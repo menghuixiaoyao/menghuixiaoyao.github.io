@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v632</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v633</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -956,10 +956,11 @@ function tribPower(S) { // v175 渡劫强度系数：压条越高天劫越强；
   if (f >= 20) return K.TRIB_POWER_1000; // v285 2000%最强天劫
   return 1 + f / 9 * (K.TRIB_POWER_MAX - 1);
 }
-function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗；v632 10回合制：击溃雷云或扛过10回合都算成功
+function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗；v632 10回合制；v633 强度按破境定基数，玩家结构微调
   const fa = fightAttrs(S, false);
   const pw = pwOverride != null ? pwOverride : tribPower(S);
-  const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.9 * pw)));
+  const realmBase = [1, 1.2, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9][Math.min(12, S.realm|0)] || 1; // 破境基数
+  const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.7 * realmBase * (0.8 + pw * 0.2))));
   const thunder = fighter('⚡雷云', tattrs, false, []);
   const b = new Battle(playerFighter(S, false), thunder);
   b.unlimited = true;
