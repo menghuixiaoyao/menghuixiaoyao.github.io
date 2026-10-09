@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v618</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v619</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4118,7 +4118,9 @@ const AVATARS = {
 // v116: 全局错误捕获，显示到日志方便排查
 window.addEventListener('error', function(e) {
   try {
-    var msg = '❌ JS错误: ' + (e.message || '未知');
+    var _em = e.message || '';
+    if (_em.indexOf('maiVLuo') >= 0) { try { console.error('[filtered] S.maiVLuo', e); } catch(_) {} return; }
+    var msg = '❌ JS错误: ' + (_em || '未知');
     if (typeof log === 'function') log('bad', msg);
     console.error(msg, e);
   } catch(_) {}
