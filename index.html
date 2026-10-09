@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v610</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v611</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1005,7 +1005,7 @@ function isPermanentlyDegraded(S) { //v590
   if (S.failNum && (S.failNum['chain']|0) >= 2) return true;
   return !!(S.failNum && (S.failNum[S.realm|0]|0) >= 2);
 }
-function useRepair(S,i){const c=DEGRADE_CHAIN[i];if(!c)return'无此物';const c2=DEGRADE_FAIL2[c],fx=[c,c2],tr=i,k='repair'+i;if((S.inv[k]|0)<=0)return'数量不足';if(!S.degraded||fx.indexOf(S.degraded)<0)return'状态不对';S.inv[k]--;const f=S.degraded;if(f===c2){S.degraded=c;if(S.failNum){S.failNum['chain']=1;delete S.failNum[S.realm|0];}return'ok|'+f+'|'+c;}S.realm=tr;S.level=1;S.xp=0;S.degraded=null;if(S.failNum){delete S.failNum[S.realm|0];delete S.failNum['chain'];}return'ok|'+f+'|'+REALMS[tr];}
+function useRepair(S,i){const c=DEGRADE_CHAIN[i];if(!c)return'无此物';const c2=DEGRADE_FAIL2[c],fx=[c,c2],tr=i,k='repair'+i;if((S.inv[k]|0)<=0)return'数量不足';if(!S.degraded||fx.indexOf(S.degraded)<0)return'状态不对';S.inv[k]--;const f=S.degraded;const back=1+Math.floor(Math.random()*9);if(f===c2){S.degraded=c;S.level=Math.max(1,(S.level|0)-back);if(S.failNum){S.failNum['chain']=1;delete S.failNum[S.realm|0];}return'ok|'+f+'|'+c+'|'+back;}S.realm=tr;S.level=Math.max(1,(S.level|0)-back);S.xp=0;S.degraded=null;if(S.failNum){delete S.failNum[S.realm|0];delete S.failNum['chain'];}return'ok|'+f+'|'+REALMS[tr]+'|'+back;}
 function gradeFromFull(full) { // v176 按充满度定档（供 tribGrade / 天劫异变共用）
   let gi = K.TRIB_GRADES.length - 1;
   for (let i = 0; i < K.TRIB_GRADE_FULL.length; i++) if (full >= K.TRIB_GRADE_FULL[i]) { gi = i; break; }
@@ -7888,7 +7888,7 @@ document.addEventListener('click', e => {
   else if (d.devour) sheetDevour(+d.devour);
   else if (d.devfood) doDevour(+d.eater, +d.devfood);
   else if (d.brew) doBrew(d.brew, +d.n);
-  else if(d.allrep!==undefined){for(let i=0;i<12;i++)S.inv['repair'+i]=(S.inv['repair'+i]|0)+9;commit();render();log('good','🌿12种修复灵物各+9');}else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();log(r[0]==='o'?'good':'bad','🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
+  else if(d.allrep!==undefined){for(let i=0;i<12;i++)S.inv['repair'+i]=(S.inv['repair'+i]|0)+9;commit();render();log('good','🌿12种修复灵物各+9');}else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();const rp=r.split('|');log(rp[0]==='ok'?'good':'bad',rp[0]==='ok'?`🌿修复成功！${rp[1]}→${rp[2]}，等级退${rp[3]}级（当前Lv.${S.level}）`:'🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
   else if (d.sha) doSha(d.sha);
   else if (d.drink) doDrink(d.drink, +d.g, +d.n);
   else if (d.take) window.finishPk(d.take);
