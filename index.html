@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v629</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v630</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1254,7 +1254,7 @@ function useManaPotion(S, k) { const P = potOf(k); if (!P || P.t !== 'mp') retur
 const useFali = S => (S.realm|0) >= 1; // 练气起法力取代活力/经验
 const lifeManaCost = S => Math.max(1, Math.ceil(manaMax(S) * 0.01)); // 生活技能耗基础法力上限1%，向上取整，最少1
 const lifeCost = S => S.dead ? 'dead' : (S.realm|0) >= 8 ? '' : useFali(S) ? (S.mana < lifeManaCost(S) ? 'mana' : '') : (S.vigor < K.COST_LIFE ? 'vigor' : ''); // 仙人境免费；10 级前 1 活力，10 级后 2 法力
-const payLife = S => { if ((S.realm|0) >= 8) return; if (useFali(S)) S.mana -= lifeManaCost(S); else S.vigor -= K.COST_LIFE; };
+const payLife = S => { if ((S.realm|0) >= 8) return; if (useFali(S)) S.mana -= lifeManaCost(S); else S.vigor -= K.COST_LIFE; try { if (typeof thunderCheck==='function') thunderCheck(); } catch(_){} }; // v630 生活物品也触发雷云判定
 function useHpPotion(S, k) { // 场外：回复 生命上限（最高生命）的 30/40/50%，不超过上限；不提高上限；不解流血/中毒
   const P = potOf(k); if (!P || P.t !== 'hp') return { err: 'bad' }; if (S.dead) return { err: 'dead' }; if (!(S.elixirs[k] > 0)) return { err: 'none' };
   const cap = Math.floor(+S.vitPeak || (S.attrs.str + S.attrs.def + S.attrs.vit)); if (S.attrs.vit >= cap) return { err: 'full' };
