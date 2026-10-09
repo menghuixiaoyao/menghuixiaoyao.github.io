@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v615</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v616</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8047,6 +8047,7 @@ document.addEventListener('click', e => {
     const r = C.consignList(S, kind, key, q ? +q.value : 0, pr ? +pr.value : 0);
     commit(); sheetConsign('list', r.ok ? '上架成功！' : '数量或价格无效。'); }
   else if ('chatsend' in d) { const inp = $('chatInput'); const r = C.chatSend(S, inp ? inp.value : ''); if (r.ok) { save(); sheetChat(); } }
+  else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v && typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value=''; save(); if (window.renderChatFloat) window.renderChatFloat(); } }
   else if (d.menutab) sheetMenu(d.menutab);
   else if (t.id === 'debugBtn') sheetDebug();
 });
