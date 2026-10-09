@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v602</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v603</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6306,7 +6306,7 @@ function sheetBag() {
     ((S.inv['mai']|0) > 0 ? `<div class="row"><div class="lab">🌀 <b class="y">开脉丹</b> ×${S.inv['mai']}<small>服用：虚络 +1<span class="r">（临时，轮回清零）</span>，当前虚络 ${S.maiVLuo|0} 条</small></div>
       <button class="btn gold" data-drinkmai="1">服用</button>
       ${(S.inv['mai']|0) > 1 ? `<button class="btn gold" data-drinkmai="${S.inv['mai']}">全部</button>` : ''}</div>` : '') +
-    (S._allrepClaimed?'':`<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`)+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎基丹婴神乘劫仙金合尊主'[i]}×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
+    `<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎基丹婴神乘劫仙金合尊主'[i]}×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
 
 
     (!list.length && !(S.inv['mai']|0) ? '<div class="empty">空空如也，去炼药吧～</div>' : '') +
@@ -7873,7 +7873,7 @@ document.addEventListener('click', e => {
   else if (d.devour) sheetDevour(+d.devour);
   else if (d.devfood) doDevour(+d.eater, +d.devfood);
   else if (d.brew) doBrew(d.brew, +d.n);
-  else if(d.allrep!==undefined){for(let i=0;i<12;i++)S.inv['repair'+i]=Math.max(S.inv['repair'+i]|0,9);S._allrepClaimed=1;commit();render();log('good','🌿12种修复灵物各补到9');}else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();log(r[0]==='o'?'good':'bad','🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
+  else if(d.allrep!==undefined){for(let i=0;i<12;i++)S.inv['repair'+i]=Math.max(S.inv['repair'+i]|0,9);commit();render();log('good','🌿12种修复灵物各补到9');}else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();log(r[0]==='o'?'good':'bad','🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
   else if (d.sha) doSha(d.sha);
   else if (d.drink) doDrink(d.drink, +d.g, +d.n);
   else if (d.take) window.finishPk(d.take);
