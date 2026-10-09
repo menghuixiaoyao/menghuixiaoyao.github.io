@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v637</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v638</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1068,9 +1068,15 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
     let trib = null;
     if ((fromRealm|0) >= 2) { // v172 筑基→金丹起：判定成功后先渡雷劫，雷劫后概率遇心魔劫
       trib = {};
-      if ((fromRealm === 2 || fromRealm === 3) && tribFull(S) <= 2 && R() < K.TRIB_JACKPOT_P) { // v176 天劫异变：压条≤200% 时 1% 撞上高阶雷劫
-        const _jt = [2, 5, 7, 9][Math.floor(Math.random() * 4)]; // 中品200%/上品500%/完美700%/圆满900%
-        trib.jackpot = { full: _jt, pw: 1 + _jt / 9 * (K.TRIB_POWER_MAX - 1) };
+      if ((fromRealm === 2 || fromRealm === 3) && tribFull(S) <= 2 && R() < K.TRIB_JACKPOT_P) { // v176 天劫异变：压条≤200% 时 1% 撞上高阶雷劫；v638 中品/上品基础最高到完美
+        const _baseGi = gradeFromFull(tribFull(S)).gi; // 0圆满1完美2上品3中品4下品
+        const _pool = [3, 2, 1].filter(gi => gi < _baseGi); // 只取比基础高的中品/上品/完美，不含圆满
+        if (_pool.length > 0) {
+          const _gi = _pool[Math.floor(Math.random() * _pool.length)];
+          const _fullMap = {3: 2, 2: 5, 1: 7}; // gi->full
+          const _jt = _fullMap[_gi];
+          trib.jackpot = { full: _jt, pw: 1 + _jt / 9 * (K.TRIB_POWER_MAX - 1) };
+        }
       }
       trib.thunder = thunderTrib(S, trib.jackpot ? trib.jackpot.pw : null);
       S.hpCur = trib.thunder.hpLeft;
