@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v628</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v629</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1062,14 +1062,14 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
       }
       trib.thunder = thunderTrib(S, trib.jackpot ? trib.jackpot.pw : null);
       S.hpCur = trib.thunder.hpLeft;
-      if (!trib.thunder.ok) { const _ds2 = applyFailState(S, fromRealm); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10)); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'thunder', trib, lifeLost, degraded: _ds2 }; } // v589
+      if (!trib.thunder.ok) { S.thunderOk = false; const _ds2 = applyFailState(S, fromRealm); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10)); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'thunder', trib, lifeLost, degraded: _ds2 }; } // v589
       if (R() < K.TRIB_DEMON_P) { trib.demonMet = true;
         if (R() < K.TRIB_QUIZ_P) { trib.quiz = pickTribQuiz(fromRealm); trib.quiz.jackpot = trib.jackpot || null; return { ok: null, pending: 'quiz', trib }; } // v174 心魔问心：UI 收集答案后调 finishTribQuiz（v176：异变信息带过）
         trib.demon = demonTrib(S);
-        if (!trib.demon.win) { const _ds3 = applyFailState(S, fromRealm); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10)); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'demon', trib, lifeLost, degraded: _ds3 }; } } // v589
+        if (!trib.demon.win) { S.thunderOk = false; const _ds3 = applyFailState(S, fromRealm); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10)); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'demon', trib, lifeLost, degraded: _ds3 }; } } // v589
     }
-    return applyBtSuccess(S, fromRealm, trib); }
-  const _ds4 = applyFailState(S, S.realm); return { ok: false, back: 0, degraded: _ds4 };
+    S.thunderOk = false; return applyBtSuccess(S, fromRealm, trib); }
+  S.thunderOk = false; const _ds4 = applyFailState(S, S.realm); return { ok: false, back: 0, degraded: _ds4 };
 } // v589 失败进降级状态
 // v136 前世遗物过期：练气遗物3世未觉醒消散，每高一境多1世（筑基4/金丹5/…/主宰14）
 function sealMaxLives(seal) { return (seal.realm | 0) + 2; }
@@ -1457,7 +1457,7 @@ function spend(S, n) { // 统一扣体力（中毒不再按体力扣，改为每
   S.stamina -= n; bumpPeak(S);
   if (S.stamina < 0) S.stamina = 0; // 体力不为负
   if (S.buff && S.buff.k === 'luck' && (S.buff.left -= n) <= 0) S.buff = null; /* 气运菜肴按体力计次 */
-}
+ try { if (typeof thunderCheck==='function') thunderCheck(); } catch(_){} }
 function leftBeforeDeath(S, k) { // 距离死亡还剩几次（中毒：进冒险次数；流血：签到次数）
   if (!hasSt(S, k)) return Infinity; const hpMax = C.bumpPeak(S) * 5, hpFull = (S.attrs.str + S.attrs.def + S.attrs.vit) * 5, hpCur = S.hpCur != null ? S.hpCur : hpFull, d = Math.max(1, hpMax * (k === 'poison' ? K.POISON_VIT : K.BLEED_CHECKIN)); if (d <= 0) return Infinity; return Math.max(1, Math.ceil(hpCur / d));
   return d > 0 ? Math.max(1, Math.ceil((S.attrs.vit - S.status[k + 'Frac']) / d - 1e-9)) : Infinity;
@@ -4867,7 +4867,7 @@ function render() { try { if (typeof afkHourly === 'function' && typeof S !== 'u
   $('manaNeedWrap').classList.toggle('xp', !C.useFali(S));
   $('manaNeedWrap').style.display = '';
   const _btXpOk = (S.realm|0) !== 0 || (S.xp|0) >= C.xpNeed(C.REALM_MAX_LV - 1); // v574 凡人经验不足不显示突破按钮
-  $('btBtn').style.display = (S.level >= C.REALM_MAX_LV && !S.dead && S.realm < C.REALMS.length - 1 && _btXpOk && !C.isPermanentlyDegraded(S)) ? '' : 'none'; // v590 第二次失败才隐藏
+  $('btBtn').style.display = (S.level >= C.REALM_MAX_LV && !S.dead && S.realm < C.REALMS.length - 1 && _btXpOk && !C.isPermanentlyDegraded(S) && S.thunderOk) ? '' : 'none'; // v590 第二次失败才隐藏；v629 需雷云判定成功
   $('alcBar').parentElement.style.display = 'none'; // 主界面不显示炼药条（生活页里看）
   $('attrs').style.display = 'none'; // v118 五维移入个人属性面板，主界面只留血条+活力/法力条
   $('stam').textContent = S.stamina; $('vig').textContent = S.vigor;
@@ -7643,6 +7643,24 @@ window.finishPk = function(chosen) {
 function doReset() {
   if (!confirm('确定要重置存档吗？所有进度将被清除且无法恢复！')) return;
   localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); closeSheet(); $('log').innerHTML = ''; welcome(); commit();
+}
+function thunderCheck() { // v629 雷云判定：用体力10%引动，1%成功才显示突破按钮
+  if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk) return;
+  if (Math.random() < 0.10) {
+    const scenes = [
+      '🌩️ 天空骤然阴沉，乌云如墨翻涌，隐隐有雷声自九天之上传来……',
+      '⚡ 狂风大作，云层中电光游走，一股浩瀚天威笼罩四野……',
+      '🌪️ 头顶雷云汇聚，越压越低，空气中弥漫着令人窒息的压迫感……'
+    ];
+    log('warn', scenes[Math.floor(Math.random()*scenes.length)] + '<br>雷云判定中……');
+    if (Math.random() < 0.01) {
+      S.thunderOk = true;
+      log('good', '✨ 雷云散去，一缕金光破云而出——<b class="g">天道认可了你的突破！</b><br>⚡ 突破按钮已显现');
+      commit();
+    } else {
+      log('info', '🌫️ 雷云缓缓散去……天道未予回应');
+    }
+  }
 }
 function commit() { if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} } if (typeof S === 'undefined' || !S) return; if ((S.maiPages|0) >= 10 && typeof C.useMaiPages === 'function') { const _r = C.useMaiPages(S, S.maiPages|0); if (_r.n > 0) log('good', `🌀 脉络残页满10自动使用 <b class="y">${_r.n}</b> 张${_r.lvUp > 0 ? `，开脉术升级，<b class="g">实脉 +${_r.lvUp}</b>` : ''}（实络 +${_r.n}）`); } if ((S.maiVLuo|0) >= 10 && typeof C.synthVMai === 'function') { let _sn = 0; while ((S.maiVLuo|0) >= 10 && C.synthVMai(S)) _sn++; if (_sn > 0) log('good', `🌀 虚络满10自动合成 <b class="g">虚脉 +${_sn}</b>（当前 ${C.maiMult(S)} 倍）`); } save(); try { if (typeof checkAchievements === 'function') checkAchievements(); } catch(e) {} render(); } // v441 脉络残页满10自动使用；v442 虚络满10自动合成虚脉
 
