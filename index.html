@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v622</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v623</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4824,7 +4824,7 @@ function render() {
     items.forEach(h => log('good', h));
   }
   const a = S.attrs, hpMax = C.bumpPeak(S) * 5, hpFull = (a.str + a.def + a.vit) * 5, hp = S.hpCur != null ? Math.max(0, Math.min(hpMax, Math.floor(S.hpCur))) : hpFull;
-  $('lv').textContent = 'Lv.' + S.level; // v572 顶栏改回显示等级
+  $('lv').textContent = 'Lv.' + ((S.realm|0) * 10 + (S.level|0)); // v623 顶栏显示累计等级
   setBar('hp', hp, hpMax, `生命 ${C.fmtN(hp)}/${C.fmtN(hpMax)}`);
   const advVit = Math.floor(S.advVit || 0);
   const hpFillEl = $('hpBar');
