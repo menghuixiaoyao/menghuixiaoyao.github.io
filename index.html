@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v630</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v631</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7647,12 +7647,22 @@ function doReset() {
 function thunderCheck() { // v629 雷云判定：用体力10%引动，1%成功才显示突破按钮
   if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk) return;
   if (Math.random() < 0.10) {
-    const scenes = [
-      '🌩️ 天空骤然阴沉，乌云如墨翻涌，隐隐有雷声自九天之上传来……',
-      '⚡ 狂风大作，云层中电光游走，一股浩瀚天威笼罩四野……',
-      '🌪️ 头顶雷云汇聚，越压越低，空气中弥漫着令人窒息的压迫感……'
+    const _scenes = [
+      ['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],
+      ['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],
+      ['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],
+      ['空气粘稠，呼吸不畅','天色如墨，劫云中隐现金色雷纹','雷声如鼓点，一声比一声近'],
+      ['灵气倒卷，阵法隐隐有崩散之感','云层裂开缝隙，透出刺目白光','虚空震颤，耳边有嗡鸣'],
+      ['方圆十里鸟兽绝迹','劫云如山岳倾覆，雷光如瀑','雷声未至，威压先到，膝盖发软'],
+      ['天地灵气为之一空','天裂一线，似有天眼睁开','万籁俱寂，唯闻自己心跳'],
+      ['凡尘气息被尽数涤荡','九天之上垂下雷柱，接天连地','雷声即天道之音，振聋发聩'],
+      ['仙灵之气紊乱，仙器共鸣','劫云呈九彩，雷光中蕴法则碎片','雷声中夹杂大道之音，似诵经文'],
+      ['一方小世界灵气被抽空','虚空生裂缝，裂缝中雷蛇狂舞','雷声过处，空间泛起涟漪'],
+      ['数个小世界同时震动','劫云遮蔽星辰，日月无光','雷声即法则碰撞，听者道心动摇'],
+      ['三千世界齐齐战栗','虚空彻底撕裂，雷劫如灭世洪流','无声——声音已被雷威吞没，唯剩天威压顶']
     ];
-    log('warn', scenes[Math.floor(Math.random()*scenes.length)] + '<br>雷云判定中……');
+    const _sc = _scenes[Math.min(11, S.realm|0)] || _scenes[0];
+    log('warn', `🌩️ ${_sc[0]}。${_sc[1]}。${_sc[2]}……<br>雷云判定中……`); // v631 按境界显示雷云异象
     if (Math.random() < 0.01) {
       S.thunderOk = true;
       log('good', '✨ 雷云散去，一缕金光破云而出——<b class="g">天道认可了你的突破！</b><br>⚡ 突破按钮已显现');
