@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v613</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v614</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6635,9 +6635,9 @@ function doBreakthrough() {
   }
   if (r.pending === 'quiz') { commit(); render(); sheetTribQuiz(r.trib.quiz); return; } // v174 心魔问心：弹出答题面板
   if (r.ok) { S.yinQi = 0; const _gs = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : `全属性 <span class="y">×2</span>`; log('good', `⚡ <b>突破成功！</b>踏入【${r.realm}】，${_gs}法力上限 <span class="g">×2</span>！${S.realm === 1 ? '引气入体' : '凝气'}已耗尽（0/10缕）。`); sealAwakenCheck(); } // v116 突破成功清零引气入体
-  else if (r.tribFail === 'thunder') log('bad', `⚡ 倒在第${r.trib.thunder.failAt}道天雷之下，突破失败……道途已断，沦为【${r.degraded || S.degraded}】（卡9级后期），折寿 <span class="r">${r.lifeLost}</span> 年。`); // v589
-  else if (r.tribFail === 'demon') log('bad', `👹 心魔难斩，突破失败……道途已断，沦为【${r.degraded || S.degraded}】（卡9级后期），折寿 <span class="r">${r.lifeLost}</span> 年。`); // v589
-  else if (r.degraded) log('bad', `⚡ 突破失败……道途受损，沦为【${r.degraded}】，气运可提高成功率。`); // v597 失败进降级状态
+  else if (r.tribFail === 'thunder') log('bad', `⚡ 倒在第${r.trib.thunder.failAt}道天雷之下，突破失败……道途已断，沦为【${r.degraded || S.degraded}】（卡9级后期），等级退 <span class="r">${S._failBack||0} 级</span>（当前Lv.${S.level}），折寿 <span class="r">${r.lifeLost}</span> 年。`); // v589 v614加退级数
+  else if (r.tribFail === 'demon') log('bad', `👹 心魔难斩，突破失败……道途已断，沦为【${r.degraded || S.degraded}】（卡9级后期），等级退 <span class="r">${S._failBack||0} 级</span>（当前Lv.${S.level}），折寿 <span class="r">${r.lifeLost}</span> 年。`); // v589 v614加退级数
+  else if (r.degraded) log('bad', `⚡ 突破失败……道途受损，沦为【${r.degraded}】，等级退 <span class="r">${S._failBack||0} 级</span>（当前Lv.${S.level}），气运可提高成功率。`); // v597 v614加退级数
   else log('bad', `⚡ 突破失败……退回 <span class="r">${r.back} 级</span>（当前 Lv.${S.level}），气运可提高成功率。`);
   afterAct(); commit(); render();
 }
