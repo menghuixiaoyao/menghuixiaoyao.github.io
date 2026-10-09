@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v607</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v608</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4806,6 +4806,8 @@ const potName = (a, g) => `<span class="q${g}">${C.GRADES[g]}${AN[a]}丹</span>`
 /* ---------- 状态面板 ---------- */
 function setBar(id, cur, max, txt) { $(id + 'Bar').style.width = (max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0) + '%'; $(id + 'Txt').textContent = txt; }
 function render() {
+  if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
+  if (typeof S === 'undefined' || !S) return;
   try { renderWorldMap(); } catch (_) {}
   /* 战斗中只显示战斗界面，隐藏主界面 header */
   const hdr = document.querySelector('header'); if (hdr) hdr.style.display = pk ? 'none' : '';
