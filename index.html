@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v620</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v621</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -765,9 +765,9 @@ const xpNeed = lv => Math.round(K.XP_PER_LEVEL * Math.pow(lv, K.XP_EXP)); // 升
 const alcNeed = lv => lv * K.ALC_XP_PER_LEVEL;
 // 境界：凡人→练气→筑基→金丹→元婴→化神→大乘→渡劫→仙人→金仙→合体→尊者→主宰；每境10级，10级为大圆满，需突破/轮回
 const REALMS = ['凡人','练气','筑基','金丹','元婴','化神','大乘','渡劫','仙人','金仙','合体','尊者','主宰'];
-const FAIL_STATES = { 0: ['凡胎','燃尽'], 1: ['虚气','伪气'], 2: ['虚丹','假丹'], 3: ['虚婴','假婴'], 4: ['虚神','散神'], 5: ['伪乘','残乘'], 6: ['怯劫','避劫'], 7: ['劫余','残仙'], 8: ['散仙','游仙'], 9: ['虚合','假合'], 10: ['伪尊','空尊'], 11: ['残主','伪主'] }; // v589 突破失败状态
-const DEGRADE_CHAIN = ['凡胎','虚气','虚丹','虚婴','虚神','伪乘','怯劫','劫余','散仙','虚合','伪尊','残主']; 
-const DEGRADE_FAIL2 = { '凡胎':'燃尽','虚气':'伪气', '虚基':'残基', '虚丹':'假丹', '虚婴':'假婴', '虚神':'散神', '伪乘':'残乘', '怯劫':'避劫', '劫余':'残仙', '散仙':'游仙', '虚合':'假合', '伪尊':'空尊', '残主':'伪主' }; // v592
+const FAIL_STATES = { 0: ['凡胎','燃尽'], 1: ['虚气','伪气'], 2: ['虚基','残基'], 3: ['虚丹','假丹'], 4: ['虚婴','假婴'], 5: ['虚神','散神'], 6: ['伪乘','残乘'], 7: ['怯劫','避劫'], 8: ['劫余','残仙'], 9: ['散仙','游仙'], 10: ['虚合','假合'], 11: ['伪尊','空尊'] }; // v589 突破失败状态
+const DEGRADE_CHAIN = ['凡胎','虚气','虚基','虚丹','虚婴','虚神','伪乘','怯劫','劫余','散仙','虚合','伪尊']; 
+const DEGRADE_FAIL2 = {'凡胎':'燃尽','虚气':'伪气','虚基':'残基','虚丹':'假丹','虚婴':'假婴','虚神':'散神','伪乘':'残乘','怯劫':'避劫','劫余':'残仙','散仙':'游仙','虚合':'假合','伪尊':'空尊'}; // v592
 
 const REALM_LIFESPAN = [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600];
 const BT_MULT = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1]; // 突破倍率（按突破前境界）：凡人→练气×1无加成，之后每境+0.1
@@ -6313,7 +6313,7 @@ function sheetBag() {
     ((S.inv['mai']|0) > 0 ? `<div class="row"><div class="lab">🌀 <b class="y">开脉丹</b> ×${S.inv['mai']}<small>服用：虚络 +1<span class="r">（临时，轮回清零）</span>，当前虚络 ${S.maiVLuo|0} 条</small></div>
       <button class="btn gold" data-drinkmai="1">服用</button>
       ${(S.inv['mai']|0) > 1 ? `<button class="btn gold" data-drinkmai="${S.inv['mai']}">全部</button>` : ''}</div>` : '') +
-    `<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气丹婴神乘劫仙金合尊主'[i]}×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
+    `<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神乘劫余散合尊'[i]}×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
 
 
     (!list.length && !(S.inv['mai']|0) ? '<div class="empty">空空如也，去炼药吧～</div>' : '') +
