@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v627</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v628</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -956,21 +956,18 @@ function tribPower(S) { // v175 渡劫强度系数：压条越高天劫越强；
   if (f >= 20) return K.TRIB_POWER_1000; // v285 2000%最强天劫
   return 1 + f / 9 * (K.TRIB_POWER_MAX - 1);
 }
-function thunderTrib(S, pwOverride) { // v172 雷劫：九道天雷，按防御减免，扛住即过；伤害计入当前生命（v175：伤害×渡劫强度；v176：天劫异变可指定强度）
+function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗：自动战斗，胜则过，败则突破失败
   const fa = fightAttrs(S, false);
   const pw = pwOverride != null ? pwOverride : tribPower(S);
-  const maxHp = Math.max(1, Math.floor(C.bumpPeak(S) * 5));
-  let hp = S.hpCur != null ? Math.max(0, Math.min(maxHp, Math.floor(S.hpCur))) : maxHp;
-  const lines = [];
-  for (let i = 1; i <= K.TRIB_ROUNDS; i++) {
-    const raw = maxHp * (0.05 + 0.015 * i); // 一道比一道狠，九道共约 112% 生命上限，靠防御减免扛
-    const dmg = Math.max(1, Math.round((raw - fa.def * K.DEF_MULT) * pw));
-    hp -= dmg;
-    const dead = hp <= 0;
-    lines.push(`第${THUNDER_NUM[i - 1]}道天雷：受到 <span class="r">${dmg}</span> 点伤害${dead ? '，<b class="r">扛不住了……</b>' : `（剩余 ${Math.max(0, hp)}）`}`);
-    if (dead) return { ok: false, lines, hpLeft: 1, failAt: i, pw }; // v627 雷劫失败留1血
-  }
-  return { ok: true, lines, hpLeft: hp, pw };
+  const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.9 * pw)));
+  const thunder = fighter('⚡雷云', tattrs, false, []);
+  const b = new Battle(playerFighter(S, false), thunder).auto();
+  const win = b.winner === b.A;
+  const lines = [`⚡ 与雷云激战${win ? '，<span class="g">击溃雷云</span>' : '，<span class="r">不敌雷云</span>'}`];
+  const hpLeft = win ? Math.max(1, Math.floor(b.A.hp)) : 1;
+  if (!win) S.hpCur = 1;
+  else S.hpCur = hpLeft;
+  return { ok: win, lines, hpLeft, pw, battle: b };
 }
 function demonTrib(S) { // v172 心魔劫：心魔属性为玩家战斗属性九成，无技能，打一场（v175：属性×渡劫强度；v178：压条 1000% 时天魔 2.5 倍属性；v179：诅咒层数增强心魔）
   const fa = fightAttrs(S, false);
