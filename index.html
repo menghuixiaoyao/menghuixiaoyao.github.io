@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v624</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v625</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -657,7 +657,7 @@ function normalize(S) {
   if (!(S.btTotal >= 0)) S.btTotal = 0; S.btTotal = Math.floor(S.btTotal); // v12 突破成功累计
   if (!(S.yinQi >= 0)) S.yinQi = 0; S.yinQi = Math.floor(S.yinQi); // v116 引气入体
   if (S.gender !== 'm' && S.gender !== 'f') S.gender = null; // v131 性别
-  if (!(S.avatar >= 0) || S.avatar > 2) S.avatar = 0; S.avatar = Math.floor(S.avatar); // v131 头像
+  if (!(S.avatar >= 0) || S.avatar > 299) S.avatar = 0; S.avatar = Math.floor(S.avatar); // v131 头像；v625 上限299
   if (S.bindNum === null || S.bindNum === undefined) S.bindNum = 0; // v263 永久编号
   if (!S.xianyuan) S.xianyuan = {m:0,f:0}; // v263 仙缘
   if (!Array.isArray(S.binders)) S.binders = [];
