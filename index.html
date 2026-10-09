@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v600</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v601</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7635,6 +7635,8 @@ document.addEventListener('change', function(e) {
   }
 });
 document.addEventListener('click', e => {
+  if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
+  if (typeof S === 'undefined' || !S) return;
   const sp = e.target.closest && e.target.closest('a[data-self]');
   if (sp) { e.preventDefault(); if (typeof sheetChar === 'function') sheetChar(); return; }
   const ap = e.target.closest && e.target.closest('a[data-person]');
