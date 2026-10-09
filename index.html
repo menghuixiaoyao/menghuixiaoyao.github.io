@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v617</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v618</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7631,7 +7631,7 @@ function doReset() {
   if (!confirm('确定要重置存档吗？所有进度将被清除且无法恢复！')) return;
   localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); closeSheet(); $('log').innerHTML = ''; welcome(); commit();
 }
-function commit() { if ((S.maiPages|0) >= 10 && typeof C.useMaiPages === 'function') { const _r = C.useMaiPages(S, S.maiPages|0); if (_r.n > 0) log('good', `🌀 脉络残页满10自动使用 <b class="y">${_r.n}</b> 张${_r.lvUp > 0 ? `，开脉术升级，<b class="g">实脉 +${_r.lvUp}</b>` : ''}（实络 +${_r.n}）`); } if ((S.maiVLuo|0) >= 10 && typeof C.synthVMai === 'function') { let _sn = 0; while ((S.maiVLuo|0) >= 10 && C.synthVMai(S)) _sn++; if (_sn > 0) log('good', `🌀 虚络满10自动合成 <b class="g">虚脉 +${_sn}</b>（当前 ${C.maiMult(S)} 倍）`); } save(); try { if (typeof checkAchievements === 'function') checkAchievements(); } catch(e) {} render(); } // v441 脉络残页满10自动使用；v442 虚络满10自动合成虚脉
+function commit() { if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} } if (typeof S === 'undefined' || !S) return; if ((S.maiPages|0) >= 10 && typeof C.useMaiPages === 'function') { const _r = C.useMaiPages(S, S.maiPages|0); if (_r.n > 0) log('good', `🌀 脉络残页满10自动使用 <b class="y">${_r.n}</b> 张${_r.lvUp > 0 ? `，开脉术升级，<b class="g">实脉 +${_r.lvUp}</b>` : ''}（实络 +${_r.n}）`); } if ((S.maiVLuo|0) >= 10 && typeof C.synthVMai === 'function') { let _sn = 0; while ((S.maiVLuo|0) >= 10 && C.synthVMai(S)) _sn++; if (_sn > 0) log('good', `🌀 虚络满10自动合成 <b class="g">虚脉 +${_sn}</b>（当前 ${C.maiMult(S)} 倍）`); } save(); try { if (typeof checkAchievements === 'function') checkAchievements(); } catch(e) {} render(); } // v441 脉络残页满10自动使用；v442 虚络满10自动合成虚脉
 
 /* ---------- 事件 ---------- */
 document.addEventListener('touchstart', e => { const t = e.target.closest && e.target.closest('button'); if (t) { const a = document.activeElement; if (a && (a.id === 'xbInput')) a.blur(); } }, { passive: true });
