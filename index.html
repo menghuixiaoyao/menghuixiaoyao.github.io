@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v653</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v654</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -987,6 +987,100 @@ function demonTrib(S) { // v172 心魔劫：心魔属性为玩家战斗属性九
   const b = new Battle(playerFighter(S, false), demon).auto();
   return { win: b.winner === b.A, battle: b, pw };
 }
+// v654 雷劫/心魔手动战斗
+function startThunderBattle(S, trib, fromRealm, pwOverride) {
+  const fa = fightAttrs(S, false);
+  const pw = pwOverride != null ? pwOverride : tribPower(S);
+  const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.5 * pw))); // v635 同thunderTrib
+  const thunder = fighter('⚡雷云', tattrs, false, []);
+  const b = new Battle(playerFighter(S, false), thunder);
+  b.unlimited = true;
+  pk = { battle: b, trib: 'thunder', tribData: { trib, fromRealm, pw }, target: 'foe' };
+  try { closeSheet(); } catch(_){}
+  if (trib.jackpot) { const _jg = C.gradeFromFull(trib.jackpot.full); log('warn', `⚡ <b>天现异象！</b>劫云翻涌——这竟是【<b class="y">${_jg.name}</b>】级别的天劫！扛过去便按【${_jg.name}】档结丹！`); }
+  else if (pw >= 1.25) log('sys', '⚡ 天劫感应到你充盈的灵气，雷威大涨！');
+  log('warn', `⚡ <b>雷劫降临！</b>劫云翻涌，天威浩荡——击溃<b class="x">⚡雷云</b>！<br><span style="color:#888">击溃雷云或存活10回合即为渡劫成功，逃跑视为落败</span>`);
+  afterAct(); save(); render();
+}
+function startDemonBattle(S, trib, fromRealm) {
+  const fa = fightAttrs(S, false);
+  const pw = tribPower(S);
+  const dbase = tribFull(S) >= 20 ? K.TRIB_DEMON_1000 : K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON);
+  const dmult = dbase * (1 + (S.curseN | 0) * K.TRIB_CURSE_PER);
+  const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * dmult)));
+  const demon = fighter('👹心魔', dattrs, false, []);
+  const b = new Battle(playerFighter(S, false), demon);
+  pk = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe' };
+  try { closeSheet(); } catch(_){}
+  const _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : '';
+  log('warn', `👹 <b>心魔来袭！</b>${_cu}直指道心——与<b class="x">👹心魔</b>一战！<br><span style="color:#888">斩灭心魔方能继续突破，逃跑视为落败</span>`);
+  afterAct(); save(); render();
+}
+function tribBattleSuccessLog(S, r) {
+  if (r.ok) { S.yinQi = 0; const _gs = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : `全属性 <span class="y">×2</span>`; log('good', `⚡ <b>突破成功！</b>踏入【${r.realm}】，${_gs}法力上限 <span class="g">×2</span>！${S.realm === 1 ? '引气入体' : '凝气'}已耗尽（0/10缕）。`); try { sealAwakenCheck(); } catch(_){} }
+}
+function finishThunderBattle() {
+  const b = pk.battle;
+  const _td = pk.tribData, trib = _td.trib, fromRealm = _td.fromRealm, pw = _td.pw;
+  const koWin = b.winner === b.A;
+  const surviveWin = !koWin && b.A.hp > 0 && (b._tribSurvive || b.round >= 10);
+  const win = koWin || surviveWin;
+  const hpLeft = win ? Math.max(1, Math.floor(b.A.hp)) : 1;
+  S.hpCur = hpLeft;
+  const _bl = `⚡ 与雷云激战${koWin ? '，<span class="g">击溃雷云</span>' : (surviveWin ? '，<span class="g">扛过十回合，雷云散去</span>' : '，<span class="r">不敌雷云</span>')}`;
+  log('sys', _bl);
+  if (win) log('good', '⚡ 九道天雷，尽数扛下！');
+  trib.thunder = { ok: win, lines: [_bl], hpLeft, pw, battle: b, koWin };
+  pk = null;
+  if (!win) {
+    S.thunderOk = false;
+    const _ds = applyFailState(S, fromRealm);
+    const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10));
+    S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost);
+    log('bad', `⚡ 倒在天雷之下，突破失败……道途已断，沦为【${_ds || S.degraded}】（卡9级后期），折寿 <span class="r">${lifeLost}</span> 年。`);
+    afterAct(); commit(); render();
+    return;
+  }
+  if (R() < K.TRIB_DEMON_P) {
+    trib.demonMet = true;
+    if (R() < K.TRIB_QUIZ_P) {
+      trib.quiz = pickTribQuiz(fromRealm);
+      trib.quiz.jackpot = trib.jackpot || null;
+      commit(); render();
+      sheetTribQuiz(trib.quiz);
+      return;
+    }
+    startDemonBattle(S, trib, fromRealm);
+    return;
+  }
+  S.thunderOk = false;
+  const r = applyBtSuccess(S, fromRealm, trib);
+  tribBattleSuccessLog(S, r);
+  afterAct(); commit(); render();
+}
+function finishDemonBattle() {
+  const b = pk.battle;
+  const _td = pk.tribData, trib = _td.trib, fromRealm = _td.fromRealm;
+  const win = b.winner === b.A;
+  const _dr = b.round | 0;
+  const _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : '';
+  log(win ? 'good' : 'bad', `👹 心魔来袭${_cu}，激战 ${_dr} 回合，${win ? '<b>斩灭心魔，道心稳固！</b>' : '<b class="r">不敌心魔，道心受损……</b>'}`);
+  trib.demon = { win, battle: b, pw: tribPower(S) };
+  pk = null;
+  if (!win) {
+    S.thunderOk = false;
+    const _ds = applyFailState(S, fromRealm);
+    const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10));
+    S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost);
+    log('bad', `👹 心魔难斩，突破失败……道途已断，沦为【${_ds || S.degraded}】（卡9级后期），折寿 <span class="r">${lifeLost}</span> 年。`);
+    afterAct(); commit(); render();
+    return;
+  }
+  S.thunderOk = false;
+  const r = applyBtSuccess(S, fromRealm, trib);
+  tribBattleSuccessLog(S, r);
+  afterAct(); commit(); render();
+}
 function applyFailState(S, fromRealm) { // v589 突破失败进降级状态；v592 降级链中失败进第二个状态；v612 失败等级退1-9
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
   const _dfail2 = (typeof DEGRADE_FAIL2 !== 'undefined') ? DEGRADE_FAIL2 : null;
@@ -1078,13 +1172,7 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
           trib.jackpot = { full: _jt, pw: 1 + _jt / 9 * (K.TRIB_POWER_MAX - 1) };
         }
       }
-      trib.thunder = thunderTrib(S, trib.jackpot ? trib.jackpot.pw : null);
-      S.hpCur = trib.thunder.hpLeft;
-      if (!trib.thunder.ok) { S.thunderOk = false; const _ds2 = applyFailState(S, fromRealm); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10)); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'thunder', trib, lifeLost, degraded: _ds2 }; } // v589
-      if (R() < K.TRIB_DEMON_P) { trib.demonMet = true;
-        if (R() < K.TRIB_QUIZ_P) { trib.quiz = pickTribQuiz(fromRealm); trib.quiz.jackpot = trib.jackpot || null; return { ok: null, pending: 'quiz', trib }; } // v174 心魔问心：UI 收集答案后调 finishTribQuiz（v176：异变信息带过）
-        trib.demon = demonTrib(S);
-        if (!trib.demon.win) { S.thunderOk = false; const _ds3 = applyFailState(S, fromRealm); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10)); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'demon', trib, lifeLost, degraded: _ds3 }; } } // v589
+      return { ok: null, pending: 'thunder', trib, fromRealm, thunderPw: trib.jackpot ? trib.jackpot.pw : null }; // v654 雷劫改手动战斗
     }
     S.thunderOk = false; return applyBtSuccess(S, fromRealm, trib); }
   S.thunderOk = false; const _ds4 = applyFailState(S, S.realm); return { ok: false, back: 0, degraded: _ds4 };
@@ -6691,6 +6779,7 @@ function doBreakthrough() {
   const r = C.breakthrough(S);
   if (r.err) { if (r.err === 'nohp') log('bad', '⚡ 当前生命为 0，无法突破，请先恢复生命。'); else if (r.err === 'nomana') { const _mm = C.manaMax(S), _pp = _mm > 0 ? Math.floor((S.mana|0) / _mm * 100) : 0; log('bad', `⚡ 法力未满（${_pp}/100），突破需法力 100/100，请先补满（签到回满或喝法力药水）。`); } else if (r.err === 'dead') log('bad', '⚡ 已死亡，无法突破。'); else if (r.err === 'nolife') log('bad', '⚡ 寿元已尽，无法突破，请先轮回转世。'); return; }
   closeSheet();
+  if (r.pending === 'thunder') { startThunderBattle(S, r.trib, r.fromRealm, r.thunderPw); return; } // v654 雷劫手动战斗
   if (r.trib) { // v172 渡劫战报
     if (r.trib.jackpot) { const _jg = C.gradeFromFull(r.trib.jackpot.full); log('warn', `⚡ <b>天现异象！</b>劫云翻涌——这竟是【<b class="y">${_jg.name}</b>】级别的天劫！扛过去便按【${_jg.name}】档结丹！`); } // v176
     if (r.trib.thunder.pw >= 1.25 && !r.trib.jackpot) log('sys', '⚡ 天劫感应到你充盈的灵气，雷威大涨！'); // v175
@@ -7514,6 +7603,8 @@ function pkHandleOver() {
 }
 function pkHandleOver() {
   const b = pk.battle;
+  if (pk.trib === 'thunder') { finishThunderBattle(); return; } // v654
+  if (pk.trib === 'demon') { finishDemonBattle(); return; } // v654
   if (pk.escape) {
     log('good', '💨 你成功逃离了战斗。');
     pk = null; afterAct(); commit();
@@ -7566,6 +7657,11 @@ function doPkActionGo(act) {
       pk.turnBanner = null;
       if (pk.target === 'pet' && !(b.B.pet && b.B.pet.hp > 0)) pk.target = 'foe';
       const Le = b.finishRound();
+      if (pk.trib === 'thunder' && !b.over && b.round >= 10 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
+        b.over = true; b._tribSurvive = true;
+        const _sl = '<div class="bl y">⚡ 十回合已尽，你扛过了天雷洗礼！雷云缓缓散去……</div>';
+        Le.push(_sl); log('pk', _sl);
+      }
       if (Le.length) log('pk', Le.join(''));
       save(); render(); pkClearActing();
       if (b.over) pkHandleOver();
@@ -7597,6 +7693,13 @@ function doPkActionGo(act) {
     doOne2(0);
     return;
   }
+  if (act === 'surrender' && pk.trib) { // v654 渡劫中逃跑视为落败
+    if (!confirm('天威之下逃跑视为渡劫失败，确定吗？')) { pkClearActing(); return; }
+    log('bad', '🏳️ 天威之下，无处可逃——渡劫失败！');
+    pk.battle.over = true; pk.battle.winner = pk.battle.B;
+    pkClearActing(); pkHandleOver();
+    return;
+  }
   if (act === 'surrender') {
     if (!confirm('确定逃跑？50%概率成功，失败则视为落败。')) { pkClearActing(); return; }
     if (Math.random() < 0.5) {
@@ -7622,6 +7725,11 @@ function doPkActionGo(act) {
     pk.turnBanner = null;
     if (pk.target === 'pet' && !(b.B.pet && b.B.pet.hp > 0)) pk.target = 'foe'; // 宠物已死切回打人
     const Le = b.finishRound();
+    if (pk.trib === 'thunder' && !b.over && b.round >= 10 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
+      b.over = true; b._tribSurvive = true;
+      const _sl = '<div class="bl y">⚡ 十回合已尽，你扛过了天雷洗礼！雷云缓缓散去……</div>';
+      Le.push(_sl); log('pk', _sl);
+    }
     if (Le.length) log('pk', Le.join(''));
     save(); render();
     pkClearActing();
