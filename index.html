@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v684</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v685</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2293,7 +2293,10 @@ Battle.prototype.finishRound = function () {
     if (this.draw) L.push(`<div class="bl y">☠️<span class="r">同归于尽</span>！双方同时倒下，各自承受死亡惩罚</div>`);
   } else {
     [A, B].forEach(f => { const mCap = f.maxMp * (f.S ? maiMult(f.S) : 2); f.mp = Math.min(mCap, f.mp + K.MP_REGEN); });
-    if (!this.unlimited && this.round >= K.MAX_ROUNDS) {
+    if (this.surviveRounds && this.round >= this.surviveRounds && A.hp > 0) { // v685 雷劫存活判胜
+      this.over = true; this.winner = A;
+      L.push(`<div class="bl g">⚡ 扛过${this.surviveRounds}回合，雷云散去！</div>`);
+    } else if (!this.unlimited && this.round >= K.MAX_ROUNDS) {
       this.over = true; this.winner = B;
       L.push(`<div class="bl y">200回合已尽，未能取胜，判${nm(B)}胜出！</div>`);
     }
@@ -6865,7 +6868,7 @@ function doBreakthrough() {
     const _ta = {}; _bx.ATTRS.forEach(k => _ta[k] = Math.max(1, Math.round(_fa[k] * 0.5 * _pw)));
     const _th = _bx.fighter('\u26a1\u96f7\u4e91', _ta, false, []);
     const _b = new _bx.Battle(_bx.playerFighter(S, false), _th);
-    _b.unlimited = true;
+    _b.unlimited = true; _b.surviveRounds = 10; // v685 10回合存活判胜
     pk = { battle: _b, adv: true, trib: 'thunder', tribData: { trib: r.trib, fromRealm: r.fromRealm, pw: _pw } };
     try { closeSheet(); } catch(_){}
     afterAct(); save(); render();
