@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v643</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v644</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7666,8 +7666,7 @@ function doReset() {
   localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); closeSheet(); $('log').innerHTML = ''; welcome(); commit();
 }
 function thunderCheck(n) { // v629 雷云判定：每点体力10%引动，1%成功才显示突破按钮；v639 按点数；v640 筑基起
-  log('info', `[调试] 雷云判定：lv=${S.level},realm=${S.realm},ok=${S.thunderOk},n=${n}`);
-  if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk || (S.realm|0) < 2) { log('info', `[调试] 跳过`); return; }
+  if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk || (S.realm|0) < 2) return;
   n = Math.max(1, n|0 || 1);
   let triggered = false;
   for (let i = 0; i < n; i++) { if (Math.random() < 0.10) { triggered = true; break; } }
@@ -7690,7 +7689,7 @@ function thunderCheck(n) { // v629 雷云判定：每点体力10%引动，1%成�
     log('warn', `🌩️ ${_sc[0]}。${_sc[1]}。${_sc[2]}……<br>雷云判定中……`); // v631 按境界显示雷云异象
     if (Math.random() < 0.01) {
       S.thunderOk = true;
-      log('good', '✨ 雷云散去，一缕金光破云而出——<b class="g">天道认可了你的突破！</b><br>⚡ 突破按钮已显现');
+      log('good', '⚡ <b class="r">天道已经将你锁定</b>！尽快准备迎接雷劫！<br>⚡ 突破按钮已显现');
       commit();
     } else {
       log('info', '🌫️ 雷云缓缓散去……天道未予回应');
