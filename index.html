@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v650</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v651</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6996,7 +6996,7 @@ const MINE_FLAVOR = { iron: '挖到', copper: '挖到', silver: '挖到一块', 
 function doGather(kind, n) {
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) { log('bad', '❌状态异常，请刷新页面'); return; }
-  try { if (typeof thunderCheck==='function') thunderCheck(n||1); } catch(_){} // v649 直接触发
+  try { log('info', '[v651] 掏蛋触发雷云检查'); if ((S.level|0) >= 10 && !S.thunderOk && (S.realm|0) >= 2) { const _scenes=[['草木低伏','劫云翻涌','雷声震耳']]; const _sc=_scenes[0]; log('warn', `🌩️ ${_sc[0]}。${_sc[1]}。${_sc[2]}……<br>雷云判定中……`); if (Math.random() < 0.5) { S.thunderOk=true; log('good', '⚡ <b class="r">天道已将你锁定</b>！'); commit(); } else { log('info', '🌫️ 雷云散去……'); } } } catch(_){} // v651 内联测试
   const g = GATHER[kind], r = C.gather(S, kind, n); if (!r.length) { if (S.dead) { closeSheet(); afterAct(); commit(); } return; }
   const cnt = {}; let crits = 0, total = 0, lostTotal = 0; r.forEach(x => { if (x.length > 1) crits++; x.forEach(k => { cnt[k] = (cnt[k] || 0) + 1; total++; }); lostTotal += x.lost || 0; }); // v433 统计背包满丢失数
   const fails = r.fails || 0, okCnt = r.length - fails;
