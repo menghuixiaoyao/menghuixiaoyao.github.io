@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v657</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v658</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -313,7 +313,7 @@ const K = {
   PK_GOLD_MIN: 30, PK_GOLD_MAX: 50, // PK 胜利金元
   DEATH_GOLD_PCT: 0.2,    // 冒险战死损失 20% 金元
   // —— 挖矿（替代修炼力量）：1 体力 = 力量 +1 + 1 块矿石（存入背包，可在商店出售）——
-  MINE_CRIT_PER_STR: 0.0005, MINE_CRIT_MAX: 0.5, // 挖矿/打猎暴击率 = 对应属性（力量/敏捷）×0.05%（上限 50%）// v657 降低配比
+  MINE_CRIT_PER_STR: 0.001, MINE_CRIT_MAX: 0.5, // 挖矿/打猎暴击率 = 对应属性×0.1%（上限 50%）// v658
   MINE_MORE_BASE: 0.15, MINE_MORE_PER_STR: 0.003, MINE_MORE_MAX: 0.45, // 暴击后每多 1 块的概率 = 15% + 力量×0.3%（上限 45%），最多 5 块
   MEAT_BASE: 0.02, MEAT_PER_AGI: 0.0001, MEAT_MAX: 0.04, // 打猎每次 2% + 敏捷×0.01%（上限 4%）额外带回 1 块肉（不受暴击影响），品种与本次（首只）猎物相同
   TIER_SHIFT_PER: 0.0005, TIER_SHIFT_MAX: 0.05, // 灵石（力量）/灵露（防御）品阶：一品概率 -属性×0.05%（上限 -5%），按 40/30/20/10% 分给二~五品
