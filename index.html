@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v645</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v646</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1470,6 +1470,37 @@ function afkLootItem(S) { // 从背包随机取一类物品（随机数量），
   const n = 1 + Math.floor(Math.random() * c.qty); // 1~全部，随机数量
   S[c.loc][c.key] -= n; if (S[c.loc][c.key] <= 0) delete S[c.loc][c.key];
   return `${c.name} <span class="r">×${n}</span> 被夺走`;
+}
+function thunderCheck(n) { // v629 雷云判定：每点体力10%引动，1%成功才显示突破按钮；v639 按点数；v640 筑基起
+  if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk || (S.realm|0) < 2) return;
+  n = Math.max(1, n|0 || 1);
+  let triggered = false;
+  for (let i = 0; i < n; i++) { if (Math.random() < 0.10) { triggered = true; break; } }
+  if (triggered) {
+    const _scenes = [
+      ['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],
+      ['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],
+      ['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],
+      ['空气粘稠，呼吸不畅','天色如墨，劫云中隐现金色雷纹','雷声如鼓点，一声比一声近'],
+      ['灵气倒卷，阵法隐隐有崩散之感','云层裂开缝隙，透出刺目白光','虚空震颤，耳边有嗡鸣'],
+      ['方圆十里鸟兽绝迹','劫云如山岳倾覆，雷光如瀑','雷声未至，威压先到，膝盖发软'],
+      ['天地灵气为之一空','天裂一线，似有天眼睁开','万籁俱寂，唯闻自己心跳'],
+      ['凡尘气息被尽数涤荡','九天之上垂下雷柱，接天连地','雷声即天道之音，振聋发聩'],
+      ['仙灵之气紊乱，仙器共鸣','劫云呈九彩，雷光中蕴法则碎片','雷声中夹杂大道之音，似诵经文'],
+      ['一方小世界灵气被抽空','虚空生裂缝，裂缝中雷蛇狂舞','雷声过处，空间泛起涟漪'],
+      ['数个小世界同时震动','劫云遮蔽星辰，日月无光','雷声即法则碰撞，听者道心动摇'],
+      ['三千世界齐齐战栗','虚空彻底撕裂，雷劫如灭世洪流','无声——声音已被雷威吞没，唯剩天威压顶']
+    ];
+    const _sc = _scenes[Math.min(11, S.realm|0)] || _scenes[0];
+    log('warn', `🌩️ ${_sc[0]}。${_sc[1]}。${_sc[2]}……<br>雷云判定中……`); // v631 按境界显示雷云异象
+    if (Math.random() < 0.01) {
+      S.thunderOk = true;
+      log('good', '⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破按钮已显现');
+      commit();
+    } else {
+      log('info', '🌫️ 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>');
+    }
+  }
 }
 function spend(S, n) { // 统一扣体力（中毒不再按体力扣，改为每次进冒险扣10%）
   S.stamina -= n; bumpPeak(S);
@@ -7665,37 +7696,7 @@ function doReset() {
   if (!confirm('确定要重置存档吗？所有进度将被清除且无法恢复！')) return;
   localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); closeSheet(); $('log').innerHTML = ''; welcome(); commit();
 }
-function thunderCheck(n) { // v629 雷云判定：每点体力10%引动，1%成功才显示突破按钮；v639 按点数；v640 筑基起
-  if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk || (S.realm|0) < 2) return;
-  n = Math.max(1, n|0 || 1);
-  let triggered = false;
-  for (let i = 0; i < n; i++) { if (Math.random() < 0.10) { triggered = true; break; } }
-  if (triggered) {
-    const _scenes = [
-      ['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],
-      ['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],
-      ['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],
-      ['空气粘稠，呼吸不畅','天色如墨，劫云中隐现金色雷纹','雷声如鼓点，一声比一声近'],
-      ['灵气倒卷，阵法隐隐有崩散之感','云层裂开缝隙，透出刺目白光','虚空震颤，耳边有嗡鸣'],
-      ['方圆十里鸟兽绝迹','劫云如山岳倾覆，雷光如瀑','雷声未至，威压先到，膝盖发软'],
-      ['天地灵气为之一空','天裂一线，似有天眼睁开','万籁俱寂，唯闻自己心跳'],
-      ['凡尘气息被尽数涤荡','九天之上垂下雷柱，接天连地','雷声即天道之音，振聋发聩'],
-      ['仙灵之气紊乱，仙器共鸣','劫云呈九彩，雷光中蕴法则碎片','雷声中夹杂大道之音，似诵经文'],
-      ['一方小世界灵气被抽空','虚空生裂缝，裂缝中雷蛇狂舞','雷声过处，空间泛起涟漪'],
-      ['数个小世界同时震动','劫云遮蔽星辰，日月无光','雷声即法则碰撞，听者道心动摇'],
-      ['三千世界齐齐战栗','虚空彻底撕裂，雷劫如灭世洪流','无声——声音已被雷威吞没，唯剩天威压顶']
-    ];
-    const _sc = _scenes[Math.min(11, S.realm|0)] || _scenes[0];
-    log('warn', `🌩️ ${_sc[0]}。${_sc[1]}。${_sc[2]}……<br>雷云判定中……`); // v631 按境界显示雷云异象
-    if (Math.random() < 0.01) {
-      S.thunderOk = true;
-      log('good', '⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破按钮已显现');
-      commit();
-    } else {
-      log('info', '🌫️ 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>');
-    }
-  }
-}
+
 function commit() { if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} } if (typeof S === 'undefined' || !S) return; if ((S.maiPages|0) >= 10 && typeof C.useMaiPages === 'function') { const _r = C.useMaiPages(S, S.maiPages|0); if (_r.n > 0) log('good', `🌀 脉络残页满10自动使用 <b class="y">${_r.n}</b> 张${_r.lvUp > 0 ? `，开脉术升级，<b class="g">实脉 +${_r.lvUp}</b>` : ''}（实络 +${_r.n}）`); } if ((S.maiVLuo|0) >= 10 && typeof C.synthVMai === 'function') { let _sn = 0; while ((S.maiVLuo|0) >= 10 && C.synthVMai(S)) _sn++; if (_sn > 0) log('good', `🌀 虚络满10自动合成 <b class="g">虚脉 +${_sn}</b>（当前 ${C.maiMult(S)} 倍）`); } save(); try { if (typeof checkAchievements === 'function') checkAchievements(); } catch(e) {} render(); } // v441 脉络残页满10自动使用；v442 虚络满10自动合成虚脉
 
 /* ---------- 事件 ---------- */
