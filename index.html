@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v664</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v665</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1592,11 +1592,11 @@ function thunderCheck(n) { // v629 雷云判定：每点体力10%引动，1%成�
     }
   }
 }
-function spend(S, n) { // 统一扣体力（中毒不再按体力扣，改为每次进冒险扣10%）
+function spend(S, n) { // 统一扣体力
   S.stamina -= n; bumpPeak(S);
-  if (S.stamina < 0) S.stamina = 0; // 体力不为负
-  if (S.buff && S.buff.k === 'luck' && (S.buff.left -= n) <= 0) S.buff = null; /* 气运菜肴按体力计次 */
- try { if (typeof thunderCheck==='function') thunderCheck(n); } catch(_){} }
+  if (S.stamina < 0) S.stamina = 0;
+  if (S.buff && S.buff.k === 'luck' && (S.buff.left -= n) <= 0) S.buff = null;
+  try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _n=Math.max(1,(n||1)|0); const _trigP=Math.min(1,0.10+0.10*S._trigFail); let _tr=false; for (let _i=0;_i<_n;_i++) { if (Math.random()<_trigP) { _tr=true; break; } } if (!_tr) { S._trigFail++; } else { S._trigFail=0; log('warn','🌩️ 雷云判定中……'); const _succP=Math.min(1,0.01+0.01*S._succFail); if (Math.random()<_succP) { S.thunderOk=true; S._succFail=0; S._trigFail=0; log('good','⚡ <b class="r">天道已将你锁定</b>！'); commit(); } else { S._succFail++; log('info','🌫️ 雷云散去……'); } } } } catch(_){} } // v665 统一体力入口内联
 function leftBeforeDeath(S, k) { // 距离死亡还剩几次（中毒：进冒险次数；流血：签到次数）
   if (!hasSt(S, k)) return Infinity; const hpMax = C.bumpPeak(S) * 5, hpFull = (S.attrs.str + S.attrs.def + S.attrs.vit) * 5, hpCur = S.hpCur != null ? S.hpCur : hpFull, d = Math.max(1, hpMax * (k === 'poison' ? K.POISON_VIT : K.BLEED_CHECKIN)); if (d <= 0) return Infinity; return Math.max(1, Math.ceil(hpCur / d));
   return d > 0 ? Math.max(1, Math.ceil((S.attrs.vit - S.status[k + 'Frac']) / d - 1e-9)) : Infinity;
