@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v693</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v694</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8015,7 +8015,7 @@ document.addEventListener('click', e => {
   else if (d.battlelog !== undefined) { sheetBattleLog(); return; }
   else if (d.blogtab !== undefined) { const op = $('blogOp'), bat = $('blogBat'); if (op && bat) { const isOp = d.blogtab === 'op'; op.style.display = isOp ? '' : 'none'; bat.style.display = isOp ? 'none' : ''; } return; }
   else if (d.burnbloodtier !== undefined) { const _bA = (pk && pk.battle && pk.battle.A), _cur = _bA ? (_bA.burnBloodTier|0) : (S.burnBloodTier|0); let _nt = _cur >= 10 ? 0 : _cur + 1; S.burnBloodTier = _nt; S.burnBlood = _nt > 0; if (_bA) _bA.burnBloodTier = _nt; save(); render(); toastLog('sys', _nt > 0 ? `🔥燃血${['','一','二','三','四','五','六','七','八','九','十'][_nt]}倍（${_nt}/10层）` : '🔥燃血已关闭'); if (typeof renderCombat === 'function') try { renderCombat(); } catch (_) {} return; }
-  else if (d.burntier !== undefined) { const _bA2 = (pk && pk.battle && pk.battle.A), _cur2 = _bA2 ? (_bA2.burnTier|0) : (S.burnTier|0); let _nt2 = _cur2 >= 10 ? 0 : _cur2 + 1; if (_nt2 > 0) { const _curMp = _bA2 ? _bA2.mp : S.mana, _mxMp = Math.max(1, _bA2 ? _bA2.maxMp : C.manaMax(S)), _maxT2 = Math.max(1, Math.min(10, 1 + Math.floor((_curMp - _mxMp * 0.05) / _mxMp))); if (_nt2 > _maxT2) { toastLog('sys', `法力不足，最高${_maxT2}层（需${_maxT2*100}%法力）`); return; } } S.burnTier = _nt2; S.burnSpirit = _nt2 > 0; if (_bA2) _bA2.burnTier = _nt2; save(); render(); toastLog('sys', _nt2 > 0 ? `💧燃法${['','一','二','三','四','五','六','七','八','九','十'][_nt2]}倍（${_nt2}/10层）` : '💧燃法已关闭'); if (typeof renderCombat === 'function') try { renderCombat(); } catch (_) {} return; }
+  else if (d.burntier !== undefined) { const _bA2 = (pk && pk.battle && pk.battle.A), _cur2 = _bA2 ? (_bA2.burnTier|0) : (S.burnTier|0); let _nt2 = _cur2 >= 10 ? 0 : _cur2 + 1; /*v694去法力上限*/ S.burnTier = _nt2; S.burnSpirit = _nt2 > 0; if (_bA2) _bA2.burnTier = _nt2; save(); render(); toastLog('sys', _nt2 > 0 ? `💧燃法${['','一','二','三','四','五','六','七','八','九','十'][_nt2]}倍（${_nt2}/10层）` : '💧燃法已关闭'); if (typeof renderCombat === 'function') try { renderCombat(); } catch (_) {} return; }
   else if (d.burn) {
     if (d.burn === 'blood') { const _nbt = +(d.burnbloodtier || 0); if (_nbt) { S.burnBloodTier = (S.burnBloodTier|0) === _nbt ? 0 : _nbt; S.burnBlood = (S.burnBloodTier|0) > 0; pk.battle.A.burnBloodTier = S.burnBloodTier|0; } else { S.burnBlood = !S.burnBlood; S.burnBloodTier = S.burnBlood ? 1 : 0; pk.battle.A.burnBloodTier = S.burnBloodTier|0; } }
     else { const _nt = +(d.burntier || 0); S.burnTier = (S.burnTier|0) === _nt ? 0 : _nt; S.burnSpirit = (S.burnTier|0) > 0; pk.battle.A.burnTier = S.burnTier|0; pk.battle.A.burnSpirit = (S.burnTier|0) > 0; }
