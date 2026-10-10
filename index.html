@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v683</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v684</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2995,6 +2995,28 @@ function pkTakeByRealm(wR, lR) { // v88：按境界算夺取点数：基数=对�
   return Math.floor(base * m);
 }
 function pkSettle(S, pk, chosen) {
+  if (pk.trib === 'thunder') { // v684 雷劫结算
+    try {
+      const b = pk.battle;
+      const _td = pk.tribData || {};
+      const fromRealm = _td.fromRealm | 0;
+      const koWin = b.winner === b.A;
+      const surviveWin = !koWin && b.A.hp > 0 && b.round >= 10;
+      const win = koWin || surviveWin;
+      const _bl = '⚡ 与雷云激战' + (koWin ? '，<span class="g">击溃雷云</span>' : (surviveWin ? '，<span class="g">扛过十回合，雷云散去</span>' : '，<span class="r">不敌雷云</span>'));
+      pk = null;
+      S.thunderOk = false; S._trigFail = 0; S._succFail = 0;
+      if (!win) {
+        try { const _ds = C.applyFailState(S, fromRealm); log('bad', _bl + '<br>⚡ 倒在天雷之下，突破失败……沦为【' + (_ds || S.degraded) + '】。'); } catch(_){ log('bad', _bl + '<br>⚡ 突破失败。'); }
+      } else {
+        try { const r = C.applyBtSuccess(S, fromRealm, _td.trib || {}); log('good', _bl + '<br>⚡ <b>突破成功！</b>踏入【' + (r.realm || '') + '】！'); } catch(_){ log('good', _bl + '<br>⚡ 突破成功！'); }
+      }
+      try { afterAct(); } catch(_){}
+      try { commit(); } catch(_){}
+      render();
+    } catch(_e){ try{ log('bad','雷劫结算失败:'+(_e.message||_e)); }catch(_){} try{ pk=null; render(); }catch(_){} }
+    return;
+  }
   const b = pk.battle, res = { win: b.winner === b.A, draw: !!b.draw };
   if (pk.isArena) { // v245 擂台结算：积分制，不夺/不掉属性；v246 积分同步到日/周/月/年榜；v247 胜者为擂主，按守擂时间算
     const a = arenaData();
