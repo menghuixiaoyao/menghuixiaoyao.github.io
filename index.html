@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v675</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v676</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6821,7 +6821,7 @@ function doBreakthrough() {
   const r = C.breakthrough(S);
   if (r.err) { if (r.err === 'nohp') log('bad', '⚡ 当前生命为 0，无法突破，请先恢复生命。'); else if (r.err === 'nomana') { const _mm = C.manaMax(S), _pp = _mm > 0 ? Math.floor((S.mana|0) / _mm * 100) : 0; log('bad', `⚡ 法力未满（${_pp}/100），突破需法力 100/100，请先补满（签到回满或喝法力药水）。`); } else if (r.err === 'dead') log('bad', '⚡ 已死亡，无法突破。'); else if (r.err === 'nolife') log('bad', '⚡ 寿元已尽，无法突破，请先轮回转世。'); return; }
   closeSheet();
-  if (r.pending === 'thunder') { try { const _bx = window._bx||{}; if(!_bx.Battle||!_bx.fighter) throw 'battle not ready'; const _fa = _bx.fightAttrs(S, false); const _pw = r.thunderPw != null ? r.thunderPw : _bx.tribPower(S); const _ta = {}; _bx.ATTRS.forEach(k => _ta[k] = Math.max(1, Math.round(_fa[k] * 0.5 * _pw))); const _th = _bx.fighter('⚡雷云', _ta, false, []); const _b = new _bx.Battle(_bx.playerFighter(S, false), _th); _b.unlimited = true; window.pk = { battle: _b, trib: 'thunder', tribData: { trib: r.trib, fromRealm: r.fromRealm, pw: _pw }, target: 'foe' }; try { closeSheet(); } catch(_){} log('warn', '⚡ <b>雷劫降临！</b>击溃<b class="x">⚡雷云</b>！<br><span style="color:#888">击溃雷云或存活10回合即为渡劫成功</span>'); afterAct(); save(); render(); } catch(_e){ log('bad','雷劫启动失败:'+(_e.message||_e)); } return; } // v673 雷劫用导出类
+  if (r.pending === 'thunder') { try { const _bx = window._bx||{}; if(!_bx.Battle||!_bx.fighter) throw 'battle not ready'; const _fa = _bx.fightAttrs(S, false); const _pw = r.thunderPw != null ? r.thunderPw : _bx.tribPower(S); const _ta = {}; _bx.ATTRS.forEach(k => _ta[k] = Math.max(1, Math.round(_fa[k] * 0.5 * _pw))); const _th = _bx.fighter('⚡雷云', _ta, false, []); const _b = new _bx.Battle(_bx.playerFighter(S, false), _th); _b.unlimited = true; window.pk = { battle: _b, adv: true, trib: 'thunder', tribData: { trib: r.trib, fromRealm: r.fromRealm, pw: _pw } }; window._thunderTrib = { trib: r.trib, fromRealm: r.fromRealm, pw: _pw }; try { closeSheet(); } catch(_){} log('warn', '⚡ <b>雷劫降临！</b>击溃<b class="x">⚡雷云</b>！<br><span style="color:#888">击溃雷云或存活10回合即为渡劫成功</span>'); afterAct(); save(); render(); } catch(_e){ log('bad','雷劫启动失败:'+(_e.message||_e)); } return; } // v673 雷劫用导出类
   if (r.trib) { // v172 渡劫战报
     if (r.trib.jackpot) { const _jg = C.gradeFromFull(r.trib.jackpot.full); log('warn', `⚡ <b>天现异象！</b>劫云翻涌——这竟是【<b class="y">${_jg.name}</b>】级别的天劫！扛过去便按【${_jg.name}】档结丹！`); } // v176
     if (r.trib.thunder.pw >= 1.25 && !r.trib.jackpot) log('sys', '⚡ 天劫感应到你充盈的灵气，雷威大涨！'); // v175
