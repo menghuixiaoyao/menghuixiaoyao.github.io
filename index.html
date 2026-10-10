@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v667</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v668</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2851,7 +2851,7 @@ function advCtx(S, run, lines) { // 事件结果工具
   };
   return X;
 }
-function advBattleSetup(S, run) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; const _tp2=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_tp2) { S._trigFail=0; log('warn','🌩️ 雷云判定中……'); if(Math.random()<0.01){S.thunderOk=true;S._trigFail=0;log('good','⚡ <b class="r">天道已将你锁定</b>！');commit();} else {log('info','🌫️ 雷云散去……');} } else { S._trigFail++; } } } catch(_){} // v664 冒险战斗内联
+function advBattleSetup(S, run) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _tp2=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_tp2) { S._trigFail=0; log('warn','🌩️ 雷云判定中……'); const _sp2=Math.min(1,0.01+0.01*S._succFail); if(Math.random()<_sp2){S.thunderOk=true;S._succFail=0;S._trigFail=0;log('good','⚡ <b class="r">天道已将你锁定</b>！');commit();} else {S._succFail++;log('info','🌫️ 雷云散去……');} } else { S._trigFail++; } } } catch(_){} // v668 冒险战斗叠加
   const m = run.ev.mon;
   const mf = fighter(m.name, m.attrs, false, m.skills); mf.inflict = m.st || null; mf.realm = S.realm|0; // v87：AI仙力攻击用
   const b = new Battle(playerFighter(S, true), mf); b.unlimited = true; return b; // 打怪回合无限，直到分胜负
@@ -2911,7 +2911,7 @@ function advBattleSettle(S, run, b) { // 冒险战斗结算
 }
 function advFight(S, run) { const b = advBattleSetup(S, run).auto(); return advBattleSettle(S, run, b); }
 function advEnd(S, why) { const run = S.run; S.run = null; S.advVit = 0; const g = run.grid; return { dk: run.dk, why, rew: run.rew, steps: g ? g.moves : run.step, total: g ? (run.evCount | 0) : run.steps, grid: !!g, defeat: !!run.defeat, newSt: run.newSt || [] }; } // v182 格子：steps=走格数，total=触发事件数
-function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; const _tp=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_tp) { S._trigFail=0; log('warn','🌩️ 雷云判定中……'); if(Math.random()<0.01){S.thunderOk=true;S._trigFail=0;log('good','⚡ <b class="r">天道已将你锁定</b>！');commit();} else {log('info','🌫️ 雷云散去……');} } else { S._trigFail++; } } } catch(_){} // v664 冒险移动内联
+function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _tp=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_tp) { S._trigFail=0; log('warn','🌩️ 雷云判定中……'); const _sp=Math.min(1,0.01+0.01*S._succFail); if(Math.random()<_sp){S.thunderOk=true;S._succFail=0;S._trigFail=0;log('good','⚡ <b class="r">天道已将你锁定</b>！');commit();} else {S._succFail++;log('info','🌫️ 雷云散去……');} } else { S._trigFail++; } } } catch(_){} // v668 冒险移动叠加
   const run = S.run; if (!run) return null; if (S.dead) return { end: advEnd(S, 'dead') };
   const chs = advChoices(S), c = chs[i]; if (!c || c.dis) return { err: 'bad' };
   const out = { lines: [], ev: run.ev };
@@ -4611,10 +4611,11 @@ function npcPos(S) {
             S._trigFail = S._trigFail|0;
             const _tp = Math.min(1, 0.10 + 0.10*S._trigFail);
             if (Math.random() < _tp) {
-              S._trigFail = 0;
+              S._trigFail = 0; S._succFail = S._succFail|0;
               log('warn','🌩️ 雷云判定中……');
-              if (Math.random() < 0.01) { S.thunderOk = true; S._trigFail = 0; log('good','⚡ <b class="r">天道已将你锁定</b>！'); commit(); }
-              else log('info','🌫️ 雷云散去……');
+              const _spm = Math.min(1, 0.01 + 0.01*S._succFail);
+              if (Math.random() < _spm) { S.thunderOk = true; S._succFail = 0; S._trigFail = 0; log('good','⚡ <b class="r">天道已将你锁定</b>！'); commit(); }
+              else { S._succFail++; log('info','🌫️ 雷云散去……'); }
             } else { S._trigFail++; }
           }
         }
