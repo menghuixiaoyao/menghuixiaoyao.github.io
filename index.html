@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v651</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v652</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1472,11 +1472,10 @@ function afkLootItem(S) { // 从背包随机取一类物品（随机数量），
   return `${c.name} <span class="r">×${n}</span> 被夺走`;
 }
 function thunderCheck(n) { // v629 雷云判定：每点体力10%引动，1%成功才显示突破按钮；v639 按点数；v640 筑基起
-  log('info', `[调试] lv=${S.level},realm=${S.realm},ok=${S.thunderOk},n=${n},rand=${Math.random().toFixed(3)}`);
-  if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk || (S.realm|0) < 2) { log('info', '[调试] 条件不满足跳过'); return; }
+  if ((S.level|0) < C.REALM_MAX_LV || S.thunderOk || (S.realm|0) < 2) return;
   n = Math.max(1, n|0 || 1);
-  let triggered = true; // v650 临时100%测试
-  // for (let i = 0; i < n; i++) { if (Math.random() < 0.10) { triggered = true; break; } }
+  let triggered = false;
+  for (let i = 0; i < n; i++) { if (Math.random() < 0.10) { triggered = true; break; } }
   if (triggered) {
     const _scenes = [
       ['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],
@@ -6996,7 +6995,7 @@ const MINE_FLAVOR = { iron: '挖到', copper: '挖到', silver: '挖到一块', 
 function doGather(kind, n) {
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) { log('bad', '❌状态异常，请刷新页面'); return; }
-  try { log('info', '[v651] 掏蛋触发雷云检查'); if ((S.level|0) >= 10 && !S.thunderOk && (S.realm|0) >= 2) { const _scenes=[['草木低伏','劫云翻涌','雷声震耳']]; const _sc=_scenes[0]; log('warn', `🌩️ ${_sc[0]}。${_sc[1]}。${_sc[2]}……<br>雷云判定中……`); if (Math.random() < 0.5) { S.thunderOk=true; log('good', '⚡ <b class="r">天道已将你锁定</b>！'); commit(); } else { log('info', '🌫️ 雷云散去……'); } } } catch(_){} // v651 内联测试
+  try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { let _tr=false; const _n=Math.max(1,(n||1)|0); for (let _i=0;_i<_n;_i++) { if (Math.random()<0.10) { _tr=true; break; } } if (_tr) { const _scenes=[['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],['空气粘稠，呼吸不畅','金色雷纹在云中若隐若现','雷声如鼓，声声催心'],['灵气倒卷， formation 纹路浮现','云层裂开，白光倾泻','虚空嗡鸣，如大道低语'],['十里之内，鸟兽绝迹','雷光如瀑，倾天而下','威压先至，骨骼作响'],['天地灵气一空','云开一线，天眼似开','万籁俱寂，只闻心跳'],['凡尘涤荡，浊气尽散','雷柱接天，直贯九霄','天道之音，响彻神魂'],['仙器共鸣，嗡嗡作响','九彩劫云，遮天蔽日','法则碎片，四散飞溅'],['小世界灵气被抽空','虚空裂缝，蔓延天际','空间涟漪，层层荡开'],['数个小世界震动','劫云蔽星，日月无光','法则碰撞，星火四溅'],['三千世界战栗','灭世洪流，席卷星海','雷威吞声，万物噤声']]; const _sc=_scenes[Math.min(11,S.realm|0)]||_scenes[0]; log('warn', `🌩️ ${_sc[0]}。${_sc[1]}。${_sc[2]}……<br>雷云判定中……`); if (Math.random()<0.01) { S.thunderOk=true; log('good', '⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破按钮已显现'); commit(); } else { log('info', '🌫️ 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>'); } } } } catch(_){} // v652 雷云判定内联正式版
   const g = GATHER[kind], r = C.gather(S, kind, n); if (!r.length) { if (S.dead) { closeSheet(); afterAct(); commit(); } return; }
   const cnt = {}; let crits = 0, total = 0, lostTotal = 0; r.forEach(x => { if (x.length > 1) crits++; x.forEach(k => { cnt[k] = (cnt[k] || 0) + 1; total++; }); lostTotal += x.lost || 0; }); // v433 统计背包满丢失数
   const fails = r.fails || 0, okCnt = r.length - fails;
