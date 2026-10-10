@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v655</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v656</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5713,7 +5713,7 @@ function foodSection() {
   if (feedTo && !S.pets.some(p => p.id === feedTo)) feedTo = 0;
   const who = feedTo ? S.pets.find(p => p.id === feedTo) : null, whoTxt = who ? `${PETS[who.k].icon}${PETS[who.k].name}#${who.id}（饥饿 ${Math.round(who.hunger)}）` : `自己（饱食 ${Math.floor(S.hunger)}）`;
   const tgt = S.pets.length ? `<div class="row" style="flex-wrap:wrap;gap:4px"><small style="width:100%;color:var(--dim)">喂给：</small><button class="btn ${feedTo ? '' : 'on'}" data-feedto="0" style="padding:6px 10px;font-size:12px">自己</button>${S.pets.map(p => `<button class="btn ${feedTo === p.id ? 'on' : ''}" data-feedto="${p.id}" style="padding:6px 10px;font-size:12px">${PETS[p.k].icon}${PETS[p.k].name}#${p.id} ${Math.round(p.hunger)}</button>`).join('')}</div>` : '';
-  const row = (kind, k, it, have, icon, extra) => `<div class="row"><div class="lab">${icon} ${it.name} ×${have}<small>饱食 +${it.hunger}${extra}</small></div><button class="btn" data-food="${kind}" data-k="${k}" data-n="1">吃 1</button>${have > 1 ? `<input type="number" min="1" max="${have}" value="${have}" data-foodnum="${kind}_${k}" style="width:56px;padding:6px;border-radius:6px;border:1px solid #555;background:#222;color:#fff;font-size:12px"><button class="btn gold" data-food="${kind}" data-k="${k}" data-ncustom="1">吃</button>` : ''}</div>`;
+  const row = (kind, k, it, have, icon, extra) => `<div class="row"><div class="lab">${icon} ${it.name} ×${have}<small>饱食 +${it.hunger}${extra}</small></div><button class="btn" data-food="${kind}" data-k="${k}" data-n="1">吃 1</button>${have > 1 ? `<input type="number" min="1" max="${have}" value="${Math.min(have,(S.foodLastN&&S.foodLastN[kind+'_'+k])||have)}" data-foodnum="${kind}_${k}" style="width:56px;padding:6px;border-radius:6px;border:1px solid #555;background:#222;color:#fff;font-size:12px"><button class="btn gold" data-food="${kind}" data-k="${k}" data-ncustom="1">吃</button>` : ''}</div>`;
   const meats = Object.keys(MEATS).filter(k => S.food[k] > 0).map(k => row('meat', k, MEATS[k], S.food[k], '🍖', who ? '' : `，体力 +${MEATS[k].sta}`));
   const eggs = Object.keys(EGGS).filter(k => S.eggs[k] > 0).map(k => row('egg', k, EGGS[k], S.eggs[k], '🥚', ''));
   return `<h3>食物 <small style="font-weight:400">（喂给 ${whoTxt} · 体力 ${S.stamina}）</small></h3>` + tgt + (meats.length + eggs.length ? meats.join('') + eggs.join('') : '<div class="empty">暂无食物，打猎偶得肉、掏兽蛋得蛋</div>');
@@ -8061,7 +8061,7 @@ document.addEventListener('click', e => {
   else if (d.pet) doPet(+d.pet);
   else if (d.passign) doAssign(+d.passign, d.attr);
   else if (d.feedto !== undefined) { feedTo = +d.feedto; const els = [$('sheet'), $('mask')], ys = els.map(e => e.scrollTop); if (window._charPage) { sheetChar(); } else { sheetBag(); } els.forEach((e, i) => e.scrollTop = ys[i]); }
-  else if (d.food) { let _n = +d.n || 1; if (d.ncustom) { const _inp = document.querySelector('[data-foodnum="' + d.food + '_' + d.k + '"]'); _n = _inp ? Math.max(1, parseInt(_inp.value||'1',10)||1) : 1; } doFood(d.food, d.k, _n); }
+  else if (d.food) { let _n = +d.n || 1; if (d.ncustom) { const _inp = document.querySelector('[data-foodnum="' + d.food + '_' + d.k + '"]'); _n = _inp ? Math.max(1, parseInt(_inp.value||'1',10)||1) : 1; try { S.foodLastN=S.foodLastN||{}; S.foodLastN[d.food+'_'+d.k]=_n; } catch(_){} } doFood(d.food, d.k, _n); }
   else if (d.med) doMed(d.med);
   else if (d.devour) sheetDevour(+d.devour);
   else if (d.devfood) doDevour(+d.eater, +d.devfood);
