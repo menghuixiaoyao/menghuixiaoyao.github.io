@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v680</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v681</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1159,6 +1159,7 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
   if (S.level < REALM_MAX_LV || S.realm >= REALMS.length - 1) return { err: 'cond' };
   const _hpForBt = S.hpCur != null ? (S.hpCur|0) : 1; if ((_hpForBt + (S.advVit|0) * 5) <= 0) return { err: 'nohp' }; // 0血无法突破（黄条也算；hpCur=null为满血）
   if ((S.realm|0) >= 1) { const _mmBt = manaMax(S); if (_mmBt > 0 && (S.mana|0) < _mmBt) return { err: 'nomana' }; } // v177 法力未满 100/100 不能突破（凡人用经验，不限）
+  if (S.thunderOk && (S.realm|0) >= 2) { const fromRealm = S.realm; let trib = {}; return { ok: null, pending: 'thunder', trib, fromRealm, thunderPw: null }; } // v681 thunderOk直接进战斗
   if (R() < breakthroughRate(S)) { const fromRealm = S.realm;
     let trib = null;
     if ((fromRealm|0) >= 2) { // v172 筑基→金丹起：判定成功后先渡雷劫，雷劫后概率遇心魔劫
