@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v674</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v675</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3084,10 +3084,9 @@ Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainI
   alcRate, potCountProbs, gradeProbs, brew, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
   genMonster, genOpponent, adventure, advBattleSetup, advBattleSettle, advEnd, advMove, advRetreat, sneakP, guardedLoot, pkStart, pkSurrender, pkSettle, applyZhenxiu });
 G.Core = C;
+try { G._bx = { Battle: Battle, fighter: fighter, playerFighter: playerFighter, fightAttrs: fightAttrs, tribPower: tribPower, ATTRS: ATTRS }; } catch(_){}
+// v675 IIFE内部导出
 })(typeof window !== 'undefined' ? window : globalThis);
-
-// v673 导出战斗类供script2手动雷劫用
-try { window._bx = { Battle: (typeof Battle!=='undefined'?Battle:null), fighter: (typeof fighter!=='undefined'?fighter:null), playerFighter: (typeof playerFighter!=='undefined'?playerFighter:null), fightAttrs: (typeof fightAttrs!=='undefined'?fightAttrs:null), tribPower: (typeof tribPower!=='undefined'?tribPower:null), ATTRS: (typeof ATTRS!=='undefined'?ATTRS:null) }; } catch(_){}
 </script>
 
 <!-- ===================== 界面 ===================== -->
