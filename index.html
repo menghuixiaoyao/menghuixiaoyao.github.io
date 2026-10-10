@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v665</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v666</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4369,18 +4369,19 @@ function isSwordCell(x, y) {
 function renderWorldMap() {
   try {
 // v536 保留地(4,3)资源点：草药+矿石定时刷新
-function reserveTick(S) {
+function reserveTick(S) { // v666 叠加：每分钟各+1，上限99，无人采集一直累积
   const now = Date.now();
-  if (!S.reserveNode) S.reserveNode = { h: 0, o: 0, t: 0 };
+  if (!S.reserveNode) S.reserveNode = { h: 0, o: 0, v: 0, vt: 0, t: now };
   const rn = S.reserveNode;
-  if (now >= rn.t) {
-    // 刷新：2-4株草药，2-4块矿石，0-2条灵脉；每分钟一次
-    rn.h = 2 + Math.floor(Math.random() * 3);
-    rn.o = 2 + Math.floor(Math.random() * 3);
-    rn.v = Math.floor(Math.random() * 3); // v538 灵脉0-2条
-    rn.vt = rn.v > 0 ? Math.floor(Math.random() * 3) : 0; // 灵脉品阶 0低 1中 2高
-    rn.t = now + 60 * 1000; // v537 每分钟刷新
-  }
+  if (!rn.t) rn.t = now; else if (rn.t > now) rn.t = now; // 兼容旧存档
+  const mins = Math.floor((now - rn.t) / 60000);
+  if (mins <= 0) return;
+  const hadV = (rn.v|0) > 0;
+  rn.h = Math.min(99, (rn.h|0) + mins);
+  rn.o = Math.min(99, (rn.o|0) + mins);
+  rn.v = Math.min(99, (rn.v|0) + mins);
+  if (!hadV && rn.v > 0) rn.vt = Math.floor(Math.random() * 3); // 新长出的灵脉重定品阶
+  rn.t += mins * 60000;
 }
 function reserveHas(S) {
   if (!S || !S.reserveNode) return false;
@@ -4388,44 +4389,46 @@ function reserveHas(S) {
   return (S.reserveNode.h > 0 || S.reserveNode.o > 0 || (S.reserveNode.v | 0) > 0); // v538
 }
 // v540 田药园(3,2)：草药刷新
-function herbTick(S) {
+function herbTick(S) { // v666 叠加：每分钟+1株，上限99
   const now = Date.now();
-  if (!S.herbGarden) S.herbGarden = { h: 0, t: 0 };
+  if (!S.herbGarden) S.herbGarden = { h: 0, t: now };
   const hg = S.herbGarden;
-  if (now >= hg.t) {
-    hg.h = 3 + Math.floor(Math.random() * 3); // 3-5株草药
-    hg.t = now + 60 * 1000; // 每分钟
-  }
+  if (!hg.t) hg.t = now; else if (hg.t > now) hg.t = now;
+  const mins = Math.floor((now - hg.t) / 60000);
+  if (mins <= 0) return;
+  hg.h = Math.min(99, (hg.h|0) + mins);
+  hg.t += mins * 60000;
 }
 function herbHas(S) {
   if (!S || !S.herbGarden) return false;
   herbTick(S);
   return (S.herbGarden.h > 0);
 }
-window.doHerbGather = function() {
+window.doHerbGather = function() { // v666 一次采1株
   // v540 采集田药园；v542 免费
+  herbTick(S);
   const hg = S.herbGarden;
-  if (hg.h <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
-  const herbKeys = Object.keys(C.HERBS || {});
-  for (let i = 0; i < hg.h; i++) {
-    const k = herbKeys[Math.floor(Math.random() * herbKeys.length)];
-    if (k) S.herbs[k] = (S.herbs[k] | 0) + 1;
-  }
-  const hn = hg.h; hg.h = 0;
-  log('good', `🌱 在田药园采集：草药×${hn}`);
-  commit(); renderWorldMap();
-  if (typeof toastLog === 'function') toastLog('good', `采集成功：草药×${hn}`);
+  if ((hg.h|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
+  const hk = Math.random() < 0.7 ? 'lq1' : 'lq2'; // 一品灵草/二品灵草
+  if (!S.herbs) S.herbs = {};
+  S.herbs[hk] = (S.herbs[hk]|0) + 1;
+  hg.h--;
+  const hn = hk === 'lq1' ? '一品灵草' : '二品灵草';
+  log('good', `🌱 在田药园采集：${hn}×1（剩余${hg.h}株）`);
+  commit(); renderWorldMap(); openHerbSheet();
+  if (typeof toastLog === 'function') toastLog('good', `采集${hn}×1`);
 }; // v540
 // v541 养殖园(2,0)：肉和蛋
-function ranchTick(S) {
+function ranchTick(S) { // v666 叠加：每分钟肉/蛋各+1，上限99
   const now = Date.now();
-  if (!S.ranch) S.ranch = { m: 0, e: 0, t: 0 };
+  if (!S.ranch) S.ranch = { m: 0, e: 0, t: now };
   const r = S.ranch;
-  if (now >= r.t) {
-    r.m = 2 + Math.floor(Math.random() * 3); // 2-4块肉
-    r.e = 2 + Math.floor(Math.random() * 3); // 2-4枚蛋
-    r.t = now + 60 * 1000;
-  }
+  if (!r.t) r.t = now; else if (r.t > now) r.t = now;
+  const mins = Math.floor((now - r.t) / 60000);
+  if (mins <= 0) return;
+  r.m = Math.min(99, (r.m|0) + mins);
+  r.e = Math.min(99, (r.e|0) + mins);
+  r.t += mins * 60000;
 }
 function ranchHas(S) {
   if (!S || !S.ranch) return false;
@@ -4453,50 +4456,44 @@ window.doRanchGather = function() {
   commit(); renderWorldMap();
   if (typeof toastLog === 'function') toastLog('good', `收获成功：肉×${mn} 蛋×${en}`);
 }; // v541
-window.doReserveHerb = function() { // v558 采草药
+window.doReserveHerb = function() { // v558 采草药；v666 一次采1株
   reserveTick(S);
   const rn = S.reserveNode;
-  if (rn.h <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有草药'); return; }
-  const herbKeys = Object.keys(C.HERBS || {});
-  for (let i = 0; i < rn.h; i++) {
-    const k = herbKeys[Math.floor(Math.random() * herbKeys.length)];
-    if (k) S.herbs[k] = (S.herbs[k] | 0) + 1;
-  }
-  const hn = rn.h; rn.h = 0;
-  log('good', `🌿 在灵脉矿区采集：草药×${hn}`);
-  commit(); renderWorldMap();
-  if (typeof toastLog === 'function') toastLog('good', `采集草药×${hn}`);
-  if (typeof closeSheet === 'function') closeSheet();
+  if ((rn.h|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有草药'); return; }
+  const hk = Math.random() < 0.7 ? 'lq1' : 'lq2';
+  if (!S.herbs) S.herbs = {};
+  S.herbs[hk] = (S.herbs[hk]|0) + 1;
+  rn.h--;
+  const hn = hk === 'lq1' ? '一品灵草' : '二品灵草';
+  log('good', `🌿 在灵脉矿区采集：${hn}×1（剩余${rn.h}株）`);
+  commit(); renderWorldMap(); openReserveSheet();
+  if (typeof toastLog === 'function') toastLog('good', `采集${hn}×1`);
 };
-window.doReserveOre = function() { // v558 挖矿石
+window.doReserveOre = function() { // v558 挖矿石；v666 一次挖1块
   reserveTick(S);
   const rn = S.reserveNode;
-  if (rn.o <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
+  if ((rn.o|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
   const oreKeys = Object.keys(C.ORES || {});
-  for (let i = 0; i < rn.o; i++) {
-    const k = oreKeys[Math.floor(Math.random() * oreKeys.length)];
-    if (k) S.ores[k] = (S.ores[k] | 0) + 1;
-  }
-  const on = rn.o; rn.o = 0;
-  log('good', `⛏️ 在灵脉矿区采集：矿石×${on}`);
-  commit(); renderWorldMap();
-  if (typeof toastLog === 'function') toastLog('good', `采集矿石×${on}`);
-  if (typeof closeSheet === 'function') closeSheet();
+  const k = oreKeys[Math.floor(Math.random() * oreKeys.length)];
+  let knm = '矿石';
+  if (k) { if (!S.ores) S.ores = {}; S.ores[k] = (S.ores[k]|0) + 1; knm = (C.ORES[k] && C.ORES[k].name) || k; }
+  rn.o--;
+  log('good', `⛏️ 在灵脉矿区采集：${knm}×1（剩余${rn.o}块）`);
+  commit(); renderWorldMap(); openReserveSheet();
+  if (typeof toastLog === 'function') toastLog('good', `采集${knm}×1`);
 };
-window.doReserveVein = function() { // v558 采灵脉
+window.doReserveVein = function() { // v558 采灵脉；v666 一次采1条
   reserveTick(S);
   const rn = S.reserveNode;
-  const vn = rn.v | 0;
-  if (vn <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
+  if ((rn.v|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
   const veinNames = ['低级灵脉', '中级灵脉', '高级灵脉'];
   const vtn = rn.vt | 0;
   if (!S.veins) S.veins = [0, 0, 0];
-  S.veins[vtn] = (S.veins[vtn] | 0) + vn;
-  rn.v = 0;
-  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]}×${vn}`);
-  commit(); renderWorldMap();
-  if (typeof toastLog === 'function') toastLog('good', `采集${veinNames[vtn]}×${vn}`);
-  if (typeof closeSheet === 'function') closeSheet();
+  S.veins[vtn] = (S.veins[vtn] | 0) + 1;
+  rn.v--;
+  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]}×1（剩余${rn.v}条）`);
+  commit(); renderWorldMap(); openReserveSheet();
+  if (typeof toastLog === 'function') toastLog('good', `采集${veinNames[vtn]}×1`);
 };
 window.doReserveGather = function() {
   // v536 采集保留地资源；v542 免费；v558 保留兼容
@@ -4528,6 +4525,53 @@ window.doReserveGather = function() {
   commit(); renderWorldMap();
   if (typeof toastLog === 'function') toastLog('good', `采集成功：草药×${hn} 矿石×${on}` + (vnn > 0 ? ` ${veinNames[vtn]}×${vnn}` : ''));
 }; // v536
+// v666 三区采集面板（逐个采集，采后刷新数量）
+window.openReserveSheet = function() {
+  try {
+    reserveTick(S); const rn = S.reserveNode;
+    const _vn = ['低级灵脉','中级灵脉','高级灵脉'];
+    const vtxt = (rn.v|0) > 0 ? _vn[rn.vt|0] + '×' + rn.v : '无';
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="doReserveHerb()" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="doReserveOre()" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="doReserveVein()" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button><button class="btn full" data-a="close">关闭</button>`);
+  } catch(_) {}
+};
+window.openHerbSheet = function() {
+  try {
+    herbTick(S); const hg = S.herbGarden;
+    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="doHerbGather()" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" data-a="close">关闭</button>`);
+  } catch(_) {}
+};
+window.openRanchSheet = function() {
+  try {
+    ranchTick(S); const r = S.ranch;
+    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" data-a="close">关闭</button>`);
+  } catch(_) {}
+};
+window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义）
+  ranchTick(S);
+  const r = S.ranch;
+  if ((r.m|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '还没有肉'); return; }
+  const meatKeys = Object.keys(C.MEATS || {});
+  const k = meatKeys[Math.floor(Math.random() * meatKeys.length)];
+  let knm = '肉';
+  if (k) { if (!S.food) S.food = {}; S.food[k] = (S.food[k]|0) + 1; knm = (C.MEATS[k] && C.MEATS[k].name) || k; }
+  r.m--;
+  log('good', `🥚 在养殖园收获：${knm}×1（剩余${r.m}块）`);
+  commit(); renderWorldMap(); openRanchSheet();
+  if (typeof toastLog === 'function') toastLog('good', `收获${knm}×1`);
+};
+window.doRanchPatrol = function() { // v666 一次收1枚蛋（修复v555未定义）
+  ranchTick(S);
+  const r = S.ranch;
+  if ((r.e|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '还没有蛋'); return; }
+  const eggKeys = Object.keys(C.EGGS || {});
+  const k = eggKeys[Math.floor(Math.random() * eggKeys.length)];
+  let knm = '蛋';
+  if (k) { if (!S.eggs) S.eggs = {}; S.eggs[k] = (S.eggs[k]|0) + 1; knm = (C.EGGS[k] && C.EGGS[k].name) || k; }
+  r.e--;
+  log('good', `🥚 在养殖园收获：${knm}×1（剩余${r.e}枚）`);
+  commit(); renderWorldMap(); openRanchSheet();
+  if (typeof toastLog === 'function') toastLog('good', `收获${knm}×1`);
+};
 // v543 地图NPC玩家
 function npcPos(S) {
   const now = Date.now();
@@ -4558,6 +4602,24 @@ function npcPos(S) {
     if (typeof S !== 'undefined' && !S.worldMap) S.worldMap = { px: 2, py: 3 }; // v342 剑格中央
     if (typeof S !== 'undefined' && !S.furnaceDur) S.furnaceDur = { alc: 100, forge: 100, ding: 200 }; // v315 炉子耐久；v317 加丹鼎200
     const wm = (typeof S !== 'undefined' && S.worldMap) || { px: 2, py: 2 };
+    try { // v666 主城移动触发雷云判定（成功率不叠加）
+      if (typeof S !== 'undefined' && S) {
+        if (window._wmLX === undefined) { window._wmLX = wm.px; window._wmLY = wm.py; }
+        else if (window._wmLX !== wm.px || window._wmLY !== wm.py) {
+          window._wmLX = wm.px; window._wmLY = wm.py;
+          if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) {
+            S._trigFail = S._trigFail|0;
+            const _tp = Math.min(1, 0.10 + 0.10*S._trigFail);
+            if (Math.random() < _tp) {
+              S._trigFail = 0;
+              log('warn','🌩️ 雷云判定中……');
+              if (Math.random() < 0.01) { S.thunderOk = true; S._trigFail = 0; log('good','⚡ <b class="r">天道已将你锁定</b>！'); commit(); }
+              else log('info','🌫️ 雷云散去……');
+            } else { S._trigFail++; }
+          }
+        }
+      }
+    } catch(_){}
     const _npcs = (typeof S !== 'undefined' && typeof npcPos === 'function') ? npcPos(S) : [];
     let cells = '';
     for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) {
@@ -4652,13 +4714,7 @@ function npcPos(S) {
           }
           if (isReserveCell) { // v536 保留地资源点
             if (w.px === x && w.py === y) {
-              reserveTick(S);
-              const rn = S.reserveNode;
-              if (rn.h > 0 || rn.o > 0) {
-                if (typeof openSheet === 'function') { const _vn2 = ['低级灵脉','中级灵脉','高级灵脉']; openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药×${rn.h}、矿石×${rn.o}` + ((rn.v|0) > 0 ? `、${_vn2[rn.vt|0]}×${rn.v}` : '') + `（免费分开采集）</div><div class="grid2"><button class="btn gold" onclick="doReserveHerb()">🌿 采草药<br><small>×${rn.h}</small></button><button class="btn gold" onclick="doReserveOre()">⛏️ 挖矿石<br><small>×${rn.o}</small></button></div><button class="btn gold full" onclick="doReserveVein()">💎 采灵脉<br><small>` + ((rn.v|0)>0 ? _vn2[rn.vt|0]+'×'+rn.v : '无') + `</small></button><button class="btn full" data-a="close">关闭</button>`); } // v538；v558 分开
-              } else {
-                if (typeof toastLog === 'function') toastLog('sys', '资源还未刷新，请稍后再来');
-              }
+              if (typeof openReserveSheet === 'function') openReserveSheet(); // v666
             } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
@@ -4666,13 +4722,7 @@ function npcPos(S) {
           }
           if (isHerbCell) { // v540 田药园
             if (w.px === x && w.py === y) {
-              herbTick(S);
-              const hg = S.herbGarden;
-              if (hg.h > 0) {
-                if (typeof openSheet === 'function') openSheet(`<h2>🌱 田药园</h2><div class="hint">草药×${hg.h}可采集（免费）</div><button class="btn gold full" onclick="doHerbGather()">🌱 采集全部</button><button class="btn full" data-a="close">关闭</button>`);
-              } else {
-                if (typeof toastLog === 'function') toastLog('sys', '草药还未长好，请稍后再来');
-              }
+              if (typeof openHerbSheet === 'function') openHerbSheet(); // v666
             } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
@@ -4680,13 +4730,7 @@ function npcPos(S) {
           }
           if (isRanchCell) { // v541 养殖园
             if (w.px === x && w.py === y) {
-              ranchTick(S);
-              const r = S.ranch;
-              if (r.m > 0 || r.e > 0) {
-                if (typeof openSheet === 'function') openSheet(`<h2>🥚 养殖园</h2><div class="hint">肉×${r.m}、蛋×${r.e}可收获（免费）</div><button class="btn gold full" onclick="doRanchGather()">🥚 收获全部</button><button class="btn full" data-a="close">关闭</button>`);
-              } else {
-                if (typeof toastLog === 'function') toastLog('sys', '还未产出，请稍后再来');
-              }
+              if (typeof openRanchSheet === 'function') openRanchSheet(); // v666
             } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
@@ -4831,23 +4875,15 @@ function npcPos(S) {
             }
             if (arena2 === 'pk' && typeof doPkChooseRealm === 'function') { doPkChooseRealm(); return; }
             if (typeof isReserve2 !== 'undefined' && isReserve2) { // v553 灵脉矿区；v558 分开
-              reserveTick(S); const _rn = S.reserveNode;
-              if (_rn.h > 0 || _rn.o > 0 || (_rn.v|0) > 0) {
-                const _vn3 = ['低级灵脉','中级灵脉','高级灵脉'];
-                openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药×${_rn.h}、矿石×${_rn.o}` + ((_rn.v|0)>0 ? `、${_vn3[_rn.vt|0]}×${_rn.v}` : '') + `（免费分开采集）</div><div class="grid2"><button class="btn gold" onclick="doReserveHerb()">🌿 采草药<br><small>×${_rn.h}</small></button><button class="btn gold" onclick="doReserveOre()">⛏️ 挖矿石<br><small>×${_rn.o}</small></button></div><button class="btn gold full" onclick="doReserveVein()">💎 采灵脉<br><small>` + ((_rn.v|0)>0 ? _vn3[_rn.vt|0]+'×'+_rn.v : '无') + `</small></button><button class="btn full" data-a="close">关闭</button>`);
-              } else if (typeof toastLog === 'function') toastLog('sys', '资源还未刷新');
+              if (typeof openReserveSheet === 'function') openReserveSheet();
               return;
             }
             if (typeof isHerb2 !== 'undefined' && isHerb2) { // v553 田药园
-              herbTick(S); const _hg = S.herbGarden;
-              if (_hg.h > 0) openSheet(`<h2>🌱 田药园</h2><div class="hint">草药×${_hg.h}可采集（免费）</div><button class="btn gold full" onclick="doHerbGather()">🌱 采集全部</button><button class="btn full" data-a="close">关闭</button>`);
-              else if (typeof toastLog === 'function') toastLog('sys', '草药还未长好');
+              if (typeof openHerbSheet === 'function') openHerbSheet();
               return;
             }
             if (typeof isRanch2 !== 'undefined' && isRanch2) { // v553 养殖园；v555 分开
-              ranchTick(S); const _rc = S.ranch;
-              if (_rc.m > 0 || _rc.e > 0) openSheet(`<h2>🥚 养殖园</h2><div class="hint">肉×${_rc.m}、蛋×${_rc.e}（免费）</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()">🏹 打猎<br><small>收肉×${_rc.m}</small></button><button class="btn gold" onclick="doRanchPatrol()">🔍 巡视<br><small>收蛋×${_rc.e}</small></button></div><button class="btn full" data-a="close">关闭</button>`);
-              else if (typeof toastLog === 'function') toastLog('sys', '还未产出');
+              if (typeof openRanchSheet === 'function') openRanchSheet();
               return;
             }
             if (arena2 === 'arena' && typeof doArena === 'function') { doArena(); return; }
