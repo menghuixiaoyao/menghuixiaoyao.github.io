@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v662</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v663</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -237,7 +237,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="fullLogStore" style="display:none"></div>
 <div id="combat"></div>
 <div id="devourTip" style="position:fixed;top:12%;left:50%;transform:translateX(-50%);z-index:99;display:none;max-width:92%;background:transparent;border:none;border-radius:0;padding:8px;font-size:14px;line-height:1.5;text-align:center;pointer-events:none;text-shadow:0 1px 3px #000"></div> <!-- v521 透明横幅 -->
-<div id="chatFloat"></div> <!-- v445 悬浮聊天窗；v446 日记并入为tab -->
+<div id="gatherProg" style="display:none;position:fixed;left:50%;top:40%;transform:translateX(-50%);z-index:999;background:#1a1a2e;border:1px solid #444;border-radius:10px;padding:12px 16px;box-shadow:0 4px 20px rgba(0,0,0,0.6)"><div style="font-size:13px;color:#aaa;margin-bottom:6px" id="gatherProgTxt">采集中……</div><div style="width:220px;height:10px;background:#222;border-radius:5px;overflow:hidden"><div id="gatherProgBar" style="width:0%;height:100%;background:linear-gradient(90deg,#4caf50,#8bc34a);border-radius:5px;transition:width 0.1s"></div></div></div><div id="chatFloat"></div> <!-- v445 悬浮聊天窗；v446 日记并入为tab -->
 <nav id="actions"></nav>
 <div id="mask"><div id="sheet"></div></div>
 
@@ -8016,7 +8016,7 @@ document.addEventListener('click', e => {
   else if (d.c) doPkAction(d.c);
   else if (d.zx !== undefined) doPkZhenxiu(d.zx);
   else if (d.train) doTrain(d.train, +d.n);
-  else if (d.gather) doGather(d.gather, +d.n);
+  else if (d.gather) { const _gk=d.gather,_gn=+d.n||1; try { const _gp=document.getElementById('gatherProg'),_gb=document.getElementById('gatherProgBar'),_gt=document.getElementById('gatherProgTxt'); if(_gp&&_gb){ _gp.style.display='block'; _gb.style.width='0%'; const _names={mine:'挖矿中……',hunt:'打猎中……',farm:'种植中……',egg:'掏蛋中……',read:'看书中……'}; if(_gt)_gt.textContent=_names[_gk]||'采集中……'; let _p=0; const _iv=setInterval(()=>{ _p+=10; if(_gb)_gb.style.width=Math.min(100,_p)+'%'; if(_p>=100){ clearInterval(_iv); if(_gp)_gp.style.display='none'; doGather(_gk,_gn); } },80); } else { doGather(_gk,_gn); } } catch(_){ doGather(_gk,_gn); } } // v663 采集进度条
   else if (d.breakthrough !== undefined) doBreakthrough();
   else if (d.reincarnate !== undefined) doReincarnate();
   else if (d.sell) doSell(d.kind, d.sell, +d.n);
