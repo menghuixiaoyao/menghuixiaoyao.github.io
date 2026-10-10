@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v688</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v689</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6878,7 +6878,8 @@ function doBreakthrough() {
     const _fa = _bx.fightAttrs(S, false);
     const _pw = r.thunderPw != null ? r.thunderPw : _bx.tribPower(S);
     const _ta = {}; _bx.ATTRS.forEach(k => _ta[k] = Math.max(1, Math.round(_fa[k] * 0.5 * _pw)));
-    const _th = _bx.fighter('\u26a1\u96f7\u4e91', _ta, false, []);
+    const _cloudRaw = (() => { try { const _f = (typeof _bx.tribFull === 'function' ? _bx.tribFull(S) : 0) || 0; if (_f >= 10) return '🫯'; if (_f >= 9) return '⛈️'; if (_f >= 7) return '🌩️'; if (_f >= 5) return '🌫️'; if (_f > 2) return '🌧️'; return '☁️'; } catch(_) { return '🌩️'; } })();
+    const _th = _bx.fighter(_cloudRaw + '雷云', _ta, false, []); // v689 黑云敌人名
     const _b = new _bx.Battle(_bx.playerFighter(S, false), _th);
     _b.unlimited = true; _b.surviveRounds = 10; // v685 10回合存活判胜
     pk = { battle: _b, adv: true, trib: 'thunder', tribData: { trib: r.trib, fromRealm: r.fromRealm, pw: _pw } };
