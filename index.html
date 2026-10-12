@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v705</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v706</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3005,7 +3005,7 @@ function pkSettle(S, pk, chosen) {
       const _td = pk.tribData || {};
       const fromRealm = _td.fromRealm | 0;
       const koWin = b.winner === b.A;
-      const surviveWin = !koWin && b.A.hp > 0 && b.round >= 10;
+      const surviveWin = !koWin && b.A.hp > 0 && b.round >= 9;
       const win = koWin || surviveWin;
       const _bl = '⚡ 与雷云激战' + (koWin ? '，<span class="g">击溃雷云</span>' : (surviveWin ? '，<span class="g">扛过十回合，雷云散去</span>' : '，<span class="r">不敌雷云</span>'));
       pk = null;
@@ -5054,7 +5054,7 @@ const potName = (a, g) => `<span class="q${g}">${C.GRADES[g]}${AN[a]}丹</span>`
 /* ---------- 状态面板 ---------- */
 function setBar(id, cur, max, txt) { $(id + 'Bar').style.width = (max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0) + '%'; $(id + 'Txt').textContent = txt; }
 function render() {
-  try { var _pk = (typeof pk !== 'undefined' && pk && pk.trib === 'thunder') ? pk : ((typeof S !== 'undefined' && S && S.pk && S.pk.trib === 'thunder') ? S.pk : ((typeof _G !== 'undefined' && _G && _G.pk && _G.pk.trib === 'thunder') ? _G.pk : null)); if (_pk && _pk.battle) { var _dbg = '雷劫调试:round=' + _pk.battle.round + ',B.hp=' + (_pk.battle.B?_pk.battle.B.hp:'?') + ',A.hp=' + (_pk.battle.A?_pk.battle.A.hp:'?'); if (typeof log === 'function' && !_pk._dbgLogged) { log('sys', _dbg); _pk._dbgLogged = true; } } if (_pk && _pk.battle && (_pk.battle.B.hp < 1 || (_pk.battle.round >= 9 && _pk.battle.A.hp > 0))) { try { pkSettle(S, _pk); } catch(_e) { if (typeof log === 'function') log('sys', '雷劫结算报错:' + (_e && _e.message ? _e.message : _e)); } if (typeof pk !== 'undefined' && pk === _pk) pk = null; if (S && S.pk === _pk) S.pk = null; if (typeof _G !== 'undefined' && _G && _G.pk === _pk) _G.pk = null; } } catch(_) {} // v705 render兜底:结算报错可见 try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
+  try { var _pk = (typeof pk !== 'undefined' && pk && pk.trib === 'thunder') ? pk : ((typeof S !== 'undefined' && S && S.pk && S.pk.trib === 'thunder') ? S.pk : ((typeof _G !== 'undefined' && _G && _G.pk && _G.pk.trib === 'thunder') ? _G.pk : null)); if (_pk && _pk.battle && typeof log === 'function' && !_pk._dbgLogged) { log('sys', '雷劫调试:round=' + _pk.battle.round + ',B.hp=' + (_pk.battle.B?_pk.battle.B.hp:'?') + ',A.hp=' + (_pk.battle.A?_pk.battle.A.hp:'?')); _pk._dbgLogged = true; } } catch(_) {} // v706 render只调试不结算(结算在doFinish,同script作用域) try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) return;
   try { renderWorldMap(); } catch (_) {}
@@ -7766,8 +7766,8 @@ function doPkActionGo(act) {
       pk.turnBanner = null;
       if (pk.target === 'pet' && !(b.B.pet && b.B.pet.hp > 0)) pk.target = 'foe';
       const Le = b.finishRound();
-      if (pk && pk.trib === 'thunder' && (b.B.hp < 1 || (b.round >= 10 && b.A.hp > 0))) { try{ pkSettle(S, pk); }catch(_){} pk = null; try{render();}catch(_){} return; } // v700 雷云优先结算
-      if (pk.trib === 'thunder' && !b.over && b.round >= 10 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
+      if (pk && pk.trib === 'thunder' && (b.B.hp < 1 || (b.round >= 9 && b.A.hp > 0))) { try{ pkSettle(S, pk); }catch(_){} pk = null; try{render();}catch(_){} return; } // v700 雷云优先结算
+      if (pk.trib === 'thunder' && !b.over && b.round >= 9 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
         b.over = true; b._tribSurvive = true;
         const _sl = '<div class="bl y">⚡ 十回合已尽，你扛过了天雷洗礼！雷云缓缓散去……</div>';
         Le.push(_sl); log('pk', _sl);
@@ -7835,8 +7835,8 @@ function doPkActionGo(act) {
     pk.turnBanner = null;
     if (pk.target === 'pet' && !(b.B.pet && b.B.pet.hp > 0)) pk.target = 'foe'; // 宠物已死切回打人
     const Le = b.finishRound();
-    if (pk && pk.trib === 'thunder' && (b.B.hp < 1 || (b.round >= 10 && b.A.hp > 0))) { try{ pkSettle(S, pk); }catch(_){} pk = null; try{render();}catch(_){} return; } // v700 雷云优先结算
-    if (pk.trib === 'thunder' && !b.over && b.round >= 10 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
+    if (pk && pk.trib === 'thunder' && (b.B.hp < 1 || (b.round >= 9 && b.A.hp > 0))) { try{ pkSettle(S, pk); }catch(_){} pk = null; try{render();}catch(_){} return; } // v700 雷云优先结算
+    if (pk.trib === 'thunder' && !b.over && b.round >= 9 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
       b.over = true; b._tribSurvive = true;
       const _sl = '<div class="bl y">⚡ 十回合已尽，你扛过了天雷洗礼！雷云缓缓散去……</div>';
       Le.push(_sl); log('pk', _sl);
