@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v712</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v713</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3137,7 +3137,7 @@ C.startThunderBattle = function(S, trib, fromRealm, pwOverride) {
   try { _G.afterAct(); } catch(_){}
   try { _G.save(); } catch(_){}
   try { _G.render(); } catch(_){}
-  try { (typeof window !== 'undefined' ? window : globalThis).pkSettle = pkSettle; } catch(_){} // v712 导出pkSettle给script#2用
+  try { (typeof window !== 'undefined' ? window : globalThis).pkSettle = pkSettle; } catch(_){} // v713 导出pkSettle给script#2用
 }; // v682 用G调全局函数
 })(typeof window !== 'undefined' ? window : globalThis);
 </script>
@@ -4701,12 +4701,14 @@ function npcPos(S) {
       const furnaceAttr = isFurnace && !isP ? ` data-furnace="${isFurnace}"` : '';
       const arenaAttr = isArena && !isP ? ` data-arena="${isArena}"` : '';
       if (!isSwordCell(x, y)) { cells += `<div style="aspect-ratio:1;visibility:hidden"></div>`; continue; }
-      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''} // v540 // v452；v458；v465；v536">${icon}</div>`;
+      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${icon}</div>`; // v713 修title泄漏
     }
     grid.innerHTML = cells;
     grid.querySelectorAll('[data-mx]').forEach(c => {
       c.onclick = () => {
         try {
+          if (typeof S === 'undefined' || !S) return; // v713 防御
+          if (!S.worldMap) S.worldMap = { px: 2, py: 3 }; // v713 自动初始化
           const furnace = c.dataset.furnace;
           const arena = c.dataset.arena;
           const x = +c.dataset.mx, y = +c.dataset.my;
@@ -5055,7 +5057,7 @@ const potName = (a, g) => `<span class="q${g}">${C.GRADES[g]}${AN[a]}丹</span>`
 /* ---------- 状态面板 ---------- */
 function setBar(id, cur, max, txt) { $(id + 'Bar').style.width = (max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0) + '%'; $(id + 'Txt').textContent = txt; }
 function render() {
-  try { var _pk = (typeof pk !== 'undefined' && pk && pk.trib === 'thunder') ? pk : ((typeof S !== 'undefined' && S && S.pk && S.pk.trib === 'thunder') ? S.pk : ((typeof _G !== 'undefined' && _G && _G.pk && _G.pk.trib === 'thunder') ? _G.pk : null)); if (_pk && _pk.battle && typeof log === 'function' && !_pk._dbgLogged) { log('sys', '雷劫调试:round=' + _pk.battle.round + ',B.hp=' + (_pk.battle.B?_pk.battle.B.hp:'?') + ',A.hp=' + (_pk.battle.A?_pk.battle.A.hp:'?')); _pk._dbgLogged = true; } } catch(_) {} // v712 render只调试不结算(结算在doFinish,同script作用域) try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
+  try { var _pk = (typeof pk !== 'undefined' && pk && pk.trib === 'thunder') ? pk : ((typeof S !== 'undefined' && S && S.pk && S.pk.trib === 'thunder') ? S.pk : ((typeof _G !== 'undefined' && _G && _G.pk && _G.pk.trib === 'thunder') ? _G.pk : null)); if (_pk && _pk.battle && typeof log === 'function' && !_pk._dbgLogged) { log('sys', '雷劫调试:round=' + _pk.battle.round + ',B.hp=' + (_pk.battle.B?_pk.battle.B.hp:'?') + ',A.hp=' + (_pk.battle.A?_pk.battle.A.hp:'?')); _pk._dbgLogged = true; } } catch(_) {} // v713 render只调试不结算(结算在doFinish,同script作用域) try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) return;
   try { renderWorldMap(); } catch (_) {}
@@ -5100,7 +5102,7 @@ function render() {
   else { const need = C.xpNeed(S.level); setBar('manaNeed', S.xp, need, S.level >= C.REALM_MAX_LV ? `经验 ${S.xp}（大圆满）` : `经验 ${S.xp}/${need}`); }
   $('manaNeedWrap').classList.toggle('xp', !C.useFali(S));
   $('manaNeedWrap').style.display = '';
-  const _btXpOk = (S.realm|0) !== 0 || S.level >= C.REALM_MAX_LV || (S.xp|0) >= C.xpNeed(C.REALM_MAX_LV - 1); // v574 凡人经验不足不显示突破按钮;v712 满级直接通过
+  const _btXpOk = (S.realm|0) !== 0 || S.level >= C.REALM_MAX_LV || (S.xp|0) >= C.xpNeed(C.REALM_MAX_LV - 1); // v574 凡人经验不足不显示突破按钮;v713 满级直接通过
   const _needThunder = (S.realm|0) >= 2; // v640 筑基起需雷云判定
   $('btBtn').style.display = (S.level >= C.REALM_MAX_LV && !S.dead && S.realm < C.REALMS.length - 1 && _btXpOk && !C.isPermanentlyDegraded(S) && (!_needThunder || S.thunderOk)) ? '' : 'none'; // v590 第二次失败才隐藏；v629 需雷云判定成功
   $('alcBar').parentElement.style.display = 'none'; // 主界面不显示炼药条（生活页里看）
