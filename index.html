@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v755</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v756</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5644,7 +5644,7 @@ function sheetStoneGamble() {
   const sp1Has = S.ores.sp1|0, goldHas = S.gold|0;
   const canPlay = sp1Has >= 3 && goldHas >= 1000;
   let html = `<h2>🪨 赌石</h2><div class="hint">3块灵气石 + 1000金元开一次，从100块原石中按概率出三块（70灵气石/20中品/8上品/2极品），每次开石千分之一出一块🧭仙玉，任选一块切开。</div>
-    <div class="row"><div class="lab">拥有</div><div>🪨灵气石 <b>${sp1Has}</b> · 金元 <b>${goldHas}</b></div></div>
+    <div class="row"><div class="lab">拥有</div><div id="stoneOwn">🪨灵气石 <b>${sp1Has}</b> · 金元 <b>${goldHas}</b></div></div>
     <div class="row"><button class="btn gold full" data-stone-start ${canPlay ? '' : 'disabled'}>开石（3灵气石+1000金元）</button></div>
     <div id="stoneResult"></div>
     <div class="row"><button class="btn full" data-close>离开</button></div>`;
@@ -5653,6 +5653,8 @@ function sheetStoneGamble() {
 function stoneGambleStart() {
   if ((S.ores.sp1|0) < 3 || (S.gold|0) < 1000) { try { alert('灵气石或金元不足'); } catch(e) {} return; }
   S.ores.sp1 -= 3; S.gold -= 1000;
+  try { if (typeof log === 'function') log('info', `🪨 消耗 3灵气石+1000金元，剩余 🪨${S.ores.sp1|0} · 金元${S.gold|0}`); } catch(_) {}
+  try { const _so = $('stoneOwn'); if (_so) _so.innerHTML = `🪨灵气石 <b>${S.ores.sp1|0}</b> · 金元 <b>${S.gold|0}</b>`; } catch(_) {} // v756 实时更新面板拥有数
   try { if (typeof thunderGatherJudge === 'function') thunderGatherJudge(); } catch(_) {} // v735 赌石触发雷云判定
   const picks = [stoneGambleRoll(), stoneGambleRoll(), stoneGambleRoll()];
   if (Math.random() < 0.001) picks[Math.floor(Math.random() * 3)] = 'xianyu'; // v744 每次开石千分之一出一块仙玉
