@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v762</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v763</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8208,8 +8208,11 @@ document.addEventListener('click', e => {
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
   else if (d.advc !== undefined) doAdvChoose(+d.advc);
   else if (d.advmove) doAdvMove(d.advmove);
-  else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格
+  else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格；v763 1秒冷却
     try {
+      const _now = Date.now();
+      if (window._advMoveCd && _now - window._advMoveCd < 1000) return; // 1秒内不重复移动
+      window._advMoveCd = _now;
       const _gx = +d.advx, _gy = +d.advy, _gr = S.run && S.run.grid;
       if (_gr) {
         const _dx = _gx - _gr.px, _dy = _gy - _gr.py;
