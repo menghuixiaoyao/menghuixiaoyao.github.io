@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v773</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v774</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2778,7 +2778,7 @@ const ADV_GW = 6, ADV_GH = 6;
 function advGenGrid() { // 起点左下，终点右上；12 个事件格，其余为空
   const tiles = []; for (let y = 0; y < ADV_GH; y++) { const row = []; for (let x = 0; x < ADV_GW; x++) row.push({ t: 'empty', seen: 0 }); tiles.push(row); }
   const sx = 0, sy = ADV_GH - 1, ex = ADV_GW - 1, ey = 0;
-  tiles[sy][sx] = { t: 'start', seen: 1 }; tiles[ey][ex] = { t: 'exit', seen: 0 };
+  tiles[sy][sx] = { t: 'start', seen: 1 }; // v774 取消终点门
   const bag = ['fight', 'fight', 'fight', 'fortune', 'fortune', 'trap', 'trap', 'rest', 'rest', 'gchest', 'gchest', 'gherb', 'gherb']; // v185 宝箱/草药格均有守怪
   const pos = []; for (let y = 0; y < ADV_GH; y++) for (let x = 0; x < ADV_GW; x++) { if ((x === sx && y === sy) || (x === ex && y === ey)) continue; pos.push([x, y]); }
   for (let i = pos.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const tmp = pos[i]; pos[i] = pos[j]; pos[j] = tmp; }
@@ -5905,7 +5905,7 @@ function sheetAdventure(page) {
     }).join('');
   }
   const pageBtns = [1,2,3,4,5].map(p => `<button class="btn" data-advpage="${p}" style="flex:1;${p===page?'opacity:0.5':''}">${p}</button>`).join('');
-  openSheet(`<h2>冒险 · 选择难度</h2><div class="hint">6×6 格子地图，上/下/左/右移动探索：❓ 格子藏着遇怪/奇遇/陷阱/休息点，🎁宝箱与🌿灵草都有守怪——可🤫悄悄获取（敏捷检定，被发现则开战）或⚔️斩杀守怪；抵达 <b>🚪终点</b> 并击败守关者即通关；难度越高体力越多、怪物越强、奖励与稀有掉落越多（当前体力 <b class="g">${S.stamina}</b>，Lv.${S.level}，总属性 ${C.total(S.attrs)}）。战败将扣除属性、<span class="r">清空剩余体力</span>并损失 ${C.pct(K.DEATH_GOLD_PCT)} 金元，冒险随即结束；随时可撤退保住收获。</div>` +
+  openSheet(`<h2>冒险 · 选择难度</h2><div class="hint">6×6 格子地图，点格子移动探索：❓ 格子藏着遇怪/奇遇/陷阱/休息点，🎁宝箱与🌿灵草都有守怪——可🤫悄悄获取（敏捷检定，被发现则开战）或⚔️斩杀守怪；难度越高体力越多、怪物越强、奖励与稀有掉落越多（当前体力 <b class="g">${S.stamina}</b>，Lv.${S.level}，总属性 ${C.total(S.attrs)}）。战败将扣除属性、<span class="r">清空剩余体力</span>并损失 ${C.pct(K.DEATH_GOLD_PCT)} 金元，冒险随即结束；随时可撤退保住收获。</div>` + // v774 取消终点门
     content +
     `<div class="row" style="padding:12px 0 0;background:var(--panel);display:flex;gap:8px">${pageBtns}</div>` +
 
@@ -5950,7 +5950,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     ? (ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monCard(ev.mon, '挡住去路')}`
       : ev.type === 'guarded' ? `🛡️ ${ev.text}——${monCard(ev.mon, '正守着' + (ev.loot === 'herb' ? '🌿灵草' : '🎁宝箱'))}`
       : C.ADV_EVENTS[ev.id].t)
-    : `<span style="color:var(--dim)">点相邻格子或方向键移动，踩开 ❓ 格子触发事件；抵达 <b>🚪终点</b> 并击败守关者即通关，随时可撤退。</span>`;
+    : `<span style="color:var(--dim)">点格子移动，踩开 ❓ 格子触发事件；随时可撤退。</span>`; // v774 取消终点门
   openSheet(`<h2>🗺️ ${d.name}冒险 <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
     (out && out.lines && out.lines.length ? `<div class="hint">${out.lines.join('；')}${out.battle ? `<details><summary>战斗记录（${out.battle.round} 回合）</summary>${out.battle.lines.join('')}</details>` : ''}</div>` : '') +
     `<div class="agrid">${cells}</div>` +
