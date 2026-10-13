@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v772</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v773</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5396,8 +5396,7 @@ function fRow(f) {
   const _hpStyle = _yPct > 0 ? `width:${f.hp / f.maxHp * 100}%;background:linear-gradient(90deg,#f97316 0%,#f97316 ${_yPct}%,#22c55e ${_yPct}%,#22c55e 100%)` : `width:${f.hp / f.maxHp * 100}%`;
   const _pInfo = (!f.isPlayer && !f.isPet && f.name) ? (() => { try { return encodeURIComponent(JSON.stringify({name:f.name, realm:f.realm||0, level:f.lv||f.level||1, attrs:f.a||f.attrs||{}, skills:f.skills||[], style:f.style||'', pet:f.pet||null})); } catch (_) { return ''; } })() : '';
   const _pLink = _pInfo ? ` data-person="${esc(f.name)}" data-info="${_pInfo}"` : (f.isPlayer ? ` data-self="1"` : '');
-  const _isThunder = !f.isPlayer && !f.isPet && f.name && f.name.indexOf('雷云') >= 0; // v771 雷云不显示人物头像
-  const _nmInner = `${f.isPlayer ? `<img src=\"${avatarUrl()}\" style=\"width:22px;height:22px;border-radius:50%;vertical-align:middle;object-fit:cover;margin-right:4px\">` : (_isThunder ? '' : (!f.isPet && f.name ? `<img src=\"${npcAvatar(f.name)}\" style=\"width:22px;height:22px;border-radius:50%;vertical-align:middle;object-fit:cover;margin-right:4px\">` : ``))}${f.name}`;
+  const _nmInner = `${f.isPlayer ? `<img src=\"${avatarUrl()}\" style=\"width:22px;height:22px;border-radius:50%;vertical-align:middle;object-fit:cover;margin-right:4px\">` : ``}${f.name}`; // v773 怪物/雷云不显示人物头像
   const _nmHtml = _pInfo ? `<a href="javascript:void(0)"${_pLink} style="color:inherit;text-decoration:underline;cursor:pointer">${_nmInner}</a>` : _nmInner;
   return `<div class="cf${(f._lunge && f.hp > 0) ? ' lunge-' + f._lunge : ''}"${f.isPet ? ' style="opacity:' + (f.hp > 0 ? 1 : .35) + ';filter:grayscale(80%)"' : ''}><span class="nm" style="${f.isPet ? 'font-size:11px;padding-left:6px;' : ''}color:${f.isPlayer ? 'var(--blue)' : 'var(--red)'}">${_nmHtml}</span>
     <div class="bar hp${f._dodged ? ' dodging' : ''}"><i style="${_hpStyle}"></i><span>${C.fmtN(f.hp)}/${C.fmtN(f.maxHp)}${f.shield ? ' 🛡' + C.fmtN(f.shield) : ''}${f.bleed ? ' 🩸' : ''}${f.poison > 0 ? ' ☠️' : ''}${f.burn ? ' 🔥' : ''}</span>${(f._wasHit && f._hitDmg > 0) ? `<span class="dmgnum">-${C.fmtN(f._hitDmg)}</span>` : ''}${f._float ? `<span class="floatxt ${f._float.t}">${f._float.txt}</span>` : ''}</div>
