@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v776</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v777</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7189,7 +7189,7 @@ function sealAwakenPrompt(seal) {
   let _awHint, _awPh;
   if (_isFame) {
     const _fh = seal.sealHint || '＿＿'; // v219 提示句；v220 玩家续下半句
-    _awHint = `天道留名，上联：<b class="y">「${_fh}」</b><br>对出 <b class="r">下半句</b> 方可继承：`;
+    _awHint = `天道留名，下联：<b class="y">「${_fh}」</b><br>对出 <b class="r">上半句</b> 方可继承：`; // v777 上下联标反修正
     _awPh = '续写下半句';
   } else {
     const _th2 = seal.sealTheme;
@@ -7291,7 +7291,7 @@ function doReincarnateName(keepAttr, forced, path) { // v215 path: dao求道(随
   if (window._sealPath === 'fame') window._fameGen = genFameSeal(); else window._sealGen = genSoulSeal(); // v216 求名用名字模板
   const _au = avatarUrl(), _pn = (S.name || '无名'); // v209 显示玩家头像+名字，不再取遗物名
   const _pathName = window._sealPath === 'fame' ? '求名' : '求道';
-  const _hint2 = window._sealPath === 'fame' ? '天道为你 <b class="r">留名</b>：记住此印记模板，觉醒胎中之谜时，天道出上联，你对 <b class="r">下半句</b>（含你的名字）方可继承（建议截图保存）。' : '天道赐下 <b class="r">灵魂印记</b>：觉醒胎中之谜时，输入印记的 <b class="r">主题</b> 方可继承（建议截图保存）。';
+  const _hint2 = window._sealPath === 'fame' ? '天道为你 <b class="r">留名</b>：记住此印记模板，觉醒胎中之谜时，天道出下联，你对 <b class="r">上半句</b>（含你的名字）方可继承（建议截图保存）。' : '天道赐下 <b class="r">灵魂印记</b>：觉醒胎中之谜时，输入印记的 <b class="r">主题</b> 方可继承（建议截图保存）。'; // v777 上下联标反修正
   const _rerollLabel = window._sealPath === 'fame' ? '🔄 换一句（3次）' : '🔄 换一次';
   openSheet(`<div style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;gap:10px"><div style="text-align:center"><img src="${_au}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;margin-bottom:6px"><h2 style="font-size:18px;margin:2px 0">🔄 封存前世</h2><div style="font-size:13px;color:var(--dim)"><b style="font-size:15px;color:#fff">${_pn}</b> 的前世遗物 · ${_pathName}</div></div><div class="hint" style="font-size:12px;line-height:1.8;text-align:center">将 <b>${AN[keepAttr]} ${v}</b> 封存。<br>${_hint2}</div>
   <div class="row" style="padding:10px 0"><div class="lab" style="font-size:13px">灵魂印记</div><div id="sealPhrase" style="flex:1;min-height:110px;display:flex;align-items:center;justify-content:center;padding:32px 12px;border-radius:10px;border:1px solid #555;background:#1a1a2e;color:#ffd700;font-size:13px;line-height:1.8;text-align:center">${sealPhraseHtml()}</div></div>
