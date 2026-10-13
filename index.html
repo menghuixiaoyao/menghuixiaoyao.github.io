@@ -387,8 +387,8 @@ const SKILLS = {
   vamp:     { name: '吸血斩', mp: 7,  price: 180, lv: 7, desc: '1.2 倍物理伤害，回复伤害 50% 生命' },
   thunder:  { name: '雷击',   mp: 16, price: 260, lv: 9, desc: '智力×3.5+力量 魔法重创，不可闪避' },
   tunmo:    { name: '吞魔',   mp: 0,  price: 800, lv: 99, desc: '被动：习得后可在背包吞噬煞气' },
-  shukuchi: { name: '缩地',   mp: 0,  price: 500, lv: 10, desc: '被动：冒险中一次可移动两格' }, // v762
-  danuoyi:  { name: '大挪移', mp: 0,  price: 1200, lv: 20, desc: '被动：冒险中一次可移动三格' } // v762
+  shukuchi: { name: '缩地',   mp: 0,  price: 500, lv: 10, desc: '被动：冒险中一次可移动两格', passive: 1 }, // v762；v780 被动
+  danuoyi:  { name: '大挪移', mp: 0,  price: 1200, lv: 20, desc: '被动：冒险中一次可移动三格', passive: 1 } // v762；v780 被动
 };
 const PAGES = { // 看书五种结果（悟道档位），各得 1 张对应残页；p 为基础概率，智力越高高档越多（同矿石公式）
   pg1: { name: '普通残页', out: '学习',     p: 0.50 },
@@ -5424,7 +5424,7 @@ function renderCombat() {
       `<button class="act primary" data-zx=""><span class="t">直接开战</span><span class="s">不使用珍馐</span></button>`;
     return;
   }
-  const sk = Object.keys(C.SKILLS).filter(k => k !== 'tunmo' && A.skills.includes(k)).map(k => { const s = C.SKILLS[k]; return `<button class="act skill" data-c="${k}" ${A.mp >= s.mp ? '' : 'disabled'}><span class="t">${s.name}</span><span class="s">${s.mp} 法力</span></button>`; }).join('');
+  const sk = Object.keys(C.SKILLS).filter(k => k !== 'tunmo' && !C.SKILLS[k].passive && A.skills.includes(k)).map(k => { const s = C.SKILLS[k]; return `<button class="act skill" data-c="${k}" ${A.mp >= s.mp ? '' : 'disabled'}><span class="t">${s.name}</span><span class="s">${s.mp} 法力</span></button>`; }).join(''); // v780 被动技能不显示
   const isXian = (S.realm|0) >= 8, isMortal = (S.realm|0) === 0, showBurnFa = !isXian && !isMortal;
   const burnOpts = `<div style="grid-column:1/-1;font-size:10px;color:var(--dim)">🔥燃血${showBurnFa?'💧燃法':''}⏳燃寿（点一下+1层，最高10层）</div>` +
     (() => { const _bt = ((pk && pk.battle && pk.battle.A ? pk.battle.A.burnBloodTier : S.burnBloodTier)|0), _cn = ['','一','二','三','四','五','六','七','八','九','十'][_bt], _bb = [0,20,45,70,100,130,165,205,250,300,355][_bt]; return `<button class="act${_bt>0?' gold':''}" data-burnbloodtier="tap"><span class="t">🔥燃血 ${_bt>0?_cn+'倍':'关'}</span><span class="s">${_bt>0?`${_bt}/10层 -${_bt*5}%血/回合 攻+${_bb}%`:'点+1层，-5%血/回合/层'}</span></button>`; })() +
@@ -7188,9 +7188,19 @@ function sealAwakenPrompt(seal) {
   const _isFame = !!(seal.sealTpl && seal.sealName); // v216 求名：填完整句
   let _awHint, _awPh;
   if (_isFame) {
-    const _fh = seal.sealHint || '＿＿'; // v219 提示句；v220 玩家续下半句
-    _awHint = `天道留名，下联：<b class="y">「${_fh}」</b><br>对出 <b class="r">上半句</b> 方可继承：`; // v777 上下联标反修正
-    _awPh = '续写下半句';
+    const _fh = seal.sealHint || '＿＿'; // v219 提示句
+    // v779 有些出上对下，有些出下对上：看名字在模板中的位置
+    const _tpl = seal.sealTpl || '';
+    const _namePos = _tpl.indexOf('{n}');
+    const _hintPos = _tpl.indexOf(_fh);
+    const _isLowerGiven = _namePos >= 0 && _hintPos >= 0 && _namePos < _hintPos; // 名字在前，提示在后 → 给出的是下联
+    if (_isLowerGiven) {
+      _awHint = `天道留名，下联：<b class="y">「${_fh}」</b><br>对出 <b class="r">上半句</b> 方可继承：`;
+      _awPh = '续写上半句';
+    } else {
+      _awHint = `天道留名，上联：<b class="y">「${_fh}」</b><br>对出 <b class="r">下半句</b> 方可继承：`;
+      _awPh = '续写下半句';
+    }
   } else {
     const _th2 = seal.sealTheme;
     const _themeHint = (_th2 && SOUL_QUATRAINS[_th2]) ? SOUL_QUATRAINS[_th2].replace(/\n/g, '<br>') : (seal.seal || ''); // v242 觉醒：显示该主题七绝，玩家输入主题名继承
@@ -7206,7 +7216,7 @@ function sealAwakenDo(sealId, code) {
   if (i < 0) { toastLog('sys', '遗物已不在'); return; }
   const seal = S.sealed[i];
   let _ok, _err = '灵魂印记不符，无法继承';
-  if (seal.sealTpl && seal.sealName) { _ok = (code || '').trim() === (seal.sealAns || seal.seal || ''); _err = '下半句不对，无法继承'; } // v220 求名：续写下半句
+  if (seal.sealTpl && seal.sealName) { _ok = (code || '').trim() === (seal.sealAns || seal.seal || ''); _err = '上半句不对，无法继承'; } // v220 求名：续写上半句；v778
   else if (seal.sealTheme) { _ok = (code || '').trim() === seal.sealTheme; _err = '主题不符，无法继承'; } // v206 求道：填主题
   else { _ok = (code || '') === (seal.seal || ''); } // 旧遗物：全文比对
   if (!_ok) { toastLog('bad', _err); return; }
