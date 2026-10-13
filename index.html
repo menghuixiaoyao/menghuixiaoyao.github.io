@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v716</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v717</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4473,6 +4473,21 @@ window.doHerbGather = function() { // v666 一次采1株
   commit(); renderWorldMap(); openHerbSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${hn}×1`);
 }; // v540
+window.gatherProgWrap = function(txt, fn) { // v717 田药园/灵脉矿区采集进度条
+  try {
+    const _gp = document.getElementById('gatherProg'), _gb = document.getElementById('gatherProgBar'), _gt = document.getElementById('gatherProgTxt');
+    if (_gp && _gb) {
+      _gp.style.display = 'block'; _gb.style.width = '0%';
+      if (_gt) _gt.textContent = txt || '采集中……';
+      let _p = 0;
+      const _iv = setInterval(() => {
+        _p += 10;
+        if (_gb) _gb.style.width = Math.min(100, _p) + '%';
+        if (_p >= 100) { clearInterval(_iv); if (_gp) _gp.style.display = 'none'; fn(); }
+      }, 80);
+    } else { fn(); }
+  } catch(_) { fn(); }
+};
 // v541 养殖园(2,0)：肉和蛋
 function ranchTick(S) { // v666 叠加：每分钟肉/蛋各+1，上限99
   const now = Date.now();
@@ -4586,13 +4601,13 @@ window.openReserveSheet = function() {
     reserveTick(S); const rn = S.reserveNode;
     const _vn = ['低级灵脉','中级灵脉','高级灵脉'];
     const vtxt = (rn.v|0) > 0 ? _vn[rn.vt|0] + '×' + rn.v : '无';
-    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="doReserveHerb()" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="doReserveOre()" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="doReserveVein()" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button><button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="gatherProgWrap('采灵脉中……',doReserveVein)" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openHerbSheet = function() {
   try {
     herbTick(S); const hg = S.herbGarden;
-    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="doHerbGather()" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openRanchSheet = function() {
