@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v742</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v743</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5596,7 +5596,7 @@ function sheetCasino(zone) {
 }
 // v584 赌石：3灵气石+100金元开一次，三选一（70%灵气石/20%中品/8%上品/2%极品）
 function stoneGambleRoll() {
-  if (Math.random() < 0.01) return 'xianyu'; // v742 1%仙玉
+  if (Math.random() < 0.001) return 'xianyu'; // v743 千分之一仙玉（原1%）
   const r = Math.random() * 100;
   if (r < 70) return 'sp1';
   if (r < 90) return 'sp3';
@@ -5606,7 +5606,7 @@ function stoneGambleRoll() {
 function sheetStoneGamble() {
   const sp1Has = S.ores.sp1|0, goldHas = S.gold|0;
   const canPlay = sp1Has >= 3 && goldHas >= 100;
-  let html = `<h2>🪨 赌石</h2><div class="hint">3块灵气石 + 100金元开一次，从100块原石中按概率出三块（70灵气石/20中品/8上品/2极品，每块另有1%出🧭仙玉），任选一块切开。</div>
+  let html = `<h2>🪨 赌石</h2><div class="hint">3块灵气石 + 100金元开一次，从100块原石中按概率出三块（70灵气石/20中品/8上品/2极品，每块另有千分之一出🧭仙玉），任选一块切开。</div>
     <div class="row"><div class="lab">拥有</div><div>🪨灵气石 <b>${sp1Has}</b> · 金元 <b>${goldHas}</b></div></div>
     <div class="row"><button class="btn gold full" data-stone-start ${canPlay ? '' : 'disabled'}>开石（3灵气石+100金元）</button></div>
     <div id="stoneResult"></div>
