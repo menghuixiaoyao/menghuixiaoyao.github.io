@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v737</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v738</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -292,9 +292,9 @@ const K = {
   MAX_ROUNDS: 200,        // 回合上限，200回合未分胜负判玩家失败
   // —— 渡劫（v172：筑基→金丹起，突破判定成功后） ——
   TRIB_ROUNDS: 9,         // 雷劫：九道天雷
-  TRIB_DEMON_P: 0.30,     // 雷劫后触发心魔劫概率（每个境界都可能）
+  TRIB_DEMON_P: 1.0,      // v738 雷劫后必定触发心魔劫（原30%）
   TRIB_DEMON_MULT: 0.9,   // 心魔属性 = 玩家战斗属性 ×0.9
-  TRIB_QUIZ_P: 0.5,       // v174 心魔劫：50% 问心答题 / 50% 斗法
+  TRIB_QUIZ_P: 1.0,        // v738 心魔劫必定问心答题（原50%问心/50%斗法）
   TRIB_QUIZ_N: 3,         // v174 问心题目数
   TRIB_QUIZ_NEED: 2,      // v174 问心答对数（≥2 即过）
   TRIB_POWER_MAX: 2.0,    // v175 渡劫强度上限：压条 900% 时天劫强度×2.0
