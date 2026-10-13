@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v769</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v770</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5461,7 +5461,10 @@ window.sheetBattleLog = sheetBattleLog;
 
 /* ---------- 弹层 ---------- */
 function openSheet(html) { $('sheet').innerHTML = html; $('sheet').scrollTop = 0; $('mask').classList.add('on'); }
-function closeSheet() { $('mask').classList.remove('on'); $('sheet').classList.remove('full'); $('sheet').innerHTML = ''; }
+function closeSheet() {
+  $('mask').classList.remove('on'); $('sheet').classList.remove('full'); $('sheet').innerHTML = '';
+  if (window._fromAdv) { window._fromAdv = false; try { if (S.run && S.run.grid && typeof sheetRun === 'function') sheetRun(); } catch(_) {} } // v770 从冒险打开人物面板，关闭返回冒险
+}
 window.closeSheet = closeSheet;
 $('mask').addEventListener('click', e => { if (e.target === $('mask') && !$('mask').dataset.lock) closeSheet(); });
 
@@ -8257,12 +8260,10 @@ document.addEventListener('click', e => {
   else if (d.advretreat !== undefined) doAdvRetreat();
   else if (d.tquiz !== undefined) { const _tq = String(d.tquiz).split(':'); doTribQuizAnswer(+_tq[0], +_tq[1]); }
   else if (d.buy) doBuy(d.buy, d.k, +d.n || 1);
-  else if (d.advself !== undefined) { // v768 冒险中点自己看状态
+  else if (d.advself !== undefined) { // v768 冒险中点自己看状态；v770 打开完整人物面板
     try {
-      const _hpMax = (typeof C !== 'undefined' && C.bumpPeak) ? Math.floor(C.bumpPeak(S) * 5) : 10;
-      const _hpCur = S.hpCur != null ? Math.floor(S.hpCur) : _hpMax;
-      const _sta = S.stamina | 0;
-      try { alert(`🧍 状态\n生命：${_hpCur} / ${_hpMax}\n体力：${_sta}`); } catch(_) {}
+      window._fromAdv = true; // 标记从冒险打开
+      if (typeof sheetChar === 'function') sheetChar();
     } catch(_) {}
   }
   else if (d.dazuo !== undefined) { // v761 冒险中调息
