@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v714</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v715</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5662,7 +5662,7 @@ function sheetTrain() {
     doAfkChoose();
     return;
   }
-  openSheet(`<h2>修炼</h2><div class="hint">消耗体力提升属性，1 体力 = 1 点。当前体力 <b class="g">${S.stamina}</b></div>` + (C.hasSt(S, 'poison') ? `<div class="warn">☠️ 你身中剧毒：每次进入冒险生命 -${Math.max(1, Math.ceil(C.bumpPeak(S) * 5 * K.POISON_VIT))}，<b>再进 ${C.leftBeforeDeath(S, 'poison')} 次冒险将毒发身亡</b>！请先用解毒丹。</div>` : '') +
+  openSheet(`<h2>修炼</h2><div class="hint">消耗体力提升属性，1 体力 = 1 点。当前体力 <b class="g">${S.stamina}</b>，🍗饱食度 <b class="g">${S.hunger}</b></div>` + (C.hasSt(S, 'poison') ? `<div class="warn">☠️ 你身中剧毒：每次进入冒险生命 -${Math.max(1, Math.ceil(C.bumpPeak(S) * 5 * K.POISON_VIT))}，<b>再进 ${C.leftBeforeDeath(S, 'poison')} 次冒险将毒发身亡</b>！请先用解毒丹。</div>` : '') +
     ATTRS.map(k => GK[k] ? (kind => { const g = GATHER[kind], v = GV[kind]; return `<div class="row"><div class="lab">${GI[kind]} ${g.name} · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，获得${g.noun}${kind === 'read' ? `（学习/深度学习/小悟/中悟/大悟 ${Object.values(C.gatherProbs(S, 'read')).map(C.pct).join('/')}，${C.pct(C.skillPageChance(S))} 得技能残页）` : `（${kind === 'farm' ? '丰收' : '暴击'}率 ${C.pct(C.gatherCrit(S, kind))}，${kind === 'farm' ? '用于炼药' : '可在商店出售'}${kind === 'egg' ? `，${C.pct(K.PET_EGG_CHANCE)} 掏到灵宠蛋` : ''}）`}</small></div>
       <button class="btn" data-gather="${kind}" data-n="1" ${S.stamina >= 1 ? '' : 'disabled'}>${v} 1</button>
       <button class="btn gold" data-gather="${kind}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>${v} 5</button></div>`; })(GK[k]) : `<div class="row"><div class="lab">📖 看书 · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，挑灯夜读，不获得物品</small></div>
