@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v759</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v760</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5930,7 +5930,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     else if (t.t === 'exit') { icon = '🚪'; cls = ' exit'; }
     else if (t.seen) icon = TICON[t.t] || '⬜';
     const _adj = !isP && Math.abs(x - g.px) + Math.abs(y - g.py) === 1; // v758 相邻格可点
-    cells += `<div class="acell${cls}"${_adj ? ` data-advx="${x}" data-advy="${y}" style="cursor:pointer"` : ''}>${icon}</div>`;
+    cells += _adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`;
   }
   const scene = ev
     ? (ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monCard(ev.mon, '挡住去路')}`
