@@ -1016,7 +1016,7 @@ function startDemonBattle(S, trib, fromRealm) {
   try { (typeof G !== 'undefined' ? G : window).pk = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe' }; } catch(_) { try { window.pk = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe' }; } catch(_) {} } // v757 严格模式下pk需挂window
   try { closeSheet(); } catch(_){}
   const _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : '';
-  log('warn', `👹 <b>心魔来袭！</b>${_cu}直指道心——与<b class="x">👹心魔</b>一战！<br><span style="color:#888">斩灭心魔方能继续突破，逃跑视为落败</span>`);
+  try { const _e = { c: 'warn', h: `👹 <b>心魔来袭！</b>${_cu}直指道心——与<b class="x">👹心魔</b>一战！<br><span style="color:#888">斩灭心魔方能继续突破，逃跑视为落败</span>`, t: (typeof timeStr === 'function' ? timeStr() : '') }; S.log.push(_e); if (typeof renderEntry === 'function') renderEntry(_e, true); } catch(_) {} // v781 不直接调log避免DOM遮蔽
   afterAct(); save(); render();
 }
 window.startDemonBattle = startDemonBattle; // v754 暴露给doTribQuizAnswer跨块调用
