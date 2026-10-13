@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v740</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v741</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4581,10 +4581,14 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
   try { if (type === 'herb') openHerbSheet(); else openReserveSheet(); } catch(_){}
 };
 window.thunderGatherJudge = function() { // v718 采集触发雷云判定（田药园/灵脉矿区）
+  thunderJudgeWithProb(0.10);
+};
+window.thunderJudgeWithProb = function(baseP) { // v741 可调概率的雷云判定（赌石用）
   try {
     if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) {
       S._trigFail = S._trigFail|0; S._succFail = S._succFail|0;
-      const _trigP = Math.min(1, 0.10 + 0.10*S._trigFail);
+      const _bp = (typeof baseP === 'number' && baseP > 0) ? baseP : 0.10;
+      const _trigP = Math.min(1, _bp + 0.10*S._trigFail);
       if (Math.random() < _trigP) {
         S._trigFail = 0;
         const _scenes = [['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],['空气粘稠，呼吸不畅','金色雷纹在云中若隐若现','雷声如鼓，声声催心'],['灵气倒卷，阵法纹路浮现','云层裂开，白光倾泻','虚空嗡鸣，如大道低语'],['十里之内，鸟兽绝迹','雷光如瀑，倾天而下','威压先至，骨骼作响'],['天地灵气一空','云开一线，天眼似开','万籁俱寂，只闻心跳'],['凡尘涤荡，浊气尽散','雷柱接天，直贯九霄','天道之音，响彻神魂'],['仙器共鸣，嗡嗡作响','九彩劫云，遮天蔽日','法则碎片，四散飞溅'],['小世界灵气被抽空','虚空裂缝，蔓延天际','空间涟漪，层层荡开'],['数个小世界震动','劫云蔽星，日月无光','法则碰撞，星火四溅'],['三千世界战栗','灭世洪流，席卷星海','雷威吞声，万物噤声']];
@@ -5626,7 +5630,7 @@ function stoneGamblePick(i) {
   const names = { sp1: '🪨灵气石', sp3: '🌗中品灵石', sp4: '💎上品灵石', sp5: '💠极品灵石' };
   S.ores[k] = (S.ores[k]|0) + 1;
   S._stonePicks = null;
-  try { if (typeof thunderGatherJudge === 'function') thunderGatherJudge(); } catch(_) {} // v740 赌石切开触发雷云判定
+  try { const _jp = k === 'sp5' ? 0.80 : k === 'sp4' ? 0.50 : k === 'sp3' ? 0.30 : 0.10; if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(_jp); } catch(_) {} // v741 赌石切出品级越高雷云判定概率越高
   try { log('good', `🪨 赌石切出 <b class="y">${names[k]}×1</b>！`); } catch(e) {}
   if (typeof announce === 'function') { try {
     const _am = `📢 全服通告：恭喜道友赌石切出【${names[k]}】！`;
