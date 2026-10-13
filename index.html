@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v789</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v790</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4887,15 +4887,16 @@ function npcPos(S) {
       const isCultivate = (x === 1 && y === 5) ? true : false; // v452 修炼区
       const isCookRefine = (x === 2 && y === 4) ? true : false; // v458 灶台·点金台
       const isBeastGarden = (x === 3 && y === 3) ? true : false; // v465 兽园
+      const isFormationTalisman = (x === 3 && y === 5) ? true : false; // v790 制阵室·画符台
       const isReserveNode = (x === 4 && y === 3) ? true : false; // v536 保留地资源点：草药矿石刷新采集
       const isHerbGarden = (x === 3 && y === 2) ? true : false; // v540 田药园
       const isRanch = (x === 2 && y === 0) ? true : false; // v541 养殖园：肉和蛋
       const dur = (typeof S !== 'undefined' && S.furnaceDur) ? S.furnaceDur : { alc: 100, forge: 100, ding: 200 }; if (dur.ding == null) dur.ding = 200;
-      const icon = (isNpc && isP && _npcHere[2]) ? `<img src="${_npcHere[2]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block">` : isP ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" onerror="this.outerHTML='🧑'">` : isFurnace === 'both_alc' ? '<span style="font-size:20px">🏛️</span>' : isFurnace ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:20px">🔨</span><span style="font-size:8px;color:var(--dim)">${dur[isFurnace]||100}/100</span></div>` : isArena === 'pk' ? '<span style="font-size:20px">⚔️</span>' : isArena === 'arena' ? '<span style="font-size:20px">🏟️</span>' : isPortal ? '<span style="font-size:20px">🌀</span>' : isShop ? '<span style="font-size:20px">🏪</span>' : isTrainPortal ? '<span style="font-size:20px">⛰️</span>' : isStall ? '<span style="font-size:20px">🎪</span>' : isCasino ? '<span style="font-size:20px">🎲</span>' : isCultivate ? '<span style="font-size:13px">☯️🪷🕉️⚡⛰️</span>' : isCookRefine ? '<span style="font-size:16px">🍳🪙</span>' : isBeastGarden ? '<span style="font-size:20px">🐾</span>' : isReserveNode ? (reserveHas(S) ? '<span style="font-size:20px">🌿</span>' : '⬜') : isHerbGarden ? (herbHas(S) ? '<span style="font-size:20px">🌱</span>' : '⬜') : isRanch ? (ranchHas(S) ? '<span style="font-size:20px">🥚</span>' : '⬜') : '⬜'; // v540；v541 // v465 兽园；v536 保留地 // v456 大殿只显示🏛️；v457 修炼区五图标；v458 灶台点金台
+      const icon = (isNpc && isP && _npcHere[2]) ? `<img src="${_npcHere[2]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block">` : isP ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" onerror="this.outerHTML='🧑'">` : isFurnace === 'both_alc' ? '<span style="font-size:20px">🏛️</span>' : isFurnace ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:20px">🔨</span><span style="font-size:8px;color:var(--dim)">${dur[isFurnace]||100}/100</span></div>` : isArena === 'pk' ? '<span style="font-size:20px">⚔️</span>' : isArena === 'arena' ? '<span style="font-size:20px">🏟️</span>' : isPortal ? '<span style="font-size:20px">🌀</span>' : isShop ? '<span style="font-size:20px">🏪</span>' : isTrainPortal ? '<span style="font-size:20px">⛰️</span>' : isStall ? '<span style="font-size:20px">🎪</span>' : isCasino ? '<span style="font-size:20px">🎲</span>' : isCultivate ? '<span style="font-size:13px">☯️🪷🕉️⚡⛰️</span>' : isCookRefine ? '<span style="font-size:16px">🍳🪙</span>' : isBeastGarden ? '<span style="font-size:20px">🐾</span>' : isFormationTalisman ? '<span style="font-size:16px">🧭📜</span>' : isReserveNode ? (reserveHas(S) ? '<span style="font-size:20px">🌿</span>' : '⬜') : isHerbGarden ? (herbHas(S) ? '<span style="font-size:20px">🌱</span>' : '⬜') : isRanch ? (ranchHas(S) ? '<span style="font-size:20px">🥚</span>' : '⬜') : '⬜'; // v540；v541 // v465 兽园；v536 保留地 // v456 大殿只显示🏛️；v457 修炼区五图标；v458 灶台点金台；v790 阵符坊
       const furnaceAttr = isFurnace && !isP ? ` data-furnace="${isFurnace}"` : '';
       const arenaAttr = isArena && !isP ? ` data-arena="${isArena}"` : '';
       if (!isSwordCell(x, y)) { cells += `<div style="aspect-ratio:1;visibility:hidden"></div>`; continue; }
-      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${icon}</div>`; // v713 修title泄漏
+      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isFormationTalisman ? '制阵室·画符台' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${icon}</div>`; // v713 修title泄漏；v790 阵符坊
     }
     grid.innerHTML = cells;
     grid.querySelectorAll('[data-mx]').forEach(c => {
@@ -4916,6 +4917,15 @@ function npcPos(S) {
           const isReserveCell = (x === 4 && y === 3); // v536
           const isHerbCell = (x === 3 && y === 2); // v540
           const isRanchCell = (x === 2 && y === 0); // v541
+          const isFormationTalismanCell = (x === 3 && y === 5); // v790 制阵室·画符台
+          if (isFormationTalismanCell) {
+            if (w.px === x && w.py === y) {
+              if (typeof sheetFormationTalisman === 'function') sheetFormationTalisman();
+            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+            }
+            return;
+          }
           if (isShopCell) {
             if (w.px === x && w.py === y) {
               if (typeof sheetShop === 'function') sheetShop();
@@ -6032,6 +6042,36 @@ function medSection() {
   const ks = Object.keys(C.MEDS).filter(k => S.meds[k] > 0);
   return `<h3>疗伤药</h3>` + (ks.length ? ks.map(k => { const m = C.MEDS[k], need = m.cure === 'curse' ? (S.curseN|0) > 0 : C.hasSt(S, m.cure); return `<div class="row"><div class="lab">💊 ${m.name} ×${S.meds[k]}<small>${m.desc}</small></div><button class="btn ${need ? 'gold' : ''}" data-med="${k}" ${need ? '' : 'disabled'}>${need ? '使用' : '无需'}</button></div>`; }).join('') : '<div class="empty">暂无，可在商店购买</div>');
 }
+function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓制作
+  const fRecipes = C.FORMATIONS || {}, tRecipes = C.TALISMANS || {};
+  const fHtml = Object.keys(fRecipes).map(k => {
+    const r = fRecipes[k], need = r.need.map(([st, ik, n]) => `${ik}×${n}`).join(' + ');
+    return `<div class="row"><div class="lab">🧭 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有阵法 ${S.formations && S.formations[k] || 0}</small></div><button class="btn gold" onclick="doCraftFormation('${k}')">制作</button></div>`;
+  }).join('');
+  const tHtml = Object.keys(tRecipes).map(k => {
+    const r = tRecipes[k], need = r.need.map(([st, ik, n]) => `${ik}×${n}`).join(' + ');
+    return `<div class="row"><div class="lab">📜 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有符箓 ${S.talismans && S.talismans[k] || 0}</small></div><button class="btn gold" onclick="doCraftTalisman('${k}')">制作</button></div>`;
+  }).join('');
+  openSheet(`<h2>🧭📜 制阵室·画符台</h2><div class="hint">阵法需「阵法」生活技能，符箓需「制符」生活技能（主宰轮回后参悟）。</div><h3>🧭 阵法台</h3>${fHtml}<h3>📜 画符台</h3>${tHtml}<div class="row"><button class="btn full" data-a="close">关闭</button></div>`);
+}
+window.doCraftFormation = function(key) { // v790 制作阵法
+  try {
+    const r = C.craft(S, 'formation', key);
+    if (!r) { log('bad', '制作失败'); return; }
+    if (r.err) { log('bad', '材料不足或等级不够'); return; }
+    log('good', `🧭 制成【${C.FORMATIONS[key].name}】×1！`);
+    save(); sheetFormationTalisman();
+  } catch(e) { try { log('bad', '制作出错:' + e.message); } catch(_) {} }
+};
+window.doCraftTalisman = function(key) { // v790 制作符箓
+  try {
+    const r = C.craft(S, 'talisman', key);
+    if (!r) { log('bad', '制作失败'); return; }
+    if (r.err) { log('bad', '材料不足或等级不够'); return; }
+    log('good', `📜 制成【${C.TALISMANS[key].name}】×1！`);
+    save(); sheetFormationTalisman();
+  } catch(e) { try { log('bad', '制作出错:' + e.message); } catch(_) {} }
+};
 function sheetShop(msg) {
   const g = S.gold, mRow = k => { const it = MATS[k]; return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc || '炼制' + AN[it.basic] + '丹必需'} · 拥有 ${S.mats[k] || 0}</small></div>
       <button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${g >= it.price ? '' : 'disabled'}>买 1</button>
