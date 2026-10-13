@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v771</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v772</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6830,7 +6830,7 @@ function sheetPersonInfo(e, backBtn) {
   const skillTxt = (e.skills || []).length ? e.skills.map(k => (typeof SKILLS !== 'undefined' && SKILLS[k]) ? SKILLS[k].name : k).join('·') : '<span style="color:var(--dim)">无</span>';
   const styleTxt = e.style ? `<div class="row"><div class="lab">⚔️ 流派</div><div><b class="y">${e.style}</b></div></div>` : '';
   const backHtml = backBtn || `<div class="row"><button class="btn full" onclick="closeSheet()">← 返回</button></div>`;
-  openSheet(`<h2 style="text-align:center">${e.isMe ? '🧍 <b class="y">你</b>' : '🧍 ' + (e.name || '未知')}</h2>
+  openSheet(`<h2 style="text-align:center">${e.isMe ? '🧍 <b class="y">你</b>' : (e.name || '未知')}</h2>
     <div style="text-align:center;margin-bottom:10px"><span class="tag" style="font-size:15px;padding:6px 14px">${C.REALMS[e.realm || 0]} · Lv.${e.level || 1}</span></div>
     <h3>五维属性</h3>
     <div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px">
