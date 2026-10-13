@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v790</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v791</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8007,9 +8007,13 @@ function pkHandleOver() {
   finishPk();
 }
 function pkHandleOver() {
-  const b = pk.battle;
-  if (pk.trib === 'thunder') { try { (window.pkSettle || pkSettle)(S, pk); } catch(_e) { try { log('sys', '雷劫结算异常:' + (_e.message || _e)); } catch(_) {} } pk = null; try{render();}catch(_){} return; } // v692 清外部pk；v725 pkSettle异常保护；v726 用window.pkSettle
-  if (pk.trib === 'demon') { finishDemonBattle(); return; } // v654
+  let _pk = null;
+  try { _pk = (typeof pk !== 'undefined' && pk) ? pk : null; } catch(_) {}
+  if (!_pk) { try { const _G = (typeof G !== 'undefined' ? G : window); _pk = (_G && _G.pk) ? _G.pk : null; } catch(_) {} } // v791 心魔战pk挂window时从window取
+  if (!_pk) return;
+  const b = _pk.battle;
+  if (_pk.trib === 'thunder') { try { (window.pkSettle || pkSettle)(S, _pk); } catch(_e) { try { log('sys', '雷劫结算异常:' + (_e.message || _e)); } catch(_) {} } try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} try { const _G2 = (typeof G !== 'undefined' ? G : window); if (_G2) _G2.pk = null; } catch(_) {} try{render();}catch(_){} return; } // v692 清外部pk；v725 pkSettle异常保护；v726 用window.pkSettle；v791 清window.pk
+  if (_pk.trib === 'demon') { finishDemonBattle(); return; } // v654
   if (pk.escape) {
     log('good', '💨 你成功逃离了战斗。');
     pk = null; afterAct(); commit();
