@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v724</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v725</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7848,7 +7848,7 @@ function pkHandleOver() {
 }
 function pkHandleOver() {
   const b = pk.battle;
-  if (pk.trib === 'thunder') { pkSettle(S, pk); pk = null; try{render();}catch(_){} return; } // v692 清外部pk
+  if (pk.trib === 'thunder') { try { pkSettle(S, pk); } catch(_e) { try { log('sys', '雷劫结算异常:' + (_e.message || _e)); } catch(_) {} } pk = null; try{render();}catch(_){} return; } // v692 清外部pk；v725 pkSettle异常保护
   if (pk.trib === 'demon') { finishDemonBattle(); return; } // v654
   if (pk.escape) {
     log('good', '💨 你成功逃离了战斗。');
