@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v765</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v766</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8211,12 +8211,12 @@ document.addEventListener('click', e => {
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
   else if (d.advc !== undefined) doAdvChoose(+d.advc);
   else if (d.advmove) doAdvMove(d.advmove);
-  else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格；v763 1秒冷却；v764 斜走
+  else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格；v763 1秒冷却；v764 斜走；v766 直接跳跃
     try {
       const _now = Date.now();
       if (window._advMoveCd && _now - window._advMoveCd < 1000) return; // 1秒内不重复移动
       window._advMoveCd = _now;
-      const _gx = +d.advx, _gy = +d.advy, _gr = S.run && S.run.grid;
+      const _gx = +d.advx, _gy = +d.advy, _run = S.run, _gr = _run && _run.grid;
       if (_gr) {
         const _dx = _gx - _gr.px, _dy = _gy - _gr.py;
         const _cheb = Math.max(Math.abs(_dx), Math.abs(_dy));
@@ -8224,20 +8224,27 @@ document.addEventListener('click', e => {
         const _hasDny = S.skills && S.skills.includes('danuoyi');
         const _maxDist = _hasDny ? 3 : (_hasSk ? 2 : 1);
         if (_cheb >= 1 && _cheb <= _maxDist) {
-          // 按切比雪夫距离走：先横后竖（或先竖后横），逐步移动触发事件
-          const _steps = [];
-          const _sx = Math.sign(_dx), _sy = Math.sign(_dy);
-          for (let _i = 0; _i < Math.abs(_dx); _i++) _steps.push(_sx > 0 ? 'right' : 'left');
-          for (let _i = 0; _i < Math.abs(_dy); _i++) _steps.push(_sy > 0 ? 'down' : 'up');
-          let _r = null;
-          for (const _dir of _steps) {
-            _r = C.advMove(S, _dir);
-            if (!_r || _r.err) break;
-            if (_r.end) { showAdvEnd({ lines: ['抵达终点'], end: _r.end }); return; }
-            // 如果触发了事件（战斗等），停下让玩家处理
-            if (_r.ev) { sheetRun(_r); return; }
+          // v766 直接跳到目标格，只触发落点事件
+          _gr.px = _gx; _gr.py = _gy; _gr.moves++;
+          const _t = _gr.tiles[_gy][_gx];
+          _run.ev = null;
+          let _r = { moved: true };
+          if (_t.t === 'exit' && !_t.done) {
+            if (!_t.ev) { const _m = C.advMonster(S, _run.dk, (_run.dk === 'mijing' || _run.dk.startsWith('wx_')) ? 4 : 1); _t.ev = { type: 'fight', mon: _m, boss: true, exitBoss: true, text: '终点守关' }; _run.evCount = (_run.evCount|0) + 1; }
+            _run.ev = _t.ev; _r.ev = _run.ev;
+          } else if (_t.ev && !_t.evDone) {
+            _run.ev = _t.ev; _r.ev = _run.ev;
+          } else if (!_t.seen && _t.t !== 'empty' && _t.t !== 'start') {
+            _t.seen = 1; _run.evCount = (_run.evCount|0) + 1;
+            try { (typeof advTileEvent === 'function' ? advTileEvent : window.advTileEvent)(S, _run, _t.t); } catch(_) {}
+            _t.ev = _run.ev; _r.ev = _run.ev;
+          } else {
+            _t.seen = 1;
           }
-          if (_r) { sheetRun(_r); return; }
+          if (_r.ev && _r.ev.exitBoss) { /* 终点事件在sheetRun显示 */ }
+          try { commit(); } catch(_) {}
+          try { sheetRun(_r); } catch(_) {}
+          return;
         }
       }
     } catch(_) {}
