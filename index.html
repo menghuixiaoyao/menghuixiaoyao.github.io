@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v754</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v755</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1139,8 +1139,11 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   if (fromRealm >= 2) { // v175 筑基→金丹结金丹、金丹→元婴结元婴：品质替代原突破倍率；v284 元婴以上也有品质（v176：天劫异变按异变档位；v180：压条 1000% 为极）
     let g = trib && trib.jackpot ? gradeFromFull(trib.jackpot.full) : tribGrade(S);
     const isJi = !(trib && trib.jackpot) && tribFull(S) >= 20; // v285 2000%为极
-    // v750 三条件加品：击溃雷云 + 问心全对 + 心魔战打赢（若触发）→ 按完成数给概率
+    // v750 三条件加品：击溃雷云 + 问心全对 + 心魔战打赢（若触发）→ 按完成数给概率；v755 非击溃不加品
     const _koWin = trib && trib.thunder && trib.thunder.koWin;
+    if (!_koWin) {
+      // 扛过雷云：无品级加成，直接按基础品质突破
+    } else {
     const _quizPerfect = trib && trib.quizMet && (trib.quizCorrect|0) >= 3;
     const _demonOk = !trib.demonAfterQuiz || (trib.demon && trib.demon.win);
     const _doneCount = (_koWin ? 1 : 0) + (_quizPerfect ? 1 : 0) + (_demonOk ? 1 : 0);
@@ -1153,6 +1156,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
     if (!isJi && _rollUp && _doneCount > 0 && g.gi === 4) { // v731 保底中品
       g = { gi: 3, name: K.TRIB_GRADES[3], mult: K.TRIB_GRADE_MULT[3], full: g.full };
       try { (typeof log === 'function' ? log : window.__log || function(){})('good', `⚡ 天道嘉奖（${_doneCount}/3），保底 <span class="g">中品</span>！`); } catch(_) {}
+    }
     }
     _btm = isJi ? K.TRIB_GRADE_JI_MULT : g.mult;
     gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极' : '');
@@ -3023,8 +3027,14 @@ function pkSettle(S, pk, chosen) {
       const fromRealm = _td.fromRealm | 0;
       const koWin = b.winner === b.A;
       const surviveWin = !koWin && b.A.hp > 0 && b.round >= 9;
-      const win = koWin || surviveWin;
-      const _bl = '⚡ 与雷云激战' + (koWin ? '，<span class="g">击溃雷云</span>' : (surviveWin ? '，<span class="g">扛过十回合，雷云散去</span>' : '，<span class="r">不敌雷云</span>'));
+      // v755 扛过雷云（非击溃）：33.33%突破成功，不加品级
+      let win = koWin || surviveWin;
+      let _survivePass = false;
+      if (surviveWin) {
+        _survivePass = Math.random() < 0.3333;
+        if (!_survivePass) win = false;
+      }
+      const _bl = '⚡ 与雷云激战' + (koWin ? '，<span class="g">击溃雷云</span>' : (surviveWin ? (_survivePass ? '，<span class="g">扛过十回合，雷云散去</span>' : '，<span class="r">扛过雷云但道基不稳</span>') : '，<span class="r">不敌雷云</span>'));
       pk = null;
       S.thunderOk = false; S._trigFail = 0; S._succFail = 0;
       if (!win) {
