@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v757</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v758</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5929,13 +5929,14 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     if (isP) { icon = `<img src="${avatarUrl()}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block">`; cls = ' me'; }
     else if (t.t === 'exit') { icon = '🚪'; cls = ' exit'; }
     else if (t.seen) icon = TICON[t.t] || '⬜';
-    cells += `<div class="acell${cls}">${icon}</div>`;
+    const _adj = !isP && Math.abs(x - g.px) + Math.abs(y - g.py) === 1; // v758 相邻格可点
+    cells += `<div class="acell${cls}"${_adj ? ` data-advx="${x}" data-advy="${y}" style="cursor:pointer"` : ''}>${icon}</div>`;
   }
   const scene = ev
     ? (ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monCard(ev.mon, '挡住去路')}`
       : ev.type === 'guarded' ? `🛡️ ${ev.text}——${monCard(ev.mon, '正守着' + (ev.loot === 'herb' ? '🌿灵草' : '🎁宝箱'))}`
       : C.ADV_EVENTS[ev.id].t)
-    : `<span style="color:var(--dim)">点方向键上/下/左/右移动，踩开 ❓ 格子触发事件；抵达 <b>🚪终点</b> 并击败守关者即通关，随时可撤退。</span>`;
+    : `<span style="color:var(--dim)">点相邻格子或方向键移动，踩开 ❓ 格子触发事件；抵达 <b>🚪终点</b> 并击败守关者即通关，随时可撤退。</span>`;
   openSheet(`<h2>🗺️ ${d.name}冒险 <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
     (out && out.lines && out.lines.length ? `<div class="hint">${out.lines.join('；')}${out.battle ? `<details><summary>战斗记录（${out.battle.round} 回合）</summary>${out.battle.lines.join('')}</details>` : ''}</div>` : '') +
     `<div class="agrid">${cells}</div>` +
@@ -8198,6 +8199,20 @@ document.addEventListener('click', e => {
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
   else if (d.advc !== undefined) doAdvChoose(+d.advc);
   else if (d.advmove) doAdvMove(d.advmove);
+  else if (d.advx !== undefined) { // v758 点地图格子移动
+    try {
+      const _gx = +d.advx, _gy = +d.advy, _gr = S.run && S.run.grid;
+      if (_gr) {
+        const _dx = _gx - _gr.px, _dy = _gy - _gr.py;
+        let _dir = null;
+        if (_dx === 0 && _dy === -1) _dir = 'up';
+        else if (_dx === 0 && _dy === 1) _dir = 'down';
+        else if (_dx === -1 && _dy === 0) _dir = 'left';
+        else if (_dx === 1 && _dy === 0) _dir = 'right';
+        if (_dir) doAdvMove(_dir);
+      }
+    } catch(_) {}
+  }
   else if (d.advretreat !== undefined) doAdvRetreat();
   else if (d.tquiz !== undefined) { const _tq = String(d.tquiz).split(':'); doTribQuizAnswer(+_tq[0], +_tq[1]); }
   else if (d.buy) doBuy(d.buy, d.k, +d.n || 1);
