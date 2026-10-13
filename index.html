@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v739</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v740</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5565,6 +5565,7 @@ function casinoPay(win) {
   const { ck, bet } = win; const _w = win.amount;
   if (_w > 0) { if (ck === 'xianyu') S.xianyu += _w; else S.ores[ck] = (S.ores[ck]||0) + _w; }
   commit();
+  try { if (typeof thunderGatherJudge === 'function') thunderGatherJudge(); } catch(_) {} // v740 赌场每次触发雷云判定
   const _cn = win.ck==='xianyu' ? MAGATAMA : (win.ci.icon||'');
   const _res = win.text + (_w>0 ? ` <b class="y">赢 ${_w} ${_cn}${win.ci.name}</b>` : ` <b style="color:#f66">输 ${bet} ${_cn}${win.ci.name}</b>`);
   openSheet(`<h2>${win.title}</h2><div class="hint">${_res}</div><div class="row"><button class="btn gold full" data-casino-again="${win.game}">再来一把</button></div><div class="row"><button class="btn full" data-casino-back>返回赌场</button></div>`);
@@ -5625,6 +5626,7 @@ function stoneGamblePick(i) {
   const names = { sp1: '🪨灵气石', sp3: '🌗中品灵石', sp4: '💎上品灵石', sp5: '💠极品灵石' };
   S.ores[k] = (S.ores[k]|0) + 1;
   S._stonePicks = null;
+  try { if (typeof thunderGatherJudge === 'function') thunderGatherJudge(); } catch(_) {} // v740 赌石切开触发雷云判定
   try { log('good', `🪨 赌石切出 <b class="y">${names[k]}×1</b>！`); } catch(e) {}
   if (typeof announce === 'function') { try {
     const _am = `📢 全服通告：恭喜道友赌石切出【${names[k]}】！`;
