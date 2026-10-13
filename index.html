@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v775</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v776</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8250,7 +8250,6 @@ document.addEventListener('click', e => {
             _t.seen = 1;
           }
           if (_r.ev && _r.ev.exitBoss) { /* 终点事件在sheetRun显示 */ }
-          try { if (typeof thunderAdv === 'function') thunderAdv(); } catch(_) {} // v775 冒险移动触发雷云判定
           try { commit(); } catch(_) {}
           try { sheetRun(_r); } catch(_) {}
           return;
