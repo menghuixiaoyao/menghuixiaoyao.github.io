@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v733</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v734</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6682,7 +6682,7 @@ function doBook(kind, k, n) {
 function sheetBag() {
   const list = C.invList(S), mats = Object.keys(MATS).filter(k => MATS[k].basic && S.mats[k] > 0);
   const _seals = (S.sealed || []).filter(x => x && !x.done);
-  openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（储物戒可扩充）。服用丹药可永久提升属性。</div>` +
+  openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 🌒下品 <b class="y">${S.ores.sp2|0}</b> · 🌗中品 <b class="y">${S.ores.sp3|0}</b> · 💎上品 <b class="y">${S.ores.sp4|0}</b> · 💠极品 <b class="y">${S.ores.sp5|0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（储物戒可扩充）。服用丹药可永久提升属性。</div>` +
     `<h3>丹药</h3>` +
     (list.length ? list.map(p => `<div class="row"><div class="lab">${potName(p.attr, p.grade)} ×${p.count}<small>${AN[p.attr]} +${p.grade}</small></div>
       <button class="btn" data-drink="${p.attr}" data-g="${p.grade}" data-n="1">服用</button>
