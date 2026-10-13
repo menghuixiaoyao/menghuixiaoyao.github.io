@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v764</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v765</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -428,7 +428,8 @@ const MEDS = {
   bandage:  { name: '止血药', price: 25, cure: 'bleed',   desc: '止住流血（流血唯一解法）' },
   antidote: { name: '解毒丹', price: 20, cure: 'poison',  desc: '解除中毒（中毒唯一解法，否则会毒发身亡）' },
   incense:  { name: '兴奋剂', price: 30, cure: 'depress', desc: '立即驱散抑郁' },
-  shenshui: { name: '神水', price: 50, cure: 'curse', desc: '消除一层诅咒' }
+  shenshui: { name: '神水', price: 50, cure: 'curse', desc: '消除一层诅咒' },
+  tpscroll: { name: '随机传送卷', price: 200, desc: '冒险中随机传送到任意一格' } // v765
 };
 const STATUS = { bleed: { name: '流血', icon: '🩸' }, poison: { name: '中毒', icon: '☠️' }, depress: { name: '抑郁', icon: '🌧️' } }; // 诅咒改为 S.curseN 永久层数，不再走状态系统
 // 灵宠种类：孵化权重 w；bonus 为冒险中的小额被动加成；PK 中灵宠亲自上阵（初始五项属性均为 1，与新角色相同）
@@ -2798,6 +2799,7 @@ function advTileEvent(S, run, type) { // 在格子上生成指定类型的事件
   const id = pick(ids.length ? ids : EV_BY_TYPE[type].filter(okT));
   type = ADV_EVENTS[id].type; run.seen.push(id); run.ev = { type, id };
 }
+try { window.advTileEvent = advTileEvent; } catch(_) {} // v765 传送卷跨块调用
 function sneakP(S, mon) { return clamp(0.2 + 0.4 * fightAttrs(S, false).agi / Math.max(1, mon.attrs.agi), 0.1, 0.9); } // v185 潜行成功率：敏捷相同 60%
 function guardedLoot(S, run, loot) { // v185 守宝战利品（已发放，返回描述）
   const X = advCtx(S, run);
@@ -5949,7 +5951,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     `<div class="agrid">${cells}</div>` +
     `<div class="scene">${scene}</div>` +
     (ev ? `<div class="grid2">${chs.map((c, i) => `<button class="btn ${c.retreat ? '' : i === 0 ? 'gold' : ''}" data-advc="${i}" ${c.dis ? 'disabled' : ''} style="line-height:1.3">${c.l}${c.hint ? `<br><small>${c.hint}</small>` : ''}</button>`).join('')}</div><div class="hint" style="text-align:center">也可直接走开，事件留在格子上，回来再处理</div>` : '') +
-    `<div class="row" style="display:flex;gap:8px"><button class="btn gold" data-dazuo style="flex:1">🧘 调息（1体力回10%生命）</button></div>` +
+    `<div class="row" style="display:flex;gap:8px"><button class="btn gold" data-dazuo style="flex:1">🧘 调息（1体力回10%生命）</button><button class="btn" data-tpscroll style="flex:1" ${(S.meds.tpscroll|0) > 0 ? '' : 'disabled'}>📜 传送卷×${S.meds.tpscroll|0}</button></div>` +
     `<div class="row" style="display:flex;gap:8px"><button class="btn" data-advretreat style="flex:1">🏳️ 撤退</button><button class="btn" data-close style="flex:1">稍后继续</button></div>` +
     `<div class="empty" style="text-align:left;padding:8px 2px">本轮收获：${rewTxt(run.rew)}</div>`);
 }
@@ -8246,6 +8248,41 @@ document.addEventListener('click', e => {
   else if (d.dazuo !== undefined) { // v761 冒险中调息
     try { doDazuo(); } catch(_) {}
     try { if (S.run && S.run.grid) sheetRun(); } catch(_) {}
+  }
+  else if (d.tpscroll !== undefined) { // v765 随机传送卷
+    try {
+      if ((S.meds.tpscroll|0) <= 0) return;
+      const _run = S.run, _gr = _run && _run.grid;
+      if (!_gr) return;
+      S.meds.tpscroll--;
+      // 随机选一格（排除当前位置）
+      let _nx, _ny, _tries = 0;
+      do {
+        _nx = Math.floor(Math.random() * _gr.w);
+        _ny = Math.floor(Math.random() * _gr.h);
+        _tries++;
+      } while ((_nx === _gr.px && _ny === _gr.py) && _tries < 50);
+      _gr.px = _nx; _gr.py = _ny; _gr.moves++;
+      try { if (typeof log === 'function') log('info', `📜 使用随机传送卷，传送到 (${_nx},${_ny})`); } catch(_) {}
+      // 触发落点事件（复用advMove的事件逻辑）
+      const _t = _gr.tiles[_ny][_nx];
+      _run.ev = null;
+      let _r = { moved: true };
+      if (_t.t === 'exit' && !_t.done) {
+        if (!_t.ev) { const _m = C.advMonster(S, _run.dk, (_run.dk === 'mijing' || _run.dk.startsWith('wx_')) ? 4 : 1); _t.ev = { type: 'fight', mon: _m, boss: true, exitBoss: true, text: '终点守关' }; _run.evCount = (_run.evCount|0) + 1; }
+        _run.ev = _t.ev; _r.ev = _run.ev;
+      } else if (_t.ev && !_t.evDone) {
+        _run.ev = _t.ev; _r.ev = _run.ev;
+      } else if (!_t.seen && _t.t !== 'empty' && _t.t !== 'start') {
+        _t.seen = 1; _run.evCount = (_run.evCount|0) + 1;
+        try { (typeof advTileEvent === 'function' ? advTileEvent : window.advTileEvent)(S, _run, _t.t); } catch(_) {}
+        _t.ev = _run.ev; _r.ev = _run.ev;
+      } else {
+        _t.seen = 1;
+      }
+      try { commit(); } catch(_) {}
+      try { sheetRun(_r); } catch(_) {}
+    } catch(_) {}
   }
   else if (d.sellspirit !== undefined) { // v759 灵气石40金回收
     try {
