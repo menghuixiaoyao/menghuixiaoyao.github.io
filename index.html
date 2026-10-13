@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v763</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v764</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5932,10 +5932,11 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     else if (t.t === 'exit') { icon = '🚪'; cls = ' exit'; }
     else if (t.seen) icon = TICON[t.t] || '⬜';
     const _dist = Math.abs(x - g.px) + Math.abs(y - g.py);
+    const _cheb = Math.max(Math.abs(x - g.px), Math.abs(y - g.py)); // v764 斜走用切比雪夫距离
     const _hasSk = S.skills && S.skills.includes('shukuchi');
     const _hasDny = S.skills && S.skills.includes('danuoyi');
     const _maxDist = _hasDny ? 3 : (_hasSk ? 2 : 1);
-    const _adj = !isP && _dist >= 1 && _dist <= _maxDist && (x === g.px || y === g.py); // v762 缩地两格/大挪移三格（直线）
+    const _adj = !isP && _cheb >= 1 && _cheb <= _maxDist; // v764 允许斜走
     cells += _adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`;
   }
   const scene = ev
@@ -8208,7 +8209,7 @@ document.addEventListener('click', e => {
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
   else if (d.advc !== undefined) doAdvChoose(+d.advc);
   else if (d.advmove) doAdvMove(d.advmove);
-  else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格；v763 1秒冷却
+  else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格；v763 1秒冷却；v764 斜走
     try {
       const _now = Date.now();
       if (window._advMoveCd && _now - window._advMoveCd < 1000) return; // 1秒内不重复移动
@@ -8216,27 +8217,25 @@ document.addEventListener('click', e => {
       const _gx = +d.advx, _gy = +d.advy, _gr = S.run && S.run.grid;
       if (_gr) {
         const _dx = _gx - _gr.px, _dy = _gy - _gr.py;
-        const _dist = Math.abs(_dx) + Math.abs(_dy);
+        const _cheb = Math.max(Math.abs(_dx), Math.abs(_dy));
         const _hasSk = S.skills && S.skills.includes('shukuchi');
         const _hasDny = S.skills && S.skills.includes('danuoyi');
         const _maxDist = _hasDny ? 3 : (_hasSk ? 2 : 1);
-        if (_dist >= 2 && _dist <= _maxDist && (_dx === 0 || _dy === 0)) {
-          // 缩地/大挪移：连走多格
-          const _dir = _dx > 0 ? 'right' : _dx < 0 ? 'left' : _dy > 0 ? 'down' : 'up';
+        if (_cheb >= 1 && _cheb <= _maxDist) {
+          // 按切比雪夫距离走：先横后竖（或先竖后横），逐步移动触发事件
+          const _steps = [];
+          const _sx = Math.sign(_dx), _sy = Math.sign(_dy);
+          for (let _i = 0; _i < Math.abs(_dx); _i++) _steps.push(_sx > 0 ? 'right' : 'left');
+          for (let _i = 0; _i < Math.abs(_dy); _i++) _steps.push(_sy > 0 ? 'down' : 'up');
           let _r = null;
-          for (let _i = 0; _i < _dist; _i++) {
+          for (const _dir of _steps) {
             _r = C.advMove(S, _dir);
             if (!_r || _r.err) break;
             if (_r.end) { showAdvEnd({ lines: ['抵达终点'], end: _r.end }); return; }
+            // 如果触发了事件（战斗等），停下让玩家处理
+            if (_r.ev) { sheetRun(_r); return; }
           }
           if (_r) { sheetRun(_r); return; }
-        } else {
-          let _dir = null;
-          if (_dx === 0 && _dy === -1) _dir = 'up';
-          else if (_dx === 0 && _dy === 1) _dir = 'down';
-          else if (_dx === -1 && _dy === 0) _dir = 'left';
-          else if (_dx === 1 && _dy === 0) _dir = 'right';
-          if (_dir) doAdvMove(_dir);
         }
       }
     } catch(_) {}
