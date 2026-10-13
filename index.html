@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v744</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v745</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1135,7 +1135,6 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
     S.degraded = null; // v591 正常突破成功清除降级状态
   }
   let _btm = BT_MULT[Math.min(11, fromRealm | 0)] || 1, gradeName = null;
-  try { log('sys', `[调试]applyBtSuccess fromRealm=${fromRealm}`); } catch(_){}
   if (fromRealm >= 2) { // v175 筑基→金丹结金丹、金丹→元婴结元婴：品质替代原突破倍率；v284 元婴以上也有品质（v176：天劫异变按异变档位；v180：压条 1000% 为极）
     let g = trib && trib.jackpot ? gradeFromFull(trib.jackpot.full) : tribGrade(S);
     const isJi = !(trib && trib.jackpot) && tribFull(S) >= 20; // v285 2000%为极
@@ -3023,7 +3022,28 @@ function pkSettle(S, pk, chosen) {
       if (!win) {
         try { const _ds = C.applyFailState(S, fromRealm); log('bad', _bl + '<br>⚡ 倒在天雷之下，突破失败……沦为【' + (_ds || S.degraded) + '】。'); } catch(_){ log('bad', _bl + '<br>⚡ 突破失败。'); }
       } else {
-        try { const _trib = _td.trib || {}; try { _trib.thunder = _trib.thunder || {}; _trib.thunder.koWin = koWin; } catch(_){} const r = C.applyBtSuccess(S, fromRealm, _trib); const _gs = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : ''; log('good', _bl + '<br>⚡ <b>突破成功！</b>踏入【' + (r.realm || '') + '】！' + _gs); } catch(_){ log('good', _bl + '<br>⚡ 突破成功！'); }
+        try {
+          const _trib = _td.trib || {};
+          try { _trib.thunder = _trib.thunder || {}; _trib.thunder.koWin = koWin; } catch(_){}
+          // v745 雷劫胜利后必定问心（原直接applyBtSuccess）
+          _trib.demonMet = true;
+          const _quiz = (typeof pickTribQuiz === 'function' ? pickTribQuiz(fromRealm) : (C.pickTribQuiz ? C.pickTribQuiz(fromRealm) : null));
+          if (_quiz) {
+            _quiz.jackpot = _trib.jackpot || null;
+            _quiz.koWin = koWin;
+            _quiz.fromRealm = fromRealm;
+            _trib.quiz = _quiz;
+            // 保存trib供后续使用
+            try { S._pendingTrib = _trib; S._pendingFromRealm = fromRealm; } catch(_){}
+            try { if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_quiz); else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_quiz); } catch(_){}
+            try { commit(); } catch(_){}
+            return;
+          }
+          // 兜底：直接突破
+          const r = C.applyBtSuccess(S, fromRealm, _trib);
+          const _gs = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : '';
+          log('good', _bl + '<br>⚡ <b>突破成功！</b>踏入【' + (r.realm || '') + '】！' + _gs);
+        } catch(_){ log('good', _bl + '<br>⚡ 突破成功！'); }
       }
       try { afterAct(); } catch(_){}
       try { commit(); } catch(_){}
