@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v748</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v749</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7097,7 +7097,7 @@ window.doTribQuizAnswer = function(qi, oi) {
   if (r.pending === 'demon') { // v739 答题后遇心魔战斗
     const n2 = r.trib.quizCorrect;
     log('good', `👹 心魔${quiz.qs.length}问，答对 <b class="g">${n2}</b> 道——<b>道心稳固！</b><br><span class="r">心魔不甘，化形来战！</span>`);
-    try { startDemonBattle(S, r.trib, r.fromRealm); } catch(_) {}
+    try { (typeof startDemonBattle === 'function' ? startDemonBattle : window.startDemonBattle)(S, r.trib, r.fromRealm); } catch(_e) { try { log('sys', '心魔战启动失败:' + (_e.message || _e)); } catch(_) {} }
     return;
   }
   const n = r.trib.quizCorrect, pass = n >= K.TRIB_QUIZ_NEED;
