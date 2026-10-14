@@ -287,7 +287,7 @@ const K = {
   DODGE_BASE: 0.05, DODGE_PER_AGI: 0.015, DODGE_MAX: 0.35, // 闪避 = 5% + 敏捷差×1.5%
   COMBO_PER_AGI: 0.02, COMBO_MAX: 0.30, // 连击：敏捷高于对手时，普攻后追加一击的概率 = 敏捷差×2%（上限 30%）
   CRIT_BASE: 0.05, CRIT_PER_AGI: 0.004, CRIT_MAX: 0.30, CRIT_MULT: 1.5,
-  DEFEND_REDUCE: 0.5,     // 防御姿态：本回合受伤 ×0.5
+  DEFEND_REDUCE: 0.25,     // 防御姿态：本回合受伤 ×0.25；v838 先手怪太疼，加强减伤
   DEFEND_MP: 3, DEFEND_MP_PCT: 0.1, // 防御姿态回复 3 + 10% 法力上限
   MP_REGEN: 2,            // 每回合自然回复法力
   MAX_ROUNDS: 200,        // 回合上限，200回合未分胜负判玩家失败
