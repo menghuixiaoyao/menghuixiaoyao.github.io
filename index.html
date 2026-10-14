@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v846</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v847</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8319,7 +8319,7 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
     try { render(); } catch(_) {}
     return;
   }
-  if (_pk.trib === 'demon') { const _demonPk = _pk; try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} try { const _G5 = (typeof G !== 'undefined' ? G : window); if (_G5) _G5.pk = null; } catch(_) {} try { window.pk = null; } catch(_) {} try { const _Gs = (typeof G !== 'undefined' ? G : window); const _Ss = _Gs.S || window.S || (typeof S !== 'undefined' ? S : null); (window.finishDemonBattle || finishDemonBattle)(_Ss); } catch(_e) { try { if (typeof log === 'function') log('sys', '[调试]finishDemonBattle异常:' + (_e.message||_e)); } catch(_) {} try { (window.finishDemonBattle || finishDemonBattle)(); } catch(__) {} } try { if (typeof render === 'function') render(); } catch(_) {} return; } // v654；v808 用window版跨script块；v814 传S；v846 先清pk再调，异常也不卡界面
+  if (_pk.trib === 'demon') { try { const _Gs = (typeof G !== 'undefined' ? G : window); const _Ss = _Gs.S || window.S || (typeof S !== 'undefined' ? S : null); (window.finishDemonBattle || finishDemonBattle)(_Ss); } catch(_e) { try { if (typeof log === 'function') log('sys', '[调试]finishDemonBattle异常:' + (_e.message||_e)); } catch(_) {} } finally { try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} try { const _G5 = (typeof G !== 'undefined' ? G : window); if (_G5) _G5.pk = null; } catch(_) {} try { window.pk = null; } catch(_) {} try { if (typeof render === 'function') render(); } catch(_) {} } return; } // v654；v808 用window版跨script块；v814 传S；v847 finally确保清pk，finishDemonBattle先调（需tribData）
   if (pk.escape) {
     log('good', '💨 你成功逃离了战斗。');
     pk = null; afterAct(); commit();
