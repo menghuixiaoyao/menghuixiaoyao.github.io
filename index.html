@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v807</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v808</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1116,6 +1116,7 @@ function finishDemonBattle() {
   } catch(_e) { try { log('sys', '心魔胜利结算异常:' + (_e.message || _e)); } catch(_) {} }
   try { afterAct(); } catch(_) {} try { commit(); } catch(_) {} try { render(); } catch(_) {} // v792 确保界面一定关闭
 }
+window.finishDemonBattle = finishDemonBattle; // v808 暴露给Script1的pkHandleOver调用
 function applyFailState(S, fromRealm) { // v589 突破失败进降级状态；v592 降级链中失败进第二个状态；v612 失败等级退1-9
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
   const _dfail2 = (typeof DEGRADE_FAIL2 !== 'undefined') ? DEGRADE_FAIL2 : null;
@@ -8099,7 +8100,7 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
   if (!_pk) return;
   const b = _pk.battle;
   if (_pk.trib === 'thunder') { try { (window.pkSettle || pkSettle)(S, _pk); } catch(_e) { try { log('sys', '雷劫结算异常:' + (_e.message || _e)); } catch(_) {} } try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} try { const _G2 = (typeof G !== 'undefined' ? G : window); if (_G2) _G2.pk = null; } catch(_) {} try{render();}catch(_){} return; } // v692 清外部pk；v725 pkSettle异常保护；v726 用window.pkSettle；v791 清window.pk
-  if (_pk.trib === 'demon') { finishDemonBattle(); return; } // v654
+  if (_pk.trib === 'demon') { (window.finishDemonBattle || finishDemonBattle)(); return; } // v654；v808 用window版跨script块
   if (pk.escape) {
     log('good', '💨 你成功逃离了战斗。');
     pk = null; afterAct(); commit();
