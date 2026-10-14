@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v855</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v856</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -890,7 +890,7 @@ function consignBuy(S, id, qty) {
 function chatSend(S, text) { text = String(text || '').trim().slice(0, 100); if (!text) return { err: 'empty' }; chatPush(S, '我', text, false); if (Math.random() < 0.35) chatNpc(S); return { ok: true }; } // 玩家发言，35%概率有人接话
 const REALM_MAX_LV = 10, REINC_CAP = 10; // 每境轮回加成上限10次
 const reincBonus = S => (S.reinc || []).reduce((a, n, i) => a + (i === 0 ? 0 : Math.min(REINC_CAP, Math.max(0, +n || 0))), 0); // 轮回加成：练气起各境min(10,次数)累加；凡人轮回不计；立即生效
-const realmTxt = S => { if (S.degraded) return S.degraded; const _ri = S.realm|0; let rn = _ri === 0 ? '引气' : REALMS[_ri]; if (_ri === 3 && S.danGrade) rn = S.danGrade; else if (_ri === 4 && S.yingGrade) rn = S.yingGrade; if (S.level >= REALM_MAX_LV) return rn + '·大圆满'; return rn + (S.level <= 3 ? '初期' : S.level <= 6 ? '中期' : '后期'); }; // v566 凡人叫引气期；1-3初期/4-6中期/7-9后期；v589 降级显示降级名；v730 金丹/元婴显示品质
+const realmTxt = S => { if (S.degraded) return S.degraded; const _ri = S.realm|0; let rn = _ri === 0 ? '引气' : REALMS[_ri]; if (_ri === 3 && S.danGrade) rn = S.danGrade; else if (_ri === 4 && S.yingGrade) rn = S.yingGrade; else if (S.realmGrades && S.realmGrades[_ri]) rn = S.realmGrades[_ri]; if (S.level >= REALM_MAX_LV) return rn + '·大圆满'; return rn + (S.level <= 3 ? '初期' : S.level <= 6 ? '中期' : '后期'); }; // v566 凡人叫引气期；1-3初期/4-6中期/7-9后期；v589 降级显示降级名；v730 金丹/元婴显示品质；v856 所有境界显示品级
 const MANA_COST_LQ = [0, 100, 200, 300, 500, 600, 700, 900, 1100, 1500]; // 练气1-9级升级法力费
 const MANA_COST_ZJ = [0, 3000, 3300, 3600, 3900, 4500, 4800, 5100, 5500, 6000]; // 筑基1-9级升级法力费
 const MANA_COST_JD = [0, 7350, 8090, 9510, 10500, 11600, 13600, 15000, 16500, 19400]; // 金丹1-9级升级法力费
@@ -1297,6 +1297,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
     _btm = isJi ? K.TRIB_GRADE_JI_MULT : g.mult;
     gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极' : '');
     if (fromRealm === 2) S.danGrade = gradeName; else if (fromRealm === 3) S.yingGrade = gradeName;
+    if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v856 所有境界都存品级
   }
   if (fromRealm === 0 && S.xp > 0) S.savedXp = (S.savedXp || 0) + S.xp; S.realm++; S.lifespan = Math.max((S.lifespan|0) * 2, REALM_LIFESPAN[Math.min(12, S.realm|0)] || 100); S.level = 1; S.xp = 0; S.btTotal = (S.btTotal || 0) + 1; chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true); chatPush(S, CHAT_NAMES[Math.floor(Math.random() * CHAT_NAMES.length)], ['恭喜道友突破！', '又一位道友突破了，可喜可贺！', '道友天资卓绝，我辈楷模！'][Math.floor(Math.random() * 3)], false); if (/散仙|游仙|虚气|伪气|虚基|残基|虚丹|假丹|虚婴|假婴|虚神|散神|伪乘|残乘|怯劫|避劫|劫余|残仙|虚合|假合|伪尊|空尊|凡胎|燃尽/.test(REALMS[S.realm]||'')) _btm = 1.2; // v811 降级状态突破倍率1.2
   ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 8) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
