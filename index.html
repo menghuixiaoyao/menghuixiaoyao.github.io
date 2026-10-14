@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v842</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v843</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5477,6 +5477,7 @@ const potName = (a, g) => `<span class="q${g}">${C.GRADES[g]}${AN[a]}丹</span>`
 /* ---------- 状态面板 ---------- */
 function setBar(id, cur, max, txt) { $(id + 'Bar').style.width = (max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0) + '%'; $(id + 'Txt').textContent = txt; }
 function render() {
+  try { if (typeof window !== 'undefined' && window.pk === null) { try { pk = null; } catch(_) {} } } catch(_) {} // v843 render开头同步：window.pk已清时本地pk也清，避免操作旧对象
   try { // v802 全局兜底：心魔已死强制结算；v805 加调试日志
     const _G = (typeof G !== 'undefined' ? G : window);
     const _pk = (typeof pk !== 'undefined' && pk) ? pk : (_G.pk ? _G.pk : null);
