@@ -2350,7 +2350,8 @@ Battle.prototype.prepRound = function (actA, actB) {
   A.defending = actA === 'defend'; B.defending = actB === 'defend';
   for (const f of [A, B]) if (f.defending && f._bb > 1) { f._bbDef = f._bb; const _bpct = Math.round((f._bb - 1) * 100); L.push(`${nm(f)}<span class="r">🔥燃血御守</span>！防御 <span class="y">+${_bpct}%</span>，物理攻击<span class="y">全额反弹</span>（法术攻击无效）`); }
   let order;
-  if (A.a.agi !== B.a.agi) order = A.a.agi > B.a.agi ? [[A, B, actA], [B, A, actB]] : [[B, A, actB], [A, B, actA]];
+  const _agiA = A.defending ? 999999999 : A.a.agi, _agiB = B.defending ? 999999999 : B.a.agi; // v839 防御无视先手：选防御直接先摆姿态
+  if (_agiA !== _agiB) order = _agiA > _agiB ? [[A, B, actA], [B, A, actB]] : [[B, A, actB], [A, B, actA]];
   else order = R() < 0.5 ? [[A, B, actA], [B, A, actB]] : [[B, A, actB], [A, B, actA]];
   this._order = order;
   this._out = [];
