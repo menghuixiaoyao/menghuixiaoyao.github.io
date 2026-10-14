@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v831</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v832</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5151,7 +5151,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
     if (_n == null) return;
     const n = Math.max(1, Math.min(max, parseInt(_n) || 1));
     if (type === 'ebook' && typeof sheetEbook === 'function') sheetEbook(key, n);
-    else if (type === 'drinkmai') { for (let i = 0; i < n; i++) { try { if (typeof drinkMaiOne === 'function') drinkMaiOne(); else break; } catch(_) { break; } } try { if (typeof sheetBag === 'function') sheetBag(); } catch(_) {} }
+    else if (type === 'drinkmai') { try { if (typeof doDrinkMai === 'function') doDrinkMai(n); } catch(_) {} try { if (typeof sheetBag === 'function') sheetBag(); } catch(_) {} } // v832 修：调doDrinkMai(n)，原drinkMaiOne不存在
     else { try { const _d = { n }; if (type === 'mai') _d.usemai = n; else if (type === 'drink') { const _p = key.split('_'); _d.drink = _p[0]; _d.g = _p[1]; } else if (type === 'lu') _d.lu = key; else if (type === 'spirit') _d.spirit = key; else if (type === 'smash') _d.smash = n; if (typeof bagAction === 'function') bagAction(_d); else if (typeof handleBagClick === 'function') handleBagClick(_d); } catch(_) {} }
   } catch(e) {}
 };
