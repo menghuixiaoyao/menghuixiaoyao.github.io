@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v804</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v805</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5300,14 +5300,23 @@ const potName = (a, g) => `<span class="q${g}">${C.GRADES[g]}${AN[a]}丹</span>`
 /* ---------- 状态面板 ---------- */
 function setBar(id, cur, max, txt) { $(id + 'Bar').style.width = (max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0) + '%'; $(id + 'Txt').textContent = txt; }
 function render() {
-  try { // v802 全局兜底：心魔已死强制结算
+  try { // v802 全局兜底：心魔已死强制结算；v805 加调试日志
     const _G = (typeof G !== 'undefined' ? G : window);
     const _pk = (typeof pk !== 'undefined' && pk) ? pk : (_G.pk ? _G.pk : null);
-    if (_pk && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) {
-      const _isDemon = _pk.trib === 'demon' || (_pk.battle.B.name && _pk.battle.B.name.indexOf('心魔') >= 0);
-      if (_isDemon && typeof pkHandleOver === 'function') { pkHandleOver(); return; }
+    if (_pk && _pk.battle && _pk.battle.B) {
+      const _bhp = _pk.battle.B.hp, _trib = _pk.trib, _bname = _pk.battle.B.name || '';
+      const _isDemon = _trib === 'demon' || _bname.indexOf('心魔') >= 0;
+      if (_isDemon && typeof log === 'function' && !_pk._demonDbgLogged) {
+        _pk._demonDbgLogged = true;
+        log('sys', `[调试]心魔战检测: trib=${_trib}, B.hp=${_bhp}, B.name=${_bname}, pkHandleOver=${typeof pkHandleOver}`);
+      }
+      if (_isDemon && _bhp < 1) {
+        if (typeof log === 'function') log('sys', `[调试]心魔血量<1，调用pkHandleOver`);
+        if (typeof pkHandleOver === 'function') { pkHandleOver(); return; }
+        else if (typeof log === 'function') log('sys', `[调试]pkHandleOver不是函数!`);
+      }
     }
-  } catch(_) {}
+  } catch(_e) { try { if (typeof log === 'function') log('sys', '[调试]render心魔检查报错:' + (_e.message||_e)); } catch(_) {} }
   try { var _pk = (typeof pk !== 'undefined' && pk && pk.trib === 'thunder') ? pk : ((typeof S !== 'undefined' && S && S.pk && S.pk.trib === 'thunder') ? S.pk : ((typeof _G !== 'undefined' && _G && _G.pk && _G.pk.trib === 'thunder') ? _G.pk : null)); if (_pk && _pk.battle && typeof log === 'function' && !_pk._dbgLogged) { log('sys', '雷劫调试:round=' + _pk.battle.round + ',B.hp=' + (_pk.battle.B?_pk.battle.B.hp:'?') + ',A.hp=' + (_pk.battle.A?_pk.battle.A.hp:'?')); _pk._dbgLogged = true; } } catch(_) {} // v713 render只调试不结算(结算在doFinish,同script作用域) try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) return;
@@ -8074,19 +8083,7 @@ function doPkAction(act) {
   try { const ac = $('actions'); if (ac) ac.style.opacity = '0.5'; } catch (_) {}
   setTimeout(() => { try { doPkActionGo(act); } catch (e) { try { pk._acting = false; const ac2 = $('actions'); if (ac2) ac2.style.opacity = ''; } catch (_) {} } }, 700);
 }
-function pkHandleOver() {
-  const b = pk.battle;
-  if (pk.escape) { // 逃跑成功：冒险回事件页，PK直接结束无惩罚
-    log('good', '💨 你成功逃离了战斗。');
-    pk = null; afterAct(); commit();
-    if (S.run) sheetRun();
-    return;
-  }
-  if (pk.adv) { finishAdvBattle(); return; }
-  if (b.winner === b.A) { render(); if (pk.isArena) { finishPk(); } else { sheetPkWin(); } return; }
-  finishPk();
-}
-function pkHandleOver() {
+function pkHandleOver() { // v805 合并：删除旧版，保留v791版
   let _pk = null;
   try { _pk = (typeof pk !== 'undefined' && pk) ? pk : null; } catch(_) {}
   if (!_pk) { try { const _G = (typeof G !== 'undefined' ? G : window); _pk = (_G && _G.pk) ? _G.pk : null; } catch(_) {} } // v791 心魔战pk挂window时从window取
