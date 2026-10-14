@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v818</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v819</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5059,7 +5059,7 @@ window.leaveCave = function() { // v817 离开洞府，传回修仙界
     try { if (typeof renderWorldMap === 'function') renderWorldMap(); } catch(_) {}
   } catch(e) {}
 };
-window.renderCaveMap = function() { // v817 全屏洞府地图
+window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞府内走动
   try {
     const which = S.inCave;
     if (!which) return;
@@ -5068,20 +5068,31 @@ window.renderCaveMap = function() { // v817 全屏洞府地图
     const energy = isDong ? (S.dongfuEnergy|0) : (S.xianfuEnergy|0);
     const name = isDong ? '洞府' : '仙府';
     const icon = isDong ? '🏠' : '🏯';
-    const _cells = Array.from({length: Math.max(grids, 4)}, (_, i) => {
-      const _opened = i < grids;
-      return `<div style="aspect-ratio:1;background:${_opened ? '#3a2a1a' : '#1a1a2e'};border:1px solid ${_opened ? '#a63' : '#333'};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:32px">${_opened ? '🟫' : ''}</div>`;
-    }).join('');
+    // 洞府内坐标，默认中心
+    if (S.cavePx == null) { S.cavePx = 2; S.cavePy = 2; }
+    const _size = 5;
+    let _cells = '';
+    for (let y = 0; y < _size; y++) {
+      for (let x = 0; x < _size; x++) {
+        const _idx = y * _size + x;
+        const _opened = _idx < grids;
+        const _isPlayer = (S.cavePx === x && S.cavePy === y);
+        const _isAdj = Math.abs(S.cavePx - x) + Math.abs(S.cavePy - y) === 1;
+        const _bg = _isPlayer ? '#4a3a1a' : (_opened ? '#3a2a1a' : '#1a1a2e');
+        const _bd = _isPlayer ? '#fc0' : (_opened ? '#a63' : '#333');
+        const _content = _isPlayer ? '🧑‍🌾' : (_opened ? '🟫' : '');
+        const _click = _isAdj ? `onclick="caveMove(${x},${y})" style="cursor:pointer;"` : '';
+        _cells += `<div ${_click} style="aspect-ratio:1;background:${_bg};border:2px solid ${_bd};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;${_isAdj ? 'cursor:pointer;' : ''}">${_content}</div>`;
+      }
+    }
     const _html = `<div style="padding:12px;min-height:60vh;background:linear-gradient(180deg,#1a0f0a,#0a0a1a);border-radius:12px">`
       + `<h2 style="text-align:center">${icon}${icon} ${name}</h2>`
-      + `<div class="hint" style="text-align:center">你的个人${name} · 已开 ${grids} 格 · 灵气 ${energy}</div>`
-      + `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;max-width:400px;margin-left:auto;margin-right:auto">${_cells}</div>`
+      + `<div class="hint" style="text-align:center">你的个人${name} · 已开 ${grids} 格 · 灵气 ${energy} · 点击相邻格子走动</div>`
+      + `<div style="display:grid;grid-template-columns:repeat(${_size},1fr);gap:8px;margin:12px 0;max-width:400px;margin-left:auto;margin-right:auto">${_cells}</div>`
       + `<div class="row"><div class="lab">灵气加成</div><div>闭关每秒法力 +${energy}</div></div>`
       + `<div class="empty">🌱 灵植种植、🐟 养鱼即将开放……</div>`
       + `<button class="btn gold full" onclick="leaveCave()" style="margin-top:12px">🚪 离开${name}（传回收仙界）</button>`
       + `</div>`;
-    // 替换主内容区为洞府地图
-    const _main = document.getElementById('mainContent') || document.querySelector('.main') || document.body;
     let _caveDiv = document.getElementById('caveMapView');
     if (!_caveDiv) {
       _caveDiv = document.createElement('div');
@@ -5091,6 +5102,14 @@ window.renderCaveMap = function() { // v817 全屏洞府地图
     }
     _caveDiv.innerHTML = _html;
     _caveDiv.style.display = 'block';
+  } catch(e) {}
+};
+window.caveMove = function(x, y) { // v819 洞府内走动
+  try {
+    if (Math.abs(S.cavePx - x) + Math.abs(S.cavePy - y) !== 1) return;
+    S.cavePx = x; S.cavePy = y;
+    try { if (typeof commit === 'function') commit(); } catch(_) {}
+    renderCaveMap();
   } catch(e) {}
 };
 // 进入洞府时如果已有全屏视图，先隐藏
