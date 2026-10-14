@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v820</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v821</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1018,6 +1018,10 @@ function startThunderBattle(S, trib, fromRealm, pwOverride) {
   afterAct(); save(); render();
 }
 function startDemonBattle(S, trib, fromRealm) {
+  try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} // v821 开战前清掉旧pk，防止卡住的上个战斗干扰
+  try { const _G0 = (typeof G !== 'undefined' ? G : window); _G0.pk = null; } catch(_) {}
+  try { window.pk = null; } catch(_) {}
+  try { window._demonDeadT = 0; } catch(_) {}
   const fa = fightAttrs(S, false);
   const pw = tribPower(S);
   const dbase = tribFull(S) >= 20 ? K.TRIB_DEMON_1000 : K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON);
@@ -1036,6 +1040,10 @@ function startDemonBattle(S, trib, fromRealm) {
 window.startDemonBattle = startDemonBattle; // v754 暴露给doTribQuizAnswer跨块调用
 window.startSanShiBattle = function(idx) { // v812 斩三尸战斗
   try {
+    try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} // v821 开战前清旧pk
+    try { const _G0 = (typeof G !== 'undefined' ? G : window); _G0.pk = null; } catch(_) {}
+    try { window.pk = null; } catch(_) {}
+    try { window._demonDeadT = 0; } catch(_) {}
     const _names = ['上尸·彭倨', '中尸·彭质', '下尸·彭矫'];
     const _name = _names[idx] || '三尸';
     const fa = fightAttrs(S, false);
