@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v848</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v849</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5002,6 +5002,20 @@ function npcPos(S) {
     }
     grid.innerHTML = cells;
     grid.querySelectorAll('[data-mx]').forEach(c => {
+
+// v849 主城移动技能距离判定：缩地2格/大挪移3格，斜走需技能
+function cityMoveOk(w, x, y) {
+  try {
+    const _dx = x - w.px, _dy = y - w.py;
+    const _cheb = Math.max(Math.abs(_dx), Math.abs(_dy));
+    const _dist = Math.abs(_dx) + Math.abs(_dy);
+    const _hasSk = typeof S !== 'undefined' && S.skills && S.skills.includes('shukuchi');
+    const _hasDny = typeof S !== 'undefined' && S.skills && S.skills.includes('danuoyi');
+    const _maxDist = _hasDny ? 3 : (_hasSk ? 2 : 1);
+    const _isOrth = (_dx === 0 || _dy === 0);
+    return (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDist);
+  } catch(_) { return Math.abs(x - w.px) + Math.abs(y - w.py) === 1; }
+}
       c.onclick = () => {
         try {
           if (typeof S === 'undefined' || !S) return; // v713 防御
@@ -5051,7 +5065,7 @@ function npcPos(S) {
           if (isPortalCell) {
             if (w.px === x && w.py === y) {
               if (typeof sheetAdventure === 'function') sheetAdventure();
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
             return;
@@ -5170,7 +5184,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
                 return;
               }
               if (typeof sheetTrain === 'function') sheetTrain();
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
             return;
@@ -5178,7 +5192,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           if (isStallCell) {
             if (w.px === x && w.py === y) {
               if (typeof sheetStall === 'function') sheetStall(x, y);
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
             return;
@@ -5186,7 +5200,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           if (isCasinoCell) {
             if (w.px === x && w.py === y) {
               if (typeof sheetCasino === 'function') sheetCasino();
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
             return;
@@ -5194,7 +5208,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           if (isReserveCell) { // v536 保留地资源点
             if (w.px === x && w.py === y) {
               if (typeof openReserveSheet === 'function') openReserveSheet(); // v666
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
             return;
@@ -5202,7 +5216,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           if (isHerbCell) { // v540 田药园
             if (w.px === x && w.py === y) {
               if (typeof openHerbSheet === 'function') openHerbSheet(); // v666
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
             return;
@@ -5210,7 +5224,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           if (isRanchCell) { // v541 养殖园
             if (w.px === x && w.py === y) {
               if (typeof openRanchSheet === 'function') openRanchSheet(); // v666
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
             }
             return;
@@ -5219,7 +5233,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (arena === 'pk' && typeof doPkChooseRealm === 'function') doPkChooseRealm();
               else if (arena === 'arena' && typeof doArena === 'function') doArena();
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               if (typeof isSwordCell === 'function' && !isSwordCell(x, y)) return;
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
               if (typeof toastLog === 'function') toastLog('sys', '走到' + (arena === 'pk' ? 'PK台' : '擂台') + '旁，再点一次进入');
@@ -5239,13 +5253,13 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
                 S.furnaceDur[furnace] = d - 1; if (typeof save === 'function') save();
                 sheetLife(furnace);
               }
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
               if (typeof toastLog === 'function') toastLog('sys', '走到' + (furnace === 'both_alc' ? '大殿' : '炼器炉') + '旁，再点一次使用'); // v455 改名大殿
             }
             return;
           }
-          if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) { w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); }
+          if (cityMoveOk(w, x, y)) { w.px = x; // v849 缩地/大挪移 w.py = y; if (typeof save === 'function') save(); renderWorldMap(); }
         } catch (_) {}
       };
     });
