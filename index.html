@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v799</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v800</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4956,6 +4956,17 @@ function npcPos(S) {
             }
             return;
           }
+window.goBackCaveChoice = function() { // v800 功能区回洞府/仙府选择
+  try {
+    const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0;
+    if (_dg <= 0 && _xg <= 0) { log('bad', '你还没有开辟洞府，商店可购买洞府令'); return; }
+    if (_dg > 0 && _xg > 0) {
+      if (typeof openSheet === 'function') openSheet(`<h2>🏠 回洞府</h2><div class="hint">你开辟了洞府和仙府，要回哪个？</div><div class="grid2"><button class="btn gold" onclick="goBackCave('dongfu')">🏠 回洞府<br><small>${_dg} 格·灵气 ${_dg*2}</small></button><button class="btn gold" onclick="goBackCave('xianfu')">🏯 回仙府<br><small>${_xg} 格·灵气 ${_xg*5}</small></button></div><div class="row"><button class="btn full" onclick="closeSheet()">关闭</button></div>`);
+      return;
+    }
+    goBackCave(_dg > 0 ? 'dongfu' : 'xianfu');
+  } catch(e) {}
+};
 window.goBackCave = function(which) { // v799 回洞府/仙府
   try {
     const isDong = which === 'dongfu';
@@ -4970,15 +4981,6 @@ window.goBackCave = function(which) { // v799 回洞府/仙府
 };
           if (isTrainCell) {
             if (w.px === x && w.py === y) {
-              const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0; // v799 点洞府回个人洞府/仙府
-              if (_dg > 0 || _xg > 0) {
-                if (_dg > 0 && _xg > 0) {
-                  if (typeof openSheet === 'function') openSheet(`<h2>🏠 回洞府</h2><div class="hint">你开辟了洞府和仙府，要回哪个？</div><div class="grid2"><button class="btn gold" onclick="goBackCave('dongfu')">🏠 回洞府<br><small>${_dg} 格·灵气 ${_dg*2}</small></button><button class="btn gold" onclick="goBackCave('xianfu')">🏯 回仙府<br><small>${_xg} 格·灵气 ${_xg*5}</small></button></div><div class="row"><button class="btn full" data-a="close">关闭</button></div>`);
-                  return;
-                }
-                const _which = _dg > 0 ? 'dongfu' : 'xianfu';
-                if (typeof goBackCave === 'function') { goBackCave(_which); return; }
-              }
               if ((S.stamina|0) <= 0) { // v564 体力耗尽点⛰️区直接进闭关二选一，不再弹体力不足
                 const _im = (S.realm|0) === 0;
                 const _ct = _im ? 'wushu' : 'cave', _vt = _im ? 'ningqi' : 'vein';
@@ -5422,6 +5424,7 @@ function renderActions() {
     ${S.afk ? `<button class="act primary" id="afkExitBtn" style="padding:1px"><span class="t" style="font-size:9px">${S.afk.type === 'vein' ? ((S.realm|0) >= 8 ? '⚖️ 参悟法则中' : '🌀 凝气中') : S.afk.type === 'cave' ? medIcon() + ' 调息中' : '🛌 出关'}</span><span class="s" style="font-size:7px">点击出关结算</span></button>` : `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 3"><button class="act" data-a="dazuo" ${_canDz ? '' : 'disabled'} style="flex:1;padding:1px;min-height:0"><span class="t" style="font-size:9px">${medIcon()} ${(S.realm|0) >= 8 ? '运转仙力' : '调息'}</span><span class="s" style="font-size:7px">${(S.realm|0) >= 8 ? '1体力=10%生命+1仙力' : '1体力=10%生命+5%法力'}</span></button></div>`} <!-- v474 移除两个闭关按钮，改走地图(0,3)；v475 缩小 -->
     <!-- v453 功能区修炼按钮已移除，改走地图(1,5)修炼区 -->
     ${(S.realm|0) >= 8 ? `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act" data-a="cave" style="flex:1;padding:2px;min-height:0"><span class="t" style="font-size:10px">🏔️ 洞府</span><span class="s" style="font-size:8px">仙家洞府</span></button></div>` : ''}
+    ${((S.dongfuGrids|0) + (S.xianfuGrids|0) > 0) ? `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act" onclick="goBackCaveChoice()" style="flex:1;padding:2px;min-height:0"><span class="t" style="font-size:10px">🏠 我的洞府</span><span class="s" style="font-size:8px">${S.dongfuGrids|0}格${(S.xianfuGrids|0)>0?`+${S.xianfuGrids|0}仙府`:''}</span></button></div>` : ''}
     <div id="chatInputRow" style="display:flex;grid-column:1/-1;gap:6px;align-items:center"><input id="cfInput" maxlength="100" placeholder="说点什么…" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff;font-size:12px"><button data-cfsend style="padding:6px 12px;border-radius:6px;background:#c9a227;color:#000;font-size:12px;flex:none">发送</button></div>`; // v475 功能区整体缩小；v509 聊天输入放功能栏
   setTimeout(() => {
     const bb2 = $('burnBloodBtn'); if (bb2) bb2.onclick = () => { S.burnBlood = !S.burnBlood; save(); render(); toastLog('sys', `🔥燃血已${S.burnBlood ? '开启' : '关闭'}`); };
