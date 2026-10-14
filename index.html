@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v850</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v851</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5017,6 +5017,15 @@ function cityMoveOk(w, x, y) {
     return (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag);
   } catch(_) { return Math.abs(x - w.px) + Math.abs(y - w.py) === 1; }
 }
+// v851 主城移动触发雷劫判定：缩地2倍、大挪移3倍
+function cityMoveThunder() {
+  try {
+    const _hasDny = typeof S !== 'undefined' && S.skills && S.skills.includes('danuoyi');
+    const _hasSk = typeof S !== 'undefined' && S.skills && S.skills.includes('shukuchi');
+    const _p = _hasDny ? 0.30 : (_hasSk ? 0.20 : 0.10);
+    if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(_p);
+  } catch(_) {}
+}
       c.onclick = () => {
         try {
           if (typeof S === 'undefined' || !S) return; // v713 防御
@@ -5044,7 +5053,7 @@ function cityMoveOk(w, x, y) {
               const _maxDist = _hasDanuoyi ? 3 : (_hasShukuchi ? 2 : 1);
               const _dist = Math.abs(x - w.px) + Math.abs(y - w.py);
               if (_dist >= 1 && _dist <= _maxDist) {
-                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
               }
             }
             return;
@@ -5058,7 +5067,7 @@ function cityMoveOk(w, x, y) {
               const _maxDist2 = _hasDanuoyi2 ? 3 : (_hasShukuchi2 ? 2 : 1);
               const _dist2 = Math.abs(x - w.px) + Math.abs(y - w.py);
               if (_dist2 >= 1 && _dist2 <= _maxDist2) {
-                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
               }
             }
             return;
@@ -5067,7 +5076,7 @@ function cityMoveOk(w, x, y) {
             if (w.px === x && w.py === y) {
               if (typeof sheetAdventure === 'function') sheetAdventure();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
             }
             return;
           }
@@ -5186,7 +5195,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
               }
               if (typeof sheetTrain === 'function') sheetTrain();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
             }
             return;
           }
@@ -5194,7 +5203,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof sheetStall === 'function') sheetStall(x, y);
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
             }
             return;
           }
@@ -5202,7 +5211,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof sheetCasino === 'function') sheetCasino();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
             }
             return;
           }
@@ -5210,7 +5219,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof openReserveSheet === 'function') openReserveSheet(); // v666
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
             }
             return;
           }
@@ -5218,7 +5227,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof openHerbSheet === 'function') openHerbSheet(); // v666
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
             }
             return;
           }
@@ -5226,7 +5235,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof openRanchSheet === 'function') openRanchSheet(); // v666
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
             }
             return;
           }
@@ -5236,7 +5245,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
               else if (arena === 'arena' && typeof doArena === 'function') doArena();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               if (typeof isSwordCell === 'function' && !isSwordCell(x, y)) return;
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
               if (typeof toastLog === 'function') toastLog('sys', '走到' + (arena === 'pk' ? 'PK台' : '擂台') + '旁，再点一次进入');
             }
             return;
@@ -5255,12 +5264,12 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
                 sheetLife(furnace);
               }
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
               if (typeof toastLog === 'function') toastLog('sys', '走到' + (furnace === 'both_alc' ? '大殿' : '炼器炉') + '旁，再点一次使用'); // v455 改名大殿
             }
             return;
           }
-          if (cityMoveOk(w, x, y)) { w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); }
+          if (cityMoveOk(w, x, y)) { w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); }
         } catch (_) {}
       };
     });
