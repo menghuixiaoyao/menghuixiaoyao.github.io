@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v803</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v804</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4967,7 +4967,7 @@ window.goBackCaveChoice = function() { // v800 功能区回洞府/仙府选择
     goBackCave(_dg > 0 ? 'dongfu' : 'xianfu');
   } catch(e) {}
 };
-window.goBackCave = function(which) { // v799 回洞府/仙府；v801 直接传送进个人洞府面板
+window.goBackCave = function(which) { // v799 回洞府/仙府；v801 直接传送进个人洞府面板；v804 显示格子
   try {
     const isDong = which === 'dongfu';
     const grids = isDong ? (S.dongfuGrids|0) : (S.xianfuGrids|0);
@@ -4976,7 +4976,8 @@ window.goBackCave = function(which) { // v799 回洞府/仙府；v801 直接传�
     const icon = isDong ? '🏠' : '🏯';
     if (grids <= 0) { log('bad', '你还没有开辟' + name); return; }
     try { if (typeof closeSheet === 'function') closeSheet(); } catch(_) {}
-    if (typeof openSheet === 'function') openSheet(`<h2>${icon} ${name}</h2><div class="hint">你的个人洞府 · 已开 ${grids} 格 · 灵气 ${energy}</div><div class="row"><div class="lab">灵气加成</div><div>闭关每秒法力 +${energy}</div></div><div class="empty">🌱 灵植种植、🐟 养鱼即将开放……</div><button class="btn full" onclick="closeSheet()">离开洞府</button>`);
+    const _cells = Array.from({length: grids}, (_, i) => `<div style="aspect-ratio:1;background:#2a2a3e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:24px">🟫</div>`).join('');
+    if (typeof openSheet === 'function') openSheet(`<h2>${icon} ${name}</h2><div class="hint">你的个人${isDong?'洞府':'仙府'} · 已开 ${grids} 格 · 灵气 ${energy}</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0">${_cells}</div><div class="row"><div class="lab">灵气加成</div><div>闭关每秒法力 +${energy}</div></div><div class="empty">🌱 灵植种植、🐟 养鱼即将开放……</div><button class="btn full" onclick="closeSheet()">离开${isDong?'洞府':'仙府'}</button>`);
     log('good', `传送回${name}！`);
   } catch(e) {}
 };
