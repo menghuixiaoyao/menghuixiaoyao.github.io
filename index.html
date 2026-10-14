@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v791</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v792</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1077,27 +1077,33 @@ function finishThunderBattle() {
 function finishDemonBattle() {
   const _G2 = (typeof G !== 'undefined' ? G : window);
   const _pk = _G2.pk;
+  if (!_pk || !_pk.battle) { try { _G2.pk = null; } catch(_) {} try { if (typeof render === 'function') render(); } catch(_) {} return; } // v792 防御：pk已清空时直接关界面
   const b = _pk.battle;
-  const _td = _pk.tribData, trib = _td.trib, fromRealm = _td.fromRealm;
+  const _td = _pk.tribData || {}, trib = _td.trib || {}, fromRealm = _td.fromRealm;
   const win = b.winner === b.A;
   const _dr = b.round | 0;
   const _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : '';
-  log(win ? 'good' : 'bad', `👹 心魔来袭${_cu}，激战 ${_dr} 回合，${win ? '<b>斩灭心魔，道心稳固！</b>' : '<b class="r">不敌心魔，道心受损……</b>'}`);
-  trib.demon = { win, battle: b, pw: tribPower(S) };
+  try { log(win ? 'good' : 'bad', `👹 心魔来袭${_cu}，激战 ${_dr} 回合，${win ? '<b>斩灭心魔，道心稳固！</b>' : '<b class="r">不敌心魔，道心受损……</b>'}`); } catch(_) {}
+  try { trib.demon = { win, battle: b, pw: (typeof tribPower === 'function' ? tribPower(S) : 1) }; } catch(_) {}
   try { _G2.pk = null; } catch(_) { try { window.pk = null; } catch(_) {} }
+  try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} // v792 同步清主作用域pk
   if (!win) {
-    S.thunderOk = false;
-    const _ds = applyFailState(S, fromRealm);
-    const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10));
-    S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost);
-    log('bad', `👹 心魔难斩，突破失败……道途已断，沦为【${_ds || S.degraded}】（卡9级后期），折寿 <span class="r">${lifeLost}</span> 年。`);
-    afterAct(); commit(); render();
+    try {
+      S.thunderOk = false;
+      const _ds = applyFailState(S, fromRealm);
+      const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10));
+      S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost);
+      log('bad', `👹 心魔难斩，突破失败……道途已断，沦为【${_ds || S.degraded}】（卡9级后期），折寿 <span class="r">${lifeLost}</span> 年。`);
+    } catch(_) {}
+    try { afterAct(); } catch(_) {} try { commit(); } catch(_) {} try { render(); } catch(_) {}
     return;
   }
-  S.thunderOk = false;
-  const r = applyBtSuccess(S, fromRealm, trib);
-  tribBattleSuccessLog(S, r);
-  afterAct(); commit(); render();
+  try {
+    S.thunderOk = false;
+    const r = applyBtSuccess(S, fromRealm, trib);
+    tribBattleSuccessLog(S, r);
+  } catch(_e) { try { log('sys', '心魔胜利结算异常:' + (_e.message || _e)); } catch(_) {} }
+  try { afterAct(); } catch(_) {} try { commit(); } catch(_) {} try { render(); } catch(_) {} // v792 确保界面一定关闭
 }
 function applyFailState(S, fromRealm) { // v589 突破失败进降级状态；v592 降级链中失败进第二个状态；v612 失败等级退1-9
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
