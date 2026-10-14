@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v851</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v852</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1159,6 +1159,7 @@ function finishDemonBattle(_S) { // v814 S跨script块取不到，改传参
   try {
     S.thunderOk = false;
     const r = applyBtSuccess(S, fromRealm, trib);
+    try { if (typeof log === 'function') log('sys', `[调试]突破结算: ok=${r.ok}, grade=${r.grade||'无'}, mult=${r.mult}, fromRealm=${fromRealm}`); } catch(_) {}
     tribBattleSuccessLog(S, r);
   } catch(_e) { try { log('sys', '心魔胜利结算异常:' + (_e.message || _e)); } catch(_) {} }
   try { afterAct(); } catch(_) {} try { commit(); } catch(_) {} try { render(); } catch(_) {} // v792 确保界面一定关闭
