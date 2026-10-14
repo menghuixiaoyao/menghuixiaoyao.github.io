@@ -5691,6 +5691,7 @@ function renderCombat() {
       if (typeof pkHandleOver === 'function') { window._inPkOver = true; try { pkHandleOver(); } finally { window._inPkOver = false; } return; }
     }
   } catch(_) { try { window._inPkOver = false; } catch(__) {} }
+  if (!pk || !pk.battle) { try { $('combat').classList.remove('on'); document.body.classList.remove('combating'); } catch(_) {} return; } // v840 pk已空时直接关战斗UI
   const b = pk.battle, A = b.A, B = b.B;
   if (pk.target === 'pet' && !(B.pet && B.pet.hp > 0)) pk.target = 'foe'; // 宠物已死切回打人
   try {
