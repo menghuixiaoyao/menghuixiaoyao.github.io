@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v859</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v860</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5664,7 +5664,7 @@ function render() {
       const _isBu = (S.realm|0) > 10; // 已过合体，补斩
       if (_cut < 3) {
         _btBtn = `<div style="margin:4px 0;padding:8px;border:1px solid #a33;border-radius:6px;background:#1a0a0a"><b class="r">⚔️ 斩三尸${_isBu ? '（补）' : ''}</b> <small>（${_cut}/3）${_isBu ? '当年未斩，今日补之' : '合体入尊者，需先斩去三尸'}</small><br>` +
-          _names.map((n,i)=> S.sanShi[i] ? `<span class="g">✓ ${n}已斩</span>` : `<button class="btn" onclick="startSanShiBattle(${i})" style="margin:4px 4px 0 0">⚔️ 斩${n}</button>`).join(' ') +
+          _names.map((n,i)=> S.sanShi[i] ? `<span class="g">✓ ${n}已斩</span>` : `<button class="btn" data-sanshi="${i}" style="margin:4px 4px 0 0">⚔️ 斩${n}</button>`).join(' ') +
           `</div>` + (_isBu ? '' : '');
         if (!_isBu) {
           // 合体时，斩完才显示突破按钮
@@ -8928,6 +8928,7 @@ document.addEventListener('click', e => {
   else if (d.gather) { const _gk=d.gather,_gn=+d.n||1; try { const _gp=document.getElementById('gatherProg'),_gb=document.getElementById('gatherProgBar'),_gt=document.getElementById('gatherProgTxt'); if(_gp&&_gb){ _gp.style.display='block'; _gb.style.width='0%'; const _names={mine:'挖矿中……',hunt:'打猎中……',farm:'种植中……',egg:'掏蛋中……',read:'看书中……'}; if(_gt)_gt.textContent=_names[_gk]||'采集中……'; let _p=0; const _iv=setInterval(()=>{ _p+=10; if(_gb)_gb.style.width=Math.min(100,_p)+'%'; if(_p>=100){ clearInterval(_iv); if(_gp)_gp.style.display='none'; doGather(_gk,_gn); } },80); } else { doGather(_gk,_gn); } } catch(_){ doGather(_gk,_gn); } } // v663 采集进度条
   else if (d.breakthrough !== undefined) doBreakthrough();
   else if (d.reincarnate !== undefined) doReincarnate();
+  else if (d.sanshi !== undefined) { try { (window.startSanShiBattle || startSanShiBattle)(+d.sanshi); } catch(e) { try { log('sys', '斩三尸启动失败:' + (e.message||e)); } catch(_) {} } } // v860 斩三尸用事件委托
   else if (d.sell) doSell(d.kind, d.sell, +d.n);
   else if (d.eat) doEat(d.eat, +d.n);
   else if (d.spirit) doSpirit(d.spirit, +d.n);
