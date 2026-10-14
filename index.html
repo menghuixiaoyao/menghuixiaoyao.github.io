@@ -1029,7 +1029,8 @@ function startDemonBattle(S, trib, fromRealm) {
   const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * dmult)));
   const demon = fighter('👹心魔', dattrs, false, []);
   const b = new Battle(playerFighter(S, false), demon);
-  try { (typeof G !== 'undefined' ? G : window).pk = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe' }; } catch(_) { try { window.pk = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe' }; } catch(_) {} } // v757 严格模式下pk需挂window
+  try { window._pkSeq = Date.now(); } catch(_) {} // v829 新战斗序号，旧pk失效
+  try { const _pkObj = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe', _seq: window._pkSeq }; if (typeof G !== 'undefined' && G) G.pk = _pkObj; window.pk = _pkObj; } catch(_) {} // v757 严格模式下pk需挂window；v829 加序号；v830 双写G.pk和window.pk，跨块同步
   try { closeSheet(); } catch(_){}
   const _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : '';
   try { const _e = { c: 'warn', h: `👹 <b>心魔来袭！</b>${_cu}直指道心——与<b class="x">👹心魔</b>一战！<br><span style="color:#888">斩灭心魔方能继续突破，逃跑视为落败</span>`, t: (typeof timeStr === 'function' ? timeStr() : '') }; S.log.push(_e); if (typeof renderEntry === 'function') renderEntry(_e, true); } catch(_) {} // v781 不直接调log避免DOM遮蔽
@@ -1051,7 +1052,9 @@ window.startSanShiBattle = function(idx) { // v812 斩三尸战斗
     const foe = fighter('💀' + _name, dattrs, false, []);
     const b = new Battle(playerFighter(S, false), foe);
     const _G = (typeof G !== 'undefined' ? G : window);
-    _G.pk = { battle: b, trib: 'sanshi', tribData: { sanShiIdx: idx }, target: 'foe' };
+    try { window._pkSeq = Date.now(); } catch(_) {}
+    const _pkS = { battle: b, trib: 'sanshi', tribData: { sanShiIdx: idx }, target: 'foe', _seq: window._pkSeq };
+    _G.pk = _pkS; try { window.pk = _pkS; } catch(_) {} // v830 双写，跨块同步
     try { closeSheet(); } catch(_){}
     log('warn', `💀 <b>${_name}现形！</b>——斩去三尸方能突破尊者！<br><span style="color:#888">此战凶险，败则折寿10%</span>`);
     try { if (typeof afterAct === 'function') afterAct(); } catch(_) {}
@@ -1059,10 +1062,11 @@ window.startSanShiBattle = function(idx) { // v812 斩三尸战斗
     try { if (typeof renderCombat === 'function') renderCombat(); else if (typeof render === 'function') render(); } catch(_) {}
   } catch(_e) { try { log('sys', '斩三尸启动失败:' + (_e.message||_e)); } catch(_) {} }
 };
-if (!window._demonWatchdog) { window._demonWatchdog = setInterval(() => { // v807 心魔战看门狗：每秒检查，死了一定结算；v812 覆盖斩三尸；v815 5秒强制清场
+if (!window._demonWatchdog) { window._demonWatchdog = setInterval(() => { // v807 心魔战看门狗：每秒检查，死了一定结算；v812 覆盖斩三尸；v815 5秒强制清场；v829 序号检查，旧pk直接忽略
   try {
     const _G = (typeof G !== 'undefined' ? G : window);
     const _pk = (typeof pk !== 'undefined' && pk) ? pk : (_G.pk ? _G.pk : null);
+    if (_pk && window._pkSeq && (!_pk._seq || _pk._seq !== window._pkSeq)) return; // v829 旧战斗的pk（无序号或序号不对），直接忽略
     if (_pk && (_pk.trib === 'demon' || _pk.trib === 'sanshi') && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) {
       window._demonDeadT = window._demonDeadT || 0;
       window._demonDeadT++;
@@ -5673,10 +5677,11 @@ function fRow(f) {
     ${f.isPet ? `<span style="font-size:11px;color:var(--dim)">${f.hp <= 0 ? '<span class="r">💫 已倒下</span>' : '灵宠' + (f.bleed ? ' <span class="r">🩸</span>' : '') + (f.poison > 0 ? ' <span class="r">☠️</span>' : '') + (C.petBiteChance(f) > 0 ? ` <span class="r">反咬${C.pct(C.petBiteChance(f))}</span>` : '')}</span>` : (isMortal ? '' : `<div class="bar mp${isXianF ? ' xian' : ''}"><i style="${mpStyle}"></i><span>${C.fmtN(f.mp)}/${C.fmtN(f.maxMp)}${mpPctTxt}${f.guard ? ' 🐢' : ''}</span></div>`)}</div>`;
 }
 function renderCombat() {
-  try { // v793 兜底：心魔已死但界面还在，直接走结算；v795 血量<1也算死（小数血量）；v827 防重入破死循环
+  try { // v793 兜底：心魔已死但界面还在，直接走结算；v795 血量<1也算死（小数血量）；v827 防重入破死循环；v830 序号检查
     if (window._inPkOver) return;
     const _G = (typeof G !== 'undefined' ? G : window);
     const _pk = (typeof pk !== 'undefined' && pk) ? pk : (_G && _G.pk ? _G.pk : null);
+    if (_pk && window._pkSeq && (!_pk._seq || _pk._seq !== window._pkSeq)) return; // 旧pk忽略
     if (_pk && _pk.trib === 'demon' && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) {
       if (typeof pkHandleOver === 'function') { window._inPkOver = true; try { pkHandleOver(); } finally { window._inPkOver = false; } return; }
     }
