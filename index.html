@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v841</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v842</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7436,6 +7436,7 @@ function doBreakthrough() {
     const _b = new _bx.Battle(_bx.playerFighter(S, false), _th);
     _b.unlimited = true; _b.surviveRounds = 10; // v685 10回合存活判胜
     pk = { battle: _b, adv: true, trib: 'thunder', tribData: { trib: r.trib, fromRealm: r.fromRealm, pw: _pw } };
+    try { if (typeof G !== 'undefined' && G) G.pk = pk; window.pk = pk; } catch(_) {} // v842 雷劫开战双写window.pk，避免renderCombat被旧null覆盖
     try { closeSheet(); } catch(_){}
     afterAct(); save(); render();
   } catch(_e){ log('bad','雷劫启动失败:'+(_e.message||_e)); } return; } // v683 script2内直接设pk
