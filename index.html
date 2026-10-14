@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v827</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v828</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5015,16 +5015,28 @@ function npcPos(S) {
           if (isFormationTalismanCell) {
             if (w.px === x && w.py === y) {
               if (typeof sheetFormationTalisman === 'function') sheetFormationTalisman();
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+            } else { // v828 主城也可用缩地/大挪移：2格/3格
+              const _hasDanuoyi = S.skills && S.skills.includes('danuoyi');
+              const _hasShukuchi = S.skills && S.skills.includes('shukuchi');
+              const _maxDist = _hasDanuoyi ? 3 : (_hasShukuchi ? 2 : 1);
+              const _dist = Math.abs(x - w.px) + Math.abs(y - w.py);
+              if (_dist >= 1 && _dist <= _maxDist) {
+                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              }
             }
             return;
           }
           if (isShopCell) {
             if (w.px === x && w.py === y) {
               if (typeof sheetShop === 'function') sheetShop();
-            } else if (Math.abs(x - w.px) + Math.abs(y - w.py) === 1) {
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+            } else { // v828 主城也可用缩地/大挪移
+              const _hasDanuoyi2 = S.skills && S.skills.includes('danuoyi');
+              const _hasShukuchi2 = S.skills && S.skills.includes('shukuchi');
+              const _maxDist2 = _hasDanuoyi2 ? 3 : (_hasShukuchi2 ? 2 : 1);
+              const _dist2 = Math.abs(x - w.px) + Math.abs(y - w.py);
+              if (_dist2 >= 1 && _dist2 <= _maxDist2) {
+                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap();
+              }
             }
             return;
           }
