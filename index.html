@@ -90,6 +90,7 @@ b.p{color:var(--blue)} b.x{color:var(--red)} .g{color:var(--green)} .r{color:var
 @keyframes bcIn{from{transform:translateY(-100%)}to{transform:translateY(0)}}
 #combat{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:8px 12px;display:none}
 #combat.on{display:block}
+body.combating .bars{display:none} /* v837 战斗时隐藏顶部血条法条 */
 .cf{display:grid;grid-template-columns:64px 1fr 1fr;gap:4px 8px;align-items:center;font-size:12px;margin-bottom:4px;position:relative}
 .cf .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 .cf .shield{color:var(--gold);font-size:11px}
@@ -5626,7 +5627,7 @@ function renderActions() {
   const nav = $('actions');
   if (pk) { renderCombat(); return; }
   // v306 去掉体力耗尽简化版，永远显示完整功能区
-  $('combat').classList.remove('on'); nav.classList.add('main');
+  $('combat').classList.remove('on'); nav.classList.add('main'); try { document.body.classList.remove('combating'); } catch(_) {} // v837 战斗结束移除body类
   const _wm2 = $('worldMapSec'); if (_wm2) _wm2.style.display = ''; // v337 恢复地图
   const st = S.stamina, ci = C.canCheckin(S);
   const _isMortal = (S.realm|0) === 0;
@@ -5698,7 +5699,7 @@ function renderCombat() {
     if (critNow) { clearTimeout(cb._shkT); cb._shkT = setTimeout(() => cb.classList.remove('shake'), 350); }
   } catch (_) {}
   if (A.isPlayer && A.S && (A.S.realm|0) >= 8) { A.maxMp = Math.max(1, Math.floor(C.manaMax(A.S))); A.mp = Math.max(0, Math.floor(A.S.mana)); }
-  $('combat').classList.add('on'); $('actions').classList.remove('main');
+  $('combat').classList.add('on'); $('actions').classList.remove('main'); try { document.body.classList.add('combating'); } catch(_) {} // v837 战斗时body加类，隐藏顶部条
   const _wm = $('worldMapSec'); if (_wm) _wm.style.display = 'none'; // v337 战斗时隐藏地图
   const _petsHtml = f => (f.pets || []).map(p => fRow(p)).join('');
   $('combat').innerHTML = `<div style="margin-bottom:14px">` + fRow(B) + _petsHtml(B) + `</div><div style="text-align:center;margin:10px 0;font-size:15px;font-weight:bold;color:var(--gold);letter-spacing:6px">⚔️ VS ⚔️ <button class=\"btn\" data-battlelog style=\"font-size:12px;padding:2px 8px;letter-spacing:normal\">📜</button></div>${pk.turnBanner ? `<div class="turnbanner ${pk.turnBanner.who}">${pk.turnBanner.txt}</div>` : ''}<div style="margin-top:14px">` + fRow(A) + _petsHtml(A) + `</div><div style="font-size:11px;color:var(--dim)">第 ${b.round + 1} 回合 · ${A.a.agi > B.a.agi ? '你敏捷更高，先手' : A.a.agi < B.a.agi ? '对手敏捷更高，先手' : '敏捷相同，随机先手'}</div>`;
