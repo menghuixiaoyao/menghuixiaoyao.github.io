@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v811</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v812</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1033,11 +1033,28 @@ function startDemonBattle(S, trib, fromRealm) {
   try { if (typeof renderCombat === 'function') renderCombat(); else if (typeof render === 'function') render(); } catch(_) {} // v786 优先调renderCombat直接开战斗UI
 }
 window.startDemonBattle = startDemonBattle; // v754 暴露给doTribQuizAnswer跨块调用
-if (!window._demonWatchdog) { window._demonWatchdog = setInterval(() => { // v807 心魔战看门狗：每秒检查，死了一定结算
+window.startSanShiBattle = function(idx) { // v812 斩三尸战斗
+  try {
+    const _names = ['上尸·彭倨', '中尸·彭质', '下尸·彭矫'];
+    const _name = _names[idx] || '三尸';
+    const fa = fightAttrs(S, false);
+    const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * 1.5))); // 三尸1.5倍属性
+    const foe = fighter('💀' + _name, dattrs, false, []);
+    const b = new Battle(playerFighter(S, false), foe);
+    const _G = (typeof G !== 'undefined' ? G : window);
+    _G.pk = { battle: b, trib: 'sanshi', tribData: { sanShiIdx: idx }, target: 'foe' };
+    try { closeSheet(); } catch(_){}
+    log('warn', `💀 <b>${_name}现形！</b>——斩去三尸方能突破尊者！<br><span style="color:#888">此战凶险，败则折寿10%</span>`);
+    try { if (typeof afterAct === 'function') afterAct(); } catch(_) {}
+    try { if (typeof save === 'function') save(); } catch(_) {}
+    try { if (typeof renderCombat === 'function') renderCombat(); else if (typeof render === 'function') render(); } catch(_) {}
+  } catch(_e) { try { log('sys', '斩三尸启动失败:' + (_e.message||_e)); } catch(_) {} }
+};
+if (!window._demonWatchdog) { window._demonWatchdog = setInterval(() => { // v807 心魔战看门狗：每秒检查，死了一定结算；v812 覆盖斩三尸
   try {
     const _G = (typeof G !== 'undefined' ? G : window);
     const _pk = (typeof pk !== 'undefined' && pk) ? pk : (_G.pk ? _G.pk : null);
-    if (_pk && _pk.trib === 'demon' && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) {
+    if (_pk && (_pk.trib === 'demon' || _pk.trib === 'sanshi') && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) {
       if (typeof pkHandleOver === 'function') { pkHandleOver(); }
     }
   } catch(_) {}
@@ -5435,8 +5452,23 @@ function render() {
   if (!S.dead && S.level >= C.REALM_MAX_LV) {
     rb.style.display = 'none'; // 已有独立按钮，不再自动显示面板
     const bonus = C.reincBonus(S), next = C.REALMS[S.realm + 1], btB = Math.min(20, S.btTotal || 0);
+    let _btBtn = '';
+    if ((S.realm|0) === 10) { // v812 合体大圆满需先斩三尸
+      S.sanShi = S.sanShi || [0,0,0];
+      const _names = ['上尸·彭倨', '中尸·彭质', '下尸·彭矫'];
+      const _cut = S.sanShi.filter(x=>x).length;
+      if (_cut < 3) {
+        _btBtn = `<div style="margin:4px 0;padding:8px;border:1px solid #a33;border-radius:6px;background:#1a0a0a"><b class="r">⚔️ 斩三尸</b> <small>（${_cut}/3）合体入尊者，需先斩去三尸</small><br>` +
+          _names.map((n,i)=> S.sanShi[i] ? `<span class="g">✓ ${n}已斩</span>` : `<button class="btn" onclick="startSanShiBattle(${i})" style="margin:4px 4px 0 0">⚔️ 斩${n}</button>`).join(' ') +
+          `</div>`;
+      } else {
+        _btBtn = `<button class="btn gold" data-breakthrough style="margin:4px 4px 0 0">⚡ 突破至${next}（三尸已斩）</button>`;
+      }
+    } else {
+      _btBtn = (next ? `<button class="btn gold" data-breakthrough style="margin:4px 4px 0 0">⚡ 突破至${next}（成功率 ${C.pct(C.breakthroughRate(S))}，${(S.realm|0) === 0 ? `引气入体 ${S.yinQi|0}/10缕` : `凝气 ${S.yinQi|0}/10缕`}，成功全属性×2；失败退 1~9 级（不清空）；需法力 100/100${(S.realm|0) >= 2 ? '；判定成功后渡⚡雷劫（压条越高雷越强，1000%最强：雷伤×2.5、天魔2.5倍属性），雷劫后 30% 概率遇👹心魔劫（斗法或问心答题，失败退 1~9 级并折寿 10%）' + (((S.realm|0) === 2 || (S.realm|0) === 3) ? '；压条定品质：1000%圆满金丹极×2.2/900%圆满×2.0/700%完美×1.8/500%上品×1.6/超200%中品×1.4/否则下品×1.2；压条≤200%有1%概率天劫异变（撞上高阶雷劫，扛过按该档结丹）' : '') : ''}）</button>` : `<small class="y">已至最高境界【主宰】</small>`);
+    }
     rb.innerHTML = `🌟 <b>${C.REALMS[S.realm]}·大圆满</b> <small>轮回加成：升级全属性 +${1 + bonus}（已轮回 ${bonus} 次，各境上限 10）· 突破经验 +${btB}% 成功率</small><br>` +
-      (next ? `<button class="btn gold" data-breakthrough style="margin:4px 4px 0 0">⚡ 突破至${next}（成功率 ${C.pct(C.breakthroughRate(S))}，${(S.realm|0) === 0 ? `引气入体 ${S.yinQi|0}/10缕` : `凝气 ${S.yinQi|0}/10缕`}，成功全属性×2；失败退 1~9 级（不清空）；需法力 100/100${(S.realm|0) >= 2 ? '；判定成功后渡⚡雷劫（压条越高雷越强，1000%最强：雷伤×2.5、天魔2.5倍属性），雷劫后 30% 概率遇👹心魔劫（斗法或问心答题，失败退 1~9 级并折寿 10%）' + (((S.realm|0) === 2 || (S.realm|0) === 3) ? '；压条定品质：1000%圆满金丹极×2.2/900%圆满×2.0/700%完美×1.8/500%上品×1.6/超200%中品×1.4/否则下品×1.2；压条≤200%有1%概率天劫异变（撞上高阶雷劫，扛过按该档结丹）' : '') : ''}）</button>` : `<small class="y">已至最高境界【主宰】</small>`) +
+      _btBtn +
       `<button class="btn" data-reincarnate style="margin:4px 0 0">🔄 轮回重修（回凡人 Lv.1，其余全保留；${S.realm === 12 ? '主宰轮回：前面各境池 +1' : C.REALMS[S.realm] + '已轮回 ' + (S.reinc[S.realm] || 0) + ' 次'}）</button>`;
   } else rb.style.display = 'none';
   $('hgState').innerHTML = `🍗 饱食 <b class="${S.hunger >= K.WELL_FED ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b>${S.hunger >= K.WELL_FED ? ' <small class="g">气运</small>' : ''} · ⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : (S.lifespan|0) <= 30 ? 'y' : 'g'}">${S.lifespan|0}</b><small>年</small> · 🌀络 <b class=\"y\">${C.maiLuo(S)}</b><small>条</small> · 脉 <b class=\"y\">${C.maiMai(S)}</b><small>条</small>`;
@@ -8128,6 +8160,28 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
   if (!_pk) return;
   const b = _pk.battle;
   if (_pk.trib === 'thunder') { try { (window.pkSettle || pkSettle)(S, _pk); } catch(_e) { try { log('sys', '雷劫结算异常:' + (_e.message || _e)); } catch(_) {} } try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} try { const _G2 = (typeof G !== 'undefined' ? G : window); if (_G2) _G2.pk = null; } catch(_) {} try{render();}catch(_){} return; } // v692 清外部pk；v725 pkSettle异常保护；v726 用window.pkSettle；v791 清window.pk
+  if (_pk.trib === 'sanshi') { // v812 斩三尸结算
+    try {
+      const _idx = (_pk.tribData && _pk.tribData.sanShiIdx) | 0;
+      const _names = ['上尸·彭倨', '中尸·彭质', '下尸·彭矫'];
+      const _win = b && b.B && b.B.hp < 1; // 敌方血量<1算赢
+      const _G3 = (typeof G !== 'undefined' ? G : window);
+      if (_win) {
+        S.sanShi = S.sanShi || [0,0,0];
+        S.sanShi[_idx] = 1;
+        log('good', `⚔️ <b>${_names[_idx]||'三尸'}已斩！</b>（${S.sanShi.filter(x=>x).length}/3）`);
+      } else {
+        const _lost = Math.max(1, Math.floor((S.lifespan|0) * 0.10));
+        S.lifespan = Math.max(1, (S.lifespan|0) - _lost);
+        log('bad', `💀 斩${_names[_idx]||'三尸'}失败，折寿10%（-${_lost}年）`);
+      }
+      if (typeof commit === 'function') commit();
+    } catch(_e) {}
+    try { if (typeof pk !== 'undefined') pk = null; } catch(_) {}
+    try { const _G4 = (typeof G !== 'undefined' ? G : window); if (_G4) _G4.pk = null; } catch(_) {}
+    try { render(); } catch(_) {}
+    return;
+  }
   if (_pk.trib === 'demon') { (window.finishDemonBattle || finishDemonBattle)(); return; } // v654；v808 用window版跨script块
   if (pk.escape) {
     log('good', '💨 你成功逃离了战斗。');
