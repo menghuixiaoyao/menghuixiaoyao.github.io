@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v805</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v806</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7226,7 +7226,7 @@ function doBreakthrough() {
     const _fa = _bx.fightAttrs(S, false);
     const _pw = r.thunderPw != null ? r.thunderPw : _bx.tribPower(S);
     const _ta = {}; _bx.ATTRS.forEach(k => _ta[k] = Math.max(1, Math.round(_fa[k] * 0.5 * _pw)));
-    const _cloudRaw = (() => { try { const _f = (typeof _bx.tribFull === 'function' ? _bx.tribFull(S) : 0) || 0; if (_f >= 10) return '🫯'; if (_f >= 9) return '⛈️'; if (_f >= 7) return '🌩️'; if (_f >= 5) return '🌫️'; if (_f > 2) return '🌧️'; return '☁️'; } catch(_) { return '🌩️'; } })();
+    const _cloudRaw = (() => { try { const _tf = (typeof tribFull === 'function') ? tribFull : ((typeof _bx !== 'undefined' && _bx && typeof _bx.tribFull === 'function') ? _bx.tribFull : null); const _f = (_tf ? _tf(S) : 0) || 0; if (_f >= 10) return '🫯'; if (_f >= 9) return '⛈️'; if (_f >= 7) return '🌩️'; if (_f >= 5) return '🌫️'; if (_f > 2) return '🌧️'; return '☁️'; } catch(_) { return '🌩️'; } })(); // v806 修复_bx.tribFull不存在时永远☁️
     const _th = _bx.fighter(_cloudRaw + '雷云', _ta, false, []); // v689 黑云敌人名
     _th.avatar = _cloudRaw; _th.icon = _cloudRaw; _th.noPhoto = true; // v691 去掉人物头像用黑云
     const _b = new _bx.Battle(_bx.playerFighter(S, false), _th);
