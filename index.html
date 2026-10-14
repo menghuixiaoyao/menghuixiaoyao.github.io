@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v857</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v858</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7573,7 +7573,16 @@ window.doTribQuizAnswer = function(qi, oi) {
   closeSheet();
   if (r.pending === 'demon') { // v739 答题后遇心魔战斗
     const n2 = r.trib.quizCorrect;
-    log('good', `👹 心魔${quiz.qs.length}问，答对 <b class="g">${n2}</b> 道——<b>道心稳固！</b><br><span class="r">心魔不甘，化形来战！</span>`);
+    let _wrongDetail2 = '';
+    if (r.trib.quizDetail) { // v858 有心魔战时也显示答错详情
+      const _qn2 = ['一', '二', '三', '四', '五'];
+      _wrongDetail2 = '<br>' + quiz.qs.map((qq, qi) => {
+        if (r.trib.quizDetail[qi]) return '';
+        const _correctOpt2 = 'ABCD'[qq.ans | 0] + '. ' + qq.opts[qq.ans | 0];
+        return `<span class="r">第${_qn2[qi]}问答错</span>，正解：<b class="y">${_correctOpt2}</b>`;
+      }).filter(Boolean).join('<br>');
+    }
+    log('good', `👹 心魔${quiz.qs.length}问，答对 <b class="g">${n2}</b> 道——<b>道心稳固！</b>${_wrongDetail2}<br><span class="r">心魔不甘，化形来战！</span>`);
     try { (typeof startDemonBattle === 'function' ? startDemonBattle : window.startDemonBattle)(S, r.trib, r.fromRealm); } catch(_e) { try { log('sys', '心魔战启动失败:' + (_e.message || _e)); } catch(_) {} }
     try { if (typeof window !== 'undefined' && window.pk && typeof pk !== 'undefined' && !pk) pk = window.pk; } catch(_) {} // v787 同步window.pk到主作用域
     try { if (typeof renderCombat === 'function') renderCombat(); else if (typeof render === 'function') render(); } catch(_) {} // v787 主作用域直接开战斗UI
