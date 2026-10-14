@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v802</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v803</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5432,8 +5432,7 @@ function renderActions() {
     <div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act" data-a="bag" style="flex:1;padding:1px;min-height:0"><span class="t" style="font-size:9px">背包</span><span class="s" style="font-size:7px">${C.invCount(S)}瓶丹药</span></button></div> <!-- v454 移除商会；v474 移除生活；v475 缩小；v488 再压 -->
     ${S.afk ? `<button class="act primary" id="afkExitBtn" style="padding:1px"><span class="t" style="font-size:9px">${S.afk.type === 'vein' ? ((S.realm|0) >= 8 ? '⚖️ 参悟法则中' : '🌀 凝气中') : S.afk.type === 'cave' ? medIcon() + ' 调息中' : '🛌 出关'}</span><span class="s" style="font-size:7px">点击出关结算</span></button>` : `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 3"><button class="act" data-a="dazuo" ${_canDz ? '' : 'disabled'} style="flex:1;padding:1px;min-height:0"><span class="t" style="font-size:9px">${medIcon()} ${(S.realm|0) >= 8 ? '运转仙力' : '调息'}</span><span class="s" style="font-size:7px">${(S.realm|0) >= 8 ? '1体力=10%生命+1仙力' : '1体力=10%生命+5%法力'}</span></button></div>`} <!-- v474 移除两个闭关按钮，改走地图(0,3)；v475 缩小 -->
     <!-- v453 功能区修炼按钮已移除，改走地图(1,5)修炼区 -->
-    ${(S.realm|0) >= 8 ? `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act" data-a="cave" style="flex:1;padding:2px;min-height:0"><span class="t" style="font-size:10px">🏔️ 洞府</span><span class="s" style="font-size:8px">仙家洞府</span></button></div>` : ''}
-    ${((S.dongfuGrids|0) + (S.xianfuGrids|0) > 0) ? `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act" onclick="goBackCaveChoice()" style="flex:1;padding:2px;min-height:0"><span class="t" style="font-size:10px">🏠 我的洞府</span><span class="s" style="font-size:8px">${S.dongfuGrids|0}格${(S.xianfuGrids|0)>0?`+${S.xianfuGrids|0}仙府`:''}</span></button></div>` : ''}
+    ${((S.realm|0) >= 8 || (S.dongfuGrids|0) + (S.xianfuGrids|0) > 0) ? `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act" data-a="cave" style="flex:1;padding:2px;min-height:0"><span class="t" style="font-size:10px">🏔️ 洞府</span><span class="s" style="font-size:8px">${(S.dongfuGrids|0)+(S.xianfuGrids|0)>0 ? `${S.dongfuGrids|0}格${(S.xianfuGrids|0)>0?`+${S.xianfuGrids|0}仙府`:''}` : '仙家洞府'}</span></button></div>` : ''}
     <div id="chatInputRow" style="display:flex;grid-column:1/-1;gap:6px;align-items:center"><input id="cfInput" maxlength="100" placeholder="说点什么…" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff;font-size:12px"><button data-cfsend style="padding:6px 12px;border-radius:6px;background:#c9a227;color:#000;font-size:12px;flex:none">发送</button></div>`; // v475 功能区整体缩小；v509 聊天输入放功能栏
   setTimeout(() => {
     const bb2 = $('burnBloodBtn'); if (bb2) bb2.onclick = () => { S.burnBlood = !S.burnBlood; save(); render(); toastLog('sys', `🔥燃血已${S.burnBlood ? '开启' : '关闭'}`); };
@@ -8362,7 +8361,7 @@ document.addEventListener('click', e => {
   if (d.netact) { Net.act(d.netact); return; }
   if ('close' in d) { closeSheet(); return; }
   if (d.charpage) { window._charPage = parseInt(d.charpage); sheetChar(); return; }
-  if (d.a) { const fn = ({ close: () => closeSheet(), checkin: () => doCheckin(false), train: sheetTrain, alchemy: () => sheetAlchemy(), life: () => sheetLife(lifeTab), adventure: sheetAdventure, wxsynth: sheetWxSynth, pk: doPkChooseRealm, arena: doArena, xianyuan: doXianyuan, mail: doMail, sect: doSect, shop: () => sheetShop(), bag: sheetBag, cave: () => { toastLog('sys', '🏔️ 洞府功能开发中，敬请期待'); }, debug: () => doDebug(d.dbg), lvup: () => doLvUp(), reinc: () => doReincarnate(), breakthrough: () => doBreakthrough(), dazuo: () => doDazuo(), afkCave: () => doAfkChoose('cave'), afkVein: () => doAfkChoose('vein') })[d.a]; if (fn) fn(); }
+  if (d.a) { const fn = ({ close: () => closeSheet(), checkin: () => doCheckin(false), train: sheetTrain, alchemy: () => sheetAlchemy(), life: () => sheetLife(lifeTab), adventure: sheetAdventure, wxsynth: sheetWxSynth, pk: doPkChooseRealm, arena: doArena, xianyuan: doXianyuan, mail: doMail, sect: doSect, shop: () => sheetShop(), bag: sheetBag, cave: () => { const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0; if (_dg > 0 || _xg > 0) { if (typeof goBackCaveChoice === 'function') goBackCaveChoice(); } else { toastLog('sys', '🏔️ 洞府功能开发中，敬请期待'); } }, debug: () => doDebug(d.dbg), lvup: () => doLvUp(), reinc: () => doReincarnate(), breakthrough: () => doBreakthrough(), dazuo: () => doDazuo(), afkCave: () => doAfkChoose('cave'), afkVein: () => doAfkChoose('vein') })[d.a]; if (fn) fn(); }
   else if (d.advpage) sheetAdventure(+d.advpage);
   else if (d.adv) doAdventure(d.adv);
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
