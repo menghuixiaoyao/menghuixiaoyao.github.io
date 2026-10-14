@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v796</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v797</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8082,6 +8082,8 @@ function doPkActionGo(act) {
       if (pk.target === 'pet' && !(b.B.pet && b.B.pet.hp > 0)) pk.target = 'foe';
       const Le = b.finishRound();
       if (pk && pk.trib === 'thunder' && (b.B.hp < 1 || (b.round >= 9 && b.A.hp > 0))) { try{ (C.pkSettle||window.pkSettle)(S, pk); }catch(_e){ try{ log('sys','雷劫doFinish结算报错:'+(_e.message||_e)); }catch(_){} } pk = null; try{render();}catch(_){} return; } // v700 雷云优先结算
+    if (pk && pk.trib === 'demon' && b.B.hp < 1) { try { if (typeof pkHandleOver === 'function') pkHandleOver(); } catch(_e) {} try{render();}catch(_){} return; } // v797 心魔优先结算（仿雷云v700）
+      if (pk && pk.trib === 'demon' && b.B.hp < 1) { try { if (typeof pkHandleOver === 'function') pkHandleOver(); } catch(_e) {} try{render();}catch(_){} return; } // v797 心魔优先结算（仿雷云v700）
       if (pk.trib === 'thunder' && !b.over && b.round >= 9 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
         b.over = true; b._tribSurvive = true;
         const _sl = '<div class="bl y">⚡ 十回合已尽，你扛过了天雷洗礼！雷云缓缓散去……</div>';
@@ -8151,6 +8153,7 @@ function doPkActionGo(act) {
     if (pk.target === 'pet' && !(b.B.pet && b.B.pet.hp > 0)) pk.target = 'foe'; // 宠物已死切回打人
     const Le = b.finishRound();
     if (pk && pk.trib === 'thunder' && (b.B.hp < 1 || (b.round >= 9 && b.A.hp > 0))) { try{ (C.pkSettle||window.pkSettle)(S, pk); }catch(_e){ try{ log('sys','雷劫doFinish结算报错:'+(_e.message||_e)); }catch(_){} } pk = null; try{render();}catch(_){} return; } // v700 雷云优先结算
+    if (pk && pk.trib === 'demon' && b.B.hp < 1) { try { if (typeof pkHandleOver === 'function') pkHandleOver(); } catch(_e) {} try{render();}catch(_){} return; } // v797 心魔优先结算（仿雷云v700）
     if (pk.trib === 'thunder' && !b.over && b.round >= 9 && b.A.hp > 0) { // v654 雷劫10回合存活即胜
       b.over = true; b._tribSurvive = true;
       const _sl = '<div class="bl y">⚡ 十回合已尽，你扛过了天雷洗礼！雷云缓缓散去……</div>';
