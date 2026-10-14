@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v798</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v799</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4589,7 +4589,7 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
     window._autoGather.active = false;
     window._autoGather.timer = null;
     window._autoGather.type = null;
-    try { if (type === 'herb') openHerbSheet(); else openReserveSheet(); } catch(_){}
+    try { if (type === 'herb') openHerbSheet(); else if (type === 'ranch') openRanchSheet(); else openReserveSheet(); } catch(_){}
     return;
   }
   let _ok = false;
@@ -4603,6 +4603,12 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
     let _fn = null, _txt = '';
     try {
       if (type === 'herb') { herbTick(S); if ((S.herbGarden.h|0) > 0) { _fn = doHerbGather; _txt = '采药中……（自动）'; } }
+      else if (type === 'ranch') { // v799 养殖园自动：肉→蛋
+        try { if (typeof ranchTick === 'function') ranchTick(S); } catch(_) {}
+        const _rr = S.ranch || {};
+        if ((_rr.m|0) > 0) { _fn = doRanchHunt; _txt = '打猎中……（自动）'; }
+        else if ((_rr.e|0) > 0) { _fn = doRanchPatrol; _txt = '巡视中……（自动）'; }
+      }
       else {
         reserveTick(S); const _rn = S.reserveNode;
         if ((_rn.h|0) > 0) { _fn = doReserveHerb; _txt = '采草药中……（自动）'; }
@@ -4800,7 +4806,7 @@ window.openHerbSheet = function() {
 window.openRanchSheet = function() {
   try {
     ranchTick(S); const r = S.ranch;
-    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义）
