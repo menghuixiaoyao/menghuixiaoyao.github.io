@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v832</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v833</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8324,6 +8324,7 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
 }
 function pkClearActing() { try { if (pk) pk._acting = false; const ac = $('actions'); if (ac) ac.style.opacity = ''; } catch (_) {} }
 function doPkActionGo(act) {
+  try { if (typeof window !== 'undefined' && window.pk) pk = window.pk; } catch(_) {} // v832 跨块同步：从window拿最新pk
   if (!pk || pk.zxPending) return;
   const b = pk.battle;
   // v299 操作记录：记玩家动作
@@ -8821,7 +8822,7 @@ document.addEventListener('click', e => {
     else { save(); render(); if (typeof renderCombat === 'function') try { renderCombat(); } catch (_) {} }
     return;
   }
-  else if (d.c === 'mana_attack') { const isXian = (S.realm|0) >= 8; const cur = pk && pk.battle && pk.battle.A ? Math.floor(pk.battle.A.mp) : 0; const unit = isXian ? '仙力' : '法力'; const ratio = isXian ? '1点=100万伤害' : '1点=10伤害'; const v = prompt(`输入消耗的${unit}（${ratio}，当前${cur}）：`, ''); if (v === null) return; const amt = Math.max(0, Math.floor(+v || 0)); if (amt <= 0) { toastLog('sys', '已取消'); return; } if (amt > cur) { toastLog('sys', `${unit}不足`); return; } doPkAction('mana_attack:' + amt); }
+  else if (d.c === 'mana_attack') { try { if (typeof window !== 'undefined' && window.pk) pk = window.pk; } catch(_) {} const isXian = (S.realm|0) >= 8; const cur = pk && pk.battle && pk.battle.A ? Math.floor(pk.battle.A.mp) : 0; const unit = isXian ? '仙力' : '法力'; const ratio = isXian ? '1点=100万伤害' : '1点=10伤害'; const v = prompt(`输入消耗的${unit}（${ratio}，当前${cur}）：`, ''); if (v === null) return; const amt = Math.max(0, Math.floor(+v || 0)); if (amt <= 0) { toastLog('sys', '已取消'); return; } if (amt > cur) { toastLog('sys', `${unit}不足`); return; } doPkAction('mana_attack:' + amt); }
   else if (d.c) doPkAction(d.c);
   else if (d.zx !== undefined) doPkZhenxiu(d.zx);
   else if (d.train) doTrain(d.train, +d.n);
