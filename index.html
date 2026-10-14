@@ -5679,7 +5679,7 @@ function fRow(f) {
     ${f.isPet ? `<span style="font-size:11px;color:var(--dim)">${f.hp <= 0 ? '<span class="r">💫 已倒下</span>' : '灵宠' + (f.bleed ? ' <span class="r">🩸</span>' : '') + (f.poison > 0 ? ' <span class="r">☠️</span>' : '') + (C.petBiteChance(f) > 0 ? ` <span class="r">反咬${C.pct(C.petBiteChance(f))}</span>` : '')}</span>` : (isMortal ? '' : `<div class="bar mp${isXianF ? ' xian' : ''}"><i style="${mpStyle}"></i><span>${C.fmtN(f.mp)}/${C.fmtN(f.maxMp)}${mpPctTxt}${f.guard ? ' 🐢' : ''}</span></div>`)}</div>`;
 }
 function renderCombat() {
-  try { if (typeof window !== 'undefined' && window.pk) pk = window.pk; } catch(_) {} // v835 跨块同步：从window拿最新pk，方向同v833
+  try { if (typeof window !== 'undefined') pk = window.pk || null; } catch(_) {} // v836 跨块同步，不留旧对象
   try { // v793 兜底：心魔已死但界面还在，直接走结算；v795 血量<1也算死（小数血量）；v827 防重入破死循环；v830 序号检查
     if (window._inPkOver) return;
     const _G = (typeof G !== 'undefined' ? G : window);
@@ -8327,7 +8327,7 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
 }
 function pkClearActing() { try { if (pk) pk._acting = false; const ac = $('actions'); if (ac) ac.style.opacity = ''; } catch (_) {} }
 function doPkActionGo(act) {
-  try { if (typeof window !== 'undefined' && window.pk) pk = window.pk; } catch(_) {} // v832 跨块同步：从window拿最新pk
+  try { if (typeof window !== 'undefined') pk = window.pk || null; } catch(_) {} // v836 跨块同步：window.pk是null就清掉，不留旧对象；v833方向
   try { if (typeof log === 'function' && pk && pk.trib === 'demon') log('sys', `[诊断]攻击: seq=${pk._seq||'无'}, B.hp=${pk.battle&&pk.battle.B?pk.battle.B.hp:'?'}, windowSeq=${window._pkSeq||'无'}`); } catch(_) {} // v834 诊断
   if (!pk || pk.zxPending) return;
   const b = pk.battle;
