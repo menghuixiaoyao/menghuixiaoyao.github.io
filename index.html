@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v858</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v859</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5653,7 +5653,8 @@ function render() {
   } else ab.style.display = 'none';
   const rb = $('realmBanner'); // 大圆满：突破/轮回
   if (!S.dead && S.level >= C.REALM_MAX_LV) {
-    rb.style.display = 'none'; // 已有独立按钮，不再自动显示面板
+    const _needSanShi = (S.realm|0) >= 10 && (S.sanShi || [0,0,0]).filter(x=>x).length < 3; // v859 需斩三尸时显示banner
+    rb.style.display = _needSanShi ? 'block' : 'none'; // 有独立按钮时隐藏，但斩三尸需显示
     const bonus = C.reincBonus(S), next = C.REALMS[S.realm + 1], btB = Math.min(20, S.btTotal || 0);
     let _btBtn = '';
     if ((S.realm|0) >= 10) { // v812 合体大圆满需先斩三尸；v820 尊者及以上可补斩
