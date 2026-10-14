@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v833</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v834</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1030,7 +1030,7 @@ function startDemonBattle(S, trib, fromRealm) {
   const demon = fighter('👹心魔', dattrs, false, []);
   const b = new Battle(playerFighter(S, false), demon);
   try { window._pkSeq = Date.now(); } catch(_) {} // v829 新战斗序号，旧pk失效
-  try { const _pkObj = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe', _seq: window._pkSeq }; if (typeof G !== 'undefined' && G) G.pk = _pkObj; window.pk = _pkObj; } catch(_) {} // v757 严格模式下pk需挂window；v829 加序号；v830 双写G.pk和window.pk，跨块同步
+  try { const _pkObj = { battle: b, trib: 'demon', tribData: { trib, fromRealm }, target: 'foe', _seq: window._pkSeq }; if (typeof G !== 'undefined' && G) G.pk = _pkObj; window.pk = _pkObj; try { if (typeof log === 'function') log('sys', `[诊断]开战: seq=${window._pkSeq}, B.hp=${b.B.hp}`); } catch(_) {} } catch(_) {} // v757 严格模式下pk需挂window；v829 加序号；v830 双写G.pk和window.pk，跨块同步；v834 诊断
   try { closeSheet(); } catch(_){}
   const _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : '';
   try { const _e = { c: 'warn', h: `👹 <b>心魔来袭！</b>${_cu}直指道心——与<b class="x">👹心魔</b>一战！<br><span style="color:#888">斩灭心魔方能继续突破，逃跑视为落败</span>`, t: (typeof timeStr === 'function' ? timeStr() : '') }; S.log.push(_e); if (typeof renderEntry === 'function') renderEntry(_e, true); } catch(_) {} // v781 不直接调log避免DOM遮蔽
@@ -1066,6 +1066,7 @@ if (!window._demonWatchdog) { window._demonWatchdog = setInterval(() => { // v80
   try {
     const _G = (typeof G !== 'undefined' ? G : window);
     const _pk = (typeof pk !== 'undefined' && pk) ? pk : (_G.pk ? _G.pk : null);
+    if (_pk && _pk.trib === 'demon' && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) { try { if (typeof log === 'function') log('sys', `[诊断]看门狗见0血: seq=${_pk._seq||'无'}, windowSeq=${window._pkSeq||'无'}, 相同=${_pk._seq===window._pkSeq}`); } catch(_) {} } // v834 诊断
     if (_pk && window._pkSeq && (!_pk._seq || _pk._seq !== window._pkSeq)) return; // v829 旧战斗的pk（无序号或序号不对），直接忽略
     if (_pk && (_pk.trib === 'demon' || _pk.trib === 'sanshi') && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) {
       window._demonDeadT = window._demonDeadT || 0;
@@ -8325,6 +8326,7 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
 function pkClearActing() { try { if (pk) pk._acting = false; const ac = $('actions'); if (ac) ac.style.opacity = ''; } catch (_) {} }
 function doPkActionGo(act) {
   try { if (typeof window !== 'undefined' && window.pk) pk = window.pk; } catch(_) {} // v832 跨块同步：从window拿最新pk
+  try { if (typeof log === 'function' && pk && pk.trib === 'demon') log('sys', `[诊断]攻击: seq=${pk._seq||'无'}, B.hp=${pk.battle&&pk.battle.B?pk.battle.B.hp:'?'}, windowSeq=${window._pkSeq||'无'}`); } catch(_) {} // v834 诊断
   if (!pk || pk.zxPending) return;
   const b = pk.battle;
   // v299 操作记录：记玩家动作
