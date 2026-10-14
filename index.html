@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v843</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v844</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7360,8 +7360,8 @@ function doDebug(act) {
   else if (act === 'dbg_mana100k') { S.mana = Math.min(C.manaCapEff(S), S.mana + 100000); toastLog('sys', '法力 +100000'); }
   else if (act === 'dbg_mana1m') { S.mana = Math.min(C.manaCapEff(S), S.mana + 1000000); toastLog('sys', '法力 +100万'); }
   else if (act === 'dbg_mana10m') { S.mana = Math.min(C.manaCapEff(S), S.mana + 10000000); toastLog('sys', '法力 +1000万'); }
-  else if (act === 'dbg_xian10k') { S.mana = Math.min(C.manaCapEff(S), S.mana + 10000); toastLog('sys', '仙力 +1万'); }
-  else if (act === 'dbg_xian1m') { S.mana = Math.min(C.manaCapEff(S), S.mana + 1000000); toastLog('sys', '仙力 +100万'); }
+  else if (act === 'dbg_xian10k') { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, (S.xianCap|0) + 10000); S.mana = (S.mana|0) + 10000; toastLog('sys', '仙力 +1万'); } // v844 仙人境加仙力时同步涨上限，否则被cap卡住没用
+  else if (act === 'dbg_xian1m') { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, (S.xianCap|0) + 1000000); S.mana = (S.mana|0) + 1000000; toastLog('sys', '仙力 +100万'); } // v844 同上
   else if (act === 'dbg_xian_fix') { S.xianCap = 2280; S.mana = 2280; toastLog('sys', '仙力已恢复为2280（22.8亿/100万）'); }
   else if (act === 'dbg_lvup') { C.levelUp(S, 1); afterAct(); commit(); render(); toastLog('sys', '升1级'); } else if (act === 'dbg_yuanman') { C.levelUp(S, 10 - (S.level|0)); toastLog('sys', '已直升圆满'); } else if (act === 'dbg_fullhp') { S.hpCur = null; toastLog('sys', '已回满血'); }
   else if (act === 'dbg_maxlv') { while (S.level < 10) C.levelUp(S); toastLog('sys', '已满级'); }
