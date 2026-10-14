@@ -102,7 +102,7 @@ nav#actions{flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;p
 .act.white{background:linear-gradient(180deg,#f0f0f0,#c8c8c8);color:#222}
 .act.gold{background:linear-gradient(180deg,#a8842a,#6b5518);color:#ffe9a8}
 /* 战斗界面紧凑化：大幅减小占屏 */
-nav#actions:not(.main){gap:2px;padding:2px 4px calc(2px + var(--safe-b));margin-top:auto;background:#1d1828;z-index:9999;position:relative} /* v476 再缩小贴底；v822 战斗按钮不透明，盖住日志；v825 z-index提最高 */
+nav#actions:not(.main){gap:2px;padding:2px 4px calc(2px + var(--safe-b));margin-top:auto} /* v476 再缩小贴底；v826 还原v822/v825的遮挡，日志可见 */
 nav#actions:not(.main) .act{padding:2px 1px;border-radius:6px}
 nav#actions:not(.main) .act .t{font-size:11px}
 nav#actions:not(.main) .act .s{font-size:8px}
@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v825</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v826</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
