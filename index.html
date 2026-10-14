@@ -193,7 +193,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v793</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v794</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1395,7 +1395,7 @@ function train(S, attr, n) {
 const hasSt = (S, k) => !!S.status && (k === 'bleed' || k === 'poison' ? !!S.status[k] : S.status[k] > C.now());
 function bumpPeak(S) { const t = S.attrs.str + S.attrs.def + S.attrs.vit; S.vitPeak = Math.max(Math.floor(+S.vitPeak || 0), t); return S.vitPeak; }
 const resLbl = S => (S.realm|0) >= 8 ? '仙力' : (C.useFali(S) ? '法力' : '经验');
-const fmtN = n => { n = Math.floor(+n || 0); return n >= 100000000 ? (n / 100000000).toFixed(2).replace(/\.00$/, '') + 'b' : String(n); }; // 上亿用b显示
+const fmtN = n => { n = Math.floor(+n || 0); return n >= 100000000 ? (n / 100000000).toFixed(2).replace(/\.00$/, '') + 'b' : n >= 1000000 ? (n / 1000000).toFixed(2).replace(/\.00$/, '') + 'm' : n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n); }; // v794 上亿b/百万m/上万k缩写，防战斗条数字溢出
 const manaMax = S => (S.realm|0) >= 8 ? Math.max(1, Math.floor(S.xianCap || 0)) : Math.floor((S.attrs.int * 3 + S.attrs.vit * 5 + S.attrs.str * 1 + S.attrs.def * 2 + S.attrs.agi * 4) * (S.manaMult || 1)); // 仙人以上仙力上限固定为转换时值 // 法力基础上限（练气后启用）
 const manaCap = S => manaMax(S) * maiMult(S); // v91：法力可存至上限maiMult倍：基础2 + 虚脉（最多8条）+ 实脉（不封顶）
 const manaCapEff = S => manaCap(S) + Math.max(0, S.shaExcess || 0); // 煞气超额无视上限倍数规则
