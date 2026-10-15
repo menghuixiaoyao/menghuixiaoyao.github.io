@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v880</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v881</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2186,8 +2186,9 @@ function buy(S, kind, key, n) {
   }
   if (kind === 'ring') {
     if ((S.rings || 0) >= 10) return { ok: false, why: 'max' };
-    if (S.gold < 1) return { ok: false, why: 'gold' };
-    S.gold -= 1; S.rings = (S.rings || 0) + 1; return { ok: true, n: 1, cost: 1 };
+    if (S.ringBought) return { ok: false, why: 'once' }; // v881 一个号限购1枚
+    if (S.gold < 1000) return { ok: false, why: 'gold' };
+    S.gold -= 1000; S.rings = (S.rings || 0) + 1; S.ringBought = 1; return { ok: true, n: 1, cost: 1000 }; // v881 储物戒1000金
   }
   if (kind === 'spirit') {
     const price = 100; // v759 一品灵石售价100金
@@ -6533,8 +6534,8 @@ function sheetShop(msg) {
       <button class="btn" data-buy="med" data-k="${k}" data-n="1" ${g >= m.price ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
     `<h3>技能书</h3>` + Object.keys(SKILLS).map(k => { const sk = SKILLS[k], has = S.skills.includes(k); return `<div class="row"><div class="lab">《${sk.name}》 <span class="tag">${sk.price} 金</span><small>${sk.desc} · 耗 ${sk.mp} 法力</small></div>
       ${has ? '<button class="btn" disabled>已习得</button>' : `<button class="btn gold" data-buy="skill" data-k="${k}" ${g >= sk.price ? '' : 'disabled'}>购买</button>`}</div>`; }).join('') +
-    `<h3>💍储物戒</h3><div class="row"><div class="lab">💍 储物戒 <span class="tag">1 金</span><small>装备包与物品包上限翻倍（当前 ${S.rings || 0}/10 枚）</small></div>
-      ${(S.rings || 0) >= 10 ? '<button class="btn" disabled>已满</button>' : `<button class="btn gold" data-buy="ring" data-k="ring" ${g >= 1 ? '' : 'disabled'}>购买</button>`}</div>` +
+    `<h3>💍储物戒</h3><div class="row"><div class="lab">💍 储物戒 <span class="tag">1000 金</span><small>装备包与物品包上限翻倍（当前 ${S.rings || 0}/10 枚，每号限购1枚）</small></div>
+      ${(S.rings || 0) >= 10 || S.ringBought ? '<button class="btn" disabled>已满</button>' : `<button class="btn gold" data-buy="ring" data-k="ring" ${g >= 1000 ? '' : 'disabled'}>购买</button>`}</div>` +
 
     `<button class="btn full" data-close>关闭</button>`);
 }
@@ -7990,7 +7991,7 @@ function doSha() {
 }
 function doBuy(kind, k, n) {
   const r = C.buy(S, kind, k, n);
-  if (!r.ok) { sheetShop(r.why === 'gold' ? '金元不足。' : r.why === 'learned' ? '已习得该技能。' : '购买失败。'); return; }
+  if (!r.ok) { sheetShop(r.why === 'gold' ? '金元不足。' : r.why === 'learned' ? '已习得该技能。' : r.why === 'once' ? '每号限购1枚储物戒。' : '购买失败。'); return; }
   if (kind === 'skill') log('gold', `📖 购买技能书，习得 <span class="pu">【${SKILLS[k].name}】</span>（金元 -${r.cost}）`);
   else if (kind === 'ring') log('gold', `💍 购买 <span class="y">储物戒</span> ×1（当前 ${S.rings} 枚，金元 -${r.cost}）`);
   else if (kind === 'spirit') log('gold', `🛒 购买 💎一品灵石 ×${r.n}（金元 -${r.cost}）`);
