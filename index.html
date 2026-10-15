@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v956</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v957</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1761,7 +1761,7 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
     const _lgAfk = 1 + lingGenAfkMult(S); // v867 灵根闭关加成：天灵根快，五灵根慢
     for (let i = 0; i < secs; i++) {
-      gain += ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0) + (S.xianfuEnergy|0)) * (1 + afkMult) * _lgAfk; // v89：每条络+1，每点开脉术经验+1；v799 洞府灵气加成；v956 只有仙府灵气计入闭关，洞府不算
+      gain += ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0) + ((S.realm|0) >= 8 ? (S.xianfuEnergy|0) : (S.dongfuEnergy|0))) * (1 + afkMult) * _lgAfk; // v89：每条络+1，每点开脉术经验+1；v799 洞府灵气加成；v957 洞府灵气加法力、仙府灵气加仙力，按境界分开算
       if (isVein && Math.random() < 0.01 / 60) {
         const res = afkChallenge(S);
         if (res) logs.push(res);
@@ -5604,7 +5604,7 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
       + ((S.realm|0) >= 5 ? `<div class="hint" style="text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">👤 <b class="pu">化神分身</b><img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:2px solid #4dd" onerror="this.style.display='none'"> · 分身正在外放神识</div>` : '')
       + ((S.realm|0) >= 6 ? `<div class="hint" style="text-align:center">🙏 <b class="y">功德金身</b> · 功德 ${(S.merit|0)}（减伤 ${Math.min(30, Math.floor((S.merit|0) / 10))}%${(S.merit|0) >= 100 ? ' · 突破+5%' : ''}）</div>` : '')
       + `<div style="display:grid;grid-template-columns:repeat(${_size},1fr);gap:8px;margin:12px 0;max-width:400px;margin-left:auto;margin-right:auto">${_cells}</div>`
-      + `<div class="row"><div class="lab">灵气加成</div><div>闭关每秒法力 +${S.xianfuEnergy|0}<small>（仙府灵气）</small></div></div>`
+      + `<div class="row"><div class="lab">灵气加成</div><div>闭关每秒${isDong ? '法力' : '仙力'} +${energy}</div></div>`
       + `<div class="empty">🌱 灵植种植、🐟 养鱼即将开放……</div>`
       + `<button class="btn gold full" onclick="leaveCave()" style="margin-top:12px">🚪 离开${name}（传回收仙界）</button>`
       + `</div>`;
