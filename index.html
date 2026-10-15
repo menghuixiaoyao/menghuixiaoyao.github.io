@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v909</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v910</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6818,11 +6818,11 @@ function medSection() {
 function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓制作
   const fRecipes = C.FORMATIONS || {}, tRecipes = C.TALISMANS || {};
   const fHtml = Object.keys(fRecipes).map(k => {
-    const r = fRecipes[k], need = r.need.map(([st, ik, n]) => `${ik}×${n}`).join(' + ');
+    const r = fRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'mats' ? ((typeof MATS !== 'undefined' && MATS[ik]||{}).name||ik) : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">🧭 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有阵法 ${S.formations && S.formations[k] || 0}</small></div><button class="btn gold" onclick="doCraftFormation('${k}')">制作</button></div>`;
   }).join('');
   const tHtml = Object.keys(tRecipes).map(k => {
-    const r = tRecipes[k], need = r.need.map(([st, ik, n]) => `${ik}×${n}`).join(' + ');
+    const r = tRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'pages' ? PAGES[ik].name : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">📜 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有符箓 ${S.talismans && S.talismans[k] || 0}</small></div><button class="btn gold" onclick="doCraftTalisman('${k}')">制作</button></div>`;
   }).join('');
   openSheet(`<h2>🧭📜 制阵室·画符台</h2><div class="hint">阵法需「阵法」生活技能，符箓需「制符」生活技能（主宰轮回后参悟）。</div><h3>🧭 阵法台</h3>${fHtml}<h3>📜 画符台</h3>${tHtml}<div class="row"><button class="btn full" data-a="close">关闭</button></div>`);
