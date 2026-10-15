@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v891</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v892</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5150,7 +5150,15 @@ function npcPos(S) {
       const furnaceAttr = isFurnace && !isP ? ` data-furnace="${isFurnace}"` : '';
       const arenaAttr = isArena && !isP ? ` data-arena="${isArena}"` : '';
       if (!isSwordCell(x, y)) { cells += `<div style="aspect-ratio:1;visibility:hidden"></div>`; continue; }
-      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isFormationTalisman ? '制阵室·画符台' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${icon}</div>`; // v713 修title泄漏；v790 阵符坊
+      let _cellIcon = icon; // v892 化神分身在神识范围内资源点显示
+      try {
+        if ((S.realm|0) >= 5 && (isReserveNode || isHerbGarden || isRanch) && !isP) {
+          const _wm = S.worldMap || { px: 2, py: 3 };
+          const _d = Math.max(Math.abs(x - _wm.px), Math.abs(y - _wm.py));
+          if (_d >= 1 && _d <= 3) _cellIcon = `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${icon}<span style="position:absolute;bottom:-2px;right:-2px;font-size:10px" title="化神分身可收取">👤</span></div>`;
+        }
+      } catch(_) {}
+      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isFormationTalisman ? '制阵室·画符台' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${_cellIcon}</div>`; // v713 修title泄漏；v790 阵符坊
     }
     grid.innerHTML = cells;
     grid.querySelectorAll('[data-mx]').forEach(c => {
