@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v904</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v905</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2027,7 +2027,7 @@ const oreProbs = S => gatherProbs(S, 'mine'), mineCritChance = S => gatherCrit(S
 const mine = (S, n) => gather(S, 'mine', n), sellOre = (S, k, n) => sellItem(S, 'mine', k, n);
 
 /* ---------- 生活技能：烹饪 / 锻造 / 炼金 / 驯兽（炼药见下） ---------- */
-const lifeOf = (S, k) => k === 'alc' ? S.alc : S.life[k];
+const lifeOf = (S, k) => { if (k === 'alc') return S.alc; const _v = S.life[k]; return _v ? _v : { lv: 0, xp: 0 }; }; // v905 未学习返回0级
 // v98 生活技能可选数量：筑基大圆满2、元婴大圆满3、仙人4、主宰5，其余1
 function lifeChoiceMax(S) { const r = S.realm | 0, lv = S.level | 0; if (r >= 12) return 5; if (r >= 8) return 4; if (r > 4 || (r === 4 && lv >= 10)) return 3; if (r > 2 || (r === 2 && lv >= 10)) return 2; return 1; }
 const lifeAttrRate = (S, k) => Math.min(K.LIFE_ATTR_RATE_MAX, S.attrs[LIFE_SKILLS[k].attr] * K.LIFE_ATTR_RATE);
