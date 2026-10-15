@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v921</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v922</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4750,7 +4750,7 @@ function arrayTick(S) {
         // v918 燃料耗尽自动消耗背包上品灵石续1小时
         if (((S.ores || {}).sp4|0) > 0) {
           S.ores.sp4--;
-          a.fuelUntil = Math.max(now, a.fuelUntil|0) + 3600000;
+          a.fuelUntil = Math.max(now, Number(a.fuelUntil)||0) + 3600000; // v922 时间戳不用|0防溢出
           if (!a.lastTick) a.lastTick = now;
           try { log('good', `💎 采集阵(${a.x},${a.y})自动消耗上品灵石×1续燃料`); } catch(_) {}
         } else return; // 没燃料也没灵石，停止
@@ -4859,7 +4859,7 @@ window.arrayPanel = function(id) {
     if (!a) return;
     const now = Date.now();
     const fuelH = a.fuelUntil > now ? ((a.fuelUntil - now) / 3600000).toFixed(1) : '0';
-    const fuelStones = a.fuelUntil > now ? Math.floor((a.fuelUntil - now) / 3600000) : 0; // v918 阵内灵石数
+    const fuelStones = a.fuelUntil > now ? Math.round((a.fuelUntil - now) / 3600000) : 0; // v922 四舍五入对齐显示
     const st = a.storage || {};
     const _nm = {h:'🌿草药',o:'⛏️矿石',v:'💧灵脉',m:'🍖兽肉',e:'🥚兽蛋'};
     const _ents = Object.entries(st).filter(([k,v]) => k !== 'vt' && v > 0);
@@ -4877,7 +4877,7 @@ window.fuelArray = function(id) {
     if (((S.ores || {}).sp4|0) <= 0) { log('bad', '没有上品灵石'); return; }
     S.ores.sp4--; // v914 上品灵石key修正
     const now = Date.now();
-    a.fuelUntil = Math.max(now, a.fuelUntil|0) + 3600000;
+    a.fuelUntil = Math.max(now, Number(a.fuelUntil)||0) + 3600000; // v922 时间戳不用|0防溢出
     if (!a.lastTick) a.lastTick = now;
     log('good', `💎 采集阵(${a.x},${a.y})燃料+1小时`);
     commit(); window.arrayPanel(id);
@@ -4888,7 +4888,7 @@ window.withdrawFuel = function(id) { // v917 取出灵石
     const a = (S.arrays || []).find(v => v.id === id);
     if (!a) return;
     const now = Date.now();
-    const remain = (a.fuelUntil|0) - now;
+    const remain = (Number(a.fuelUntil)||0) - now; // v922
     if (remain < 3600000) { log('bad', '燃料不足1小时，无法取出'); return; }
     a.fuelUntil -= 3600000;
     S.ores = S.ores || {}; S.ores.sp4 = (S.ores.sp4|0) + 1;
