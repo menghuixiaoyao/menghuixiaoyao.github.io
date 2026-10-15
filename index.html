@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v867</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v868</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1286,9 +1286,16 @@ function lingGenTrainBonus(S) { // 修炼加成概率
   const n = (S.lingGen && S.lingGen.length) || 0;
   return n === 1 ? 0.25 : n === 2 ? 0.15 : n === 3 ? 0.08 : n === 4 ? 0.03 : 0;
 }
-function lingGenAfkMult(S) { // 闭关收益系数
+function lingGenAfkMult(S) { // 闭关收益系数：五档齐全
   const n = (S.lingGen && S.lingGen.length) || 0;
-  return n === 1 ? 0.30 : n === 2 ? 0.15 : n === 4 ? -0.10 : n >= 5 ? -0.20 : 0;
+  return n === 1 ? 0.30 : n === 2 ? 0.15 : n === 3 ? 0.05 : n === 4 ? -0.10 : n >= 5 ? -0.20 : 0;
+}
+function lingGenAfkTxt(S) { // 闭关加成显示
+  const m = lingGenAfkMult(S);
+  return (m > 0 ? '+' : '') + Math.round(m * 100) + '%';
+}
+function lingGenTrainTxt(S) { // 修炼加成显示
+  return Math.round(lingGenTrainBonus(S) * 100) + '%';
 }
 function faZeBonus(S) { // 法则战斗加成：{attr: mult}
   const out = {};
@@ -1300,7 +1307,7 @@ function faZeBonus(S) { // 法则战斗加成：{attr: mult}
   } catch(_) {}
   return out;
 }
-try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, faZeBonus: faZeBonus }; } catch(_) {} // v867 跨script块用window.LG
+try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus }; } catch(_) {} // v867 跨script块用window.LG
 function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 breakthrough / finishTribQuiz 共用）
   S.thunderOk = false; S._trigFail = 0; S._succFail = 0; // v659 突破后重置雷云判定
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
@@ -1653,7 +1660,8 @@ function doAfkChoose(type) {
   // 如果type没指定，弹窗让用户选
   if (!type) {
     const _luo = C.maiLuo(S), _xp = (S.maiShuXp|0);
-    const isVein = confirm(`🧘 选择闭关地点：\\n\\n🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）+ 开脉术经验 ${_xp}（闭关每秒 +${_luo + _xp}）\\n\\n确定 = ⛰️ 灵脉闭关（每秒+${2 + _luo + _xp}法力，每分钟1%被挑战）\\n取消 = 🏔️ 洞府闭关（安全，每秒+${1 + _luo + _xp}法力）`);
+    const _lgT = window.LG ? `\\n🌟灵根${window.LG.name(S)}：闭关收益 ${window.LG.afkTxt(S)}` : '';
+    const isVein = confirm(`🧘 选择闭关地点：\\n\\n🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）+ 开脉术经验 ${_xp}（闭关每秒 +${_luo + _xp}）${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每秒+${2 + _luo + _xp}法力，每分钟1%被挑战）\\n取消 = 🏔️ 洞府闭关（安全，每秒+${1 + _luo + _xp}法力）`);
     type = isVein ? 'vein' : 'cave';
   }
   // 开关：如果已在该闭关中则出关，否则进入（切换时先结算）
@@ -6276,7 +6284,7 @@ function sheetTrain() {
     doAfkChoose();
     return;
   }
-  openSheet(`<h2>修炼</h2><div class="hint">消耗体力提升属性，1 体力 = 1 点。当前体力 <b class="g">${S.stamina}</b>，🍗饱食度 <b class="g">${S.hunger}</b></div>` + (C.hasSt(S, 'poison') ? `<div class="warn">☠️ 你身中剧毒：每次进入冒险生命 -${Math.max(1, Math.ceil(C.bumpPeak(S) * 5 * K.POISON_VIT))}，<b>再进 ${C.leftBeforeDeath(S, 'poison')} 次冒险将毒发身亡</b>！请先用解毒丹。</div>` : '') +
+  openSheet(`<h2>修炼</h2><div class="hint">消耗体力提升属性，1 体力 = 1 点。当前体力 <b class="g">${S.stamina}</b>，🍗饱食度 <b class="g">${S.hunger}</b>${(S.realm|0) >= 1 && window.LG ? `<br>🌟灵根 <b>${window.LG.name(S)}</b>：修炼 <b class="g">${window.LG.trainTxt(S)}</b> 概率多得1点，闭关收益 <b class="g">${window.LG.afkTxt(S)}</b>` : ''}</div>` + (C.hasSt(S, 'poison') ? `<div class="warn">☠️ 你身中剧毒：每次进入冒险生命 -${Math.max(1, Math.ceil(C.bumpPeak(S) * 5 * K.POISON_VIT))}，<b>再进 ${C.leftBeforeDeath(S, 'poison')} 次冒险将毒发身亡</b>！请先用解毒丹。</div>` : '') +
     ATTRS.map(k => GK[k] ? (kind => { const g = GATHER[kind], v = GV[kind]; return `<div class="row"><div class="lab">${GI[kind]} ${g.name} · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，获得${g.noun}${kind === 'read' ? `（学习/深度学习/小悟/中悟/大悟 ${Object.values(C.gatherProbs(S, 'read')).map(C.pct).join('/')}，${C.pct(C.skillPageChance(S))} 得技能残页）` : `（${kind === 'farm' ? '丰收' : '暴击'}率 ${C.pct(C.gatherCrit(S, kind))}，${kind === 'farm' ? '用于炼药' : '可在商店出售'}${kind === 'egg' ? `，${C.pct(K.PET_EGG_CHANCE)} 掏到灵宠蛋` : ''}）`}</small></div>
       <button class="btn" data-gather="${kind}" data-n="1" ${S.stamina >= 1 ? '' : 'disabled'}>${v} 1</button>
       <button class="btn gold" data-gather="${kind}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>${v} 5</button></div>`; })(GK[k]) : `<div class="row"><div class="lab">📖 看书 · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，挑灯夜读，不获得物品</small></div>
