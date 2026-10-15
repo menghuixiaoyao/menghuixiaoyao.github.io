@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v893</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v894</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5381,11 +5381,22 @@ window.addMerit = function(n, why) { // v893 功德增减（大乘起）
     try { if (typeof commit === 'function') commit(); } catch(_) {}
   } catch(_) {}
 };
-window.doReleasePet = function(id) { // v893 放生灵宠+10功德
+window.doTogglePetLock = function(id) { // v894 锁定/解锁灵宠
+  try {
+    const _pt = S.pets.find(p => p.id === id);
+    if (!_pt) return;
+    _pt.locked = !_pt.locked;
+    log('good', `${_pt.locked ? '🔒' : '🔓'} ${PETS[_pt.k].name}#${_pt.id}${_pt.locked ? '已锁定（不可放生/吞噬）' : '已解锁'}`);
+    try { if (typeof commit === 'function') commit(); } catch(_) {}
+    sheetChar();
+  } catch(e) {}
+};
+window.doReleasePet = function(id) { // v893 放生灵宠+10功德；v894 锁定不可放
   try {
     const _i = S.pets.findIndex(p => p.id === id);
     if (_i < 0) return;
     const _pt = S.pets[_i];
+    if (_pt.locked) { log('bad', '🔒 该灵宠已锁定，先解锁才能放生'); return; }
     if (!confirm(`放生 ${PETS[_pt.k].name}#${_pt.id}？放生后灵宠回归山林。`)) return;
     S.pets.splice(_i, 1);
     if (Array.isArray(S.pet)) S.pet = S.pet.filter(x => x !== id); else if (S.pet === id) S.pet = null;
@@ -6841,7 +6852,7 @@ function sheetChar() {
     p3 += (S.pets.length ? S.pets.map(pt => { const P = PETS[pt.k], Q = petQ(pt); return `<div class="row" style="flex-wrap:wrap"><div class="lab">${P.icon} <b style="color:${Q.color}">${P.name}</b><small style="display:inline;color:${Q.color}"> ·${Q.name}</small> <small style="display:inline">#${pt.id} · Lv.${pt.lv}（经验 ${pt.xp}/${C.petXpNeed(pt.lv)}）· 总属性 ${C.total(pt.attrs)} · 升级 +5点/全属性+${Q.grow}</small><small>饥饿 <b class="${pt.hunger < K.PET_HUNGRY ? 'r' : 'g'}">${Math.round(pt.hunger)}</b> · 忠诚 <b class="${pt.loyal < 30 ? 'r' : pt.loyal >= 60 ? 'g' : 'y'}">${pt.loyal}</b> · 寿命 <b class="${pt.life <= 20 ? 'r' : 'g'}">${pt.life}</b>${C.petBiteChance(pt) > 0 ? ` · <span class="r">PK 反咬率 ${C.pct(C.petBiteChance(pt))}${pt.hunger < K.PET_HUNGRY ? '，饿了会咬人！' : ''}</span>` : ''}<br>${ATTRS.map(a => AN[a] + ' ' + pt.attrs[a]).join(' · ')}<br>PK：${P.style} · 冒险：${C.petBonusTxt(pt.k)} · 对应 <b class="y">${petMatchTxt(pt.k)}</b> · 技能 <b class="y">${(pt.skills || []).map(sk => C.petSkillTxt(S, pt, sk)).join("·") || "无"}</b>${pt.q === 7 ? ` · 🌟神通 <b class="y">${pt.talent ? C.PET_TALENT[pt.k].name + '（' + C.PET_TALENT[pt.k].desc + '）' : '未领悟（升级 10% 领悟）'}</b>` : ''}<br>🎽灵宠套装：${petSetTxt(pt)}</small></div>
         ${S.pets.length > 1 ? `` : ''} <!-- v467 吞噬移至兽园 -->
         ${pt.pts > 0 ? `<div style="flex-basis:100%;display:flex;gap:4px;align-items:center;margin-top:6px"><small class="y" style="white-space:nowrap">可分配 ${pt.pts} 点</small>${['str', 'vit', 'def', 'agi', 'int'].map(a => `<button class="btn" style="flex:1;padding:6px 0;font-size:12px" data-passign="${pt.id}" data-attr="${a}">${AN[a]}+1</button>`).join('')}</div>` : ''}
-        <div style="flex-basis:100%;margin-top:4px"><button class="btn" style="font-size:11px;padding:4px 8px" onclick="window.doReleasePet(${pt.id})">🕊️ 放生</button></div></div>`; }).join('') : (S.petEggs > 0 ? '' : '<div class="empty">暂无灵宠，掏兽蛋时偶尔可得灵宠蛋</div>'));
+        <div style="flex-basis:100%;margin-top:4px;display:flex;gap:4px"><button class="btn" style="font-size:11px;padding:4px 8px" onclick="window.doTogglePetLock(${pt.id})">${pt.locked ? '🔓 解锁' : '🔒 锁定'}</button><button class="btn" style="font-size:11px;padding:4px 8px" onclick="window.doReleasePet(${pt.id})" ${pt.locked ? 'disabled' : ''}>🕊️ 放生</button>${pt.locked ? '<small class="y" style="align-self:center">已锁定</small>' : ''}</div></div>`; }).join('') : (S.petEggs > 0 ? '' : '<div class="empty">暂无灵宠，掏兽蛋时偶尔可得灵宠蛋</div>'));
     html = p3;
   } else {
     html = html + `<div style="height:40vh"></div>`;
@@ -8193,7 +8204,7 @@ function sheetDevour(id) {
     return (b.q|0) - (a.q|0);
   });
   openSheet(`<h2>吞噬</h2><div class="hint">选择被 ${petTag(eater)} 吞噬的灵宠：吞噬者获得对方<b class="y">全部五项属性</b>，被吞噬的灵宠将<b class="r">永久消失</b>。<br>🌟 <b class="y">同品种同品质</b>排前面，15%概率品质进阶！</div><div class="row" style="display:flex;gap:6px;margin-bottom:6px"><button class="btn" onclick="window.sheetBeastDevour()" style="flex:1">↩️ 返回重选吞噬者</button></div>` + // v485 返回按钮放顶部
-    _foods.map(p => { const _match = (p.k === eater.k && (p.q|0) === (eater.q|0)); return `<div class="row"><div class="lab">${_match ? '🌟' : ''}${petTag(p)} Lv.${p.lv}${S.pet === p.id ? ' <span class="tag">出战中</span>' : ''}<small>${ATTRS.map(a => AN[a] + ' +' + p.attrs[a]).join(' · ')}（总 +${C.total(p.attrs)}）</small></div><button class="btn danger" data-devfood="${p.id}" data-eater="${id}">吞噬</button></div>`; }).join('') +
+    _foods.map(p => { const _match = (p.k === eater.k && (p.q|0) === (eater.q|0)); return `<div class="row"><div class="lab">${_match ? '🌟' : ''}${p.locked ? '🔒' : ''}${petTag(p)} Lv.${p.lv}${S.pet === p.id ? ' <span class="tag">出战中</span>' : ''}<small>${ATTRS.map(a => AN[a] + ' +' + p.attrs[a]).join(' · ')}（总 +${C.total(p.attrs)}）</small></div><button class="btn danger" data-devfood="${p.id}" data-eater="${id}" ${p.locked ? 'disabled' : ''}>吞噬</button></div>`; }).join('') +
     `<button class="btn full" data-a="bag">返回背包</button>`);
 }
 // v467 兽园吞噬入口：先选吞噬者
@@ -8206,6 +8217,7 @@ window.sheetBeastDevour = function() {
 window.sheetLife = sheetLife; window.sheetDevour = sheetDevour; // v471 挂全局供兽园调用
 function doDevour(eaterId, foodId) {
   const e = S.pets.find(p => p.id === eaterId), f = S.pets.find(p => p.id === foodId); if (!e || !f) return;
+  if (f.locked) { log('bad', '🔒 该灵宠已锁定，不可吞噬'); return; } // v894
   if (!confirm(`确定让 ${PETS[e.k].name}#${e.id} 吞噬 ${PETS[f.k].name}#${f.id}？\n${PETS[f.k].name}#${f.id} 将永久消失！`)) return;
   const r = C.devourPet(S, eaterId, foodId); if (!r) return;
   log('gold', `🌀 ${petTag(r.eater)} 吞噬了 ${petTag(r.food)}，获得 ${gainsTxt(r.gains)}（总属性 ${C.total(r.eater.attrs)}）` + (r.xpGain > 0 ? `，经验 <span class="y">+${r.xpGain}</span>${r.xpUp && r.xpUp.ups ? `，<span class="y">升到 Lv.${r.eater.lv}！</span>` : ''}` : '') + (r.moved ? `，并接替出战` : '') + (r.sks && r.sks.length ? `，<span class="y">✨习得技能【${r.sks.map(sk => C.GEAR_SETS[sk].name).join('·')}】</span>` : '') + (r.xpUp && r.xpUp.sks.length ? `，<span class="y">✨领悟【${[...new Set(r.xpUp.sks)].map(sk => C.GEAR_SETS[sk].name).join('·')}】</span>` : '') + (r.xpUp && r.xpUp.tls.length ? `，<span class="y">🌟 领悟天赋神通【${[...new Set(r.xpUp.tls)].join('·')}】</span>` : '') + (r.qup ? `<br>🌟 <span class="g">品质进阶！${petTag(r.eater)}</span>` : ''));
