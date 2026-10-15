@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v887</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v888</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -227,7 +227,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 </header>
 <div id="worldMapSec" style="padding:8px;border-bottom:1px solid var(--line)">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-    <span style="font-size:13px;color:var(--dim);flex:none">🗺️ 修仙界</span>
+    <span style="font-size:13px;color:var(--dim);flex:none"><u style="cursor:pointer" onclick="window.swordIntro()">🗺️ 残陨之剑</u></span>
     <div id="cellInfo" style="flex:1;padding:4px 8px;background:#1a1a2e;border-radius:6px;font-size:12px;color:var(--dim);min-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
     <span style="flex:none"><button class="icon-btn" id="shenshiBtn" style="font-size:16px;display:none" title="神识外放（化神）" onclick="window.shenshiPanel()">👁️</button><button class="icon-btn" id="chatToggleBtn" style="font-size:16px" title="悬浮聊天开/关">💬</button><button class="icon-btn" id="msgFilterBtn" style="font-size:16px" title="消息过滤设置">⚙️</button></span>
     <div id="msgFilterPop" style="display:none;position:absolute;right:8px;top:120px;z-index:60;background:#1a1a2e;border:1px solid #444;border-radius:8px;padding:8px;box-shadow:0 2px 12px rgba(0,0,0,0.5)"></div>
@@ -5255,7 +5255,7 @@ window.goBackCave = function(which) { // v799 回洞府/仙府；v801 直接传�
     log('good', `传送回${isDong ? '洞府' : '仙府'}！`);
   } catch(e) {}
 };
-window.leaveCave = function() { // v817 离开洞府，传回修仙界
+window.leaveCave = function() { // v817 离开洞府，传回残陨之剑
   try {
     S.inCave = null;
     try { if (typeof commit === 'function') commit(); } catch(_) {}
@@ -5348,6 +5348,11 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
     }
     _caveDiv.innerHTML = _html;
     _caveDiv.style.display = 'block';
+  } catch(e) {}
+};
+window.swordIntro = function() { // v888 残陨之剑介绍
+  try {
+    openSheet(`<h2>🗡️ 残陨之剑</h2><div class="hint" style="line-height:1.8">在此地四周是时空乱流。一把残剑之上，不知多久看看孕育万物，但此地除了传送阵能用无法与外界取得联系。据推测应该是上古大能损毁的残剑，一直不停的穿梭在时空乱流之中！</div><div class="row"><button class="btn full" onclick="closeSheet()">关闭</button></div>`);
   } catch(e) {}
 };
 window.shenshiPanel = function() { // v887 化神神识：3格内资源远程收取
