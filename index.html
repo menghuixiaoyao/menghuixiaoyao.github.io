@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v946</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v947</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -390,7 +390,8 @@ const SKILLS = {
   thunder:  { name: '雷击',   mp: 16, price: 260, lv: 9, desc: '智力×3.5+力量 魔法重创，不可闪避' },
   tunmo:    { name: '吞魔',   mp: 0,  price: 800, lv: 99, desc: '被动：习得后可在背包吞噬煞气' },
   shukuchi: { name: '缩地',   mp: 0,  price: 500, lv: 10, desc: '被动：冒险中一次可移动两格', passive: 1 }, // v762；v780 被动
-  danuoyi:  { name: '大挪移', mp: 0,  price: 1200, lv: 20, desc: '被动：冒险中一次可移动三格', passive: 1 } // v762；v780 被动
+  danuoyi:  { name: '大挪移', mp: 0,  price: 1200, lv: 20, desc: '被动：冒险中一次可移动三格', passive: 1 }, // v762；v780 被动
+  shenshu:   { name: '神术',   mp: 10, price: 1000, lv: 15, desc: '主动：神识探查，1分钟内探查神识×2', active: 1 } // v947 神识探查
 };
 const PAGES = { // 看书五种结果（悟道档位），各得 1 张对应残页；p 为基础概率，智力越高高档越多（同矿石公式）
   pg1: { name: '普通残页', out: '学习',     p: 0.50 },
@@ -701,7 +702,9 @@ function normalize(S) {
   if (!(S.qixi >= 0)) S.qixi = 0; // v928 气息
 function flowerCount(S) { const s = S.shenshi|0; if (s >= 25600) return 9; if (s >= 12800) return 8; if (s >= 6400) return 7; if (s >= 3200) return 6; if (s >= 1600) return 5; if (s >= 800) return 4; if (s >= 400) return 3; if (s >= 200) return 2; if (s >= 100) return 1; return 0; } // v944 翻倍：100起至25600
 function flowerBonus(S) { return (typeof flowerCount === 'function' ? flowerCount(S) : 0) * 0.03; } // v932
+function effShenshi(S) { try { var b = (S.ssBoostUntil|0) > Date.now() ? 2 : 1; return (S.shenshi|0) * b; } catch(e) { return S.shenshi|0; } } // v947 探查双倍
 function qixiIcon(S) { try { var q = (S.qixi|0); if (q >= 20000) return '♾️'; if (q >= 5000) return '👣'; if (q >= 2000) return '🕶️'; if (q >= 1000) return '🩰'; if (q >= 300) return '👀'; return '🗣️'; } catch(e) { return '🗣️'; } } // v946 用户分段：0-300/300-1000/1000-2000/2000-5000/5000-10000/20000+
+window.useShenshu = function() { try { if (!(S.skills||[]).includes('shenshu')) { log('bad', '未学会神术'); return; } if ((S.mp|0) < 10) { log('bad', '法力不足'); return; } S.mp -= 10; S.ssBoostUntil = Date.now() + 60000; log('good', '👁️ 神识探查开启（1分钟，双倍）'); commit(); render(); } catch(e) {} }; // v947
 function flowerIcons(S) { try { var fc = (typeof flowerCount === 'function' ? flowerCount(S) : 0); if (fc <= 0) return ''; var w = Math.floor(fc/3), p = fc%3; return '💮'.repeat(w) + '🌸'.repeat(p); } catch(e) { return ''; } } // v936 3粉变1白 每朵花+3%全属性（待定）
 function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   try {
@@ -5844,7 +5847,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           // NPC
           try {
             const _ns = (S.npcs && S.npcs.spots) || [];
-            const _mySS = (typeof S !== 'undefined' && S) ? (S.shenshi|0) : 0;
+            const _mySS = (typeof effShenshi === 'function' && typeof S !== 'undefined' && S) ? effShenshi(S) : 0; // v947 探查双倍
             const _here = _ns.filter(function(s){ return s[0] === wx && s[1] === wy; }).filter(function(s){ const _qx = (s[7]|0) || (s[5]*2); return _qx <= _mySS; }); // v937 气息高不显示
             if (_here.length) _parts.push('人×' + _here.length + '（' + _here.map(function(s){ return s[3]; }).join('、') + '）');
           } catch(e) {}
@@ -5878,7 +5881,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         // v554 NPC也显示在信息栏；v556 独立点击
         try {
           const _ns2 = (S.npcs && S.npcs.spots) || [];
-          const _mySS2 = (typeof S !== 'undefined' && S) ? (S.shenshi|0) : 0;
+          const _mySS2 = (typeof effShenshi === 'function' && typeof S !== 'undefined' && S) ? effShenshi(S) : 0; // v947
           const _here2 = _ns2.filter(function(s){ return s[0] === wx && s[1] === wy; }).filter(function(s){ const _qx = (s[7]|0) || (s[5]*2); return _qx <= _mySS2; }); // v937
           if (_here2.length) {
             const _names = _here2.map(function(s){ return s[3]; }).join('、');
@@ -7758,7 +7761,7 @@ function sheetPersonInfo(e, backBtn) {
   let _hidden = false;
   try {
     if (!e.isMe && typeof S !== 'undefined' && S) {
-      const mySS = S.shenshi|0;
+      const mySS = (typeof effShenshi === 'function' ? effShenshi(S) : (S.shenshi|0)); // v947
       // 对方气息：有则用，没有按等级估算（2/级）
       const tgtQX = (e.qixi|0) || ((e.level|0) * 2 + (e.realm|0) * 20);
       if (mySS <= tgtQX) _hidden = true; // 神识不够，看不透
