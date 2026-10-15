@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v957</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v958</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8903,6 +8903,27 @@ window.doNpcPk = function(name, realm, lv) {
   if (typeof closeSheet === 'function') closeSheet();
   if (typeof doPkStart === 'function') doPkStart(realm);
 }; // v545
+function _revengeRow() { // v958 复仇状态行
+  try {
+    const now = Date.now();
+    if ((S.revengeUntil|0) > now) {
+      const _m = Math.ceil(((S.revengeUntil|0) - now) / 60000);
+      return `<div class="row"><div class="lab">⚔️ <b class="r">复仇中</b><small>剩余${_m}分钟，PK胜利不扣功德</small></div></div>`;
+    }
+    if ((S.lastPkLossAt|0) > 0 && now - (S.lastPkLossAt|0) < 86400000) {
+      return `<div class="row"><div class="lab">⚔️ <b class="y">复仇</b><small>战败后24小时内可开启，持续1小时</small></div><button class="btn danger" onclick="window.doRevenge()">开启复仇</button></div>`;
+    }
+  } catch(_) {}
+  return '';
+}
+window.doRevenge = function() { // v958 开启复仇
+  try {
+    S.revengeUntil = Date.now() + 3600000;
+    try { log('good', '⚔️ <b class="r">复仇状态已开启</b>！1小时内PK胜利不扣功德（首胜后解除）'); } catch(_) {}
+    try { if (typeof commit === 'function') commit(); } catch(_) {}
+    try { if (typeof doPkChooseRealm === 'function') doPkChooseRealm(); } catch(_) {}
+  } catch(_) {}
+};
 function doPkChooseRealm() {
   if (S.dead || S.stamina < K.COST_PK) { doPkStart(S.realm|0); return; }
   const cr = S.realm|0;
@@ -8910,6 +8931,7 @@ function doPkChooseRealm() {
   openSheet(`<h2>🥊 选择对手境界</h2><div class="hint">当前境界：<b class="y">${C.REALMS[cr]}</b> · 对手属性按境界差 ×2<sup>|差|</sup>（高你1境=2倍，高2境=4倍）${cr >= 12 ? '<br><span class="r">主宰境只能与主宰切磋</span>' : ''}</div>` +
     `<div class="row"><div class="lab">🌐 <b class="y">联机对战</b><small>与真人玩家实时1v1（测试版）</small></div><button class="btn gold" data-netpk="1">寻找对手</button></div>` +
     _rmap.map(i => { const rn = C.REALMS[i]; const d = i - cr; const tag = d === 0 ? '同境' : (d > 0 ? `高${d}境` : `低${-d}境`); const mult = d === 0 ? '' : ` · 属性×${Math.pow(2, Math.abs(d))}`; return `<div class="row"><div class="lab">${rn}<small>${tag}${mult}</small></div><button class="btn ${d === 0 ? 'gold' : 'danger'}" data-pkrealm="${i}">${d === 0 ? '切磋' : (d > 0 ? '挑战' : '碾压')}</button></div>`; }).join('') +
+    _revengeRow() +
     `<div class="row"><button class="btn" data-close="1">取消</button></div>`);
 }
 function doPkStart(forceRealm) {
@@ -9166,9 +9188,17 @@ window.finishPk = function(chosen) {
     if (ex.length) log(r.win ? 'good' : 'bad', ex.join('<br>'));
     pk = null; delete $('mask').dataset.lock; closeSheet(); afterAct(); commit(); return;
   }
+  if (r.win) { // v958 以大欺小扣功德（复仇状态免扣，首胜后解除复仇）
+    try {
+      const _or = (o && typeof o.realm === 'number') ? (o.realm|0) : (S.realm|0);
+      const _diff = (S.realm|0) - _or;
+      if ((S.revengeUntil|0) > Date.now()) { S.revengeUntil = 0; try { log('sys', '⚔️ 复仇完成，复仇状态解除'); } catch(_) {} }
+      else if (_diff > 0 && typeof addMerit === 'function') addMerit(-10 * _diff, `以大欺小（对方低${_diff}境）`);
+    } catch(_) {}
+  }
   if (r.win) log('good', `🏆 你击败了 <b class="x"><a href="javascript:void(0)" data-person="${esc(o.name)}" data-info="${oInfo2}" style="color:#7ec8ff;text-decoration:underline;cursor:pointer">${o.name}</a></b>，夺取 ${AN[r.attr]} <span class="g">+${r.take}</span>，金元 <span class="y">+${r.gold}</span>，经验 +${r.xp}` + lvUpTxt(r.lvUp) + petXpTxt(r) + (r.sha ? `<br>👹 获得 <b class="y">煞气 ×1</b>（背包中习得吞魔后可吞噬）` : '') + (r.shaPet ? `<br>👹 击杀敌方灵宠获得 <b class="y">煞气 ×${r.shaPet}</b>` : '') + (r.curse ? `<br>👻 你被 <b class="r">诅咒</b>了！诅咒×${r.curse}，突破成功率 -${r.curse}%（永久叠加）` : ''));
   else if (r.protected) log('good', `💔 你败给了 <b class="x"><a href="javascript:void(0)" data-person="${esc(o.name)}" data-info="${oInfo2}" style="color:#7ec8ff;text-decoration:underline;cursor:pointer">${o.name}</a></b>，<span class="y">🛡️新人保护（余 ${r.protectLeft} 次）</span>免除被夺走 ${AN[r.attr]} -${r.wouldTake}，经验 +${r.xp}` + lvUpTxt(r.lvUp) + petXpTxt(r));
-  else log('bad', `${r.draw ? '☠️<span class="r">同归于尽</span>！' : '💔 你败给了 '}<b class="x"><a href="javascript:void(0)" data-person="${esc(o.name)}" data-info="${oInfo2}" style="color:#7ec8ff;text-decoration:underline;cursor:pointer">${o.name}</a></b>，被夺走 ${AN[r.attr]} <span class="r">-${r.take}</span>，经验 +${r.xp}` + lvUpTxt(r.lvUp) + petXpTxt(r) + (r.draw ? `<br>⚔️ 互夺：你夺得 ${AN[r.drawTakeAttr]} <span class="g">+${r.drawTake}</span>；${r.drawLost ? `你的 <span class="r">${C.lootLabel('inv', r.drawLost)}×1</span> 被对方夺走` : '你的背包空无一物'}；你夺得对方 <span class="y">${r.drawGot ? C.lootLabel('inv', r.drawGot.k) + '×1' : '（对方背包已空）'}</span>${r.drawPctLoss && Object.keys(r.drawPctLoss).length ? `；全属性消散1%：<span class="r">${Object.keys(r.drawPctLoss).map(a => AN[a] + '-' + r.drawPctLoss[a]).join(' ')}</span>` : ''}` : ''));
+  else { if (!r.draw) { try { S.lastPkLossAt = Date.now(); } catch(_) {} } log('bad', `${r.draw ? '☠️<span class="r">同归于尽</span>！' : '💔 你败给了 '}<b class="x"><a href="javascript:void(0)" data-person="${esc(o.name)}" data-info="${oInfo2}" style="color:#7ec8ff;text-decoration:underline;cursor:pointer">${o.name}</a></b>，被夺走 ${AN[r.attr]} <span class="r">-${r.take}</span>，经验 +${r.xp}` + lvUpTxt(r.lvUp) + petXpTxt(r) + (r.draw ? `<br>⚔️ 互夺：你夺得 ${AN[r.drawTakeAttr]} <span class="g">+${r.drawTake}</span>；${r.drawLost ? `你的 <span class="r">${C.lootLabel('inv', r.drawLost)}×1</span> 被对方夺走` : '你的背包空无一物'}；你夺得对方 <span class="y">${r.drawGot ? C.lootLabel('inv', r.drawGot.k) + '×1' : '（对方背包已空）'}</span>${r.drawPctLoss && Object.keys(r.drawPctLoss).length ? `；全属性消散1%：<span class="r">${Object.keys(r.drawPctLoss).map(a => AN[a] + '-' + r.drawPctLoss[a]).join(' ')}</span>` : ''}` : '')); }
   const ex = [];
   if (r.bites) ex.push(`<span class="r">${petTag(r.pet)} 本场反咬你 ${r.bites} 次，忠诚 -${2 * r.bites}</span>`);
   if (r.petDead) ex.push(`<span class="r">💀 ${petTag(r.pet)} 本场阵亡：寿命 -${K.PET_DEATH_LIFE}（余 ${r.pet.life}）、忠诚 -${K.PET_DEATH_LOYAL}</span>`);
