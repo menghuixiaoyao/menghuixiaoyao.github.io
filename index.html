@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v877</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v878</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -571,8 +571,8 @@ const MATS = {
   h_agi: { name: '敏捷草', price: 5, basic: 'agi' }, h_str: { name: '力量草', price: 5, basic: 'str' },
   h_def: { name: '防御草', price: 5, basic: 'def' }, h_vit: { name: '生命草', price: 5, basic: 'vit' },
   h_int: { name: '智力草', price: 5, basic: 'int' },
-  cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2', token: 'cave', energy: 2 },
-  xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟洞府1格，灵气+5', token: 'xianfu', energy: 5 }
+  cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 },
+  xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 8 }
 };
 Object.assign(MATS, LU);
 const STARTER_MATS = 0, STARTER_GOLD = 0; // 新手礼包：无（旧存档迁移时同样发放）
@@ -6518,7 +6518,7 @@ function sheetShop(msg) {
     `<div class="grid2" style="grid-template-columns:1fr 1fr;gap:8px;margin:8px 0"><button class="btn gold" data-consign style="padding:10px">🏪 寄售行</button><button class="btn gold" data-auction style="padding:10px">🔨 拍卖行</button></div>` +
     `<h3>药草（炼药必需）</h3>` + Object.keys(MATS).filter(k => MATS[k].basic).map(mRow).join('') +
     `<h3>灵露（炼药增益，二品以上仅可种植获得）</h3>` + Object.keys(MATS).filter(k => !MATS[k].basic && !MATS[k].token && MATS[k].price).map(mRow).join('') +
-    `<h3>洞府令（开辟洞府）</h3>` + Object.keys(MATS).filter(k => MATS[k].token).map(k => { const it = MATS[k]; return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc} · 拥有 ${S.mats[k] || 0}</small></div><button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${g >= it.price ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
+    `<h3>洞府令（开辟洞府）</h3>` + Object.keys(MATS).filter(k => MATS[k].token).map(k => { const it = MATS[k]; const _canB = g >= it.price && (S.realm|0) >= (it.needRealm|0); return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc} · 拥有 ${S.mats[k] || 0}</small></div><button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${_canB ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
     `<h3>灵石</h3><div class="row"><div class="lab">🪨 灵气石 <span class="tag">100 金</span><small>服用：经验 +20 · 炼药投入：成功率/上品 +5% · 拥有 ${S.ores.sp1 || 0}</small></div>
       <button class="btn" data-buy="spirit" data-k="sp1" data-n="1" ${g >= 100 ? '' : 'disabled'}>买 1</button>
       <button class="btn gold" data-buy="spirit" data-k="sp1" data-n="5" ${g >= 500 ? '' : 'disabled'}>买 5</button></div>
@@ -7245,11 +7245,13 @@ function doBook(kind, k, n) {
   else if (kind === 'sskill') { const r = C.sellSkillBook(S, k); if (r.ok) log('gold', `📗 出售${SKILLS[k].name}技能书，金元 <span class="y">+${r.gold}</span>`); }
   commit(); if (kind === 'ebook' && arguments[3]) sheetLife(arguments[3] === 'alc' ? lifeTab : arguments[3]); else sheetBag();
 }
-window.useCaveToken = function(k) { // v798 使用洞府令/仙府令开格；v799 分开记洞府/仙府
+window.useCaveToken = function(k) { // v798 使用洞府令/仙府令开格；v799 分开记洞府/仙府；v878 境界门槛
   try {
     if ((S.mats[k]|0) <= 0) { log('bad', '没有该令牌'); return; }
     const it = MATS[k];
     if (!it || !it.token) { log('bad', '不是洞府令'); return; }
+    const _nr = it.needRealm|0, _rn = _nr === 8 ? '仙人' : _nr === 4 ? '元婴' : '';
+    if (_nr > 0 && (S.realm|0) < _nr) { log('bad', `${it.name}需<b class="r">${_rn}</b>境界才能使用`); return; }
     S.mats[k]--; if (!S.mats[k]) delete S.mats[k];
     if (it.token === 'cave') {
       S.dongfuGrids = (S.dongfuGrids|0) + 1;
