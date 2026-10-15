@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v908</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v909</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -555,7 +555,7 @@ const POT_PCT = [0, 0.30, 0.40, 0.50]; // 普通 / 精良 / 极品：回复 30% 
 const potKey = (t, q) => t + q, potOf = k => { const m = /^(hp|mp)([1-3])$/.exec(k || ''); return m ? { t: m[1], q: +m[2], pct: POT_PCT[+m[2]], name: POTIONS[m[1]].name } : null; };
 // 阵法配方 v788：阵法台制作，布阵后获得限时增益
 const FORMATIONS = {
-  f_gather: { name: '采集阵', lv: 1, need: [['prey', 'rabbit', 2], ['ores', 'sp1', 5], ['ores', 'iron', 3]], desc: '可布于资源格，上品灵石驱动自动采集（1颗=1小时，速度手动一半）', buff: 'gather', mult: 1.25, duration: 7200 }, // v908 配方加兽皮
+  f_gather: { name: '采集阵', lv: 1, need: [['prey', 'wolf', 2], ['ores', 'sp1', 5], ['ores', 'iron', 3]], desc: '可布于资源格，上品灵石驱动自动采集（1颗=1小时，速度手动一半）', buff: 'gather', mult: 1.25, duration: 7200 }, // v908 配方：狼皮+灵气石+铁矿
   f_spirit: { name: '聚灵阵', lv: 2, need: [['ores', 'sp1', 10]], desc: '闭关法力+25%，持续2小时', buff: 'spirit', mult: 1.25, duration: 7200 },
 };
 // 符箓配方 v788：画符台制作，战斗中使用的消耗品
