@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v916</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v917</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4849,7 +4849,7 @@ window.arrayPanel = function(id) {
     const _ents = Object.entries(st).filter(([k,v]) => k !== 'vt' && v > 0);
     const items = _ents.length ? `<div class="grid2" style="grid-template-columns:repeat(3,1fr);gap:4px;margin:6px 0">` + _ents.map(([k,v]) => `<div class="row" style="padding:6px;text-align:center"><div class="lab">${_nm[k]||k}<br><b class="y">×${v}</b></div></div>`).join('') + `</div>` : '<div class="empty">空</div>'; // v915 背包式
     const stoneCount = ((S.ores || {}).sp4|0); // v915 key修正
-    openSheet(`<h2>🧭 采集阵 (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b>小时 · ${a.guarded ? '🛡️ 神识坐阵中' : '无守卫'}<br>上品灵石：${stoneCount}颗（1颗=1小时）</div><h3>🎒 阵内库存（人人可看）</h3>${items}<div class="grid2"><button class="btn gold" onclick="window.fuelArray(${id})">💎 加灵石</button><button class="btn" onclick="window.collectArray(${id})">📦 收取</button><button class="btn" onclick="window.toggleGuard(${id})">${a.guarded ? '🔓 撤回神识' : '🛡️ 神识坐阵'}</button><button class="btn danger" onclick="window.destroyArray(${id})">💥 拆除</button></div><button class="btn full" onclick="closeSheet()">关闭</button>`);
+    openSheet(`<h2>🧭 采集阵 (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b>小时 · ${a.guarded ? '🛡️ 神识坐阵中' : '无守卫'}<br>上品灵石：${stoneCount}颗（1颗=1小时）</div><h3>🎒 阵内库存（人人可看）</h3>${items}<div class="grid2"><button class="btn gold" onclick="window.fuelArray(${id})">💎 加灵石</button><button class="btn" onclick="window.withdrawFuel(${id})">💎 取灵石</button><button class="btn" onclick="window.collectArray(${id})">📦 收取</button><button class="btn" onclick="window.toggleGuard(${id})">${a.guarded ? '🔓 撤回神识' : '🛡️ 神识坐阵'}</button><button class="btn danger" onclick="window.destroyArray(${id})">💥 拆除</button></div><button class="btn full" onclick="closeSheet()">关闭</button>`);
   } catch(e) {}
 };
 window.fuelArray = function(id) {
@@ -4862,6 +4862,19 @@ window.fuelArray = function(id) {
     a.fuelUntil = Math.max(now, a.fuelUntil|0) + 3600000;
     if (!a.lastTick) a.lastTick = now;
     log('good', `💎 采集阵(${a.x},${a.y})燃料+1小时`);
+    commit(); window.arrayPanel(id);
+  } catch(e) {}
+};
+window.withdrawFuel = function(id) { // v917 取出灵石
+  try {
+    const a = (S.arrays || []).find(v => v.id === id);
+    if (!a) return;
+    const now = Date.now();
+    const remain = (a.fuelUntil|0) - now;
+    if (remain < 3600000) { log('bad', '燃料不足1小时，无法取出'); return; }
+    a.fuelUntil -= 3600000;
+    S.ores = S.ores || {}; S.ores.sp4 = (S.ores.sp4|0) + 1;
+    log('good', `💎 取出上品灵石×1（剩余燃料${((a.fuelUntil-now)/3600000).toFixed(1)}小时）`);
     commit(); window.arrayPanel(id);
   } catch(e) {}
 };
