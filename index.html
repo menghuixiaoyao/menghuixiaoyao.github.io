@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v889</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v890</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -571,8 +571,8 @@ const MATS = {
   h_agi: { name: '敏捷草', price: 5, basic: 'agi' }, h_str: { name: '力量草', price: 5, basic: 'str' },
   h_def: { name: '防御草', price: 5, basic: 'def' }, h_vit: { name: '生命草', price: 5, basic: 'vit' },
   h_int: { name: '智力草', price: 5, basic: 'int' },
-  lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（元神照料才生长，需元婴以上）', seed: 1 }, // v887；v889 种植不限境界
-  cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（开格费用递增）', token: 'cave', energy: 2, needRealm: 0 }, // v889 洞府不限境界
+  lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（元婴以上元神照料才生长）', seed: 1 }, // v887；v890 洞府元婴限定
+  cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 }, // v890 改回元婴限定
   xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 8 }
 };
 Object.assign(MATS, LU);
@@ -5232,10 +5232,12 @@ function cityMoveThunder() {
             }
             return;
           }
-window.goBackCaveChoice = function() { // v800 功能区回洞府/仙府选择
+window.goBackCaveChoice = function() { // v800 功能区回洞府/仙府选择；v890 元婴以下不得入内
   try {
     const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0;
     if (_dg <= 0 && _xg <= 0) { log('bad', '你还没有开辟洞府，商店可购买洞府令'); return; }
+    if ((S.realm|0) < 4 && _dg > 0 && _xg <= 0) { log('bad', '洞府需<b class="r">元婴</b>境界才能进入'); return; }
+    if ((S.realm|0) < 8 && _xg > 0 && _dg <= 0) { log('bad', '仙府需<b class="r">仙人</b>境界才能进入'); return; }
     if (_dg > 0 && _xg > 0) {
       if (typeof openSheet === 'function') openSheet(`<h2>🏠 回洞府</h2><div class="hint">你开辟了洞府和仙府，要回哪个？</div><div class="grid2"><button class="btn gold" onclick="goBackCave('dongfu')">🏠 回洞府<br><small>${_dg} 格·灵气 ${_dg*2}</small></button><button class="btn gold" onclick="goBackCave('xianfu')">🏯 回仙府<br><small>${_xg} 格·灵气 ${_xg*5}</small></button></div><div class="row"><button class="btn full" onclick="closeSheet()">关闭</button></div>`);
       return;
