@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v864</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v865</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8932,24 +8932,21 @@ document.addEventListener('click', e => {
   else if (d.gather) { const _gk=d.gather,_gn=+d.n||1; try { const _gp=document.getElementById('gatherProg'),_gb=document.getElementById('gatherProgBar'),_gt=document.getElementById('gatherProgTxt'); if(_gp&&_gb){ _gp.style.display='block'; _gb.style.width='0%'; const _names={mine:'挖矿中……',hunt:'打猎中……',farm:'种植中……',egg:'掏蛋中……',read:'看书中……'}; if(_gt)_gt.textContent=_names[_gk]||'采集中……'; let _p=0; const _iv=setInterval(()=>{ _p+=10; if(_gb)_gb.style.width=Math.min(100,_p)+'%'; if(_p>=100){ clearInterval(_iv); if(_gp)_gp.style.display='none'; doGather(_gk,_gn); } },80); } else { doGather(_gk,_gn); } } catch(_){ doGather(_gk,_gn); } } // v663 采集进度条
   else if (d.breakthrough !== undefined) doBreakthrough();
   else if (d.reincarnate !== undefined) doReincarnate();
-  else if (d.sanshi !== undefined) { // v864 内联斩三尸战斗，不经函数调用
+  else if (d.sanshi !== undefined) { // v865 用window._bx命名空间（主块看不到fightAttrs，v864已证实）
     try {
       const _sidx = +d.sanshi;
-      try { if (typeof log === 'function') log('sys', '[调试]三尸内联 idx=' + _sidx); } catch(_) {}
+      const _bx = window._bx || {};
+      if (!_bx.Battle) throw new Error('battle not ready');
       try { if (typeof pk !== 'undefined') pk = null; } catch(_) {}
       try { const _G0 = (typeof G !== 'undefined' ? G : window); _G0.pk = null; } catch(_) {}
       try { window.pk = null; } catch(_) {}
       try { window._demonDeadT = 0; } catch(_) {}
       const _names = ['上尸·彭倨', '中尸·彭质', '下尸·彭矫'];
       const _name = _names[_sidx] || '三尸';
-      const _fa = (typeof fightAttrs === 'function') ? fightAttrs(S, false) : (typeof window.fightAttrs === 'function' ? window.fightAttrs(S, false) : null);
-      if (!_fa) throw new Error('fightAttrs不可用');
-      const _dattrs = {}; (typeof ATTRS !== 'undefined' ? ATTRS : window.ATTRS).forEach(k => _dattrs[k] = Math.max(1, Math.round(_fa[k] * 1.5)));
-      const _fighter = (typeof fighter === 'function') ? fighter : window.fighter;
-      const _foe = _fighter('💀' + _name, _dattrs, false, []);
-      const _Battle = (typeof Battle !== 'undefined') ? Battle : window.Battle;
-      const _pf = (typeof playerFighter === 'function') ? playerFighter : window.playerFighter;
-      const _b = new _Battle(_pf(S, false), _foe);
+      const _fa = _bx.fightAttrs(S, false);
+      const _dattrs = {}; _bx.ATTRS.forEach(k => _dattrs[k] = Math.max(1, Math.round(_fa[k] * 1.5))); // 三尸1.5倍属性
+      const _foe = _bx.fighter('💀' + _name, _dattrs, false, []);
+      const _b = new _bx.Battle(_bx.playerFighter(S, false), _foe);
       const _G = (typeof G !== 'undefined' ? G : window);
       try { window._pkSeq = Date.now(); } catch(_) {}
       const _pkS = { battle: _b, trib: 'sanshi', tribData: { sanShiIdx: _sidx }, target: 'foe', _seq: window._pkSeq };
@@ -8959,7 +8956,7 @@ document.addEventListener('click', e => {
       try { if (typeof afterAct === 'function') afterAct(); } catch(_) {}
       try { if (typeof save === 'function') save(); } catch(_) {}
       try { if (typeof renderCombat === 'function') renderCombat(); else if (typeof render === 'function') render(); } catch(_) {}
-    } catch(_e) { try { log('sys', '斩三尸内联失败:' + (_e.message||_e)); } catch(_) {} }
+    } catch(_e) { try { log('sys', '斩三尸失败:' + (_e.message||_e)); } catch(_) {} }
   }
   else if (d.sell) doSell(d.kind, d.sell, +d.n);
   else if (d.eat) doEat(d.eat, +d.n);
