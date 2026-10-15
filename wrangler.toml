@@ -1,0 +1,6 @@
+name = "menghuixiaoyao-game"
+compatibility_date = "2026-10-15"
+
+[assets]
+directory = "./"
+not_found_handling = "single-page-application"
