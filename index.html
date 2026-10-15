@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v873</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v874</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3060,8 +3060,10 @@ function advRetreat(S) { const run = S.run; if (!run || !run.grid) return null; 
 function advStart(S, dk) {
   const diff = DIFFS[dk]; if (!diff || S.dead || S.run || S.stamina < diff.cost) return null;
   const isWx = dk.startsWith('wx_');
-  if (isWx) { // 五行：仙人以上可进，10仙力+5体力，按境界每日限次
+  if (isWx) { // 五行：仙人以上可进，10仙力+5体力，按境界每日限次；v874 需对应法则圆满
     if ((S.realm | 0) < 8 || (S.mana | 0) < WX_COST_XIAN) return null;
+    const _wxEl = (wxByK(dk.slice(3)) || {}).name;
+    if (!_wxEl || (((S.faZe || {})[_wxEl] | 0) < 100)) return null;
     const t = todayStr(); if (S.wxD !== t) { S.wxD = t; S.wxN = 0; }
     if ((S.wxN | 0) >= (WX_DAILY[S.realm | 0] || 0)) return null;
   }
@@ -6337,8 +6339,9 @@ function sheetAdventure(page) {
   if (page === 5 && isXian) {
     content = `<h3 style="margin:10px 0 4px">🖐️ 仙术五行修炼 <small style="color:var(--dim)">10步 · 守关必为👑王阶（必掉1对应残物）· 每日限 ${wxLim} 次（今日剩余 <b class="${wxLeft > 0 ? 'g' : 'r'}">${wxLeft}</b> 次）</small></h3>` +
       C.WUXING.map(e => { const k = 'wx_' + e.k, d = DIFFS[k];
-        const can = S.stamina >= d.cost && (S.mana | 0) >= C.WX_COST_XIAN && !S.dead && wxLeft > 0;
-        return `<div class="row"><div class="lab"><b style="color:${e.color}">${e.name}行</b><small>-${C.WX_COST_XIAN} 仙力 · -${d.cost} 体力 · ${C.ADV_STEPS[k]} 步 · ${e.name}属性怪 · 王必掉<b style="color:${e.color}">【${e.name}残物】</b>×1，其他怪 ${C.pct(C.WX_FRAG_DROP)} 掉落（每次不出+1%，出了清零）</small></div>
+        const _fzOk = ((S.faZe || {})[e.name] | 0) >= 100; // v874 需对应法则圆满
+        const can = S.stamina >= d.cost && (S.mana | 0) >= C.WX_COST_XIAN && !S.dead && wxLeft > 0 && _fzOk;
+        return `<div class="row"><div class="lab"><b style="color:${e.color}">${e.name}行</b><small>-${C.WX_COST_XIAN} 仙力 · -${d.cost} 体力 · ${C.ADV_STEPS[k]} 步 · ${e.name}属性怪 · 王必掉<b style="color:${e.color}">【${e.name}残物】</b>×1，其他怪 ${C.pct(C.WX_FRAG_DROP)} 掉落（每次不出+1%，出了清零）${_fzOk ? '' : `<br><span class="r">需${e.name}之法则圆满（尊者参悟）</span>`}</small></div>
         <button class="btn gold" data-adv="${k}" ${can ? '' : 'disabled'}>进入</button></div>`; }).join('') +
       `<div class="row"><div class="lab">⚗️ <b>五行合成</b><small>10个同属性残物合成1件，自选 <b>X之力</b>（攻击附带+10%属性伤害/件）或 <b>X之抗</b>（免除X属性伤害，按(抗-力)反弹）</small></div>
         <button class="btn" data-a="wxsynth">合成</button></div>`;
