@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v930</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v931</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7734,13 +7734,14 @@ const RANK_TABS = [['level','🏆等级榜'],['str','💪力量榜'],['agi','�
 let _rankCache = null, _rankTab = 'level';
 function sheetPersonInfo(e, backBtn) {
   if (!e) return;
-  // v930 神识+花：跨境界查看限制
+  // v931 神识vs气息：看透判定
   let _hidden = false;
   try {
     if (!e.isMe && typeof S !== 'undefined' && S) {
-      const gap = (e.realm|0) - (S.realm|0);
-      const maxGap = (typeof flowerCount === 'function' ? flowerCount(S) : 0);
-      if (gap > maxGap) _hidden = true; // 境界高过可看范围，神识不足
+      const mySS = S.shenshi|0;
+      // 对方气息：有则用，没有按等级估算（2/级）
+      const tgtQX = (e.qixi|0) || ((e.level|0) * 2 + (e.realm|0) * 20);
+      if (mySS <= tgtQX) _hidden = true; // 神识不够，看不透
     }
   } catch(_) {}
   const a = e.attrs || {};
