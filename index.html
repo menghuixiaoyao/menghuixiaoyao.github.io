@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v951</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v952</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -704,7 +704,7 @@ function flowerCount(S) { const s = S.shenshi|0; if (s >= 25600) return 9; if (s
 function flowerBonus(S) { return (typeof flowerCount === 'function' ? flowerCount(S) : 0) * 0.03; } // v932
 function effShenshi(S) { try { if (!S) return 0; var b = (S.ssBoostUntil|0) > Date.now() ? 2 : 1; return (S.shenshi|0) * b; } catch(e) { return 0; } } // v951 修catch
 function qixiIcon(S) { try { var q = (S.qixi|0); if (q >= 20000) return '♾️'; if (q >= 5000) return '👣'; if (q >= 2000) return '🕶️'; if (q >= 1000) return '🩰'; if (q >= 300) return '👀'; return '🗣️'; } catch(e) { return '🗣️'; } } // v946 用户分段：0-300/300-1000/1000-2000/2000-5000/5000-10000/20000+
-window.useShenshu = function() { try { if (!(S.skills||[]).includes('shenshu')) { log('bad', '未学会神术'); return; } if ((S.mp|0) < 10) { log('bad', '法力不足'); return; } S.mp -= 10; S.ssBoostUntil = Date.now() + 60000; const _nm = (S.name||'无名道友'); log('good', `👁️ ${ _nm }使用了神识探查（同格者可见）`); commit(); render(); } catch(e) {} }; // v949 广播提示
+window.useShenshu = function() { try { if (!(S.skills||[]).includes('shenshu')) { log('bad', '未学会神术'); return; } if ((S.mp|0) < 10) { log('bad', '法力不足'); return; } S.mp -= 10; S.ssBoostUntil = Date.now() + 60000; const _nm = (S.name||'无名道友'); log('good', '👁️ ' + _nm + '使用了神识探查（同格者可见）'); commit(); render(); } catch(e) {} }; // v949 广播提示
 function flowerIcons(S) { try { var fc = (typeof flowerCount === 'function' ? flowerCount(S) : 0); if (fc <= 0) return ''; var w = Math.floor(fc/3), p = fc%3; return '💮'.repeat(w) + '🌸'.repeat(p); } catch(e) { return ''; } } // v936 3粉变1白 每朵花+3%全属性（待定）
 function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   try {
@@ -951,7 +951,7 @@ function doManualLevelUp(S) {
   if (fullMana && ups > 0) { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, Math.floor(S.xianCap * 1.1)); S.mana = Math.min(manaCapEff(S), Math.floor(S.mana * 1.1)); return { ok: true, ups, manaBoost: true }; } // 满法力/仙力升级：当前×1.1，仙人以上上限也×1.1
   return { ok: true, ups };
 }
-function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n; S.qixi = (S.qixi|0) + n * 2; // v944 轮回清零，无永久累积 神识+1/级，气息+2/级 神识+2/级，轮回清零，与气息对称 try { if (typeof claimFlowerSS === 'function') { const _g = claimFlowerSS(S); if (_g > 0) { try { log('good', `🌸 花开加神识+${_g}`); } catch(_){} } } } catch(_){} return n; } // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v932 神识+5/级不清零（花可跨世累积）；v928 气息+2/级，轮回清零
+function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n; S.qixi = (S.qixi|0) + n * 2;  try { if (typeof claimFlowerSS === 'function') { const _g = claimFlowerSS(S); if (_g > 0) { try { log('good', `🌸 花开加神识+${_g}`); } catch(_){} } } } catch(_){} return n; } // v944 轮回清零，无永久累积 神识+1/级，气息+2/级 神识+2/级，轮回清零，与气息对称 // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v932 神识+5/级不清零（花可跨世累积）；v928 气息+2/级，轮回清零
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
 const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
