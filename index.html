@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v952</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v953</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1149,7 +1149,7 @@ window.startSanShiBattle = function(idx) { // v812 斩三尸战斗；v862 分段
     try { if (typeof renderCombat === 'function') renderCombat(); else if (typeof render === 'function') render(); } catch(_) {}
   } catch(_e) { try { log('sys', '斩三尸启动失败:' + (_e.message||_e)); } catch(_) {} }
 };
-if (!window._arrayWatchdog) { window._arrayWatchdog = setInterval(() => { try { if (typeof S !== 'undefined' && S && typeof arrayTick === 'function') { arrayTick(S); } } catch(_) {} }, 5000); } // v925 采集阵后台5秒tick
+if (!window._arrayWatchdog) { window._arrayWatchdog = setInterval(() => { try { if (typeof S !== 'undefined' && S && typeof arrayTick === 'function') { arrayTick(S); if (typeof save === 'function') save(); } } catch(_) {} }, 5000); } // v953 后台tick后保存
 if (!window._demonWatchdog) { window._demonWatchdog = setInterval(() => { // v807 心魔战看门狗：每秒检查，死了一定结算；v812 覆盖斩三尸；v815 5秒强制清场；v829 序号检查，旧pk直接忽略
   try {
     const _G = (typeof G !== 'undefined' ? G : window);
