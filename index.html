@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v915</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v916</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4831,8 +4831,7 @@ window.placeArray = function(x, y) {
     S.formations = S.formations || {};
     if ((S.formations.f_gather|0) <= 0) { log('bad', '没有采集阵（阵法台制作）'); return; }
     S.arrays = S.arrays || [];
-    // 检查该格是否已有阵
-    if (S.arrays.some(a => a.map === 'world' && a.x === x && a.y === y)) { log('bad', '该格已有采集阵'); return; }
+    // v916 一格可放多个，不限制
     S.formations.f_gather--;
     S.arrays.push({ id: Date.now(), map: 'world', x, y, fuelUntil: 0, storage: {}, guarded: false, lastTick: Date.now() });
     log('good', `🧭 采集阵已布于(${x},${y})，放入上品灵石启动（1颗=1小时）`);
@@ -5213,19 +5212,19 @@ window.openReserveSheet = function() {
     reserveTick(S); const rn = S.reserveNode;
     const _vn = ['低级灵脉','中级灵脉','高级灵脉'];
     const vtxt = (rn.v|0) > 0 ? _vn[rn.vt|0] + '×' + rn.v : '无';
-    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="gatherProgWrap('采灵脉中……',doReserveVein)" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button><button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="gatherProgWrap('采灵脉中……',doReserveVein)" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button><button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).filter(a=>a.map==='world'&&a.x===4&&a.y===3).map(a=>`<button class="btn full" onclick="window.arrayPanel(${a.id})">🧭 管理采集阵#${a.id%1000}</button>`).join('')}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openHerbSheet = function() {
   try {
     herbTick(S); const hg = S.herbGarden;
-    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? '<button class="btn gold full" onclick="window.placeArray(3,2)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===3&&a.y===2).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) ? '<button class="btn gold full" onclick="window.placeArray(3,2)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).filter(a=>a.map==='world'&&a.x===3&&a.y===2).map(a=>`<button class="btn full" onclick="window.arrayPanel(${a.id})">🧭 管理采集阵#${a.id%1000}</button>`).join('')}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openRanchSheet = function() {
   try {
     ranchTick(S); const r = S.ranch;
-    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? '<button class="btn gold full" onclick="window.placeArray(2,0)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===2&&a.y===0).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) ? '<button class="btn gold full" onclick="window.placeArray(2,0)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).filter(a=>a.map==='world'&&a.x===2&&a.y===0).map(a=>`<button class="btn full" onclick="window.arrayPanel(${a.id})">🧭 管理采集阵#${a.id%1000}</button>`).join('')}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义）
