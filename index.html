@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v868</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v869</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6290,9 +6290,10 @@ function sheetTrain() {
       <button class="btn gold" data-gather="${kind}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>${v} 5</button></div>`; })(GK[k]) : `<div class="row"><div class="lab">📖 看书 · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，挑灯夜读，不获得物品</small></div>
       <button class="btn" data-train="${k}" data-n="1" ${S.stamina >= 1 ? '' : 'disabled'}>读 1</button>
       <button class="btn gold" data-train="${k}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>读 5</button></div>`).join('') +
-    ((S.realm|0) >= 11 && window.LG ? `<h3 style="margin:10px 0 4px">☯️ 参悟法则 <small style="color:var(--dim)">灵根：${window.LG.name(S)} · 每次3体力</small></h3>` +
+    ((S.realm|0) >= 11 && window.LG ? `<h3 style="margin:10px 0 4px">☯️ 参悟法则 <small style="color:var(--dim)">灵根：${window.LG.name(S)} · 每次3体力 · 单法则圆满对应属性+15%</small></h3>` +
       window.LG.ELES.map(el => { const pg = (S.faZe && S.faZe[el]) | 0, mine = (S.lingGen||[]).indexOf(el) >= 0, done = pg >= 100;
-        return `<div class="row"><div class="lab">${window.LG.ICON[el]} ${el}之法则 <b>${pg}%</b><small>对应${{str:'力量',vit:'体质',agi:'身法',int:'智力',def:'防御'}[window.LG.ATTR[el]]}${done ? ' · <b class="g">圆满</b>' : ''}${mine ? '' : ' · 🔒无此灵根'}</small></div>
+        const _an = {str:'力量',vit:'体质',agi:'身法',int:'智力',def:'防御'}[window.LG.ATTR[el]];
+        return `<div class="row"><div class="lab">${window.LG.ICON[el]} ${el}之法则 <b>${pg}%</b><small>对应${_an}${done ? ` · <b class="g">圆满（${_an}+15%生效中）</b>` : ''}${mine ? '' : ' · 🔒无此灵根'}</small></div>
         <button class="btn gold" data-faze="${el}" ${!mine || done || (S.stamina|0) < 3 ? 'disabled' : ''}>参悟</button></div>`; }).join('') +
       (S.faZeDone5 ? `<div class="hint">🌈 <b class="y">五行圆满 · 混元道体</b>：全属性+20%，突破主宰成功率+15%</div>` : S.faZeDone ? `<div class="hint">☯️ <b class="y">本命法则圆满</b>：全属性+5%，突破主宰成功率+5%</div>` : '') : '') +
 
