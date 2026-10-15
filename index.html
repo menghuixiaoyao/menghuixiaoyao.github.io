@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v953</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v954</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1149,7 +1149,7 @@ window.startSanShiBattle = function(idx) { // v812 斩三尸战斗；v862 分段
     try { if (typeof renderCombat === 'function') renderCombat(); else if (typeof render === 'function') render(); } catch(_) {}
   } catch(_e) { try { log('sys', '斩三尸启动失败:' + (_e.message||_e)); } catch(_) {} }
 };
-if (!window._arrayWatchdog) { window._arrayWatchdog = setInterval(() => { try { if (typeof S !== 'undefined' && S && typeof arrayTick === 'function') { arrayTick(S); if (typeof save === 'function') save(); } } catch(_) {} }, 5000); } // v953 后台tick后保存
+// v953 后台tick已移至界面script块（本行删除：core块取不到S/arrayTick/save）
 if (!window._demonWatchdog) { window._demonWatchdog = setInterval(() => { // v807 心魔战看门狗：每秒检查，死了一定结算；v812 覆盖斩三尸；v815 5秒强制清场；v829 序号检查，旧pk直接忽略
   try {
     const _G = (typeof G !== 'undefined' ? G : window);
@@ -4770,6 +4770,7 @@ function arrayTick(S) {
     if (!S.arrays || !S.arrays.length) return;
     const now = Date.now();
     S.arrays.forEach(a => {
+      if (!(a.lastTick > 0) || a.lastTick > now + 60000) { a.lastTick = now; try { log('sys', `🧭 采集阵(${a.x},${a.y})时间戳异常，已重置计时`); } catch(_) {} } // v954 自愈：lastTick损坏(NaN/缺失)或未来时间则重置，否则静默跳过永不采集
       if (!a.fuelUntil || a.fuelUntil <= now) {
         // v918 燃料耗尽自动消耗背包上品灵石续1小时
         if (((S.ores || {}).sp4|0) > 0) {
@@ -4889,6 +4890,7 @@ window.placeArray = function(x, y) {
 };
 window.arrayPanel = function(id) {
   try {
+    try { if (typeof arrayTick === 'function') { arrayTick(S); if (typeof save === 'function') save(); } } catch(_) {} // v954 开面板先结算一次，iOS挂起定时器时也能补采
     const a = (S.arrays || []).find(v => v.id === id);
     if (!a) return;
     const now = Date.now();
