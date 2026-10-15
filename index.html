@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v902</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v903</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4785,11 +4785,8 @@ function arrayTick(S) {
           let defPow = arrPow;
           let defName = '采集阵';
           if (a.guarded) {
-            try {
-              const _tot = (typeof C !== 'undefined' && C.total) ? C.total(S.attrs) : 1000;
-              defPow += _tot;
-              defName = '神识+采集阵';
-            } catch(_) { defPow += 1000; }
+            defPow += (a.guardPow|0) || 1000; // 守卫人的属性
+            defName = '神识+采集阵';
           }
           // NPC战力：随机，随玩家境界浮动
           const npcPow = Math.floor((800 + Math.random() * 700) * (1 + (S.realm|0) * 0.1));
@@ -4889,6 +4886,10 @@ window.toggleGuard = function(id) {
     if (!a) return;
     if ((S.realm|0) < 5) { log('bad', '需要化神以上'); return; }
     a.guarded = !a.guarded;
+    if (a.guarded) {
+      // 存守卫人属性（以后别人帮忙看时用别人的）
+      try { a.guardPow = (typeof C !== 'undefined' && C.total) ? C.total(S.attrs) : 1000; a.guardName = '你'; } catch(_) { a.guardPow = 1000; }
+    } else { a.guardPow = 0; }
     log('good', a.guarded ? `🛡️ 神识坐阵(${a.x},${a.y})，破坏需对战神识+采集阵` : `🔓 已撤回神识`);
     commit(); window.arrayPanel(id);
   } catch(e) {}
