@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v884</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v885</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5282,7 +5282,7 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
         const _isAdj = Math.abs(S.cavePx - x) + Math.abs(S.cavePy - y) === 1;
         const _bg = _isPlayer ? '#4a3a1a' : (_opened ? '#3a2a1a' : '#1a1a2e');
         const _bd = _isPlayer ? '#fc0' : (_opened ? '#a63' : '#333');
-        const _content = _isPlayer ? '🧑‍🌾' : (_opened ? '🟫' : '');
+        const _content = _isPlayer ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:80%;height:80%;object-fit:cover;border-radius:50%;display:block" onerror="this.outerHTML='🧑‍🌾'">` : (_opened ? '🟫' : ''); // v885 洞府用本人头像
         const _click = _isAdj ? `onclick="caveMove(${x},${y})" style="cursor:pointer;"` : '';
         _cells += `<div ${_click} style="aspect-ratio:1;background:${_bg};border:2px solid ${_bd};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;${_isAdj ? 'cursor:pointer;' : ''}">${_content}</div>`;
       }
