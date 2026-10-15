@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v885</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v886</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5274,12 +5274,18 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
     if (S.cavePx == null) { S.cavePx = 2; S.cavePy = 2; }
     const _size = 5;
     let _cells = '';
+    const _hasSkC = S.skills && S.skills.includes('shukuchi'), _hasDnyC = S.skills && S.skills.includes('danuoyi'); // v886
+    const _moveHint = _hasDnyC ? '大挪移：正交3格/斜2格' : _hasSkC ? '缩地：正交2格/斜1格' : '点击相邻格子走动';
     for (let y = 0; y < _size; y++) {
       for (let x = 0; x < _size; x++) {
         const _idx = y * _size + x;
         const _opened = _idx < grids;
         const _isPlayer = (S.cavePx === x && S.cavePy === y);
-        const _isAdj = Math.abs(S.cavePx - x) + Math.abs(S.cavePy - y) === 1;
+        const _cdx = x - S.cavePx, _cdy = y - S.cavePy; // v886 洞府移动接缩地/大挪移
+        const _cheb = Math.max(Math.abs(_cdx), Math.abs(_cdy)), _cdist = Math.abs(_cdx) + Math.abs(_cdy);
+        const _maxD = _hasDnyC ? 3 : (_hasSkC ? 2 : 1), _maxG = _hasDnyC ? 2 : (_hasSkC ? 1 : 0);
+        const _isOrth = (_cdx === 0 || _cdy === 0);
+        const _isAdj = (_isOrth && _cdist >= 1 && _cdist <= _maxD) || (!_isOrth && (_hasSkC || _hasDnyC) && _cheb >= 1 && _cheb <= _maxG);
         const _bg = _isPlayer ? '#4a3a1a' : (_opened ? '#3a2a1a' : '#1a1a2e');
         const _bd = _isPlayer ? '#fc0' : (_opened ? '#a63' : '#333');
         const _content = _isPlayer ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:80%;height:80%;object-fit:cover;border-radius:50%;display:block" onerror="this.outerHTML='🧑‍🌾'">` : (_opened ? '🟫' : ''); // v885 洞府用本人头像
@@ -5289,7 +5295,7 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
     }
     const _html = `<div style="padding:12px;min-height:60vh;background:linear-gradient(180deg,#1a0f0a,#0a0a1a);border-radius:12px">`
       + `<h2 style="text-align:center">${icon}${icon} ${name}</h2>`
-      + `<div class="hint" style="text-align:center">你的个人${name} · 已开 ${grids} 格 · 灵气 ${energy} · 点击相邻格子走动</div>`
+      + `<div class="hint" style="text-align:center">你的个人${name} · 已开 ${grids} 格 · 灵气 ${energy} · ${_moveHint}</div>`
       + `<div style="display:grid;grid-template-columns:repeat(${_size},1fr);gap:8px;margin:12px 0;max-width:400px;margin-left:auto;margin-right:auto">${_cells}</div>`
       + `<div class="row"><div class="lab">灵气加成</div><div>闭关每秒法力 +${energy}</div></div>`
       + `<div class="empty">🌱 灵植种植、🐟 养鱼即将开放……</div>`
@@ -5306,9 +5312,15 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
     _caveDiv.style.display = 'block';
   } catch(e) {}
 };
-window.caveMove = function(x, y) { // v819 洞府内走动
+window.caveMove = function(x, y) { // v819 洞府内走动；v886 接缩地/大挪移
   try {
-    if (Math.abs(S.cavePx - x) + Math.abs(S.cavePy - y) !== 1) return;
+    const _cdx = x - S.cavePx, _cdy = y - S.cavePy;
+    const _cheb = Math.max(Math.abs(_cdx), Math.abs(_cdy)), _cdist = Math.abs(_cdx) + Math.abs(_cdy);
+    const _hasSk = S.skills && S.skills.includes('shukuchi'), _hasDny = S.skills && S.skills.includes('danuoyi');
+    const _maxD = _hasDny ? 3 : (_hasSk ? 2 : 1), _maxG = _hasDny ? 2 : (_hasSk ? 1 : 0);
+    const _isOrth = (_cdx === 0 || _cdy === 0);
+    const _ok = (_isOrth && _cdist >= 1 && _cdist <= _maxD) || (!_isOrth && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxG);
+    if (!_ok) return;
     S.cavePx = x; S.cavePy = y;
     try { if (typeof commit === 'function') commit(); } catch(_) {}
     renderCaveMap();
@@ -7272,11 +7284,14 @@ window.useCaveToken = function(k) { // v798 使用洞府令/仙府令开格；v7
     if (!it || !it.token) { log('bad', '不是洞府令'); return; }
     const _nr = it.needRealm|0, _rn = _nr === 8 ? '仙人' : _nr === 4 ? '元婴' : '';
     if (_nr > 0 && (S.realm|0) < _nr) { log('bad', `${it.name}需<b class="r">${_rn}</b>境界才能使用`); return; }
-    S.mats[k]--; if (!S.mats[k]) delete S.mats[k];
+    let _cost = 1; // v886 洞府开格递增：第N格需N个令牌
+    if (it.token === 'cave') _cost = (S.dongfuGrids|0) + 1;
+    if ((S.mats[k]|0) < _cost) { log('bad', `令牌不足！开辟第 <b class="y">${(S.dongfuGrids|0) + 1}</b> 格需 <b class="r">${_cost}</b> 个${it.name}`); return; }
+    S.mats[k] -= _cost; if (S.mats[k] <= 0) delete S.mats[k];
     if (it.token === 'cave') {
       S.dongfuGrids = (S.dongfuGrids|0) + 1;
       S.dongfuEnergy = (S.dongfuEnergy|0) + (it.energy|0);
-      log('good', `${it.name}使用成功！开辟洞府第 <b class="y">${S.dongfuGrids}</b> 格，灵气 <b class="pu">+${it.energy}</b>（洞府灵气 ${S.dongfuEnergy}）`);
+      log('good', `${it.name}×${_cost}使用成功！开辟洞府第 <b class="y">${S.dongfuGrids}</b> 格，灵气 <b class="pu">+${it.energy}</b>（洞府灵气 ${S.dongfuEnergy}，下格需${S.dongfuGrids + 1}个令牌）`);
     } else {
       S.xianfuGrids = (S.xianfuGrids|0) + 1;
       S.xianfuEnergy = (S.xianfuEnergy|0) + (it.energy|0);
@@ -7314,7 +7329,7 @@ function sheetBag() {
       ((S.inv['chestR']|0) > 0 ? `<div class="row"><div class="lab">🎁 <b class="y">稀有宝箱</b> ×${S.inv['chestR']}<small>擂台月榜奖励，开出高品灵石/灵露</small></div><button class="btn gold" data-chest="chestR" data-n="1">开启</button>${(S.inv['chestR']|0) > 1 ? `<button class="btn" data-chest="chestR" data-n="${S.inv['chestR']}">全开</button>` : ''}</div>` : '') +
       ((S.inv['chestA']|0) > 0 ? `<div class="row"><div class="lab">💎 <b class="y">高级宝箱</b> ×${S.inv['chestA']}<small>擂台年榜奖励，开出极品灵石/珍稀</small></div><button class="btn gold" data-chest="chestA" data-n="1">开启</button>${(S.inv['chestA']|0) > 1 ? `<button class="btn" data-chest="chestA" data-n="${S.inv['chestA']}">全开</button>` : ''}</div>` : '') : '') +
     `<h3>材料</h3>` + (mats.length ? mats.map(k => `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}</div></div>`).join('') : '<div class="empty">暂无材料，可在商店购买</div>') +
-    `<h3>🏠 洞府令</h3>` + ((S.mats['cave_token']|0) + (S.mats['xianfu_token']|0) > 0 ? ['cave_token','xianfu_token'].filter(k => (S.mats[k]|0) > 0).map(k => { const _eg = k === 'cave_token' ? `洞府 ${S.dongfuGrids|0} 格·灵气 ${S.dongfuEnergy|0}` : `仙府 ${S.xianfuGrids|0} 格·灵气 ${S.xianfuEnergy|0}`; return `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}<small>${MATS[k].desc} · ${_eg}</small></div><button class="btn gold" onclick="useCaveToken('${k}')">使用</button></div>`; }).join('') : '<div class="empty">暂无，商店有售</div>') +
+    `<h3>🏠 洞府令</h3>` + ((S.mats['cave_token']|0) + (S.mats['xianfu_token']|0) > 0 ? ['cave_token','xianfu_token'].filter(k => (S.mats[k]|0) > 0).map(k => { const _eg = k === 'cave_token' ? `洞府 ${S.dongfuGrids|0} 格·灵气 ${S.dongfuEnergy|0}·下格需${(S.dongfuGrids|0) + 1}令牌` : `仙府 ${S.xianfuGrids|0} 格·灵气 ${S.xianfuEnergy|0}`; return `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}<small>${MATS[k].desc} · ${_eg}</small></div><button class="btn gold" onclick="useCaveToken('${k}')">使用</button></div>`; }).join('') : '<div class="empty">暂无，商店有售</div>') +
     `<h3>灵露</h3>` + (LUK.some(k => S.mats[k] > 0) ? LUK.filter(k => S.mats[k] > 0).map(k => `<div class="row"><div class="lab">${rarTxt('farm', k)} ×${S.mats[k]}<small>服用：随机属性 +${LU[k].pts} · 炼药投入：成功率/上品 +${C.pct(LU[k].alc)}</small></div>
       <button class="btn" data-lu="${k}" data-n="1">服用</button>${S.mats[k] > 1 ? `<button class="btn gold" onclick="qtyPrompt('lu','${k}',${S.mats[k]})">数量</button>` : ''}</div>`).join('') : '<div class="empty">暂无灵露，种植时偶尔可得（一品可在商店购买）</div>') +
     `<h3>灵石</h3>` + (Object.keys(ORES).some(k => ORES[k].extra && S.ores[k] > 0) ? Object.keys(ORES).filter(k => ORES[k].extra && S.ores[k] > 0).map(k => `<div class="row"><div class="lab">${rarTxt('mine', k)} ×${S.ores[k]}<small>服用：${ORES[k].lvl ? '直接提升 1 级' : '经验 +' + ORES[k].xp} · 炼药投入：成功率/上品 +${C.pct(ORES[k].alc)}</small></div>
