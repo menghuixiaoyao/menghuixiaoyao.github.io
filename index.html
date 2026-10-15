@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v890</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v891</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5323,7 +5323,8 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
           const _crop = (S.caveCrops||{})[_idx];
           if (_crop && !_crop.done) {
             const _pct = Math.min(100, Math.floor(((_crop.g||0) / 14400000) * 100));
-            _content = `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:22px">${_pct >= 100 ? '🌾' : '🌱'}</span><span style="font-size:8px;color:#8f8">${_pct}%${(S.realm|0) >= 4 ? '' : '·需元神'}</span></div>`;
+            const _yy = (S.realm|0) >= 4 ? '<span style="font-size:10px">👶</span>' : ''; // v891 元婴照料中
+            _content = `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:22px">${_pct >= 100 ? '🌾' : '🌱'}${_yy}</span><span style="font-size:8px;color:#8f8">${_pct}%${(S.realm|0) >= 4 ? '' : '·需元神'}</span></div>`;
             _click = '';
           } else if (!_crop && (S.mats['lz_seed']|0) > 0) {
             _content = `<span style="font-size:16px;opacity:0.5">➕</span>`;
@@ -5336,6 +5337,8 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
     const _html = `<div style="padding:12px;min-height:60vh;background:linear-gradient(180deg,#1a0f0a,#0a0a1a);border-radius:12px">`
       + `<h2 style="text-align:center">${icon}${icon} ${name}</h2>`
       + `<div class="hint" style="text-align:center">你的个人${name} · 已开 ${grids} 格 · 灵气 ${energy} · ${_moveHint}</div>`
+      + ((S.realm|0) >= 4 ? `<div class="hint" style="text-align:center">👶 <b class="pu">元婴坐镇</b> · 元神正在照料灵植</div>` : '')
+      + ((S.realm|0) >= 5 ? `<div class="hint" style="text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">👤 <b class="pu">化神分身</b><img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:2px solid #4dd" onerror="this.style.display='none'"> · 分身正在外放神识</div>` : '')
       + `<div style="display:grid;grid-template-columns:repeat(${_size},1fr);gap:8px;margin:12px 0;max-width:400px;margin-left:auto;margin-right:auto">${_cells}</div>`
       + `<div class="row"><div class="lab">灵气加成</div><div>闭关每秒法力 +${energy}</div></div>`
       + `<div class="empty">🌱 灵植种植、🐟 养鱼即将开放……</div>`
