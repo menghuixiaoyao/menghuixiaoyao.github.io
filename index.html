@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v935</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v936</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -699,7 +699,8 @@ function normalize(S) {
   if (!(S.shenshi >= 1)) S.shenshi = 1; S.shenshi = Math.floor(S.shenshi); // v580 神识独立于五维
   if (!(S.qixi >= 0)) S.qixi = 0; // v928 气息
 function flowerCount(S) { const s = S.shenshi|0; if (s >= 25600) return 9; if (s >= 12800) return 8; if (s >= 6400) return 7; if (s >= 3200) return 6; if (s >= 1600) return 5; if (s >= 800) return 4; if (s >= 400) return 3; if (s >= 200) return 2; if (s >= 100) return 1; return 0; } // v933 9朵满：100起翻倍至25600
-function flowerBonus(S) { return (typeof flowerCount === 'function' ? flowerCount(S) : 0) * 0.03; } // v932 每朵花+3%全属性（待定）
+function flowerBonus(S) { return (typeof flowerCount === 'function' ? flowerCount(S) : 0) * 0.03; } // v932
+function flowerIcons(S) { try { var fc = (typeof flowerCount === 'function' ? flowerCount(S) : 0); if (fc <= 0) return ''; var w = Math.floor(fc/3), p = fc%3; return '💮'.repeat(w) + '🌸'.repeat(p); } catch(e) { return ''; } } // v936 3粉变1白 每朵花+3%全属性（待定）
 function claimFlowerSS(S) { // v935 三朵花加一次：每满3朵+150神识
   try {
     const fc = (typeof flowerCount === 'function' ? flowerCount(S) : 0);
@@ -7035,7 +7036,7 @@ function sheetChar() {
   let _sbTop = [];
   Object.keys(_setNamesTop).forEach(k => { if ((_setsTop[k]|0) >= 2) _sbTop.push(`<span class="y">🎽${_setNamesTop[k]}${_setsTop[k]}件</span>`); });
   const setBonusHtml = _sbTop.length ? `<span style="font-weight:normal;font-size:12px">${_sbTop.join(' ')}</span>` : '';
-  html += `<div style="font-size:13px;font-weight:bold;margin-bottom:6px;display:flex;gap:6px;align-items:center"><span style="width:44px;flex:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.name || '无名道友')}</span><div style="flex:1;min-width:0;display:flex;gap:6px;align-items:center"><button class="act primary" style="flex:none;padding:6px 8px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">${S.level === C.REALM_MAX_LV - 1 ? '⬆️突破圆满' : '⬆️升级'}</span></button><span style="flex:1;text-align:center">${C.realmTxt(S)}</span>${S.dead ? '' : '<button class="act" style="flex:none;padding:6px 6px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">🔄轮回</span></button>'}</div><span style="flex:none;font-size:11px;font-weight:normal">👁️<b>${C.fmtN(S.shenshi|0)}</b>${(typeof flowerCount !== 'undefined' ? flowerCount(S) : 0) > 0 ? ` <span class="y">🌸×${(typeof flowerCount !== 'undefined' ? flowerCount(S) : 0)}</span>` : ''}</span>${setBonusHtml}</div>`; // v570 名字对齐头像正中；v571 阶段对齐经验条正中；v581 神识放阶段右边
+  html += `<div style="font-size:13px;font-weight:bold;margin-bottom:6px;display:flex;gap:6px;align-items:center"><span style="width:44px;flex:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.name || '无名道友')}</span><div style="flex:1;min-width:0;display:flex;gap:6px;align-items:center"><button class="act primary" style="flex:none;padding:6px 8px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">${S.level === C.REALM_MAX_LV - 1 ? '⬆️突破圆满' : '⬆️升级'}</span></button><span style="flex:1;text-align:center">${C.realmTxt(S)}</span>${S.dead ? '' : '<button class="act" style="flex:none;padding:6px 6px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">🔄轮回</span></button>'}</div><span style="flex:none;font-size:11px;font-weight:normal">👁️<b>${C.fmtN(S.shenshi|0)}</b>${(typeof flowerIcons === 'function' ? flowerIcons(S) : '') ? ` <span class="y">${flowerIcons(S)}</span>` : ''}</span>${setBonusHtml}</div>`; // v570 名字对齐头像正中；v571 阶段对齐经验条正中；v581 神识放阶段右边
   { xyInit(); const _xyt = xyTotal(); html += `<div class="row" style="padding:4px 0"><div class="lab">💞 仙缘<small>♂ ${S.xianyuan.m|0} · ♀ ${S.xianyuan.f|0} · 共 ${_xyt}</small></div><div class="lab">🔗 编号<small>${S.bindNum}</small></div><button class="btn sm" data-a="xianyuan">仙缘</button></div>`; }
   html += `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:3.5px;margin-bottom:4px;margin-left:0;margin-right:0;font-size:12px"><span style="white-space:nowrap">⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : 'g'}">${S.lifespan|0}</b>年</span><span></span><span class="stam" style="text-align:center">体力 <b style="font-size:12px">${S.stamina|0}</b></span><span></span><span style="text-align:center;position:relative;left:-15px">🍗饱食 <b class="${S.hunger >= 60 ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b></span></div>`;
   if ((S.realm|0) >= 1 && window.LG) html += `<div class="row" style="padding:4px 0"><div class="lab">🌟 灵根<small>${window.LG.name(S)}</small></div>${S.faZeDone5 ? '<div class="lab">🌈 <b class="y">混元道体</b></div>' : ''}${(S.realm|0) >= 6 ? `<div class="lab">🙏 功德金身<small>功德 <b class="y">${S.merit|0}</b> · 减伤 ${Math.min(30, Math.floor((S.merit|0)/10))}%${(S.merit|0) >= 100 ? ' · 突破+5%' : ''}</small></div>` : ''}</div>`; // v867 灵根显示；v906 功德金身放灵根一排
