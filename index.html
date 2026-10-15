@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v866</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v867</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -926,7 +926,7 @@ function doManualLevelUp(S) {
 }
 function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); return n; } // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
-const breakthroughRate = S => Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）
+const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) { if (S.faZeDone5) r += 0.15; else if (S.faZeDone) r += 0.05; r = Math.min(0.95, r); } return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867 法则圆满加成
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
 const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {q, opts, ans}
   { q: '新入仙途的道友，初始有几点体力？', opts: ['3 点', '5 点', '10 点', '20 点'], ans: 1 },
@@ -1257,6 +1257,50 @@ function gradeFromFull(full) { // v176 按充满度定档（供 tribGrade / 天�
 function tribGrade(S) { // v175 金丹/元婴品质：按突破前灵气条/仙力充满度定档（压条 900% 圆满）
   return gradeFromFull(tribFull(S));
 }
+/* ---------- v867 灵根/法则 ---------- */
+const LINGGEN_ELEMS = ['金','木','水','火','土'];
+const LINGGEN_ATTR = {金:'str', 木:'vit', 水:'agi', 火:'int', 土:'def'};
+const LINGGEN_ELE_ICON = {金:'⚙️', 木:'🌿', 水:'💧', 火:'🔥', 土:'🪨'};
+function assignLingGen(S) { // 练气突破随机灵根：1-5条加权
+  if (S.lingGen && S.lingGen.length) return S.lingGen;
+  const r = Math.random();
+  const n = r < 0.10 ? 1 : r < 0.30 ? 2 : r < 0.60 ? 3 : r < 0.85 ? 4 : 5;
+  const pool = LINGGEN_ELEMS.slice(), gen = [];
+  for (let i = 0; i < n; i++) gen.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  S.lingGen = gen;
+  return gen;
+}
+function lingGenName(S) {
+  const g = S.lingGen || [];
+  if (!g.length) return '未觉醒';
+  const t = g.length === 1 ? '天灵根' : g.length === 5 ? '杂灵根' : g.length + '灵根';
+  return t + '·' + g.join('');
+}
+function ensureLingGen(S) { // 老存档补抽
+  if (S && (S.realm|0) >= 1 && !(S.lingGen && S.lingGen.length)) {
+    assignLingGen(S);
+    try { log('good', `🌟 灵根觉醒：<b>${lingGenName(S)}</b>！`); } catch(_) {}
+  }
+}
+function lingGenTrainBonus(S) { // 修炼加成概率
+  const n = (S.lingGen && S.lingGen.length) || 0;
+  return n === 1 ? 0.25 : n === 2 ? 0.15 : n === 3 ? 0.08 : n === 4 ? 0.03 : 0;
+}
+function lingGenAfkMult(S) { // 闭关收益系数
+  const n = (S.lingGen && S.lingGen.length) || 0;
+  return n === 1 ? 0.30 : n === 2 ? 0.15 : n === 4 ? -0.10 : n >= 5 ? -0.20 : 0;
+}
+function faZeBonus(S) { // 法则战斗加成：{attr: mult}
+  const out = {};
+  try {
+    const fz = S.faZe || {};
+    for (const el of LINGGEN_ELEMS) if ((fz[el]|0) >= 100) out[LINGGEN_ATTR[el]] = 0.15;
+    if (S.faZeDone5) ATTRS.forEach(k => out[k] = (out[k]||0) + 0.20);
+    else if (S.faZeDone) ATTRS.forEach(k => out[k] = (out[k]||0) + 0.05);
+  } catch(_) {}
+  return out;
+}
+try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, faZeBonus: faZeBonus }; } catch(_) {} // v867 跨script块用window.LG
 function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 breakthrough / finishTribQuiz 共用）
   S.thunderOk = false; S._trigFail = 0; S._succFail = 0; // v659 突破后重置雷云判定
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
@@ -1303,6 +1347,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
     if (fromRealm === 2) S.danGrade = gradeName; else if (fromRealm === 3) S.yingGrade = gradeName;
   }
   if (fromRealm === 0 && S.xp > 0) S.savedXp = (S.savedXp || 0) + S.xp; S.realm++; S.lifespan = Math.max((S.lifespan|0) * 2, REALM_LIFESPAN[Math.min(12, S.realm|0)] || 100); S.level = 1; S.xp = 0; S.btTotal = (S.btTotal || 0) + 1;
+  if (fromRealm === 0) { assignLingGen(S); try { log('good', `🌟 踏入练气，灵根觉醒：<b>${lingGenName(S)}</b>！`); } catch(_) {} } // v867 练气突破随机灵根
   if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v857 修v856：realm++后存到新境界索引 chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true); chatPush(S, CHAT_NAMES[Math.floor(Math.random() * CHAT_NAMES.length)], ['恭喜道友突破！', '又一位道友突破了，可喜可贺！', '道友天资卓绝，我辈楷模！'][Math.floor(Math.random() * 3)], false); if (/散仙|游仙|虚气|伪气|虚基|残基|虚丹|假丹|虚婴|假婴|虚神|散神|伪乘|残乘|怯劫|避劫|劫余|残仙|虚合|假合|伪尊|空尊|凡胎|燃尽/.test(REALMS[S.realm]||'')) _btm = 1.2; // v811 降级状态突破倍率1.2
   ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 8) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
 } // 突破全属性×倍率表；渡劫→仙人时100万法力=1仙力转换，上限=转换后值
@@ -1383,6 +1428,7 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   if (S.status) { S.status.bleed = false; S.status.poison = false; S.status.bleedBase = 0; S.status.poisonBase = 0; S.status.bleedFrac = 0; S.status.poisonFrac = 0; S.status.curse = false; S.status.depress = false; } // 轮回清除所有负面状态：流血/中毒/诅咒/抑郁
   S.maiVLuo = 0; S.maiVMai = 0; // v89 轮回：虚络/虚脉清零，实络/实脉/开脉术保留
   S.degraded = null; if (S.failNum) S.failNum = {}; // v613 轮回清零降级状态
+  S.butianTaken = {}; // v867 轮回：补天丹每境界计数清零（新一世重算），灵根/法则进度保留
   S.yinQi = 0; // v116 轮回清零引气入体
   S.skills = []; // 轮回后技能消失，需用技能书重学（技能书/残页保留）
   S.hpCur = null; // 轮回回满血
@@ -1510,7 +1556,7 @@ function train(S, attr, n) {
       S.hpCur = Math.max(0, hpCur2 - pl); poisonAcc += pl; if (S.hpCur <= 0) { C.die(S, 'poison'); break; } } } // 逐点扣体力；中毒时每次修炼扣2%（可能中途毒发）
   const ok = S.dead ? done - 1 : done; hungerDown(S, done * K.HUNGER_ACT, done); /* 毒发的那一点体力不算修炼成果 */
   let fail = 0; if (hasSt(S, 'depress')) for (let i = 0; i < ok; i++) if (R() < K.DEPRESS_FAIL) fail++; // 抑郁：修炼偶尔失败
-  if (!S.dead) { S.attrs[attr] += ok - fail; if (S.realm === 0) S.xp += (ok - fail) * 10; } train.fail = fail; train.gain = S.dead ? 0 : ok - fail; return done; // 凡人每次成功锻炼+10经验（抑郁失手不算），练气以上不加
+  if (!S.dead) { let _lgb = 0; const _lgp = lingGenTrainBonus(S); for (let _i = 0; _i < ok - fail; _i++) if (Math.random() < _lgp) _lgb++; S.attrs[attr] += ok - fail + _lgb; if (S.realm === 0) S.xp += (ok - fail) * 10; train._lgb = _lgb; } train.fail = fail; train.gain = S.dead ? 0 : ok - fail + (train._lgb||0); return done; // 凡人每次成功锻炼+10经验（抑郁失手不算），练气以上不加；v867 灵根修炼加成
 }
 // —— 饥饿 / 气运 / 状态 / 灵宠忠诚 ——
 const hasSt = (S, k) => !!S.status && (k === 'bleed' || k === 'poison' ? !!S.status[k] : S.status[k] > C.now());
@@ -1660,8 +1706,9 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     const secs = Math.floor((Date.now() - S.afk.start + dbgMs) / 1000);
     const dc = (C.setCounts(S).def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1;
     const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
+    const _lgAfk = 1 + lingGenAfkMult(S); // v867 灵根闭关加成：天灵根快，五灵根慢
     for (let i = 0; i < secs; i++) {
-      gain += ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0) + (S.caveEnergy|0)) * (1 + afkMult); // v89：每条络+1，每点开脉术经验+1；v799 洞府灵气加成
+      gain += ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0) + (S.caveEnergy|0)) * (1 + afkMult) * _lgAfk; // v89：每条络+1，每点开脉术经验+1；v799 洞府灵气加成
       if (isVein && Math.random() < 0.01 / 60) {
         const res = afkChallenge(S);
         if (res) logs.push(res);
@@ -1811,7 +1858,7 @@ function eatFood(S, kind, k, n, petId) { // 吃肉/蛋：恢复饱食度（肉�
   return res;
 }
 function useMed(S, k) { const m = MEDS[k]; if (!m || !(S.meds[k] > 0)) return { ok: false, why: 'none' }; if (m.cure === 'curse') { if (!((S.curseN|0) > 0)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; S.curseN = (S.curseN|0) - 1; return { ok: true, cure: 'curse' }; } if (!hasSt(S, m.cure)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); return { ok: true, cure: m.cure }; }
-function fightAttrs(S, adv) { const a = adv ? battleAttrs(S) : Object.assign({}, S.attrs); gearAdd(S, a); if (S.buff && AN[S.buff.k]) a[S.buff.k] = Math.round(a[S.buff.k] * (1 + S.buff.v)); if (hasSt(S, 'depress')) ATTRS.forEach(k => a[k] = Math.max(1, Math.round(a[k] * K.DEPRESS_ATTR))); const _shaN = S.inv.sha|0; if (_shaN > 0) { if (S.shaMode === 'def') a.def = Math.max(1, Math.round(a.def * (1 + _shaN / 100))); else a.str = Math.max(1, Math.round(a.str * (1 + _shaN / 100))); } return a; }
+function fightAttrs(S, adv) { const a = adv ? battleAttrs(S) : Object.assign({}, S.attrs); gearAdd(S, a); if (S.buff && AN[S.buff.k]) a[S.buff.k] = Math.round(a[S.buff.k] * (1 + S.buff.v)); if (hasSt(S, 'depress')) ATTRS.forEach(k => a[k] = Math.max(1, Math.round(a[k] * K.DEPRESS_ATTR))); const _shaN = S.inv.sha|0; if (_shaN > 0) { if (S.shaMode === 'def') a.def = Math.max(1, Math.round(a.def * (1 + _shaN / 100))); else a.str = Math.max(1, Math.round(a.str * (1 + _shaN / 100))); } try { const _fzb = faZeBonus(S); for (const k in _fzb) a[k] = Math.max(1, Math.round(a[k] * (1 + _fzb[k]))); } catch(_) {} return a; } // v867 法则圆满加成
 const AURA_SETS = ['def', 'heal']; // 防御套 / 治愈（生命）套：同时作用于队友（目前为出战灵宠，将来组队的队友也传入 allies）
 const setDefBoost = (def, v) => v ? Math.round(def * v) : 0; // 防御套：按各自的防御提升百分比
 function applySetDef(f) { if (!f || f.defBoost != null) return; const v = f.sets && f.sets.def; f.defBase = f.a.def; f.defBoost = setDefBoost(f.a.def, v); f.a.def += f.defBoost; } // 只加一次；f.a 是副本，不改存档
@@ -4570,6 +4617,7 @@ var S, pk = null; window.S = S;
 function load() {
   try { const raw = localStorage.getItem(SAVE_KEY); S = raw ? C.normalize(JSON.parse(raw)) : null; } catch (e) { S = null; }
   if (!S) { S = C.newState(); welcome(); }
+  try { if (window.LG) window.LG.ensure(S); } catch(_) {} // v867 老存档补抽灵根（跨块走window.LG）
 }
 function save() { try { S.log = S.log.slice(-K.LOG_KEEP); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 function welcome() {
@@ -6234,6 +6282,11 @@ function sheetTrain() {
       <button class="btn gold" data-gather="${kind}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>${v} 5</button></div>`; })(GK[k]) : `<div class="row"><div class="lab">📖 看书 · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，挑灯夜读，不获得物品</small></div>
       <button class="btn" data-train="${k}" data-n="1" ${S.stamina >= 1 ? '' : 'disabled'}>读 1</button>
       <button class="btn gold" data-train="${k}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>读 5</button></div>`).join('') +
+    ((S.realm|0) >= 11 && window.LG ? `<h3 style="margin:10px 0 4px">☯️ 参悟法则 <small style="color:var(--dim)">灵根：${window.LG.name(S)} · 每次3体力</small></h3>` +
+      window.LG.ELES.map(el => { const pg = (S.faZe && S.faZe[el]) | 0, mine = (S.lingGen||[]).indexOf(el) >= 0, done = pg >= 100;
+        return `<div class="row"><div class="lab">${window.LG.ICON[el]} ${el}之法则 <b>${pg}%</b><small>对应${{str:'力量',vit:'体质',agi:'身法',int:'智力',def:'防御'}[window.LG.ATTR[el]]}${done ? ' · <b class="g">圆满</b>' : ''}${mine ? '' : ' · 🔒无此灵根'}</small></div>
+        <button class="btn gold" data-faze="${el}" ${!mine || done || (S.stamina|0) < 3 ? 'disabled' : ''}>参悟</button></div>`; }).join('') +
+      (S.faZeDone5 ? `<div class="hint">🌈 <b class="y">五行圆满 · 混元道体</b>：全属性+20%，突破主宰成功率+15%</div>` : S.faZeDone ? `<div class="hint">☯️ <b class="y">本命法则圆满</b>：全属性+5%，突破主宰成功率+5%</div>` : '') : '') +
 
     `<button class="btn full" data-close>关闭</button>`);
 }
@@ -6557,6 +6610,7 @@ function sheetChar() {
   html += `<div style="font-size:13px;font-weight:bold;margin-bottom:6px;display:flex;gap:6px;align-items:center"><span style="width:44px;flex:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.name || '无名道友')}</span><div style="flex:1;min-width:0;display:flex;gap:6px;align-items:center"><button class="act primary" style="flex:none;padding:6px 8px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">${S.level === C.REALM_MAX_LV - 1 ? '⬆️突破圆满' : '⬆️升级'}</span></button><span style="flex:1;text-align:center">${C.realmTxt(S)}</span>${S.dead ? '' : '<button class="act" style="flex:none;padding:6px 6px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">🔄轮回</span></button>'}</div><span style="flex:none;font-size:11px;font-weight:normal">👁️<b>${C.fmtN(S.shenshi|0)}</b></span>${setBonusHtml}</div>`; // v570 名字对齐头像正中；v571 阶段对齐经验条正中；v581 神识放阶段右边
   { xyInit(); const _xyt = xyTotal(); html += `<div class="row" style="padding:4px 0"><div class="lab">💞 仙缘<small>♂ ${S.xianyuan.m|0} · ♀ ${S.xianyuan.f|0} · 共 ${_xyt}</small></div><div class="lab">🔗 编号<small>${S.bindNum}</small></div><button class="btn sm" data-a="xianyuan">仙缘</button></div>`; }
   html += `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:3.5px;margin-bottom:4px;margin-left:0;margin-right:0;font-size:12px"><span style="white-space:nowrap">⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : 'g'}">${S.lifespan|0}</b>年</span><span></span><span class="stam" style="text-align:center">体力 <b style="font-size:12px">${S.stamina|0}</b></span><span></span><span style="text-align:center;position:relative;left:-15px">🍗饱食 <b class="${S.hunger >= 60 ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b></span></div>`;
+  if ((S.realm|0) >= 1 && window.LG) html += `<div class="row" style="padding:4px 0"><div class="lab">🌟 灵根<small>${window.LG.name(S)}</small></div>${S.faZeDone5 ? '<div class="lab">🌈 <b class="y">混元道体</b></div>' : ''}</div>`; // v867 灵根显示
 
   // 五维：一行五列
   html += ``;
@@ -7199,6 +7253,8 @@ function sheetBag() {
     ((S.inv['mai']|0) > 0 ? `<div class="row"><div class="lab">🌀 <b class="y">开脉丹</b> ×${S.inv['mai']}<small>服用：虚络 +1<span class="r">（临时，轮回清零）</span>，当前虚络 ${S.maiVLuo|0} 条 · 虚脉 ${S.maiVMai|0} 条</small></div>
       <button class="btn gold" data-drinkmai="1">服用</button>
       ${(S.inv['mai']|0) > 1 ? `<button class="btn gold" onclick="qtyPrompt('drinkmai','',${S.inv['mai']|0})">数量</button>` : ''}</div>` : '') +
+    ((S.inv['butian']|0) > 0 ? `<div class="row"><div class="lab">🌟 <b class="y">补天丹</b> ×${S.inv['butian']}<small>服用：随机+1条灵根（上限5条），每境界限服1颗，当前${window.LG ? window.LG.name(S) : ''}</small></div>
+      <button class="btn gold" data-drinkbutian="1">服用</button></div>` : '') +
     `<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神乘劫余散合尊'[i]}×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
 
 
@@ -7498,7 +7554,26 @@ function doCheckin(force) {
   commit();
   if (r.forceReinc) doReincarnate(true);
 }
-function doTrain(k, n) { const d = C.train(S, k, n), f = C.train.fail || 0; if (d) { const xpGain = S.realm === 0 ? (C.train.gain || 0) * 10 : 0; log(S.dead ? 'bad' : 'good', `📖 挑灯看书，${AN[k]} <span class="g">+${C.train.gain}</span>（体力 -${d}）` + (xpGain ? `，经验 <span class="g">+${xpGain}</span>` : '') + (f ? `<br><span class="r">🌧️ 心绪低落，${f} 次看书读不进去</span>` : '')); afterAct(); commit(); S.dead ? closeSheet() : sheetTrain(); } }
+function doFaZe(el) { // v867 参悟法则：尊者解锁，3体力/次，仅对应灵根
+  if ((S.realm|0) < 11 || !window.LG) return;
+  if ((S.lingGen||[]).indexOf(el) < 0) { toastLog('bad', '🔒 无此灵根，无法参悟' + el + '之法则'); return; }
+  S.faZe = S.faZe || {};
+  const cur = (S.faZe[el]|0);
+  if (cur >= 100) { toastLog('sys', el + '之法则已圆满'); return; }
+  if ((S.stamina|0) < 3) { toastLog('bad', '⚡ 体力不足（参悟需3点）'); return; }
+  S.stamina -= 3;
+  let add = 1 + Math.floor(Math.random() * 3), dw = false;
+  if (Math.random() < 0.05) { add += 8; dw = true; } // 5%顿悟
+  S.faZe[el] = Math.min(100, cur + add);
+  if (S.faZe[el] >= 100) log('good', `✨ <b>${el}之法则圆满！</b>${{str:'力量',vit:'体质',agi:'身法',int:'智力',def:'防御'}[window.LG.ATTR[el]]}+15%！`);
+  else log('good', `${dw ? '💡 顿悟！' : '☯️ '}${el}之法则参悟 +${add}%（${S.faZe[el]}%/100%）`);
+  const _allMine = (S.lingGen||[]).every(e => (S.faZe[e]|0) >= 100);
+  const _allFive = window.LG.ELES.every(e => (S.faZe[e]|0) >= 100);
+  if (_allFive && !S.faZeDone5) { S.faZeDone5 = 1; log('warn', `🌈 <b>五行圆满！成就【混元道体】！</b>全属性+20%，突破主宰成功率+15%！`); }
+  else if (_allMine && !S.faZeDone) { S.faZeDone = 1; log('warn', `☯️ <b>本命法则圆满！</b>全属性+5%，突破主宰成功率+5%！`); }
+  afterAct(); save(); sheetTrain(); render();
+}
+function doTrain(k, n) { const d = C.train(S, k, n), f = C.train.fail || 0; if (d) { const xpGain = S.realm === 0 ? (C.train.gain || 0) * 10 : 0; const _lgb = C.train._lgb || 0; log(S.dead ? 'bad' : 'good', `📖 挑灯看书，${AN[k]} <span class="g">+${C.train.gain}</span>（体力 -${d}）` + (_lgb ? `，<span class="g">灵根 +${_lgb}</span>` : '') + (xpGain ? `，经验 <span class="g">+${xpGain}</span>` : '') + (f ? `<br><span class="r">🌧️ 心绪低落，${f} 次看书读不进去</span>` : '')); afterAct(); commit(); S.dead ? closeSheet() : sheetTrain(); } }
 function doLvUp() {
   const r = C.doManualLevelUp(S);
   if (r.err) { toastLog('bad', r.err === 'dead' ? '已死亡' : r.err === 'max' ? '已大圆满' : r.err === 'mana' ? '法力不足' : '经验不足'); return; }
@@ -7810,6 +7885,22 @@ function doDrinkMai(n) {
   log('good', `🌀 服用开脉丹 ×${got}，虚络 <span class="y">+${got}</span><span class="r">（临时，轮回清零）</span>（当前虚络 ${S.maiVLuo}，实络 ${S.maiRLuo}，闭关每秒 +${C.maiLuo(S) + (S.maiShuXp|0)}）`);
   afterAct(); commit(); sheetBag();
 }
+function doDrinkButian() { // v867 补天丹：+1随机灵根，上限5条，每境界限1颗
+  const have = S.inv['butian']|0; if (have <= 0) { toastLog('sys', '没有补天丹'); return; }
+  if (window.LG) window.LG.ensure(S);
+  const g = S.lingGen || [];
+  if (g.length >= 5) { toastLog('sys', '灵根已满（5条），无需补天丹'); return; }
+  const rm = S.realm|0;
+  S.butianTaken = S.butianTaken || {};
+  if (S.butianTaken[rm]) { toastLog('sys', '本境界已服用过补天丹（每境界限1颗）'); return; }
+  const missing = window.LG.ELES.filter(e => g.indexOf(e) < 0);
+  const el = missing[Math.floor(Math.random() * missing.length)];
+  S.inv['butian']--; if (S.inv['butian'] <= 0) delete S.inv['butian'];
+  S.lingGen.push(el); S.butianTaken[rm] = 1;
+  S.faZeDone = 0; // 灵根变化，本命圆满需重判
+  log('good', `🌟 服用补天丹，补全 <b class="y">${el}灵根</b>！当前：<b>${window.LG.name(S)}</b>`);
+  afterAct(); commit(); sheetBag();
+}
 function doOpenChest(kind, n) { // v251 开宝箱
   const have = S.inv[kind] | 0; if (have <= 0) { toastLog('sys', '没有宝箱'); return; }
   n = Math.max(1, Math.min(have, n | 0 || 1));
@@ -7817,6 +7908,8 @@ function doOpenChest(kind, n) { // v251 开宝箱
   const gains = [];
   for (let i = 0; i < n; i++) {
     const r = Math.random();
+    const _btR = kind === 'chestB' ? 0.001 : kind === 'chestN' ? 0.002 : kind === 'chestR' ? 0.003 : 0.004; // v867 补天丹：盲盒1‰，每高一档+1‰
+    if (Math.random() < _btR) { S.inv['butian'] = (S.inv['butian']|0) + 1; gains.push('🌟补天丹×1'); }
     if (kind === 'chestN' || kind === 'chestB') {
       if (r < 0.5) { const g = 20 + Math.floor(Math.random() * 30); S.gold += g; gains.push('金元+' + g); }
       else if (r < 0.8) { S.ores['sp1'] = (S.ores['sp1'] | 0) + 1; gains.push('下品灵石×1'); }
@@ -8935,6 +9028,7 @@ document.addEventListener('click', e => {
   else if (d.c) doPkAction(d.c);
   else if (d.zx !== undefined) doPkZhenxiu(d.zx);
   else if (d.train) doTrain(d.train, +d.n);
+  else if (d.faze) doFaZe(d.faze);
   else if (d.gather) { const _gk=d.gather,_gn=+d.n||1; try { const _gp=document.getElementById('gatherProg'),_gb=document.getElementById('gatherProgBar'),_gt=document.getElementById('gatherProgTxt'); if(_gp&&_gb){ _gp.style.display='block'; _gb.style.width='0%'; const _names={mine:'挖矿中……',hunt:'打猎中……',farm:'种植中……',egg:'掏蛋中……',read:'看书中……'}; if(_gt)_gt.textContent=_names[_gk]||'采集中……'; let _p=0; const _iv=setInterval(()=>{ _p+=10; if(_gb)_gb.style.width=Math.min(100,_p)+'%'; if(_p>=100){ clearInterval(_iv); if(_gp)_gp.style.display='none'; doGather(_gk,_gn); } },80); } else { doGather(_gk,_gn); } } catch(_){ doGather(_gk,_gn); } } // v663 采集进度条
   else if (d.breakthrough !== undefined) doBreakthrough();
   else if (d.reincarnate !== undefined) doReincarnate();
@@ -9013,7 +9107,7 @@ document.addEventListener('click', e => {
   else if (d.devour) sheetDevour(+d.devour);
   else if (d.devfood) doDevour(+d.eater, +d.devfood);
   else if (d.brew) doBrew(d.brew, +d.n);
-  else if(d.allrep!==undefined){for(let i=0;i<12;i++)S.inv['repair'+i]=(S.inv['repair'+i]|0)+9;commit();render();log('good','🌿12种修复灵物各+9');}else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();const rp=r.split('|');log(rp[0]==='ok'?'good':'bad',rp[0]==='ok'?`🌿修复成功！${rp[1]}→${rp[2]}`:'🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); try { if (typeof sheetChar === 'function' && $('sheet') && $('sheet').style.display !== 'none') sheetChar(); } catch(_) {} toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
+  else if(d.allrep!==undefined){for(let i=0;i<12;i++)S.inv['repair'+i]=(S.inv['repair'+i]|0)+9;commit();render();log('good','🌿12种修复灵物各+9');}else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();const rp=r.split('|');log(rp[0]==='ok'?'good':'bad',rp[0]==='ok'?`🌿修复成功！${rp[1]}→${rp[2]}`:'🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if(d.drinkbutian)doDrinkButian(); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); try { if (typeof sheetChar === 'function' && $('sheet') && $('sheet').style.display !== 'none') sheetChar(); } catch(_) {} toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
   else if (d.sha) doSha(d.sha);
   else if (d.drink) doDrink(d.drink, +d.g, +d.n);
   else if (d.take) window.finishPk(d.take);
