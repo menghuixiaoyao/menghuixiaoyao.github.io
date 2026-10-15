@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v869</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v870</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -926,7 +926,7 @@ function doManualLevelUp(S) {
 }
 function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); return n; } // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
-const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) { if (S.faZeDone5) r += 0.15; else if (S.faZeDone) r += 0.05; r = Math.min(0.95, r); } return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867 法则圆满加成
+const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
 const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {q, opts, ans}
   { q: '新入仙途的道友，初始有几点体力？', opts: ['3 点', '5 点', '10 点', '20 点'], ans: 1 },
@@ -1297,17 +1297,34 @@ function lingGenAfkTxt(S) { // 闭关加成显示
 function lingGenTrainTxt(S) { // 修炼加成显示
   return Math.round(lingGenTrainBonus(S) * 100) + '%';
 }
-function faZeBonus(S) { // 法则战斗加成：{attr: mult}
+function faZeBonus(S) { // 法则战斗加成：{attr: mult}；v869 本命圆满按灵根数分档
   const out = {};
   try {
-    const fz = S.faZe || {};
+    const fz = S.faZe || {}, lg = S.lingGen || [], n = lg.length;
     for (const el of LINGGEN_ELEMS) if ((fz[el]|0) >= 100) out[LINGGEN_ATTR[el]] = 0.15;
-    if (S.faZeDone5) ATTRS.forEach(k => out[k] = (out[k]||0) + 0.20);
-    else if (S.faZeDone) ATTRS.forEach(k => out[k] = (out[k]||0) + 0.05);
+    const allFive = LINGGEN_ELEMS.every(e => (fz[e]|0) >= 100);
+    const allMine = n > 0 && lg.every(e => (fz[e]|0) >= 100);
+    let bAll = 0;
+    if (allFive) bAll = 0.20;
+    else if (allMine) bAll = n === 1 ? 0.05 : n === 2 ? 0.08 : n === 3 ? 0.11 : 0.14;
+    if (bAll > 0) ATTRS.forEach(k => out[k] = (out[k]||0) + bAll);
   } catch(_) {}
   return out;
 }
-try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus }; } catch(_) {} // v867 跨script块用window.LG
+function faZeBtBonus(S) { // v869 法则主宰突破加成：按灵根数分档
+  try {
+    const fz = S.faZe || {}, lg = S.lingGen || [], n = lg.length;
+    if (LINGGEN_ELEMS.every(e => (fz[e]|0) >= 100)) return 0.15;
+    if (n > 0 && lg.every(e => (fz[e]|0) >= 100)) return n === 1 ? 0.05 : n === 2 ? 0.08 : n === 3 ? 0.10 : 0.12;
+  } catch(_) {}
+  return 0;
+}
+function faZeBenMingTxt(S) { // v869 本命圆满加成显示
+  const n = (S.lingGen||[]).length;
+  const a = n === 1 ? 5 : n === 2 ? 8 : n === 3 ? 11 : 14, b = n === 1 ? 5 : n === 2 ? 8 : n === 3 ? 10 : 12;
+  return `全属性+${a}%，突破主宰成功率+${b}%`;
+}
+try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus, faZeBtBonus: faZeBtBonus, benMingTxt: faZeBenMingTxt }; } catch(_) {} // v867 跨script块用window.LG
 function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 breakthrough / finishTribQuiz 共用）
   S.thunderOk = false; S._trigFail = 0; S._succFail = 0; // v659 突破后重置雷云判定
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
@@ -6290,12 +6307,12 @@ function sheetTrain() {
       <button class="btn gold" data-gather="${kind}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>${v} 5</button></div>`; })(GK[k]) : `<div class="row"><div class="lab">📖 看书 · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，挑灯夜读，不获得物品</small></div>
       <button class="btn" data-train="${k}" data-n="1" ${S.stamina >= 1 ? '' : 'disabled'}>读 1</button>
       <button class="btn gold" data-train="${k}" data-n="5" ${S.stamina >= 5 ? '' : 'disabled'}>读 5</button></div>`).join('') +
-    ((S.realm|0) >= 11 && window.LG ? `<h3 style="margin:10px 0 4px">☯️ 参悟法则 <small style="color:var(--dim)">灵根：${window.LG.name(S)} · 每次3体力 · 单法则圆满对应属性+15%</small></h3>` +
+    ((S.realm|0) >= 11 && window.LG ? `<h3 style="margin:10px 0 4px">☯️ 参悟法则 <small style="color:var(--dim)">灵根：${window.LG.name(S)} · 每次3体力 · 单法则圆满对应属性+15%</small></h3><div class="hint" style="margin-top:-2px">本命圆满档：天灵根全属性+5%/突破+5% · 双灵根+8%/+8% · 三灵根+11%/+10% · 四灵根+14%/+12% · 五行圆满+20%/+15%</div>` +
       window.LG.ELES.map(el => { const pg = (S.faZe && S.faZe[el]) | 0, mine = (S.lingGen||[]).indexOf(el) >= 0, done = pg >= 100;
         const _an = {str:'力量',vit:'体质',agi:'身法',int:'智力',def:'防御'}[window.LG.ATTR[el]];
         return `<div class="row"><div class="lab">${window.LG.ICON[el]} ${el}之法则 <b>${pg}%</b><small>对应${_an}${done ? ` · <b class="g">圆满（${_an}+15%生效中）</b>` : ''}${mine ? '' : ' · 🔒无此灵根'}</small></div>
         <button class="btn gold" data-faze="${el}" ${!mine || done || (S.stamina|0) < 3 ? 'disabled' : ''}>参悟</button></div>`; }).join('') +
-      (S.faZeDone5 ? `<div class="hint">🌈 <b class="y">五行圆满 · 混元道体</b>：全属性+20%，突破主宰成功率+15%</div>` : S.faZeDone ? `<div class="hint">☯️ <b class="y">本命法则圆满</b>：全属性+5%，突破主宰成功率+5%</div>` : '') : '') +
+      (S.faZeDone5 ? `<div class="hint">🌈 <b class="y">五行圆满 · 混元道体</b>：全属性+20%，突破主宰成功率+15%</div>` : S.faZeDone ? `<div class="hint">☯️ <b class="y">本命法则圆满</b>：${window.LG.benMingTxt(S)}</div>` : '') : '') +
 
     `<button class="btn full" data-close>关闭</button>`);
 }
@@ -7579,7 +7596,7 @@ function doFaZe(el) { // v867 参悟法则：尊者解锁，3体力/次，仅对
   const _allMine = (S.lingGen||[]).every(e => (S.faZe[e]|0) >= 100);
   const _allFive = window.LG.ELES.every(e => (S.faZe[e]|0) >= 100);
   if (_allFive && !S.faZeDone5) { S.faZeDone5 = 1; log('warn', `🌈 <b>五行圆满！成就【混元道体】！</b>全属性+20%，突破主宰成功率+15%！`); }
-  else if (_allMine && !S.faZeDone) { S.faZeDone = 1; log('warn', `☯️ <b>本命法则圆满！</b>全属性+5%，突破主宰成功率+5%！`); }
+  else if (_allMine && !S.faZeDone) { S.faZeDone = 1; log('warn', `☯️ <b>本命法则圆满！</b>${window.LG.benMingTxt(S)}！`); }
   afterAct(); save(); sheetTrain(); render();
 }
 function doTrain(k, n) { const d = C.train(S, k, n), f = C.train.fail || 0; if (d) { const xpGain = S.realm === 0 ? (C.train.gain || 0) * 10 : 0; const _lgb = C.train._lgb || 0; log(S.dead ? 'bad' : 'good', `📖 挑灯看书，${AN[k]} <span class="g">+${C.train.gain}</span>（体力 -${d}）` + (_lgb ? `，<span class="g">灵根 +${_lgb}</span>` : '') + (xpGain ? `，经验 <span class="g">+${xpGain}</span>` : '') + (f ? `<br><span class="r">🌧️ 心绪低落，${f} 次看书读不进去</span>` : '')); afterAct(); commit(); S.dead ? closeSheet() : sheetTrain(); } }
