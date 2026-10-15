@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v886</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v887</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -229,7 +229,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
     <span style="font-size:13px;color:var(--dim);flex:none">🗺️ 修仙界</span>
     <div id="cellInfo" style="flex:1;padding:4px 8px;background:#1a1a2e;border-radius:6px;font-size:12px;color:var(--dim);min-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-    <span style="flex:none"><button class="icon-btn" id="chatToggleBtn" style="font-size:16px" title="悬浮聊天开/关">💬</button><button class="icon-btn" id="msgFilterBtn" style="font-size:16px" title="消息过滤设置">⚙️</button></span>
+    <span style="flex:none"><button class="icon-btn" id="shenshiBtn" style="font-size:16px;display:none" title="神识外放（化神）" onclick="window.shenshiPanel()">👁️</button><button class="icon-btn" id="chatToggleBtn" style="font-size:16px" title="悬浮聊天开/关">💬</button><button class="icon-btn" id="msgFilterBtn" style="font-size:16px" title="消息过滤设置">⚙️</button></span>
     <div id="msgFilterPop" style="display:none;position:absolute;right:8px;top:120px;z-index:60;background:#1a1a2e;border:1px solid #444;border-radius:8px;padding:8px;box-shadow:0 2px 12px rgba(0,0,0,0.5)"></div>
   </div>
   <div id="mapGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:1px;max-width:96px;margin:0"> <!-- v505 再缩小 --></div>
@@ -571,6 +571,7 @@ const MATS = {
   h_agi: { name: '敏捷草', price: 5, basic: 'agi' }, h_str: { name: '力量草', price: 5, basic: 'str' },
   h_def: { name: '防御草', price: 5, basic: 'def' }, h_vit: { name: '生命草', price: 5, basic: 'vit' },
   h_int: { name: '智力草', price: 5, basic: 'int' },
+  lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（需元婴以上，元神照料才生长）', seed: 1 }, // v887
   cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 },
   xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 8 }
 };
@@ -4730,6 +4731,7 @@ function isSwordCell(x, y) {
 }
 function renderWorldMap() {
   try {
+    try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 5 ? '' : 'none'; } catch(_) {} // v887 化神显示神识按钮
 // v536 保留地(4,3)资源点：草药+矿石定时刷新
 function reserveTick(S) { // v666 叠加：每分钟各+1，上限99，无人采集一直累积
   const now = Date.now();
@@ -5261,11 +5263,35 @@ window.leaveCave = function() { // v817 离开洞府，传回修仙界
     try { if (typeof renderWorldMap === 'function') renderWorldMap(); } catch(_) {}
   } catch(e) {}
 };
-window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞府内走动
+window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞府内走动；v887 灵田种植
   try {
     const which = S.inCave;
     if (!which) return;
     const isDong = which === 'dongfu';
+    // v887 灵田生长结算：仅元婴以上元神照料才生长
+    try {
+      if (!S.caveCrops) S.caveCrops = {};
+      const _now = Date.now(), _isYuan = (S.realm|0) >= 4;
+      if (_isYuan) {
+        const _dt = S.caveCropTick ? Math.min(_now - S.caveCropTick, 86400000) : 0; // 上限1天防跳变
+        if (_dt > 0) {
+          for (const _k in S.caveCrops) {
+            const _c = S.caveCrops[_k];
+            if (!_c || _c.done) continue;
+            _c.g = (_c.g || 0) + _dt;
+            if (_c.g >= 14400000) { // 4小时成熟，元婴自动收获
+              _c.done = 1;
+              const _herbs = ['h_str','h_agi','h_def','h_vit','h_int'];
+              const _got = [];
+              for (let _i = 0; _i < 3; _i++) { const _h = _herbs[Math.floor(Math.random() * _herbs.length)]; S.mats[_h] = (S.mats[_h]||0) + 1; _got.push(MATS[_h].name); }
+              delete S.caveCrops[_k];
+              try { log('good', `👶 元神照料：灵植成熟，自动收获 ${_got.join('、')}！`); } catch(_) {}
+            }
+          }
+        }
+      }
+      S.caveCropTick = _now;
+    } catch(_) {}
     const grids = isDong ? (S.dongfuGrids|0) : (S.xianfuGrids|0);
     const energy = isDong ? (S.dongfuEnergy|0) : (S.xianfuEnergy|0);
     const name = isDong ? '洞府' : '仙府';
@@ -5288,8 +5314,20 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
         const _isAdj = (_isOrth && _cdist >= 1 && _cdist <= _maxD) || (!_isOrth && (_hasSkC || _hasDnyC) && _cheb >= 1 && _cheb <= _maxG);
         const _bg = _isPlayer ? '#4a3a1a' : (_opened ? '#3a2a1a' : '#1a1a2e');
         const _bd = _isPlayer ? '#fc0' : (_opened ? '#a63' : '#333');
-        const _content = _isPlayer ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:80%;height:80%;object-fit:cover;border-radius:50%;display:block" onerror="this.outerHTML='🧑‍🌾'">` : (_opened ? '🟫' : ''); // v885 洞府用本人头像
-        const _click = _isAdj ? `onclick="caveMove(${x},${y})" style="cursor:pointer;"` : '';
+        let _content = _isPlayer ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:80%;height:80%;object-fit:cover;border-radius:50%;display:block" onerror="this.outerHTML='🧑‍🌾'">` : (_opened ? '🟫' : ''); // v885 洞府用本人头像
+        let _click = _isAdj ? `onclick="caveMove(${x},${y})" style="cursor:pointer;"` : '';
+        // v887 灵田：已开空格显示作物/种植
+        if (!_isPlayer && _opened && isDong) {
+          const _crop = (S.caveCrops||{})[_idx];
+          if (_crop && !_crop.done) {
+            const _pct = Math.min(100, Math.floor(((_crop.g||0) / 14400000) * 100));
+            _content = `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:22px">${_pct >= 100 ? '🌾' : '🌱'}</span><span style="font-size:8px;color:#8f8">${_pct}%${(S.realm|0) >= 4 ? '' : '·需元神'}</span></div>`;
+            _click = '';
+          } else if (!_crop && (S.mats['lz_seed']|0) > 0) {
+            _content = `<span style="font-size:16px;opacity:0.5">➕</span>`;
+            if (!_isAdj) _click = `onclick="cavePlant(${_idx})" style="cursor:pointer;"`;
+          }
+        }
         _cells += `<div ${_click} style="aspect-ratio:1;background:${_bg};border:2px solid ${_bd};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:28px;${_isAdj ? 'cursor:pointer;' : ''}">${_content}</div>`;
       }
     }
@@ -5310,6 +5348,36 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
     }
     _caveDiv.innerHTML = _html;
     _caveDiv.style.display = 'block';
+  } catch(e) {}
+};
+window.shenshiPanel = function() { // v887 化神神识：3格内资源远程收取
+  try {
+    if ((S.realm|0) < 5) { log('bad', '需化神境界才能神识外放'); return; }
+    const wm = S.worldMap || { px: 2, py: 3 };
+    const _spots = [
+      { x: 4, y: 3, name: '⛏️灵脉矿区', fn: 'openReserveSheet' },
+      { x: 3, y: 2, name: '🌱田药园', fn: 'openHerbSheet' },
+      { x: 2, y: 0, name: '🥚养殖园', fn: 'openRanchSheet' }
+    ].filter(s => {
+      const _d = Math.max(Math.abs(s.x - wm.px), Math.abs(s.y - wm.py));
+      return _d >= 1 && _d <= 3;
+    });
+    if (!_spots.length) { log('bad', '👁️ 神识范围内（3格）没有资源点'); return; }
+    openSheet(`<h2>👁️ 神识外放</h2><div class="hint">化神神识覆盖3格，远程收取资源</div>` +
+      _spots.map(s => `<div class="row"><div class="lab">${s.name} <small>(${s.x},${s.y})</small></div><button class="btn gold" onclick="window.${s.fn}()">收取</button></div>`).join('') +
+      `<div class="row"><button class="btn full" onclick="closeSheet()">关闭</button></div>`);
+  } catch(e) {}
+};
+window.cavePlant = function(idx) { // v887 洞府灵田种植
+  try {
+    if ((S.mats['lz_seed']|0) <= 0) { log('bad', '没有灵植种子，商会可购买'); return; }
+    if (!S.caveCrops) S.caveCrops = {};
+    if (S.caveCrops[idx]) return;
+    S.mats['lz_seed']--; if (S.mats['lz_seed'] <= 0) delete S.mats['lz_seed'];
+    S.caveCrops[idx] = { g: 0 };
+    try { if (typeof commit === 'function') commit(); } catch(_) {}
+    log('good', `🌱 灵植种下！${(S.realm|0) >= 4 ? '元神会自动照料，约4小时成熟' : '<b class="r">需元婴以上元神照料才生长</b>'}`);
+    renderCaveMap();
   } catch(e) {}
 };
 window.caveMove = function(x, y) { // v819 洞府内走动；v886 接缩地/大挪移
@@ -6546,7 +6614,8 @@ function sheetShop(msg) {
   openSheet(`<h2>🏛️ 商会</h2><div class="hint">当前金元 <b class="y">${g}</b>。冒险与 PK 获胜、出售矿石、猎物与兽蛋可获得金元。</div>` + (msg ? `<div class="warn">${msg}</div>` : '') +
     `<div class="grid2" style="grid-template-columns:1fr 1fr;gap:8px;margin:8px 0"><button class="btn gold" data-consign style="padding:10px">🏪 寄售行</button><button class="btn gold" data-auction style="padding:10px">🔨 拍卖行</button></div>` +
     `<h3>药草（炼药必需）</h3>` + Object.keys(MATS).filter(k => MATS[k].basic).map(mRow).join('') +
-    `<h3>灵露（炼药增益，二品以上仅可种植获得）</h3>` + Object.keys(MATS).filter(k => !MATS[k].basic && !MATS[k].token && MATS[k].price).map(mRow).join('') +
+    `<h3>🌱灵植种子</h3>` + Object.keys(MATS).filter(k => MATS[k].seed).map(mRow).join('') +
+    `<h3>灵露（炼药增益，二品以上仅可种植获得）</h3>` + Object.keys(MATS).filter(k => !MATS[k].basic && !MATS[k].token && !MATS[k].seed && MATS[k].price).map(mRow).join('') +
     `<h3>洞府令（开辟洞府）</h3>` + Object.keys(MATS).filter(k => MATS[k].token).map(k => { const it = MATS[k]; const _canB = g >= it.price && (S.realm|0) >= (it.needRealm|0); return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc} · 拥有 ${S.mats[k] || 0}</small></div><button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${_canB ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
     `<h3>灵石</h3><div class="row"><div class="lab">🪨 灵气石 <span class="tag">100 金</span><small>服用：经验 +20 · 炼药投入：成功率/上品 +5% · 拥有 ${S.ores.sp1 || 0}</small></div>
       <button class="btn" data-buy="spirit" data-k="sp1" data-n="1" ${g >= 100 ? '' : 'disabled'}>买 1</button>
