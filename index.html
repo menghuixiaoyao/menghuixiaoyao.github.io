@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v875</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v876</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1273,7 +1273,7 @@ function assignLingGen(S) { // 练气突破随机灵根：1-5条加权
 function lingGenName(S) {
   const g = S.lingGen || [];
   if (!g.length) return '未觉醒';
-  const t = g.length === 1 ? '天灵根' : g.length === 5 ? '杂灵根' : g.length + '灵根';
+  const t = g.length === 1 ? '天灵根' : g.length === 2 ? '上品灵根' : g.length === 3 ? '中品灵根' : g.length === 4 ? '下品灵根' : '杂灵根'; // v876 品级显示
   return t + '·' + g.join('');
 }
 function ensureLingGen(S) { // 老存档补抽
