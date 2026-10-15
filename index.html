@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v931</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v932</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -699,6 +699,7 @@ function normalize(S) {
   if (!(S.shenshi >= 1)) S.shenshi = 1; S.shenshi = Math.floor(S.shenshi); // v580 神识独立于五维
   if (!(S.qixi >= 0)) S.qixi = 0; // v928 气息
 function flowerCount(S) { const s = S.shenshi|0; if (s >= 1600) return 5; if (s >= 800) return 4; if (s >= 400) return 3; if (s >= 200) return 2; if (s >= 100) return 1; return 0; } // v927 神识换花：100/200/400/800/1600→1/2/3/4/5朵
+function flowerBonus(S) { return (typeof flowerCount === 'function' ? flowerCount(S) : 0) * 0.03; } // v932 每朵花+3%全属性
   if (!S.failNum) S.failNum = {}; // v589 各境界失败次数
   if (!Array.isArray(S.skills)) S.skills = ver < 2 ? OLD_SKILLS.slice() : []; // v1 存档保留原有 4 个技能
   if (!(S.hpCur >= 0)) S.hpCur = null; // v14 战斗掉血持久化，null=满血
@@ -930,7 +931,7 @@ function doManualLevelUp(S) {
   if (fullMana && ups > 0) { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, Math.floor(S.xianCap * 1.1)); S.mana = Math.min(manaCapEff(S), Math.floor(S.mana * 1.1)); return { ok: true, ups, manaBoost: true }; } // 满法力/仙力升级：当前×1.1，仙人以上上限也×1.1
   return { ok: true, ups };
 }
-function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n; S.qixi = (S.qixi|0) + n * 2; return n; } // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v926 神识+1/级不清零；v928 气息+2/级，轮回清零
+function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n * 5; S.qixi = (S.qixi|0) + n * 2; return n; } // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v932 神识+5/级不清零（花可跨世累积）；v928 气息+2/级，轮回清零
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
 const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
