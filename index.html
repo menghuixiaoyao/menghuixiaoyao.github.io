@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v958</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v959</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4692,7 +4692,7 @@ function load() {
   if (!S) { S = C.newState(); welcome(); }
   try { if (window.LG) window.LG.ensure(S); } catch(_) {} // v867 老存档补抽灵根（跨块走window.LG）
 }
-function save() { try { S.log = S.log.slice(-K.LOG_KEEP); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function save() { try { S.log = S.log.slice(-K.LOG_KEEP); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); try{window.MHXY&&MHXY.markDirty(SAVE_KEY)}catch(_){} } catch (e) {} }
 function welcome() {
   log('gold', `<b class="y">欢迎来到【梦回逍遥】</b><br>每日<b>签到</b>可得 ${C.checkinAmount(S)} 点体力（每升 1 级 +1）。体力可用于<b>修炼</b>属性、<b>炼药</b>、<b>冒险</b>斩妖、与他人<b>PK</b>夺取属性。冒险与 PK 获胜可得<b>金元</b>，在<b>商店</b>购买药草与技能书。<br>初入江湖，赠你 ${K.START_STAMINA} 点体力。`);
   // v131 新号先选性别头像
@@ -6321,6 +6321,7 @@ function closeSheet() {
   if (window._fromAdv) { window._fromAdv = false; try { if (S.run && S.run.grid && typeof sheetRun === 'function') sheetRun(); } catch(_) {} } // v770 从冒险打开人物面板，关闭返回冒险
 }
 window.closeSheet = closeSheet;
+window.openSheet = openSheet; // v959 联机模块需要（顶层函数默认非全局）
 $('mask').addEventListener('click', e => { if (e.target === $('mask') && !$('mask').dataset.lock) closeSheet(); });
 
 const GK = { str: 'mine', agi: 'hunt', def: 'farm', vit: 'egg', int: 'read' }, GV = { mine: '挖', hunt: '猎', farm: '种', egg: '掏', read: '读' }, GI = { mine: '⛏️', hunt: '🏹', farm: '🌱', egg: '🥚', read: '📖' };
@@ -7830,6 +7831,7 @@ function sheetMenu(tab) {
     <div class="row"><button class="btn gold full" data-battleplan>⚔️ 战斗预设（前5回合）</button></div>
     <div class="row"><button class="btn gold full" data-rank="1">🏆 修仙榜单</button></div>
     <div class="row"><button class="btn full" data-chat>💬 世界聊天</button></div>
+    <div class="row"><button class="btn full" data-mhxy>🌐 真人联机</button></div>
     <div class="row"><div class="lab">⚔️ 本世冒险<small>${s.advWin || 0} 胜 / ${s.adv || 0} 战</small></div></div>
     <div class="row"><div class="lab">⚔️ 历世冒险<small>${s.advWinTotal || 0} 胜 / ${s.advTotal || 0} 战（不清零）</small></div></div>
     <div class="row"><div class="lab">🥊 本世 PK<small>${s.pkWin || 0} 胜 / ${s.pk || 0} 战</small></div></div>
@@ -9253,6 +9255,7 @@ document.addEventListener('click', e => {
   if (ar && ar.dataset.rankinfo !== undefined) { e.preventDefault(); sheetRankInfo(+ar.dataset.rankinfo); return; }
   const t = e.target.closest('button'); if (!t || t.disabled) return;
   const d = t.dataset;
+  if (window.MHXY && MHXY.onClick(d, t, e)) return; // v959 联机模块钩子
   if (d.afk) { window._afkShown = false; afkStart(S, d.afk); closeSheet(); log('good', `🧘 开始${d.afk === 'vein' ? '灵脉' : '洞府'}闭关挂机…`); save(); render(); return; }
   if (d.reincKeep) { const _k = d.reincKeep; openSheet(`<div style="min-height:40vh;display:flex;flex-direction:column;justify-content:center;gap:10px"><h2 style="font-size:18px;text-align:center">🔄 轮回之路</h2><div class="hint" style="text-align:center;font-size:13px">此世将尽，当选一条路：</div><div class="row"><button class="btn gold" data-seal-path="dao" data-attr="${_k}" data-v="1" style="flex:1;padding:16px;font-size:15px">求道<br><small style="font-weight:normal">天道随机赐下灵魂印记</small></button></div><div class="row"><button class="btn" data-seal-path="fame" data-attr="${_k}" data-v="1" style="flex:1;padding:16px;font-size:15px">求名<br><small style="font-weight:normal">自选印记主题，留名于世</small></button></div><div class="row"><button class="btn" data-a="close" style="flex:1">取消</button></div></div>`); return; } // v215 先选求道/求名
   else if (d.sealPath) { doReincarnateName(d.attr, S.forceReinc, d.sealPath); return; } // v215 进入封存面板
@@ -10040,6 +10043,508 @@ if (typeof window.doReleasePet !== 'function') {
     } catch(e) {}
   };
 }
+
+/* ================= 联机模块 v959 =================
+ * 账号/云存档/真人聊天/服务端权威PK。独立模块，不改原有逻辑。
+ * 后端：https://mhxy-game-api.yexiong262310.workers.dev
+ * 降级：网络/后端不可用时全部静默失败，单机照常可玩。
+ */
+(function(){
+'use strict';
+var API = 'https://mhxy-game-api.yexiong262310.workers.dev';
+var LK = { tok:'mhxy_token', rev:'mhxy_rev', name:'mhxy_name', pno:'mhxy_pno', guest:'mhxy_guest', aid:'mhxy_aid' };
+function ls(k, v){
+  try{
+    if (v === undefined) return localStorage.getItem(k);
+    if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v);
+  }catch(_){ return null; }
+}
+function escH(s){ try{ if (typeof esc === 'function') return esc(s); }catch(_){} return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function glog(cls, html){ try{ if (typeof log === 'function') log(cls, html); }catch(_){} }
+
+/* ---------- 网络 ---------- */
+async function api(path, opt){
+  opt = opt || {};
+  var ctrl = null, timer = null;
+  try { ctrl = new AbortController(); timer = setTimeout(function(){ try{ctrl.abort();}catch(_){} }, 12000); } catch(_){}
+  try{
+    var headers = { 'content-type':'application/json' };
+    var tok = ls(LK.tok);
+    if (tok && !opt.noAuth) headers['Authorization'] = 'Bearer ' + tok;
+    var r = await fetch(API + path, {
+      method: opt.method || 'GET',
+      headers: headers,
+      body: opt.body ? JSON.stringify(opt.body) : undefined,
+      signal: ctrl ? ctrl.signal : undefined
+    });
+    var j = null; try { j = await r.json(); } catch(_){}
+    if (r.status === 401 && j && j.error === 'session_replaced') onReplaced();
+    return { status: r.status, ok: r.ok, json: j };
+  }catch(e){
+    return { status: 0, ok: false, json: null, netErr: true };
+  }finally{
+    if (timer) clearTimeout(timer);
+  }
+}
+function loggedIn(){ return !!ls(LK.tok); }
+function myName(){ return ls(LK.name) || '未登录'; }
+function myPno(){ return ls(LK.pno) || ''; }
+function myAid(){ return ls(LK.aid) || ''; }
+function isGuest(){ return ls(LK.guest) === '1'; }
+
+function onReplaced(){
+  clearAuth(false);
+  glog('bad', '🌐 你已在另一台设备登录，本机已下线（单机存档不受影响）。');
+  try{ if (typeof closeSheet === 'function') closeSheet(); }catch(_){}
+}
+function clearAuth(clearRev){
+  [LK.tok, LK.name, LK.pno, LK.guest, LK.aid].forEach(function(k){ ls(k, null); });
+  if (clearRev !== false) ls(LK.rev, null);
+  M.baseRev = 0; M.dirty = false;
+  stopPresence(); closeChatWs(); closePkWs();
+}
+function saveAuth(d){
+  ls(LK.tok, d.token); ls(LK.aid, d.account_id || '');
+  ls(LK.name, d.username || ''); ls(LK.pno, String(d.player_no || ''));
+  ls(LK.guest, d.guest ? '1' : '0');
+  if (!ls(LK.rev)) ls(LK.rev, '0');
+  M.baseRev = parseInt(ls(LK.rev) || '0', 10) || 0;
+}
+
+var M = {
+  baseRev: parseInt((function(){ try{return localStorage.getItem(LK.rev)||'0';}catch(_){return '0';} })(), 10) || 0,
+  dirty: false, syncTimer: null, syncing: false,
+  chatWs: null, chatOpen: false,
+  pkWs: null, hbTimer: null, challenging: null,
+  saveKey: 'fushengwendao_save_v1' // 游戏侧 save() 钩子会传入真实 SAVE_KEY 校准
+};
+
+/* ---------- 主面板 ---------- */
+function panel(){
+  var html;
+  if (!loggedIn()){
+    html = '<h2>🌐 真人联机</h2><div class="hint">登录后：云存档跨设备同步、与真人道友聊天、真人PK（服务端结算）。不登录不影响单机游玩。</div>'
+      + '<div class="row"><button class="btn gold full" data-mhxyguest>一键游客登录</button></div>'
+      + '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
+      + '<input id="mhxyP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
+      + '<div class="grid2"><button class="btn full" data-mhxylogin>登录</button><button class="btn full" data-mhxyreg>注册</button></div>'
+      + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
+  } else {
+    var nm = escH(myName()), pno = escH(myPno());
+    html = '<h2>🌐 真人联机</h2>'
+      + '<div class="hint">已登录：<b class="y">' + nm + '</b> #' + pno + (isGuest() ? '（游客）' : '') + '　云存档 rev ' + M.baseRev + '</div>'
+      + '<div class="grid2">'
+      + '<button class="btn full" data-mhxychat>💬 真人聊天</button>'
+      + '<button class="btn full" data-mhxypk>⚔️ 在线约战</button>'
+      + '</div>'
+      + '<div class="grid2">'
+      + '<button class="btn full" data-mhxysync>☁️ 同步存档</button>'
+      + '<button class="btn full" data-mhxydown>⬇️ 下载云档</button>'
+      + '</div>'
+      + (isGuest()
+        ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
+        : '')
+      + '<div class="row"><button class="btn red full" data-mhxylogout>登出（回单机）</button></div>'
+      + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
+  }
+  try{ openSheet(html); }catch(_){}
+}
+function val(id){ var el = null; try{ el = document.getElementById(id); }catch(_){} return el ? (el.value || '').trim() : ''; }
+
+async function doGuest(){
+  var r = await api('/api/guest', { method:'POST', noAuth:true, body:{} });
+  if (r.ok && r.json && r.json.ok){
+    saveAuth(r.json);
+    glog('good', '🌐 游客登录成功：<b class="y">' + escH(r.json.username) + '</b> #' + r.json.player_no);
+    afterLogin();
+  } else {
+    glog('bad', '🌐 游客登录失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  }
+}
+async function doLogin(){
+  var u = val('mhxyU'), p = val('mhxyP');
+  if (!u || !p){ glog('bad', '🌐 请填写用户名和密码'); return; }
+  var r = await api('/api/login', { method:'POST', noAuth:true, body:{ username:u, password:p } });
+  if (r.ok && r.json && r.json.ok){
+    saveAuth(r.json);
+    glog('good', '🌐 登录成功：<b class="y">' + escH(r.json.username) + '</b> #' + r.json.player_no);
+    afterLogin();
+  } else {
+    glog('bad', '🌐 登录失败' + (r.netErr ? '（网络不通）' : r.status === 401 ? '（用户名或密码不对）' : '：' + escH((r.json||{}).error || r.status)));
+  }
+}
+async function doRegister(){
+  var u = val('mhxyU'), p = val('mhxyP');
+  if (!u || !p){ glog('bad', '🌐 请填写用户名和密码'); return; }
+  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p } });
+  if ((r.status === 201 || r.ok) && r.json && r.json.ok){
+    glog('good', '🌐 注册成功：<b class="y">' + escH(u) + '</b> #' + r.json.player_no + '，请登录');
+  } else {
+    var err = (r.json||{}).error || r.status;
+    glog('bad', '🌐 注册失败' + (r.netErr ? '（网络不通）' : err === 'username_taken' ? '（用户名已被占用）' : err === 'bad_username' ? '（用户名3-16位，字母/数字/下划线/中文）' : err === 'bad_password' ? '（密码至少6位）' : '：' + escH(err)));
+  }
+}
+async function doUpgrade(){
+  var u = val('mhxyU'), p = val('mhxyP');
+  if (!u || !p){ glog('bad', '🌐 请填写新用户名和密码'); return; }
+  var r = await api('/api/upgrade', { method:'POST', body:{ username:u, password:p } });
+  if (r.ok && r.json && r.json.ok){
+    ls(LK.name, r.json.username); ls(LK.guest, '0');
+    glog('good', '🌐 已转为正式账号：<b class="y">' + escH(r.json.username) + '</b>（编号不变）');
+    panel();
+  } else {
+    glog('bad', '🌐 转正失败：' + escH((r.json||{}).error || r.status));
+  }
+}
+async function doLogout(){
+  try{ await api('/api/logout', { method:'POST' }); }catch(_){}
+  try{ await api('/api/world/logout', { method:'POST' }); }catch(_){}
+  clearAuth(false);
+  glog('sys', '🌐 已登出，回到单机模式。');
+  panel();
+}
+async function afterLogin(){
+  await ensurePresence();
+  pkWsConnect();
+  await checkCloud();
+  panel();
+}
+
+/* ---------- 云存档同步 ---------- */
+function markDirty(saveKey){
+  if (saveKey) M.saveKey = saveKey; // 游戏内 S 非全局，存档经 localStorage 读写
+  if (!loggedIn()) return;
+  M.dirty = true;
+  if (M.syncTimer) return;
+  M.syncTimer = setTimeout(function(){ M.syncTimer = null; syncNow(false); }, 60000);
+}
+// 游戏内 S 非全局：realm 从 localStorage 存档里读
+function curRealm(){
+  try{
+    var raw = localStorage.getItem(M.saveKey);
+    if (raw) return (JSON.parse(raw).realm | 0) || 0;
+  }catch(_){}
+  return 0;
+}
+async function syncNow(manual){
+  if (!loggedIn() || M.syncing) return;
+  if (!manual && !M.dirty) return;
+  M.dirty = false;
+  var sj = null;
+  try{ sj = localStorage.getItem(M.saveKey); }catch(_){}
+  if (!sj){ if (manual){ glog('bad', '🌐 本地还没有存档'); try{ panel(); }catch(_){} } return; }
+  if (sj.length > 1000000){ if (manual){ glog('bad', '🌐 存档过大，跳过同步'); try{ panel(); }catch(_){} } return; }
+  M.syncing = true;
+  try{
+    var r = await api('/api/save', { method:'PUT', body:{ base_rev:M.baseRev, save_json:sj, client_ts:Date.now() } });
+    if (r.ok && r.json && r.json.ok){
+      M.baseRev = r.json.rev; ls(LK.rev, String(M.baseRev));
+      if (manual) glog('good', '🌐 存档已同步到云端（rev ' + M.baseRev + '）');
+    } else if (r.status === 409){
+      M.dirty = true; // 留着，下次手动处理
+      glog('bad', '🌐 云存档冲突：云端有更新的版本。请在联机面板点"下载云档"覆盖本地，或等下次同步。');
+    } else if (manual){
+      glog('bad', '🌐 同步失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+    }
+  }finally{ M.syncing = false; }
+  if (manual){ try{ panel(); }catch(_){} } // 刷新面板，rev 数字即反馈
+}
+async function checkCloud(){
+  // 登录后：云端 rev 比本地新 → 提示是否下载
+  var r = await api('/api/save/meta');
+  if (!r.ok || !r.json || !r.json.ok) return;
+  if (!r.json.exists) return;
+  var srv = r.json.rev | 0;
+  if (srv > M.baseRev){
+    var ok = false;
+    try{ ok = confirm('云端有更新的存档（rev ' + srv + '，本地 rev ' + M.baseRev + '），是否下载覆盖本地？'); }catch(_){}
+    if (ok) await downloadSave(true); else M.baseRev = srv, ls(LK.rev, String(srv));
+  } else if (srv < M.baseRev){
+    M.baseRev = srv; ls(LK.rev, String(srv));
+  }
+}
+async function downloadSave(quiet){
+  var r = await api('/api/save');
+  if (r.ok && r.json && r.json.ok){
+    try{
+      JSON.parse(r.json.save_json); // 仅校验
+      // 游戏内 S 非全局：写 localStorage 后重载页面，游戏启动时自然载入
+      try{ localStorage.setItem(M.saveKey, r.json.save_json); }
+      catch(_){ glog('bad', '🌐 本地写入失败'); return; }
+      M.baseRev = r.json.rev; ls(LK.rev, String(M.baseRev));
+      M.dirty = false;
+      glog('good', '🌐 已从云端下载存档（rev ' + M.baseRev + '），正在重载…');
+      setTimeout(function(){ try{ location.reload(); }catch(_){} }, 800);
+    }catch(e){ glog('bad', '🌐 云存档解析失败'); }
+  } else if (r.status === 404){
+    if (!quiet) glog('sys', '🌐 云端还没有存档，先点"同步存档"上传。');
+  } else {
+    glog('bad', '🌐 下载失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  }
+}
+try{
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') syncNow(false); });
+  window.addEventListener('pagehide', function(){ syncNow(false); });
+}catch(_){}
+
+/* ---------- 在线状态 ---------- */
+async function ensurePresence(){
+  if (!loggedIn()) return;
+  var realm = curRealm();
+  await api('/api/world/register', { method:'POST', body:{ realm:realm, x:0, y:0 } });
+  if (M.hbTimer) clearInterval(M.hbTimer);
+  M.hbTimer = setInterval(function(){
+    if (!loggedIn()){ stopPresence(); return; }
+    api('/api/world/heartbeat', { method:'POST', body:{ x:0, y:0 } });
+  }, 30000);
+}
+function stopPresence(){ if (M.hbTimer){ clearInterval(M.hbTimer); M.hbTimer = null; } }
+async function onlinePlayers(){
+  var r = await api('/api/world/state');
+  if (!r.ok || !r.json) return null;
+  var ps = r.json.players || [];
+  var me = myAid();
+  return ps.filter(function(p){ return p.online && p.accountId !== me; });
+}
+
+/* ---------- 真人聊天 ---------- */
+function chatName(m){ return escH(m.username || '?') + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; }
+function chatMsgHtml(m){
+  return '<div class="chat-msg"><b style="color:#7ec8ff">' + chatName(m) + '</b>：' + escH(m.text) + '</div>';
+}
+function chatPanel(){
+  M.chatOpen = true;
+  openSheet('<h2>💬 真人世界</h2><div class="hint">与真人道友聊天（3秒1条，50条历史）。关闭面板后不再接收实时消息。</div>'
+    + '<div id="mhxyChatBox" style="max-height:300px;overflow-y:auto;border:1px solid #444;border-radius:8px;padding:8px;margin-bottom:8px;background:#111"><div class="hint">连接中…</div></div>'
+    + '<div class="row" style="display:flex;gap:6px"><input id="mhxyChatInp" maxlength="200" placeholder="说点什么…" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-mhxychatsend>发送</button></div>'
+    + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
+  chatHistory();
+  chatWsConnect();
+  var inp = document.getElementById('mhxyChatInp');
+  if (inp) inp.onkeydown = function(e){ if (e.key === 'Enter') chatSend(); };
+}
+async function chatHistory(){
+  var box = document.getElementById('mhxyChatBox'); if (!box) return;
+  var r = await api('/api/chat/history');
+  if (r.ok && r.json && r.json.ok){
+    var ms = r.json.messages || [];
+    box.innerHTML = ms.map(chatMsgHtml).join('') || '<div class="hint">暂无消息，道友先开个头吧。</div>';
+    box.scrollTop = box.scrollHeight;
+  } else {
+    box.innerHTML = '<div class="hint">历史加载失败' + (r.netErr ? '（网络不通）' : '') + '</div>';
+  }
+}
+function chatWsConnect(){
+  if (!loggedIn() || M.chatWs) return;
+  var tok = ls(LK.tok); if (!tok) return;
+  try{
+    var ws = new WebSocket(API.replace(/^http/, 'ws') + '/api/chat/ws?token=' + encodeURIComponent(tok));
+    M.chatWs = ws;
+    ws.onmessage = function(ev){
+      var m = null; try{ m = JSON.parse(ev.data); }catch(_){ return; }
+      if (!m) return;
+      var box = document.getElementById('mhxyChatBox');
+      if (m.type === 'history' && box && Array.isArray(m.messages)){
+        box.innerHTML = m.messages.map(chatMsgHtml).join('') || '<div class="hint">暂无消息</div>';
+        box.scrollTop = box.scrollHeight;
+      } else if (m.type === 'chat' && m.message && box){
+        var tmp = document.createElement('div'); tmp.innerHTML = chatMsgHtml(m.message);
+        while (tmp.firstChild) box.appendChild(tmp.firstChild);
+        while (box.children.length > 60) box.removeChild(box.firstChild);
+        box.scrollTop = box.scrollHeight;
+      }
+    };
+    ws.onclose = function(){ if (M.chatWs === ws) M.chatWs = null; };
+    ws.onerror = function(){ try{ ws.close(); }catch(_){} };
+  }catch(_){ M.chatWs = null; }
+}
+function closeChatWs(){ M.chatOpen = false; if (M.chatWs){ try{ M.chatWs.close(); }catch(_){} M.chatWs = null; } }
+async function chatSend(){
+  var inp = document.getElementById('mhxyChatInp');
+  var v = inp ? (inp.value || '').trim().slice(0, 200) : '';
+  if (!v) return;
+  var realm = curRealm();
+  var r = await api('/api/chat/send', { method:'POST', body:{ text:v, realm:realm } });
+  if (r.ok && r.json && r.json.ok){
+    if (inp) inp.value = '';
+    // WS 会广播回来；若 WS 没连，手动补一条
+    if (!M.chatWs){
+      var box = document.getElementById('mhxyChatBox');
+      if (box && r.json.message){ var tmp = document.createElement('div'); tmp.innerHTML = chatMsgHtml(r.json.message); while (tmp.firstChild) box.appendChild(tmp.firstChild); box.scrollTop = box.scrollHeight; }
+    }
+  } else if (r.status === 429){
+    glog('bad', '🌐 发言太快，3秒后再试');
+  } else {
+    glog('bad', '🌐 发送失败' + (r.netErr ? '（网络不通）' : ''));
+  }
+}
+
+/* ---------- 真人PK ---------- */
+function pkPanel(){
+  openSheet('<h2>⚔️ 在线约战</h2><div class="hint">挑战在线道友，真人对战由服务端结算（防作弊）。对方60秒内接受即开打。</div>'
+    + '<div id="mhxyPkList"><div class="hint">加载在线道友…</div></div>'
+    + '<div class="row"><button class="btn full" data-mhxypkrefresh>刷新</button></div>'
+    + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
+  pkRefresh();
+}
+async function pkRefresh(){
+  var box = document.getElementById('mhxyPkList'); if (!box) return;
+  var ps = await onlinePlayers();
+  if (ps === null){ box.innerHTML = '<div class="hint">在线列表加载失败（网络不通）</div>'; return; }
+  if (!ps.length){ box.innerHTML = '<div class="hint">暂无其他道友在线</div>'; return; }
+  box.innerHTML = ps.slice(0, 30).map(function(p){
+    return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(p.username) + '</b><span style="color:#666">[' + (p.playerNo || '?') + ']</span></span>'
+      + '<button class="btn gold" data-mhxypkgo="' + escH(p.accountId) + '">挑战</button></div>';
+  }).join('');
+}
+async function pkChallenge(targetId){
+  var r = await api('/api/pk/challenge', { method:'POST', body:{ target_account_id:targetId, arena:false, take_attr:'str' } });
+  if (r.ok && r.json && r.json.ok){
+    M.challenging = r.json.challenge_id;
+    glog('sys', '⚔️ 已向对方发出挑战，等待接受（60秒）。可在"在线约战"面板等结果。');
+    pkPollResult(r.json.challenge_id, 0);
+  } else {
+    var err = (r.json||{}).error || r.status;
+    glog('bad', '⚔️ 挑战失败' + (r.netErr ? '（网络不通）' : err === 'target_offline' ? '（对方已离线）' : err === 'already_challenging' ? '（你已有一场待应战的挑战）' : '：' + escH(err)));
+  }
+}
+async function pkPollResult(cid, n){
+  // WS 推送为主，轮询兜底（最多约65秒）
+  if (n > 13) return;
+  if (M.challenging !== cid) return;
+  setTimeout(async function(){
+    if (M.challenging !== cid) return;
+    var r = await api('/api/pk/result/' + encodeURIComponent(cid));
+    if (r.ok && r.json && r.json.ok && r.json.result){
+      M.challenging = null;
+      pkShowResult(r.json.result, null);
+    } else {
+      pkPollResult(cid, n + 1);
+    }
+  }, 5000);
+}
+function pkWsConnect(){
+  if (!loggedIn() || M.pkWs) return;
+  var tok = ls(LK.tok); if (!tok) return;
+  try{
+    var ws = new WebSocket(API.replace(/^http/, 'ws') + '/api/pk/ws?token=' + encodeURIComponent(tok));
+    M.pkWs = ws;
+    ws.onmessage = function(ev){
+      var m = null; try{ m = JSON.parse(ev.data); }catch(_){ return; }
+      if (!m) return;
+      if (m.type === 'challenge' && m.challenge){
+        pkOnChallenge(m.challenge);
+      } else if (m.type === 'result' && m.result){
+        if (M.challenging){ M.challenging = null; }
+        pkShowResult(m.result.public || m.result, null);
+      } else if (m.type === 'declined'){
+        if (M.challenging === m.challenge_id){ M.challenging = null; glog('sys', '⚔️ 对方拒绝了你的挑战'); }
+      } else if (m.type === 'accepted'){
+        glog('sys', '⚔️ 对方接受了挑战，服务端正在结算…');
+      }
+    };
+    ws.onclose = function(){ if (M.pkWs === ws) M.pkWs = null; };
+    ws.onerror = function(){ try{ ws.close(); }catch(_){} };
+  }catch(_){ M.pkWs = null; }
+}
+function closePkWs(){ if (M.pkWs){ try{ M.pkWs.close(); }catch(_){} M.pkWs = null; } }
+function pkOnChallenge(ch){
+  var from = ch.challenger || {};
+  var msg = '⚔️ ' + (from.username || '?') + '[' + (from.playerNo || '?') + '] 向你发起真人PK！60秒内有效，是否接受？（服务端结算）';
+  var ok = false;
+  try{ ok = confirm(msg); }catch(_){}
+  if (ok) pkAccept(ch.id); else pkDecline(ch.id);
+}
+async function pkDecline(cid){
+  await api('/api/pk/decline', { method:'POST', body:{ challenge_id:cid } });
+  glog('sys', '⚔️ 已拒绝挑战');
+}
+async function pkAccept(cid){
+  glog('sys', '⚔️ 已接受挑战，服务端结算中…');
+  var r = await api('/api/pk/accept', { method:'POST', body:{ challenge_id:cid } });
+  if (r.ok && r.json && r.json.ok){
+    if (M.challenging === cid) M.challenging = null;
+    pkShowResult(r.json.result, r.json.consequences);
+    // 服务端已改 D1 存档 → 本地从云端同步回来，保证一致
+    await downloadSave(true);
+  } else {
+    glog('bad', '⚔️ 结算失败：' + escH((r.json||{}).error || r.status));
+  }
+}
+function pkShowResult(res, cons){
+  if (!res) return;
+  var me = myAid();
+  var iWon = (res.winner === 'A' && res.challenger && res.challenger.accountId === me)
+          || (res.winner === 'B' && res.challenged && res.challenged.accountId === me);
+  // winner 字段是 'A'（挑战者）/'B'（被挑战者）；若结构不同，兜底按 accountId 判断
+  if (res.winner_account_id) iWon = (res.winner_account_id === me);
+  var wName = res.winner === 'A' ? ((res.challenger||{}).username) : ((res.challenged||{}).username);
+  var html = '<h2>⚔️ 真人PK结算</h2>'
+    + '<div class="e ' + (iWon ? 'good' : 'bad') + '">' + (res.draw ? '双方同归于尽！' : (iWon ? '🎉 你赢了！' : '你输了，对方是 <b class="y">' + escH(wName || '?') + '</b>')) + '</div>'
+    + '<div class="hint">回合数：' + (res.rounds || '?') + '　剩余生命：' + escH(JSON.stringify(res.hpLeft || {})) + '</div>';
+  if (cons){
+    var cs = [];
+    if (cons.meritLost) cs.push('功德 -' + cons.meritLost);
+    if (cons.attrTake) cs.push('夺取 ' + escH(cons.attrTake.attr) + ' +' + cons.attrTake.n);
+    if (cons.revengeGranted) cs.push('对方获得对你的复仇');
+    if (cons.arena) cs.push('擂台：无复仇无功德惩罚');
+    if (cs.length) html += '<div class="hint">结算：' + cs.join('、') + '</div>';
+  }
+  var logHtml = '';
+  try{
+    var lg = res.log || [];
+    logHtml = '<details><summary>战斗日志（' + lg.length + '条）</summary><div style="max-height:240px;overflow-y:auto;font-size:12px">' + lg.slice(0, 200).map(function(l){ return '<div>' + escH(typeof l === 'string' ? l : JSON.stringify(l)) + '</div>'; }).join('') + '</div></details>';
+  }catch(_){}
+  html += logHtml + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
+  try{ openSheet(html); }catch(_){}
+  glog(iWon ? 'good' : 'bad', '⚔️ 真人PK' + (res.draw ? '平局' : (iWon ? '胜利' : '战败')) + '（' + (res.rounds || '?') + '回合，服务端结算）');
+}
+
+/* ---------- 点击分发 ---------- */
+function onClick(d, t, e){
+  if (!d) return false;
+  if ('mhxy' in d){ panel(); return true; }
+  if ('mhxyguest' in d){ doGuest(); return true; }
+  if ('mhxylogin' in d){ doLogin(); return true; }
+  if ('mhxyreg' in d){ doRegister(); return true; }
+  if ('mhxyupgrade' in d){ doUpgrade(); return true; }
+  if ('mhxylogout' in d){ doLogout(); return true; }
+  if ('mhxysync' in d){ syncNow(true); return true; }
+  if ('mhxydown' in d){ downloadSave(false).then(function(){ panel(); }); return true; }
+  if ('mhxychat' in d){ chatPanel(); return true; }
+  if ('mhxychatsend' in d){ chatSend(); return true; }
+  if ('mhxypk' in d){ pkPanel(); return true; }
+  if ('mhxypkrefresh' in d){ pkRefresh(); return true; }
+  if (d.mhxypkgo){ pkChallenge(d.mhxypkgo); return true; }
+  if ('close' in d && M.chatOpen){ closeChatWs(); }
+  return false;
+}
+
+/* ---------- 启动 ---------- */
+function init(){
+  // 已有 token → 恢复在线状态（静默，失败就当没登录）
+  if (loggedIn()){
+    M.baseRev = parseInt(ls(LK.rev) || '0', 10) || 0;
+    ensurePresence().then(function(){ pkWsConnect(); });
+    // 轻量自检：token 是否还有效
+    api('/api/save/meta').then(function(r){
+      if (r.status === 401 && r.json && (r.json.error === 'session_replaced' || r.json.error === 'session_expired' || r.json.error === 'unauthorized')){
+        // onReplaced 已在 api() 内处理 replaced；expired/unknown 在此清掉
+        if (r.json.error !== 'session_replaced'){ clearAuth(false); }
+      }
+    });
+  }
+}
+
+window.MHXY = {
+  panel: panel, markDirty: markDirty, onClick: onClick,
+  loggedIn: loggedIn, syncNow: syncNow, init: init
+};
+
+try{ init(); }catch(_){}
+
+})();
+
 </script>
 </body>
 </html>
