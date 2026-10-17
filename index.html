@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v959</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v960</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -844,76 +844,10 @@ const CONSIGN_FEE = 0.05; // 寄售手续费5%
 function consignPrice(kind, key) { if (kind === 'xianyu') return 5000; if (kind === 'petegg') return 500; const it = kind === 'ore' ? ORES[key] : kind === 'mat' ? MATS[key] : kind === 'med' ? MEDS[key] : POTIONS[key]; return (it && it.price) || 10; }
 function consignName(kind, key) { if (kind === 'xianyu') return '仙玉'; if (kind === 'petegg') return '灵宠蛋'; if (kind === 'inv' && key === 'sha') return '👹 煞气'; if (kind === 'inv' && key === 'mai') return '🌀 开脉丹'; const it = kind === 'ore' ? ORES[key] : kind === 'mat' ? MATS[key] : kind === 'med' ? MEDS[key] : kind === 'egg' ? (typeof EGGS !== 'undefined' ? EGGS[key] : null) : POTIONS[key]; return (it && it.name) || key; }
 function consignStore(S, kind) { if (kind === 'xianyu') return { get xianyu() { return S.xianyu || 0; }, set xianyu(v) { S.xianyu = Math.max(0, Math.floor(v)); } }; if (kind === 'petegg') return { get petEgg() { return S.petEggs || 0; }, set petEgg(v) { S.petEggs = Math.max(0, Math.floor(v)); } }; if (kind === 'inv') { if (!S.inv) S.inv = {}; return S.inv; } if (kind === 'egg') { if (!S.eggs) S.eggs = {}; return S.eggs; } return kind === 'ore' ? S.ores : kind === 'mat' ? S.mats : kind === 'med' ? S.meds : S.elixirs; }
-function consignList(S, kind, key, qty, price) {
-  qty = Math.floor(qty); price = Math.floor(price);
-  if (!(qty > 0) || !(price > 0)) return { err: 'bad' };
-  // EGGSEP前缀：实际存放在S.eggs
-  let _ak = kind, _akey = key;
-  if (kind === 'inv' && key.startsWith('EGGSEP')) { _ak = 'egg'; _akey = key.slice(6); }
-  const st = consignStore(S, _ak);
-  const _sk = (_ak === 'egg') ? _akey : key;
-  if (!(st[_sk] >= qty)) return { err: 'none' };
-  st[_sk] -= qty; if (!st[_sk]) delete st[_sk];
-  if (!Array.isArray(S.consign)) S.consign = [];
-  const id = 'c' + Date.now() + Math.floor(Math.random() * 999);
-  S.consign.push({ id, kind: _ak, key: _sk, name: consignName(_ak, _sk), qty, price });
-  return { ok: true };
-}
-function consignCancel(S, id) {
-  const i = (S.consign || []).findIndex(c => c.id === id);
-  if (i < 0) return { err: 'bad' };
-  const c = S.consign.splice(i, 1)[0];
-  const st = consignStore(S, c.kind); st[c.key] = (st[c.key] || 0) + c.qty;
-  return { ok: true };
-}
-function consignTick(S) { // NPC随机购买玩家寄售
-  if (!Array.isArray(S.consign) || !S.consign.length) return null;
-  if (Math.random() > 0.3) return null;
-  const c = S.consign[Math.floor(Math.random() * S.consign.length)];
-  const base = consignPrice(c.kind, c.key);
-  if (c.price > base * 2) return null; // 太贵没人买
-  const n = Math.min(c.qty, 1 + Math.floor(Math.random() * 3));
-  const gain = Math.floor(n * c.price * (1 - CONSIGN_FEE));
-  c.qty -= n; S.gold = (S.gold || 0) + gain;
-  if (c.qty <= 0) S.consign = S.consign.filter(x => x.id !== c.id);
-  chatPush(S, '', `你的【${c.name}×${n}】已售出，获得 ${gain} 金元`, true);
-  return { ok: true, gain };
-}
-function genMarket(S) { // 生成NPC寄售市场（v587：下品/中品/上品/极品灵石/仙玉）
-  const items = [['ore', 'sp2'], ['ore', 'sp3'], ['ore', 'sp4'], ['ore', 'sp5'], ['xianyu', 'xianyu']];
-  const sellers = CHAT_NAMES;
-  const mk = [];
-  for (let i = 0; i < 10; i++) {
-    const [kind, key] = items[Math.floor(Math.random() * items.length)];
-    const base = consignPrice(kind, key);
-    const price = Math.max(1, Math.round(base * (0.7 + Math.random() * 0.6)));
-    mk.push({ id: 'm' + i, kind, key, name: consignName(kind, key), qty: 1 + Math.floor(Math.random() * 5), price, seller: sellers[Math.floor(Math.random() * sellers.length)] });
-  }
-  S.consignMarket = mk; S.consignMarketTime = Date.now();
-}
-function consignBuy(S, id, qty) {
-  const i = (S.consignMarket || []).findIndex(c => c.id === id);
-  if (i < 0) return { err: 'bad' };
-  const c = S.consignMarket[i];
-  qty = Math.min(c.qty, Math.max(1, Math.floor(qty || c.qty)));
-  const cost = c.price * qty;
-  // 用当前分区货币结算（window.consignCur跨script）
-  const _sec = (typeof consignSec !== 'undefined' ? consignSec : (typeof window.consignSec !== 'undefined' ? window.consignSec : 'shangpin'));
-  const _cc = (typeof consignCur !== 'undefined' ? consignCur : window.consignCur);
-  const _cur = _cc(_sec);
-  let _bal = 0;
-  if (_cur.key === 'xianyu') _bal = S.xianyu || 0;
-  else if (_cur.key === 'gold') _bal = S.gold || 0;
-  else _bal = (S.ores[_cur.key] || 0);
-  if (_bal < cost) return { err: 'cur' };
-  if (_cur.key === 'xianyu') S.xianyu -= cost;
-  else if (_cur.key === 'gold') S.gold -= cost;
-  else S.ores[_cur.key] -= cost;
-  const st = consignStore(S, c.kind); st[c.key] = (st[c.key] || 0) + qty;
-  c.qty -= qty;
-  if (c.qty <= 0) S.consignMarket.splice(i, 1);
-  return { ok: true, cur: _cur.name };
-}
+// v960 寄售行转线上：本地 consignList/consignCancel 已删除，上架/下架走 /api/market/*
+// v960 寄售行转线上：NPC 购买（consignTick）已删除
+// v960 寄售行转线上：NPC 市场生成（genMarket）已删除
+// v960 寄售行转线上：本地购买（consignBuy）已删除，购买走 /api/market/buy
 function chatSend(S, text) { text = String(text || '').trim().slice(0, 100); if (!text) return { err: 'empty' }; chatPush(S, '我', text, false); if (Math.random() < 0.35) chatNpc(S); return { ok: true }; } // 玩家发言，35%概率有人接话
 const REALM_MAX_LV = 10, REINC_CAP = 10; // 每境轮回加成上限10次
 const reincBonus = S => (S.reinc || []).reduce((a, n, i) => a + (i === 0 ? 0 : Math.min(REINC_CAP, Math.max(0, +n || 0))), 0); // 轮回加成：练气起各境min(10,次数)累加；凡人轮回不计；立即生效
@@ -7405,40 +7339,100 @@ const CONSIGN_SECS = [
 // 获取当前区货币（挂window供script0调用）
 function consignCur(sec) { const s = CONSIGN_SECS.find(x => x.key === sec); return s ? { key: s.cur, name: s.curName, icon: s.curIcon } : { key: 'gold', name: '金元', icon: '' }; }
 window.consignCur = consignCur; window.CONSIGN_SECS = CONSIGN_SECS;
-function sheetConsign(tab, msg, sec) {
-  tab = tab || 'market'; sec = sec || consignSec; consignSec = sec;
-  const SEC = CONSIGN_SECS.find(x => x.key === sec);
-  if (tab === 'market' && (!S.consignMarketTime || Date.now() - S.consignMarketTime > 300000)) C.genMarket(S);
-  let html = `<h2>🏪 寄售行</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 成交收5%手续费</div>` + (msg ? `<div class="warn">${msg}</div>` : '') +
+/* ================= 寄售行（v960 全转线上） =================
+ * Ye 指令"没有线下以后全是线上"：NPC 市场/购买/定时购买已删除。
+ * 市场/上架/下架全部走后端 /api/market/*，服务端权威结算（仿 PK 防刷）。
+ * 未登录联机账号时显示登录引导。
+ */
+let _mktView = null; // {tab, sec}：防异步加载过期重绘
+let _mktCat = 'all';
+function mktBal(cur) { // 当前分区货币余额
+  if (cur === 'xianyu') return S.xianyu || 0;
+  if (cur === 'gold') return S.gold || 0;
+  return (S.ores && S.ores[cur]) || 0;
+}
+function mktApplySave(sv) { // 交易后应用服务端返回的存档（服务端已是最新，只写本地不上传）
+  if (!sv || typeof sv !== 'object') return;
+  S = sv; window.S = S;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch(_) {}
+  try { if (typeof render === 'function') render(); } catch(_) {}
+}
+async function mktRefreshRev() { // 交易后刷新同步基线，避免下次上传 409 冲突
+  try {
+    const m = await window.MHXY.api('/api/save/meta');
+    if (m.ok && m.json && typeof m.json.rev === 'number') window.MHXY.setBaseRev(m.json.rev);
+  } catch(_) {}
+}
+function mktHeadHtml(sec, msg, tab) {
+  return `<h2>🏪 寄售行</h2><div class="hint">线上玩家市场 · 成交收5%手续费 · ${esc(window.MHXY.myName())}</div>` +
+    (msg ? `<div class="warn">${msg}</div>` : '') +
     `<div class="grid2" style="grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px">` +
     CONSIGN_SECS.map(x => `<button class="btn${sec === x.key ? ' gold' : ''}" data-consignsec="${x.key}" style="padding:6px 2px;font-size:12px">${x.icon}${x.name}</button>`).join('') + `</div>` +
-    `<div class="grid2" style="margin-bottom:8px">
-      <button class="btn${tab==='market'?' gold':''}" data-consigntab="market">市场</button>
-      <button class="btn${tab==='mine'?' gold':''}" data-consigntab="mine">我的寄售</button>
-      <button class="btn${tab==='list'?' gold':''}" data-consigntab="list">上架</button>
-    </div>`;
-  const matchSec = c => c.kind === SEC.kind && c.key === SEC.item;
-  if (tab === 'market') {
-    // 类目筛选（无"全部"，默认灵石）
-    const _mcat = (window._marketCat && window._marketCat !== 'ore') ? window._marketCat : 'gear'; // v587 默认装备
-    const _catLabel = { gear: '装备', med: '疗伤药', elixir: '丹药', mat: '杂物' }; // v587 取消灵石交易类目
-    const _mcur = consignCur(sec);
-    const _mcurBal = _mcur.key === 'xianyu' ? (S.xianyu||0) : _mcur.key === 'gold' ? (S.gold||0) : (S.ores[_mcur.key]||0);
-    html += `<div class="grid2" style="grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:8px">` +
-      Object.keys(_catLabel).map(k => `<button class="btn${_mcat===k?' gold':''}" data-mcat="${k}" style="padding:6px 2px;font-size:12px">${_catLabel[k]}</button>`).join('') + `</div>`;
-    html += `<div class="hint">本区货币：${_mcur.icon}${_mcur.name} <b class="y">${_mcurBal}</b></div>`;
-    const _catMatch = c => { const _k = c.kind || 'ore'; return _k === _mcat || (_mcat === 'mat' && _k === 'petegg'); };
-    const _npc = (S.consignMarket||[]).filter(c => matchSec(c) && _catMatch(c)).map(c => `<div class="row"><div class="lab">${esc(c.name)} ×${c.qty} <span class="tag">${c.price}${_mcur.name}/个</span><small>卖家 ${esc(c.seller)}</small></div>
-      <input id="bq_${c.id}" type="number" min="1" max="${c.qty}" value="1" style="width:45px;padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px">
-      <button class="btn gold" data-cbuy="${c.id}" ${_mcurBal >= c.price?'':'disabled'}>买下</button></div>`).join('');
-    const _myName = esc(S.name || '我');
-    const _mine = (S.consign||[]).filter(_catMatch).map(c => `<div class="row"><div class="lab">${esc(c.name)} ×${c.qty} <span class="tag">${c.price}${_mcur.name}/个</span><small>卖家 <span class="y">${_myName}</span></small></div>
-      <button class="btn" disabled>我的寄售</button></div>`).join('');
-    html += (_npc + _mine) || '<div class="empty">该类目暂无货物</div>';
-  } else if (tab === 'mine') {
-    html += (S.consign||[]).map(c => `<div class="row"><div class="lab">${esc(c.name)} ×${c.qty} <span class="tag">${c.price}金/个</span></div>
-      <button class="btn" data-ccancel="${c.id}">下架</button></div>`).join('') || '<div class="empty">你还没有上架物品</div>';
-  } else {
+    `<div class="grid2" style="margin-bottom:8px">` +
+    `<button class="btn${tab==='market'?' gold':''}" data-consigntab="market">市场</button>` +
+    `<button class="btn${tab==='mine'?' gold':''}" data-consigntab="mine">我的寄售</button>` +
+    `<button class="btn${tab==='list'?' gold':''}" data-consigntab="list">上架</button></div>`;
+}
+async function sheetConsign(tab, msg, sec) {
+  tab = tab || 'market'; sec = sec || consignSec; consignSec = sec;
+  const view = { tab, sec }; _mktView = view;
+  if (!window.MHXY || !MHXY.loggedIn()) {
+    openSheet(`<h2>🏪 寄售行</h2><div class="hint">线上玩家市场 · 成交收5%手续费</div>` +
+      `<div class="empty">需要登录联机账号才能交易<br><br><button class="btn gold" data-mktlogin>🌐 去登录联机</button></div>` +
+      `<div class="row"><button class="btn full" data-close>关闭</button></div>`);
+    return;
+  }
+  if (tab === 'list') { sheetConsignList(msg, sec); return; }
+  openSheet(mktHeadHtml(sec, null, tab) + `<div class="empty">加载中……</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  const SEC = CONSIGN_SECS.find(x => x.key === sec) || CONSIGN_SECS[2];
+  let data = null, loginBad = false;
+  try {
+    await window.MHXY.syncNow(); // 先推本地脏存档，避免服务端存档过期
+    const r = await window.MHXY.api(tab === 'mine' ? '/api/market/mine' : ('/api/market/list?cur=' + encodeURIComponent(SEC.cur) + '&limit=100'));
+    if (r.status === 401) loginBad = true;
+    else if (r.ok && r.json) data = r.json;
+  } catch(_) { data = null; }
+  if (_mktView !== view) return; // 用户已切走，不重绘
+  if (loginBad) { sheetConsign(tab, '登录已过期，请重新登录联机账号。', sec); return; }
+  if (!data) { openSheet(mktHeadHtml(sec, '网络不通，稍后再试。', tab) + `<div class="row"><button class="btn full" data-close>关闭</button></div>`); return; }
+  if (tab === 'mine') sheetConsignMineShow(sec, data.listings || [], msg);
+  else sheetConsignMarketShow(sec, data.listings || [], msg);
+}
+const MKT_CATS = [['all', '全部'], ['ore', '矿石'], ['elixir', '丹药'], ['med', '疗伤药'], ['misc', '杂物']];
+function sheetConsignMarketShow(sec, list, msg) {
+  const SEC = CONSIGN_SECS.find(x => x.key === sec) || CONSIGN_SECS[2];
+  const curName = SEC.curName, curIcon = SEC.curIcon || '';
+  const bal = mktBal(SEC.cur), me = window.MHXY.myName();
+  const catOf = c => c.kind === 'ore' ? 'ore' : c.kind === 'elixir' ? 'elixir' : c.kind === 'med' ? 'med' : 'misc';
+  let html = mktHeadHtml(sec, msg, 'market') +
+    `<div class="hint">本区货币：${curIcon}${curName} <b class="y">${bal}</b> · <button class="btn" data-mktrefresh style="padding:2px 8px">🔄 刷新</button></div>` +
+    `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:8px">` +
+    MKT_CATS.map(([k, n]) => `<button class="btn${_mktCat===k?' gold':''}" data-mktcat="${k}" style="padding:6px 2px;font-size:12px">${n}</button>`).join('') + `</div>`;
+  const rows = list.filter(c => _mktCat === 'all' || catOf(c) === _mktCat);
+  html += rows.map(c => {
+    const own = c.seller_name === me;
+    return `<div class="row"><div class="lab">${esc(c.name)} ×${c.qty} <span class="tag">${c.price}${curName}/个</span><small>卖家 ${own ? '<span class="y">我</span>' : esc(c.seller_name)}</small></div>` +
+      (own ? `<button class="btn" disabled>我的寄售</button>` :
+        `<input id="bq_${c.id}" type="number" min="1" max="${c.qty}" value="1" style="width:45px;padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px">` +
+        `<button class="btn gold" data-mktbuy="${c.id}"${bal >= c.price ? '' : ' disabled'}>买下</button>`) + `</div>`;
+  }).join('') || '<div class="empty">该区暂无货物，快去上架吧</div>';
+  html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
+  openSheet(html);
+}
+function sheetConsignMineShow(sec, list, msg) {
+  let html = mktHeadHtml(sec, msg, 'mine');
+  html += list.map(c => {
+    const z = CONSIGN_SECS.find(x => x.cur === c.cur);
+    const zn = z ? (z.icon + z.curName) : c.cur;
+    return `<div class="row"><div class="lab">${esc(c.name)} ×${c.qty} <span class="tag">${c.price}${z ? z.curName : c.cur}/个</span><small>${zn}区</small></div>` +
+      `<button class="btn" data-mkdel="${c.id}">下架</button></div>`;
+  }).join('') || '<div class="empty">你还没有上架物品</div>';
+  html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
+  openSheet(html);
+}
+function sheetConsignList(msg, sec) {
+  let html = mktHeadHtml(sec, msg, 'list');
+
     // 矿石类目（所有矿石 + 灵石 + 仙玉）
     const _cur = consignCur(sec);
     const _oreKeys = Object.keys(S.ores || {}).filter(k => (S.ores[k]||0) > 0);
@@ -7517,7 +7511,6 @@ function sheetConsign(tab, msg, sec) {
         <button class="btn gold" data-clist="elixir:${_ek}">上架</button></div>`;
       }
     }
-  }
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
   openSheet(html);
 }
@@ -9632,7 +9625,20 @@ document.addEventListener('click', e => {
   else if (d.consigntab) sheetConsign(d.consigntab, null, consignSec);
   else if (d.consignsec) sheetConsign('market', null, d.consignsec);
   else if (d.mcat) { window._marketCat = d.mcat; sheetConsign('market', null, consignSec); }
-  else if (d.cbuy) { try { window.consignSec = consignSec; } catch(e) {} const _bq = $('bq_'+d.cbuy); const _bqty = _bq ? +_bq.value : 0; const r = C.consignBuy(S, d.cbuy, _bqty); commit(); sheetConsign('market', r.ok ? '购买成功！' : (r.err === 'cur' ? consignCur(consignSec).name + '不足。' : '购买失败。'), consignSec); }
+  else if (d.mktbuy) { (async () => { // v960 线上购买
+    const _qid = $('bq_' + d.mktbuy);
+    const _qty = _qid ? Math.max(1, Math.floor(+_qid.value)) : 1;
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/market/buy', { method: 'POST', body: { id: d.mktbuy, qty: _qty } });
+      if (r.status === 401) { sheetConsign('market', '登录已过期，请重新登录联机账号。', consignSec); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetConsign('market', '购买成功！', consignSec); }
+      else { const _e = (r.json || {}).error; sheetConsign('market', _e === 'no_money' ? '货币不足。' : _e === 'not_found' ? '该寄售已下架。' : _e === 'own' ? '不能购买自己的寄售。' : '购买失败。', consignSec); }
+    } catch(_) { sheetConsign('market', '网络不通，稍后再试。', consignSec); }
+  })(); }
+  else if ('mktrefresh' in d) sheetConsign('market', null, consignSec);
+  else if (d.mktcat) { _mktCat = d.mktcat; sheetConsign('market', null, consignSec); }
+  else if ('mktlogin' in d) { try { window.MHXY.panel(); } catch(e) {} }
   else if (d.stallbuy !== undefined) { const _sx = +d.sx, _sy = +d.sy, _si = +d.stallbuy; const _items = stallGen(_sx, _sy); const _it = _items[_si]; if (_it) { const _scc = stallCur(_sx, _sy); const _cost = _it.price * _it.qty; const _sbal = stallBal(_scc.key); if (_sbal >= _cost) { if (_scc.key === 'xianyu') S.xianyu -= _cost; else if (_scc.key === 'gold') S.gold -= _cost; else S.ores[_scc.key] -= _cost; if (_it.kind === 'ore') { S.ores[_it.key] = (S.ores[_it.key]||0) + _it.qty; } else if (_it.kind === 'mat') { S.mats[_it.key] = (S.mats[_it.key]||0) + _it.qty; } _items.splice(_si, 1); commit(); sheetStall(_sx, _sy); } } }
   else if (d.stallrent) { const _parts = String(d.stallrent).split(','); const _rx = +_parts[0], _ry = +_parts[1]; const _rent = STALL_RENT[_rx + ',' + _ry]; if (_rent && !stallRented(_rx, _ry)) { let _ok = false; if (_rent.kind === 'xianyu' && (S.xianyu||0) >= _rent.price) { S.xianyu -= _rent.price; _ok = true; } else if (_rent.kind === 'ore' && (S.ores[_rent.key]||0) >= _rent.price) { S.ores[_rent.key] -= _rent.price; _ok = true; } if (_ok) { if (!S.stalls) S.stalls = {}; S.stalls[_rx + ',' + _ry] = { until: Date.now() + 3600000, items: [] }; commit(); sheetStall(_rx, _ry); } } }
   else if (d.stalllist) { const _p = String(d.stalllist).split(','); sheetStallList(+_p[0], +_p[1]); }
@@ -9753,10 +9759,32 @@ document.addEventListener('click', e => {
   else if (d.casinoBack !== undefined) { if (typeof sheetCasino==='function') sheetCasino(); }
   else if (d.casinoAgain) { const _ag = d.casinoAgain; if (_ag==='dice') casinoDice(); else if (_ag==='beast') casinoBeast(); else if (_ag==='slots') casinoSlots(); else if (_ag==='bowls') casinoBowls(); else if (_ag==='number') casinoNumber(); else if (_ag==='card') casinoCard(); }
   else if (d.stallunlist) { const _p = String(d.stallunlist).split(','); const _ux = +_p[0], _uy = +_p[1], _ui = +_p[2]; const _rk = _ux + ',' + _uy; const _st = (S.stalls||{})[_rk]; if (_st && _st.items && _st.items[_ui]) { const _mi = _st.items.splice(_ui, 1)[0]; if (_mi.kind === 'ore') S.ores[_mi.key] = (S.ores[_mi.key]||0) + _mi.qty; else S.mats[_mi.key] = (S.mats[_mi.key]||0) + _mi.qty; commit(); sheetStall(_ux, _uy); } }
-  else if (d.ccancel) { C.consignCancel(S, d.ccancel); commit(); sheetConsign('mine', '已下架。', consignSec); }
-  else if (d.clist) { const [kind, key] = d.clist.split(':'); const q = $('cq_'+kind+'_'+key), pr = $('cp_'+kind+'_'+key);
-    const r = C.consignList(S, kind, key, q ? +q.value : 0, pr ? +pr.value : 0);
-    commit(); sheetConsign('list', r.ok ? '上架成功！' : '数量或价格无效。'); }
+  else if (d.mkdel) { (async () => { // v960 线上下架
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/market/delist', { method: 'POST', body: { id: d.mkdel } });
+      if (r.status === 401) { sheetConsign('mine', '登录已过期，请重新登录联机账号。', consignSec); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetConsign('mine', '已下架，物品退回背包。', consignSec); }
+      else sheetConsign('mine', '下架失败。', consignSec);
+    } catch(_) { sheetConsign('mine', '网络不通，稍后再试。', consignSec); }
+  })(); }
+  else if (d.clist) { (async () => { // v960 线上上架
+    const _parts = String(d.clist).split(':');
+    const _rk = _parts[0], _rkey = _parts.slice(1).join(':');
+    let _ak = _rk, _akey = _rkey;
+    if (_ak === 'inv' && _akey.indexOf('EGGSEP') === 0) { _ak = 'egg'; _akey = _akey.slice(6); } // EGGSEP：实际存放在S.eggs
+    const q = $('cq_' + _rk + '_' + _rkey), pr = $('cp_' + _rk + '_' + _rkey);
+    const _qty = q ? Math.floor(+q.value) : 0, _price = pr ? Math.floor(+pr.value) : 0;
+    if (!(_qty > 0) || !(_price > 0)) { sheetConsign('list', '数量或价格无效。'); return; }
+    const _SEC = CONSIGN_SECS.find(x => x.key === consignSec) || CONSIGN_SECS[2];
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/market/sell', { method: 'POST', body: { kind: _ak, key: _akey, qty: _qty, price: _price, cur: _SEC.cur, name: consignName(_ak, _akey) } });
+      if (r.status === 401) { sheetConsign('list', '登录已过期，请重新登录联机账号。', consignSec); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetConsign('list', '上架成功！'); }
+      else sheetConsign('list', ((r.json || {}).error === 'no_item') ? '物品不足（存档可能已同步变动）。' : '上架失败。', consignSec);
+    } catch(_) { sheetConsign('list', '网络不通，稍后再试。', consignSec); }
+  })(); }
   else if ('chatsend' in d) { const inp = $('chatInput'); const r = C.chatSend(S, inp ? inp.value : ''); if (r.ok) { save(); sheetChat(); } }
   else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v && typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value=''; save(); if (window.renderChatFloat) window.renderChatFloat(); } }
   else if (d.menutab) sheetMenu(d.menutab);
@@ -9764,11 +9792,23 @@ document.addEventListener('click', e => {
 });
 
 load(); applyDebug(); renderLog(); afterAct(); render(); save();
+// v960 寄售行转线上：本地寄售物品退回背包，NPC 市场清空（一次性迁移）
+try {
+  if (S && !S._mkt960mig) {
+    if (Array.isArray(S.consign) && S.consign.length) {
+      for (const _c of S.consign) {
+        try { if (_c && _c.qty > 0) { const _st = consignStore(S, _c.kind); _st[_c.key] = (_st[_c.key] || 0) + _c.qty; } } catch(_){}
+      }
+    }
+    S.consign = []; S.consignMarket = null; S.consignMarketTime = 0; S._mkt960mig = 1;
+    save();
+  }
+} catch(_){}
 if (S.forceReinc) setTimeout(() => doReincarnate(true), 500); // 刷新后仍有强制轮回标记则弹窗
 // AFK横幅每10秒刷新一次
 setInterval(() => { try { if (S.afk) render(); } catch(e) {} }, 10000);
-// 世界聊天NPC每60秒35%概率发言；寄售NPC每60秒可能购买
-setInterval(() => { try { if (Math.random() < 0.35) { C.chatNpc(S); } C.consignTick(S); save(); } catch(e) {} }, 60000);
+// 世界聊天NPC每60秒35%概率发言（v960 寄售NPC购买已删除，转线上）
+setInterval(() => { try { if (Math.random() < 0.35) { C.chatNpc(S); } save(); } catch(e) {} }, 60000);
 
 /* ---------- 联机对战 v92：WebSocket 1v1 ---------- */
 const NET_URL = 'ws://localhost:8080'; // 上线时改成正式服务器地址
@@ -10538,7 +10578,8 @@ function init(){
 
 window.MHXY = {
   panel: panel, markDirty: markDirty, onClick: onClick,
-  loggedIn: loggedIn, syncNow: syncNow, init: init
+  loggedIn: loggedIn, syncNow: syncNow, init: init, api: api, myName: myName,
+  setBaseRev: function(r){ M.baseRev = r; try{ ls(LK.rev, String(r)); }catch(_){} } // v960 交易后更新同步基线
 };
 
 try{ init(); }catch(_){}
