@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v961</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v962</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5138,7 +5138,28 @@ window.doRanchGather = function() {
   commit(); renderWorldMap();
   if (typeof toastLog === 'function') toastLog('good', `收获成功：肉×${mn} 蛋×${en}`);
 }; // v541
-window.doReserveHerb = function() { // v558 采草药；v666 一次采1株
+window.doReserveHerb = async function() { // v558 采草药；v666 一次采1株
+  // v962 彻底版：登录在线时走服务端掷骰发放（系统记账，不限流）；网络失败/未登录回落本地逻辑
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const r = await MHXY.api('/api/roll/gather', {method:'POST', body:{}});
+      const j = r && r.json;
+      if (r.ok && j && j.key) {
+        if (!S.herbs) S.herbs = {};
+        S.herbs[j.key] = (S.herbs[j.key]|0) + 1;
+        if (S.reserveNode) S.reserveNode.h = j.remaining;
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        log('good', `🌿 在灵脉矿区采集：${j.name}×1（剩余${j.remaining}株）`);
+        thunderGatherJudge();
+        commit(); renderWorldMap(); openReserveSheet();
+        if (typeof toastLog === 'function') toastLog('good', `采集${j.name}×1`);
+        return;
+      }
+      if (j && j.error === 'no_herb') { if (typeof toastLog === 'function') toastLog('sys', '没有草药'); return; }
+      if (r.status === 401) { /* 登录过期，回落本地 */ }
+      else if (!r.netErr) { return; } // 服务端已响应（限流/冲突等），不回落，避免重复记账
+    } catch(e) { /* 网络失败，回落本地 */ }
+  }
   reserveTick(S);
   const rn = S.reserveNode;
   if ((rn.h|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有草药'); return; }
@@ -5152,7 +5173,28 @@ window.doReserveHerb = function() { // v558 采草药；v666 一次采1株
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${hn}×1`);
 };
-window.doReserveOre = function() { // v558 挖矿石；v666 一次挖1块
+window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
+  // v962 彻底版：登录在线时走服务端掷骰发放（系统记账，不限流）；网络失败/未登录回落本地逻辑
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const r = await MHXY.api('/api/roll/mine', {method:'POST', body:{}});
+      const j = r && r.json;
+      if (r.ok && j && j.key) {
+        if (!S.ores) S.ores = {};
+        S.ores[j.key] = (S.ores[j.key]|0) + 1;
+        if (S.reserveNode) S.reserveNode.o = j.remaining;
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        log('good', `⛏️ 在灵脉矿区采集：${j.name}×1（剩余${j.remaining}块）`);
+        thunderGatherJudge();
+        commit(); renderWorldMap(); openReserveSheet();
+        if (typeof toastLog === 'function') toastLog('good', `采集${j.name}×1`);
+        return;
+      }
+      if (j && j.error === 'no_ore') { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
+      if (r.status === 401) { /* 登录过期，回落本地 */ }
+      else if (!r.netErr) { return; } // 服务端已响应（限流/冲突等），不回落，避免重复记账
+    } catch(e) { /* 网络失败，回落本地 */ }
+  }
   reserveTick(S);
   const rn = S.reserveNode;
   if ((rn.o|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
