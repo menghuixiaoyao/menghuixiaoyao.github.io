@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v965</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v966</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4869,7 +4869,31 @@ window.withdrawFuel = function(id) { // v917 取出灵石
     commit(); window.arrayPanel(id);
   } catch(e) {}
 };
-window.collectArray = function(id) {
+window.collectArray = async function(id) {
+  // v966 彻底版：登录在线时走服务端（服务端按正确语义实现，修本地 bug）
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/roll/array_collect', {method:'POST', body:{id}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        const got = [];
+        for (const gg of (j.gains||[])) {
+          if (!S[gg.st]) { S[gg.st] = gg.st === 'veins' ? [0,0,0] : {}; }
+          if (Array.isArray(S[gg.st])) { /* veins 不走此处 */ }
+          else { S[gg.st][gg.k] = (S[gg.st][gg.k]|0) + gg.n; }
+          got.push(`${gg.k}×${gg.n}`);
+        }
+        // 本地阵 storage 清零（与服务端一致）
+        try { const a = (S.arrays||[]).find(v => v.id === id); if (a && a.storage) { a.storage.h = 0; a.storage.o = 0; a.storage.v = 0; a.storage.m = 0; a.storage.e = 0; } } catch(_){}
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        if (got.length) log('good', `📦 从采集阵收取：${got.join('、')}`);
+        else log('sys', '阵内空空如也');
+        commit(); window.arrayPanel(id);
+        return;
+      }
+      if (!resp.netErr) { if ((j||{}).error === 'no_array') log('sys', '阵不存在'); return; }
+    } catch(e) { /* 回落本地 */ }
+  }
   try {
     const a = (S.arrays || []).find(v => v.id === id);
     if (!a || !a.storage) return;
@@ -4952,7 +4976,27 @@ function herbHas(S) {
   herbTick(S);
   return (S.herbGarden.h > 0);
 }
-window.doHerbGather = function() { // v666 一次采1株
+window.doHerbGather = async function() { // v666 一次采1株
+  // v966 彻底版：登录在线时走服务端
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/roll/herb_garden', {method:'POST', body:{}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        if (!S.herbs) S.herbs = {};
+        S.herbs[j.key] = (S.herbs[j.key]|0) + 1;
+        if (S.herbGarden) S.herbGarden.h = Math.max(0, (S.herbGarden.h|0) - 1);
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        const hn = j.key === 'lq1' ? '一品灵草' : '二品灵草';
+        log('good', `🌱 在田药园采集：${hn}×1（剩余${S.herbGarden ? S.herbGarden.h|0 : 0}株）`);
+        thunderGatherJudge();
+        commit(); renderWorldMap(); openHerbSheet();
+        if (typeof toastLog === 'function') toastLog('good', `采集${hn}×1`);
+        return;
+      }
+      if ((j||{}).error === 'no_herb' || !resp.netErr) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
+    } catch(e) { /* 回落本地 */ }
+  }
   // v540 采集田药园；v542 免费
   herbTick(S);
   const hg = S.herbGarden;
@@ -5208,7 +5252,28 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${knm}×1`);
 };
-window.doReserveVein = function() { // v558 采灵脉；v666 一次采1条
+window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
+  // v966 彻底版：登录在线时走服务端
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/roll/vein', {method:'POST', body:{}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        const veinNames = ['低级灵脉', '中级灵脉', '高级灵脉'];
+        const vtn = j.key|0;
+        if (!S.veins) S.veins = [0, 0, 0];
+        S.veins[vtn] = (S.veins[vtn]|0) + 1;
+        if (S.reserveNode) S.reserveNode.v = Math.max(0, (S.reserveNode.v|0) - 1);
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        log('good', `💎 在灵脉矿区采集：${veinNames[vtn]}×1（剩余${S.reserveNode ? S.reserveNode.v|0 : 0}条）`);
+        thunderGatherJudge();
+        commit(); renderWorldMap(); openReserveSheet();
+        if (typeof toastLog === 'function') toastLog('good', `采集${veinNames[vtn]}×1`);
+        return;
+      }
+      if ((j||{}).error === 'no_vein' || !resp.netErr) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
+    } catch(e) { /* 回落本地 */ }
+  }
   reserveTick(S);
   const rn = S.reserveNode;
   if ((rn.v|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
@@ -8821,7 +8886,25 @@ function doLu(k, n) {
   log('good', `💧 服用 ${rarTxt('farm', k)} ×${r.n}，获得 ${r.pts} 点属性：${gainsTxt(r.gains)}`);
   commit(); sheetBag();
 }
-function doSmash(n) {
+async function doSmash(n) {
+  // v966 彻底版：登录在线时走服务端
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/roll/smash', {method:'POST', body:{n}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        if (!S.ores) S.ores = {};
+        S.ores.sp5 = (S.ores.sp5|0) - j.n; if (S.ores.sp5 <= 0) delete S.ores.sp5;
+        const got = {};
+        for (const gg of (j.gains||[])) { S.ores[gg.k] = (S.ores[gg.k]|0) + gg.n; got[gg.k] = (got[gg.k]|0) + gg.n; }
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        log('gold', `🔨 砸开 ${rarTxt('mine', 'sp5')}${j.n > 1 ? ' ×' + j.n : ''}，得到 ` + ['sp1', 'sp2', 'sp3', 'sp4'].filter(k => got[k]).map(k => `${rarTxt('mine', k)}×${got[k]}`).join(' '));
+        commit(); if (window._charPage) { sheetChar(); } else { sheetBag(); }
+        return;
+      }
+      if (!resp.netErr) return; // 服务端已响应，不回落
+    } catch(e) { /* 回落本地 */ }
+  }
   const r = C.smashSpirit(S, n); if (!r) return;
   log('gold', `🔨 砸开 ${rarTxt('mine', 'sp5')}${r.n > 1 ? ' ×' + r.n : ''}，得到 ` + ['sp1', 'sp2', 'sp3', 'sp4'].filter(k => r.got[k]).map(k => `${rarTxt('mine', k)}×${r.got[k]}`).join(' '));
   commit(); if (window._charPage) { sheetChar(); } else { sheetBag(); }
