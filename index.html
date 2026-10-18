@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v964</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v965</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6492,7 +6492,29 @@ function sheetStoneGamble() {
     <div class="row"><button class="btn full" data-close>离开</button></div>`;
   openSheet(html);
 }
-function stoneGambleStart() {
+async function stoneGambleStart() {
+  // v965 彻底版：登录在线时走服务端（两步：start 扣费生成 picks，pick 领取）
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/roll/gamble_stone/start', {method:'POST', body:{}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        S.ores.sp1 = (S.ores.sp1|0) - 3; S.gold = (S.gold|0) - 1000;
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        try { if (typeof log === 'function') log('info', `🪨 消耗 3灵气石+1000金元，剩余 🪨${S.ores.sp1|0} · 金元${S.gold|0}`); } catch(_) {}
+        try { const _so = $('stoneOwn'); if (_so) _so.innerHTML = `🪨灵气石 <b>${S.ores.sp1|0}</b> · 金元 <b>${S.gold|0}</b>`; } catch(_) {}
+        try { if (typeof thunderGatherJudge === 'function') thunderGatherJudge(); } catch(_) {}
+        S._stonePicks = j.picks;
+        const names = { sp1: ['🪨','灵气石'], sp3: ['🌗','中品灵石'], sp4: ['💎','上品灵石'], sp5: ['💠','极品灵石'] };
+        const btns = j.picks.map((k, i) => `<button class="btn gold" data-stone-pick="${i}" style="flex:1;padding:20px 4px;font-size:14px">🪨<br>原石${i+1}<br><small>点我切开</small></button>`).join('');
+        const el = $('stoneResult');
+        if (el) el.innerHTML = `<div class="hint">三块原石已出，选一块切开：</div><div style="display:flex;gap:6px">${btns}</div>`;
+        save(); render();
+        return;
+      }
+      if ((j||{}).error === 'no_mats' || !resp.netErr) { try { alert('灵气石或金元不足'); } catch(e) {} return; }
+    } catch(e) { /* 回落本地 */ }
+  }
   if ((S.ores.sp1|0) < 3 || (S.gold|0) < 1000) { try { alert('灵气石或金元不足'); } catch(e) {} return; }
   S.ores.sp1 -= 3; S.gold -= 1000;
   try { if (typeof log === 'function') log('info', `🪨 消耗 3灵气石+1000金元，剩余 🪨${S.ores.sp1|0} · 金元${S.gold|0}`); } catch(_) {}
@@ -6507,7 +6529,36 @@ function stoneGambleStart() {
   if (el) el.innerHTML = `<div class="hint">三块原石已出，选一块切开：</div><div style="display:flex;gap:6px">${btns}</div>`;
   save(); render();
 }
-function stoneGamblePick(i) {
+async function stoneGamblePick(i) {
+  // v965 彻底版：登录在线且服务端有 picks 时走服务端领取
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/roll/gamble_stone/pick', {method:'POST', body:{i}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok && (j.gains||[]).length) {
+        const gg = j.gains[0];
+        const k = gg.k;
+        if (k === 'xianyu') S.xianyu = (S.xianyu|0) + 1; else { if (!S.ores) S.ores = {}; S.ores[k] = (S.ores[k]|0) + 1; }
+        S._stonePicks = null;
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        const names = { sp1: '🪨灵气石', sp3: '🌗中品灵石', sp4: '💎上品灵石', sp5: '💠极品灵石', xianyu: '🧭仙玉' };
+        try { const _jp = k === 'xianyu' ? 1.0 : k === 'sp5' ? 0.80 : k === 'sp4' ? 0.50 : k === 'sp3' ? 0.30 : 0.10; if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(_jp); } catch(_) {}
+        try { log('good', `🪨 赌石切出 <b class="y">${names[k]}×1</b>！`); } catch(e) {}
+        if (typeof announce === 'function') { try {
+          const _am = `📢 全服通告：恭喜道友赌石切出【${names[k]}】！`;
+          if (k === 'xianyu') { announce(S, _am); }
+          else if (k === 'sp3') { announce(S, _am); }
+          else if (k === 'sp4') { announce(S, _am); setTimeout(() => { try { announce(S, _am); } catch(e) {} }, 10*60*1000); }
+          else if (k === 'sp5') { announce(S, _am); setTimeout(() => { try { announce(S, _am); } catch(e) {} }, 20*60*1000); setTimeout(() => { try { announce(S, _am); } catch(e) {} }, 40*60*1000); }
+        } catch(e) {} }
+        const el = $('stoneResult');
+        if (el) el.innerHTML = `<div class="hint">切出 <b class="y">${names[k]}×1</b>！</div><div class="row"><button class="btn gold full" data-stone-start>再开一次（3灵气石+1000金元）</button></div>`;
+        save(); render();
+        return;
+      }
+      // 服务端无 picks（no_picks）→ 回落本地逻辑
+    } catch(e) { /* 回落本地 */ }
+  }
   const picks = S._stonePicks; if (!picks || !picks[i]) return;
   const k = picks[i];
   const names = { sp1: '🪨灵气石', sp3: '🌗中品灵石', sp4: '💎上品灵石', sp5: '💠极品灵石', xianyu: '🧭仙玉' };
@@ -8469,7 +8520,31 @@ function doDrinkButian() { // v867 补天丹：+1随机灵根，上限5条，每
   log('good', `🌟 服用补天丹，补全 <b class="y">${window.LG.ICON[el]}灵根</b>！当前：<b>${window.LG.name(S)}</b>`);
   afterAct(); commit(); sheetBag();
 }
-function doOpenChest(kind, n) { // v251 开宝箱
+async function doOpenChest(kind, n) { // v251 开宝箱
+  // v965 彻底版：登录在线时走服务端
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/roll/chest', {method:'POST', body:{kind, n}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        if (!S.inv) S.inv = {}; if (!S.ores) S.ores = {}; if (!S.mats) S.mats = {};
+        S.inv[kind] = (S.inv[kind]|0) - j.n; if (S.inv[kind] <= 0) delete S.inv[kind];
+        const gains = [];
+        for (const gg of (j.gains||[])) {
+          if (gg.st === 'gold') { S.gold = (S.gold|0) + gg.n; gains.push('金元+' + gg.n); }
+          else if (gg.st === 'ores') { S.ores[gg.k] = (S.ores[gg.k]|0) + gg.n; gains.push((gg.k==='sp1'?'下品灵石':gg.k==='sp2'?'中品灵石':gg.k==='sp3'?'上品灵石':gg.k==='sp4'?'极品灵石':gg.k==='sp5'?'💠极品灵石':gg.k) + '×' + gg.n); }
+          else if (gg.st === 'mats') { S.mats[gg.k] = (S.mats[gg.k]|0) + gg.n; if (gg.k === 'maiPages') gains.push('🌀脉络残页×1'); else gains.push((gg.k==='lu1'?'一':gg.k==='lu2'?'二':'三') + '品灵露×1'); }
+          else if (gg.st === 'inv') { S.inv[gg.k] = (S.inv[gg.k]|0) + gg.n; gains.push('🌟补天丹×1'); }
+        }
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        const name = kind === 'chestN' ? '🎀精致盲盒' : kind === 'chestB' ? '🎲盲盒' : kind === 'chestR' ? '🎁稀有宝箱' : '💎高级宝箱';
+        log('good', name + ' ×' + j.n + ' 开启，获得：<span class="y">' + gains.join('、') + '</span>');
+        afterAct(); commit(); sheetBag();
+        return;
+      }
+      if ((j||{}).error === 'no_chest' || !resp.netErr) { toastLog('sys', '没有宝箱'); return; }
+    } catch(e) { /* 回落本地 */ }
+  }
   const have = S.inv[kind] | 0; if (have <= 0) { toastLog('sys', '没有宝箱'); return; }
   n = Math.max(1, Math.min(have, n | 0 || 1));
   S.inv[kind] -= n; if (S.inv[kind] <= 0) delete S.inv[kind];
