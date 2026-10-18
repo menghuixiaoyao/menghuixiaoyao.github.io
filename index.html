@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v969</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v970</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10710,8 +10710,9 @@ function isGuest(){ return ls(LK.guest) === '1'; }
 
 function onReplaced(){
   clearAuth(false);
-  glog('bad', '🌐 你已在另一台设备登录，本机已下线（单机存档不受影响）。');
+  glog('bad', '🌐 你已在另一台设备登录，本机已下线。');
   try{ if (typeof closeSheet === 'function') closeSheet(); }catch(_){}
+  showLoginGate(); // v970 掉线后弹门禁
 }
 function clearAuth(clearRev){
   [LK.tok, LK.name, LK.pno, LK.guest, LK.aid].forEach(function(k){ ls(k, null); });
@@ -10739,7 +10740,7 @@ var M = {
 function panel(){
   var html;
   if (!loggedIn()){
-    html = '<h2>🌐 真人联机</h2><div class="hint">登录后：云存档跨设备同步、与真人道友聊天、真人PK（服务端结算）。不登录不影响单机游玩。</div>'
+    html = '<h2>🌐 真人联机</h2><div class="hint">已登录：云存档跨设备同步、与真人道友聊天、真人PK（服务端结算）。</div>'
       + '<div class="row"><button class="btn gold full" data-mhxyguest>一键游客登录</button></div>'
       + '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
       + '<input id="mhxyP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
@@ -10816,8 +10817,8 @@ async function doLogout(){
   try{ await api('/api/logout', { method:'POST' }); }catch(_){}
   try{ await api('/api/world/logout', { method:'POST' }); }catch(_){}
   clearAuth(false);
-  glog('sys', '🌐 已登出，回到单机模式。');
-  panel();
+  glog('sys', '🌐 已登出。');
+  showLoginGate(); // v970 登出后弹门禁，不再回单机
 }
 async function afterLogin(){
   await ensurePresence();
@@ -11146,10 +11147,74 @@ function init(){
     api('/api/save/meta').then(function(r){
       if (r.status === 401 && r.json && (r.json.error === 'session_replaced' || r.json.error === 'session_expired' || r.json.error === 'unauthorized')){
         // onReplaced 已在 api() 内处理 replaced；expired/unknown 在此清掉
-        if (r.json.error !== 'session_replaced'){ clearAuth(false); }
+        if (r.json.error !== 'session_replaced'){ clearAuth(false); showLoginGate(); } // v970 token失效弹门禁
       }
     });
+  } else {
+    // v970 登录门禁：未登录先弹登录页，不进游戏
+    showLoginGate();
   }
+}
+// v970 登录门禁
+function showLoginGate(){
+  if (document.getElementById('loginGate')) return;
+  var g = document.createElement('div');
+  g.id = 'loginGate';
+  g.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f0f1a;display:flex;align-items:center;justify-content:center;padding:20px';
+  g.innerHTML = '<div style="width:100%;max-width:340px;text-align:center">'
+    + '<div style="font-size:42px;margin-bottom:8px">🌙</div>'
+    + '<h2 style="color:#e8c468;margin:0 0 6px;font-size:22px">梦回逍遥</h2>'
+    + '<div style="color:#888;font-size:13px;margin-bottom:20px">登录后进入游戏（需要联网）</div>'
+    + '<button id="gateGuest" style="width:100%;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,#e8c468,#c9962e);color:#1a1a2e;font-size:16px;font-weight:bold;margin-bottom:12px;cursor:pointer">一键游客登录</button>'
+    + '<div style="display:flex;gap:8px;margin-bottom:8px">'
+    + '<input id="gateU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0">'
+    + '<input id="gateP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0">'
+    + '</div>'
+    + '<div style="display:flex;gap:8px">'
+    + '<button id="gateLogin" style="flex:1;padding:10px;border:1px solid #555;border-radius:8px;background:#222;color:#fff;font-size:14px;cursor:pointer">登录</button>'
+    + '<button id="gateReg" style="flex:1;padding:10px;border:1px solid #555;border-radius:8px;background:#222;color:#fff;font-size:14px;cursor:pointer">注册</button>'
+    + '</div>'
+    + '<div id="gateMsg" style="color:#e88;font-size:13px;margin-top:12px;min-height:18px"></div>'
+    + '</div>';
+  document.body.appendChild(g);
+  document.getElementById('gateGuest').onclick = gateDoGuest;
+  document.getElementById('gateLogin').onclick = gateDoLogin;
+  document.getElementById('gateReg').onclick = gateDoRegister;
+}
+function hideLoginGate(){
+  var g = document.getElementById('loginGate');
+  if (g) g.remove();
+}
+function gateMsg(t){ var m = document.getElementById('gateMsg'); if (m) m.textContent = t; }
+async function gateDoGuest(){
+  gateMsg('登录中…');
+  var r = await api('/api/guest', { method:'POST', noAuth:true, body:{} });
+  if (r.ok && r.json && r.json.ok){ await gateAfterAuth(r.json); }
+  else gateMsg('登录失败' + (r.netErr ? '（网络不通，连上网再试）' : '：' + ((r.json||{}).error || r.status)));
+}
+async function gateDoLogin(){
+  var u = document.getElementById('gateU').value.trim(), p = document.getElementById('gateP').value;
+  if (!u || !p){ gateMsg('请填写用户名和密码'); return; }
+  gateMsg('登录中…');
+  var r = await api('/api/login', { method:'POST', noAuth:true, body:{ username:u, password:p } });
+  if (r.ok && r.json && r.json.ok){ await gateAfterAuth(r.json); }
+  else gateMsg('登录失败' + (r.netErr ? '（网络不通）' : r.status === 401 ? '（用户名或密码不对）' : '：' + ((r.json||{}).error || r.status)));
+}
+async function gateDoRegister(){
+  var u = document.getElementById('gateU').value.trim(), p = document.getElementById('gateP').value;
+  if (!u || !p){ gateMsg('请填写用户名和密码'); return; }
+  gateMsg('注册中…');
+  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p } });
+  if (r.ok && r.json && r.json.ok){ await gateAfterAuth(r.json); }
+  else gateMsg('注册失败' + (r.netErr ? '（网络不通）' : '：' + ((r.json||{}).error || r.status)));
+}
+async function gateAfterAuth(d){
+  saveAuth(d);
+  gateMsg('正在同步存档…');
+  // 首次登录：把本地存档绑账号上传云端
+  try{ await syncNow(true); }catch(_){}
+  hideLoginGate();
+  await afterLogin();
 }
 
 window.MHXY = {
