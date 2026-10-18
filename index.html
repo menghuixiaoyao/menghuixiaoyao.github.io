@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v963</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v964</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7626,10 +7626,46 @@ function sheetLife(tab) {
       `<div class="row"><div class="lab">驯兽加成<small>灵宠咬人概率 ×${Math.round(C.tameBiteMult(S) * 100) / 100} · 孵化概率 ${Object.keys(hp).map(k => PETS[k].name + ' ' + C.pct(hp[k])).join(' · ')}</small></div></div>`; }
   openSheet(`<h2>生活技能</h2>` + (() => { const _mx = C.lifeChoiceMax(S), _cl = (S.lifeChoices || []).length, _lf = Math.max(0, _mx - _cl); return _lf > 0 ? `<div class="row"><button class="btn gold full" data-lcopen>🎯 再选择 ${_lf} 个生活技能（境界提升解锁更多）</button></div>` : ''; })() + tabs + head + body + `<button class="btn full" data-close>关闭</button>`);
 }
-function doCraft(skill, k, n, opt) {
+async function doCraft(skill, k, n, opt) {
   if (lifeLocked(skill)) { toastLog('bad', '🔒 未选择该生活技能'); return; } // v204
   let ok = 0, fail = 0, lvUp = 0, xp = 0, stop = ''; const got = [];
-  for (let i = 0; i < n; i++) { const r = C.craft(S, skill, k, opt); if (!r) break;
+  // v964 彻底版：炼金丹药分支登录在线时走服务端
+  const useAlcServer = skill === 'alc' && C.REFINES[k] && C.REFINES[k].pot && window.MHXY && MHXY.loggedIn && MHXY.loggedIn();
+  for (let i = 0; i < n; i++) {
+    let r;
+    if (useAlcServer) {
+      try {
+        const resp = await MHXY.api('/api/roll/craft_alc', {method:'POST', body:{key:k}});
+        const j = resp && resp.json;
+        if (resp.ok && j && j.ok) {
+          // 本地应用（服务端已记账）
+          if (!S.elixirs) S.elixirs = {};
+          if (j.success && j.key) S.elixirs[j.key] = (S.elixirs[j.key]|0) + j.n;
+          const need = C.REFINES[k].need || [];
+          if (j.success) { for (const [nst,nk,nn] of need) { if (S[nst]) { S[nst][nk] = (S[nst][nk]|0) - nn; if (S[nst][nk] <= 0) delete S[nst][nk]; } } }
+          else if (need[0]) { const [fst,fk] = need[0]; if (S[fst]) { S[fst][fk] = (S[fst][fk]|0) - 1; if (S[fst][fk] <= 0) delete S[fst][fk]; } }
+          try { payLife(S); } catch(_){}
+          S.vigor = j.vigor; S.mana = j.mana;
+          if (S.life && S.life.refine) { S.life.refine.lv = j.lifeLv; S.life.refine.xp = j.lifeXp; }
+          try { hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
+          if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+          r = {ok: j.success, pot: j.key, n: j.n||0, xp: 0, lvUp: j.lvUp||0};
+          xp += 0; // 服务端已加经验，本地 xp 仅用于显示（此处计 0，由 lvUp 体现）
+        } else {
+          const e = (j||{}).error;
+          if (e === 'no_vigor') r = {err:'vigor'};
+          else if (e === 'no_mana') r = {err:'mana'};
+          else if (e === 'no_mats' || e === 'bad_key') r = {err:'mat'};
+          else if (e === 'low_lv') r = {err:'lv'};
+          else if (e === 'dead') r = {err:'dead'};
+          else if (resp.netErr) r = C.craft(S, skill, k, opt);
+          else { stop = '服务端异常，请稍后重试'; break; }
+        }
+      } catch(e) { r = C.craft(S, skill, k, opt); }
+    } else {
+      r = C.craft(S, skill, k, opt);
+    }
+    if (!r) break;
     if (r.err) { stop = { vigor: '活力不足', mana: '法力不足（签到回满，或喝法力药水）', mat: '材料不足', lv: '等级不足', dead: '' }[r.err]; break; }
     xp += r.xp; lvUp += r.lvUp; if (r.ok) { ok++; got.push(skill === 'cook' ? dishName(r.item) : skill === 'forge' ? gearName(r.gear) + (r.equipped ? '（已自动装备）' : '') : C.REFINES[k].pot ? `${elixName(r.pot)}${r.n > 1 ? '×' + r.n + '<span class="y">（双倍！）</span>' : ''}` : `${C.REFINES[k].out[0] === 'ores' ? rarTxt('mine', C.REFINES[k].out[1]) : rarTxt('farm', C.REFINES[k].out[1])}×${r.n}${r.n > 1 ? '<span class="y">（双倍！）</span>' : ''}`); } else fail++; }
   if (ok + fail) { const LS = C.LIFE_SKILLS[skill], nm = skill === 'forge' ? C.gearItemName(k, opt.set) : (C.RECIPES[skill][k]).name;
@@ -7687,13 +7723,13 @@ function bookSection() { // 看书所得：观相残页 / 经验书 / 技能残�
     (sb.length ? `<h3>📗 技能书</h3>` + sb.map(k => `<div class="row"><div class="lab"><b class="pu">📗${SKILLS[k].name}</b>技能书 ×${S.skillBooks[k]}<small>${SKILLS[k].desc}${S.skills.includes(k) ? ` · 已习得，可出售 ${C.skillBookPrice(k)} 金` : ''}</small></div>
       ${S.skills.includes(k) ? `<button class="btn" data-sskill="${k}">出售</button>` : `<button class="btn gold" data-uskill="${k}">学习</button>`}</div>`).join('') : '');
 }
-function doBook(kind, k, n) {
+async function doBook(kind, k, n) {
   if (kind === 'cpage') { const r = C.combinePages(S, k, n); if (r.ok) log('good', `📜 将 ${r.n * K.PAGES_PER_BOOK} 张${C.PAGES[k].name}装订成 <b>📘${C.EXP_BOOKS[r.book].name} ×${r.n}</b>`); }
   else if (kind === 'ebook') { const r = C.useExpBook(S, k, n, arguments[3] || 'alc'); if (r.ok) log('alc', `📘 研读${C.EXP_BOOKS[k].name} ×${r.n}，${C.LIFE_SKILLS[r.target].name}经验 <span class="g">+${r.xp}</span>` + (r.lvUp ? `，<span class="y">${C.LIFE_SKILLS[r.target].name}等级提升至 Lv.${C.lifeOf(S, r.target).lv}！</span>` : `（${C.lifeOf(S, r.target).xp}/${C.alcNeed(C.lifeOf(S, r.target).lv)}）`)); }
   else if (kind === 'cskill') { if (C.combineSkillPages(S, k).ok) log('good', `📕 集齐 ${K.SKILL_PAGES_PER_BOOK} 张残页，合成了 <b class="pu">📗${SKILLS[k].name}</b>技能书！`); }
   else if (kind === 'usemai') { const r = C.useMaiPages(S, parseInt(k) || 1); const n = r.n; if (n > 0) log('good', `🌀 使用脉络残页 ×${n}，实络 <span class="y">+${n}</span><span class="g">（永久）</span>，开脉术经验 +${n}（当前 ${(S.maiShuXp|0)}，Lv.${C.maiShuLv(S)}）${r.lvUp > 0 ? `，<b class="y">📖开脉术升级！实脉 +${r.lvUp}</b><span class="g">（永久）</span>` : ''}（当前实络 ${S.maiRLuo} 条，实脉 ${S.maiRMai} 条）`); }
   else if (kind === 'uskill') { if (C.useSkillBook(S, k).ok) log('good', `📗 研读技能书，习得技能 <b class="pu">${SKILLS[k].name}</b>！`); }
-  else if (kind === 'sskill') { const r = C.sellSkillBook(S, k); if (r.ok) log('gold', `📗 出售${SKILLS[k].name}技能书，金元 <span class="y">+${r.gold}</span>`); }
+  else if (kind === 'sskill') { const sr = await sellServer('skillbook', k); if (sr && sr.ok) log('gold', `📗 出售${SKILLS[k].name}技能书，金元 <span class="y">+${sr.gold}</span>`); else if (!sr) { const r = C.sellSkillBook(S, k); if (r.ok) log('gold', `📗 出售${SKILLS[k].name}技能书，金元 <span class="y">+${r.gold}</span>`); } }
   commit(); if (kind === 'ebook' && arguments[3]) sheetLife(arguments[3] === 'alc' ? lifeTab : arguments[3]); else sheetBag();
 }
 window.useCaveToken = function(k) { // v798 使用洞府令/仙府令开格；v799 分开记洞府/仙府；v878 境界门槛
@@ -8354,11 +8390,48 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
   // v131 轮回后可重选性别头像
   setTimeout(() => sheetGender(), 500);
 }
-function doBrew(k, n) {
+async function doBrew(k, n) {
   if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择该生活技能'); return; } // v204
   const lines = []; let got = [], ok = 0, fail = 0, ups = 0, used = {}, stop = '';
+  // v964 彻底版：登录在线时走服务端掷骰
+  const useBrewServer = window.MHXY && MHXY.loggedIn && MHXY.loggedIn();
   for (let i = 0; i < n; i++) {
-    const r = C.brew(S, k, useOpt); if (!r) break;
+    let r;
+    if (useBrewServer) {
+      try {
+        const resp = await MHXY.api('/api/roll/brew', {method:'POST', body:{attr:k, lu: useOpt.lu||undefined, spirit: useOpt.spirit||undefined}});
+        const j = resp && resp.json;
+        if (resp.ok && j && j.ok) {
+          // 本地应用（服务端已记账）
+          if (!S.inv) S.inv = {};
+          for (const gg of (j.gains||[])) S.inv[gg.k] = (S.inv[gg.k]|0) + gg.n;
+          S.mats['h_'+k] = (S.mats['h_'+k]|0) - 1; if (S.mats['h_'+k] <= 0) delete S.mats['h_'+k];
+          try { takeEgg(S, 1); } catch(_){}
+          if (j.lu && S.mats) { S.mats[j.lu] = (S.mats[j.lu]|0) - 1; if (S.mats[j.lu] <= 0) delete S.mats[j.lu]; }
+          if (j.sp && S.ores) { S.ores[j.sp] = (S.ores[j.sp]|0) - 1; if (S.ores[j.sp] <= 0) delete S.ores[j.sp]; }
+          try { payLife(S); } catch(_){} // 雷云判定（v661）
+          S.vigor = j.vigor; S.mana = j.mana;
+          S.alc.lv = j.alcLv; S.alc.xp = j.alcXp;
+          try { hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
+          if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+          // 转 UI 格式
+          const potions = [];
+          for (const gg of (j.gains||[])) { const grade = parseInt((gg.k||'').split('_')[1])||1; for (let q=0; q<gg.n; q++) potions.push(grade); }
+          r = {ok: j.success, rate: j.rate, attr: k, potions, xp: 0, lvUp: j.lvUp||0, lu: j.lu||null, sp: j.sp||null};
+        } else {
+          const e = (j||{}).error;
+          if (e === 'no_mats') r = {err:'mat'};
+          else if (e === 'no_mana') r = {err:'mana'};
+          else if (e === 'no_vigor') r = {err:'vigor'};
+          else if (e === 'dead') r = {err:'dead'};
+          else if (resp.netErr) r = C.brew(S, k, useOpt); // 网络异常 → 回落本地
+          else { stop = '服务端异常，请稍后重试'; break; } // 服务端已响应，不回落
+        }
+      } catch(e) { r = C.brew(S, k, useOpt); } // 网络异常 → 回落本地
+    } else {
+      r = C.brew(S, k, useOpt);
+    }
+    if (!r) break;
     if (r.err === 'dead') { stop = '你毒发身亡了。'; break; }
     if (r.err) { stop = r.err === 'mat' ? `缺少<b>${MATS['h_' + k].name}</b>，无法炼制${AN[k]}丹。可在修炼中种植，或到商店购买。` : r.err === 'mana' ? '法力不足，无法继续炼药（签到回满，或喝法力药水）。' : '活力不足，无法继续炼药（每日签到恢复活力）。'; break; }
     if (r.lu) used[r.lu] = (used[r.lu] || 0) + 1; if (r.sp) used[r.sp] = (used[r.sp] || 0) + 1;
@@ -8454,7 +8527,51 @@ function doSha() {
   log('good', `👹 吞噬煞气！${r.manaGained ? `法力 <span class="y">+${C.fmtN(r.manaGained)}</span>（无视上限，可叠加）` : '（凡人无法力，仅消耗）'}`);
   afterAct(); commit(); sheetBag();
 }
-function doBuy(kind, k, n) {
+// v964 彻底版：出售走服务端（固定价，服务端验算）。返回 true=已处理（无论成功失败），false=需走本地。
+async function sellServer(type, idOrKey) {
+  if (!(window.MHXY && MHXY.loggedIn && MHXY.loggedIn())) return false;
+  try {
+    const body = type === 'gear' || type === 'petgear' ? {type, id: idOrKey} : {type, key: idOrKey};
+    const resp = await MHXY.api('/api/shop/sell', {method:'POST', body});
+    const j = resp && resp.json;
+    if (resp.ok && j && j.ok) {
+      // 本地应用（确定性，无随机）
+      if (type === 'gear') { const i = S.gearBag.findIndex(g => g.id === idOrKey); if (i >= 0) S.gearBag.splice(i, 1); }
+      else if (type === 'petgear') { const i = (S.petBag||[]).findIndex(g => g.id === idOrKey); if (i >= 0) S.petBag.splice(i, 1); }
+      else if (type === 'skillbook') { if (S.skillBooks) { S.skillBooks[idOrKey] = (S.skillBooks[idOrKey]|0) - 1; if (S.skillBooks[idOrKey] <= 0) delete S.skillBooks[idOrKey]; } }
+      S.gold = (S.gold|0) + j.gold;
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      return {ok: true, gold: j.gold};
+    }
+    return {ok: false, err: (j||{}).error}; // 服务端已响应，不回落
+  } catch(e) { return false; } // 网络异常 → 回落本地
+}
+async function doBuy(kind, k, n) {
+  // v964 彻底版：med/mat/spirit 登录在线时走服务端（固定价兑换，服务端验算）
+  if ((kind === 'med' || kind === 'mat' || kind === 'spirit') && window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/shop/buy', {method:'POST', body:{kind, key:k, n}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        const store = kind === 'med' ? 'meds' : kind === 'mat' ? 'mats' : 'ores';
+        const skey = kind === 'spirit' ? 'sp1' : k;
+        S.gold = (S.gold|0) - j.cost;
+        if (!S[store]) S[store] = {};
+        S[store][skey] = (S[store][skey]|0) + j.n;
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        if (kind === 'spirit') log('gold', `🛒 购买 💎一品灵石 ×${j.n}（金元 -${j.cost}）`);
+        else log('gold', `🛒 购买 ${(kind === 'med' ? C.MEDS : MATS)[k].name} ×${j.n}（金元 -${j.cost}）`);
+        try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {}
+        commit(); const _sy = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy;
+        return;
+      }
+      if ((j||{}).error === 'no_money' || !resp.netErr) {
+        sheetShop('金元不足。');
+        return; // 服务端已响应，不回落
+      }
+      // 网络异常 → 回落本地
+    } catch(e) { /* 回落本地 */ }
+  }
   const r = C.buy(S, kind, k, n);
   if (!r.ok) { sheetShop(r.why === 'gold' ? '金元不足。' : r.why === 'learned' ? '已习得该技能。' : r.why === 'once' ? '每号限购1次。' : r.why === 'stone' ? '灵石不足。' : r.why === 'xianyu' ? '仙玉不足。' : '购买失败。'); return; }
   if (kind === 'skill') log('gold', `📖 购买技能书，习得 <span class="pu">【${SKILLS[k].name}】</span>（金元 -${r.cost}）`);
@@ -8658,7 +8775,25 @@ function doFood(kind, k, n) {
 }
 function doMed(k) { const r = C.useMed(S, k); if (!r.ok) return; log('good', r.cure === 'curse' ? `💧 使用 ${C.MEDS[k].name}，<span class="g">消除一层诅咒</span>（剩余 ${S.curseN|0} 层）` : `💊 使用 ${C.MEDS[k].name}，${C.STATUS[r.cure].icon}${C.STATUS[r.cure].name}<span class="g">已解除</span>`); commit(); sheetBag(); }
 function doEat(k, n) { const d = C.eatMeat(S, k, n); if (d) { log('good', `🍖 吃下 ${MEATS[k].name} ×${n}，体力 <span class="g">+${d}</span>（当前 ${S.stamina}）`); commit(); sheetBag(); } }
-function doSell(kind, k, n) {
+async function doSell(kind, k, n) {
+  // v964 彻底版：登录在线时走服务端（固定价，服务端验算）
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const resp = await MHXY.api('/api/shop/sell', {method:'POST', body:{type:'item', key:k, n}});
+      const j = resp && resp.json;
+      if (resp.ok && j && j.ok) {
+        const store = GATHER[kind].store;
+        if (!S[store]) S[store] = {};
+        S[store][k] = (S[store][k]|0) - j.n; if (S[store][k] <= 0) delete S[store][k];
+        S.gold = (S.gold|0) + j.gold;
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+        log('gold', `💰 出售 ${GATHER[kind].items[k].name} ×${j.n}，金元 <span class="y">+${j.gold}</span>`);
+        commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2;
+        return;
+      }
+      if (!resp.netErr) return; // 服务端已响应（no_item 等），不回落
+    } catch(e) { /* 网络异常 → 回落本地 */ }
+  }
   const r = C.sellItem(S, kind, k, n); if (!r.ok) return;
   log('gold', `💰 出售 ${GATHER[kind].items[k].name} ×${r.n}，金元 <span class="y">+${r.gold}</span>`);
   commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2; // v200 出售后保持滚动位置
@@ -9662,7 +9797,7 @@ document.addEventListener('click', e => {
   else if (d.pickpet) { forgePet = +d.pickpet; sheetLife('forge'); }
   else if (d.pequip) { const [pid, gid] = String(d.pequip).split(':'); const g = (S.petBag || []).find(x => x.id === +gid); if (C.equipPetGear(S, +pid, +gid) && g) log('good', `🎽 ${gearName(g)} 已穿戴`); commit(); sheetLife('forge'); }
   else if (d.punequip) { const [pid, sl] = String(d.punequip).split(':'); if (C.unequipPetGear(S, +pid, sl)) log('sys', '🎽 已卸下灵宠装备'); commit(); sheetLife('forge'); }
-  else if (d.psell) { const it = (S.petBag || []).find(x => x.id === +d.psell), g = C.sellPetGear(S, +d.psell); if (g) log('gold', `🔨 出售 ${it ? gearName(it) : '灵宠装备'}，金元 <span class="y">+${g}</span>`); commit(); sheetLife('forge'); }
+  else if (d.psell) { (async () => { const it = (S.petBag || []).find(x => x.id === +d.psell); const sr = await sellServer('petgear', +d.psell); if (sr && sr.ok) { log('gold', `🔨 出售 ${it ? gearName(it) : '灵宠装备'}，金元 <span class="y">+${sr.gold}</span>`); } else if (!sr) { const g = C.sellPetGear(S, +d.psell); if (g) log('gold', `🔨 出售 ${it ? gearName(it) : '灵宠装备'}，金元 <span class="y">+${g}</span>`); } commit(); sheetLife('forge'); })(); }
   else if (d.battlepet) { const _bid = +d.battlepet; const _arr = (Array.isArray(S.pet) ? S.pet.map(x=>+x) : []); const _was = _arr.includes(_bid); const _now = Date.now();
     if (!_was) { if (_arr.length >= 4) { log('bad', '出战已满4只，双击✓的撤下一只再选'); } else { _arr.push(_bid); S.pet = _arr; tameTargetId = _bid; log('good', `出战 ${petTag(S.pets.find(p=>p.id===_bid))}，当前 ${_arr.length}/4 只`); } }
     else { if (window._lastBp && window._lastBp.id === _bid && _now - window._lastBp.t < 500) { S.pet = _arr.filter(x => x !== _bid); window._lastBp = null; log('good', `撤下 ${petTag(S.pets.find(p=>p.id===_bid))}，当前 ${S.pet.length}/4 只`); } else { window._lastBp = { id: _bid, t: _now }; tameTargetId = _bid; toastLog('info', '已切换训练目标，再点一下撤下'); } }
@@ -9674,7 +9809,7 @@ document.addEventListener('click', e => {
   else if (d.hppot) { const r = C.useHpPotion(S, d.hppot); if (r.ok) log('good', `❤️ 饮下 ${elixName(d.hppot)}，生命 <span class="g">+${r.gain}</span>（${r.vit}/${r.cap}）`); else toastLog('bad', r.err === 'full' ? '❤️ 生命已满，无需服用' : r.err === 'dead' ? '已昏死' : '没有药水'); commit(); sheetBag(); }
   else if (d.equip) { const g = S.gearBag.find(x => x.id === +d.equip); if (C.equipGear(S, +d.equip) && g) log('good', `🗡️ 装备 ${gearName(g)}`); commit(); sheetLife('forge'); }
   else if (d.unequip) { const r = C.unequipGear(S, d.unequip); if (r === 'full') { log('warn', '装备包已满！获得储物戒指可扩充容量'); } else { commit(); } sheetLife('forge'); }
-  else if (d.sellgear) { const it = S.gearBag.find(x => x.id === +d.sellgear), g = C.sellGear(S, +d.sellgear); if (g) log('gold', `🔨 出售 ${it ? gearName(it) : '装备'}，金元 <span class="y">+${g}</span>`); commit(); sheetLife('forge'); }
+  else if (d.sellgear) { (async () => { const it = S.gearBag.find(x => x.id === +d.sellgear); const sr = await sellServer('gear', +d.sellgear); if (sr && sr.ok) { log('gold', `🔨 出售 ${it ? gearName(it) : '装备'}，金元 <span class="y">+${sr.gold}</span>`); } else if (!sr) { const g = C.sellGear(S, +d.sellgear); if (g) log('gold', `🔨 出售 ${it ? gearName(it) : '装备'}，金元 <span class="y">+${g}</span>`); } commit(); sheetLife('forge'); })(); }
   else if (d.cskill) doBook('cskill', d.cskill);
   else if (d.usemai) doBook('usemai', d.usemai);
   else if (d.rank) sheetRank();
