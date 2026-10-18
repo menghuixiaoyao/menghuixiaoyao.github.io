@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v966</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v967</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2960,23 +2960,23 @@ const G_TRAPS = [ // 机关 / 两个检定属性 / 失败后果
 const G_TRAP_AT = ['山路上', '石窟里', '古墓中', '林间', '桥上', '洞口'];
 const G_RESTS = ['山洞', '凉亭', '废驿站', '古刹', '溪边', '猎人小屋'], G_REST_ADD = ['', '（有篝火）', '（有清泉）', '（有干草铺）', '（有前人留下的干粮）'];
 G_PLACES.forEach((pl, i) => G_NPCS.forEach(([nm, a, act], j) => { ADV_EVENTS[`n${i}_${j}`] = { type: 'fortune', t: `${pl}遇到一位${nm}`, ch: [
-  { l: act, a, f: (X, ok) => ok ? X.loot(1 + (R() < 0.3 ? 1 : 0), null) + '；' + X.xp(0.2) : X.say() },
-  { l: '花钱买东西', cost: 0.35, f: X => X.loot(1, null, 1) },
+  { l: act, a, f: async (X, ok) => ok ? await X.loot(1 + (R() < 0.3 ? 1 : 0), null) + '；' + X.xp(0.2) : X.say() },
+  { l: '花钱买东西', cost: 0.35, f: async X => await X.loot(1, null, 1) },
   { l: '离开', f: X => X.say() }] }; }));
 G_PLACES.forEach((pl, i) => G_FINDS.forEach(([nm, cats, a], j) => { ADV_EVENTS[`f${i}_${j}`] = { type: 'fortune', t: `${pl}发现${nm}`, ch: [
-  { l: '拿走', f: X => R() < 0.85 ? X.loot(1, cats) : X.hurt(pick(['poison', 'bleed']), '') },
-  { l: '仔细搜', a, f: (X, ok) => ok ? X.loot(2, cats) : X.say() },
+  { l: '拿走', f: async X => R() < 0.85 ? await X.loot(1, cats) : X.hurt(pick(['poison', 'bleed']), '') },
+  { l: '仔细搜', a, f: async (X, ok) => ok ? await X.loot(2, cats) : X.say() },
   { l: '离开', f: X => X.say() }] }; }));
 G_BOX_AT.forEach((at, i) => G_BOXES.forEach(([nm, a], j) => { ADV_EVENTS[`b${i}_${j}`] = { type: 'chest', t: `${at}有${nm}`, ch: [
-  { l: '打开', f: X => R() < 0.7 ? X.loot(2, null) : R() < 0.5 ? X.hurt(pick(['poison', 'bleed']), '') : X.ambush(0, '宝箱怪！') },
-  { l: '小心开', a, f: (X, ok) => ok ? X.loot(2, null, 1) + '；' + X.gold(0.2) : X.say() },
+  { l: '打开', f: async X => R() < 0.7 ? await X.loot(2, null) : R() < 0.5 ? X.hurt(pick(['poison', 'bleed']), '') : X.ambush(0, '宝箱怪！') },
+  { l: '小心开', a, f: async (X, ok) => ok ? await X.loot(2, null, 1) + '；' + X.gold(0.2) : X.say() },
   { l: '离开', f: X => X.say() }] }; }));
 G_TRAP_AT.forEach((at, i) => G_TRAPS.forEach(([nm, a1, a2, bad], j) => { const fail = X => bad === 'attr' ? X.loseAttr(1) : X.hurt(bad); ADV_EVENTS[`t${i}_${j}`] = { type: 'trap', t: `${at}触发了${nm}`, ch: [
-  { l: `${AN[a1]}应对`, a: a1, f: (X, ok) => ok ? (R() < 0.3 ? X.loot(1, ['ores', 'mats']) : X.say()) : fail(X) },
+  { l: `${AN[a1]}应对`, a: a1, f: async (X, ok) => ok ? (R() < 0.3 ? await X.loot(1, ['ores', 'mats']) : X.say()) : fail(X) },
   { l: `${AN[a2]}应对`, a: a2, f: (X, ok) => ok ? X.say() : fail(X) }] }; }));
 G_RESTS.forEach((sp, i) => G_REST_ADD.forEach((ad, j) => { ADV_EVENTS[`r${i}_${j}`] = { type: 'rest', t: `前方有一处${sp}可以歇脚${ad}`, ch: [
   { l: '休息', f: X => X.heal(j === 2 ? 0.35 : 0.25) + (j === 1 && X.cure('depress') ? '；抑郁消除' : '') },
-  { l: '搜索', f: X => R() < 0.75 ? X.loot(1, j === 4 ? ['food', 'eggs', 'dishes'] : null) : X.ambush(0, '有怪物！') },
+  { l: '搜索', f: async X => R() < 0.75 ? await X.loot(1, j === 4 ? ['food', 'eggs', 'dishes'] : null) : X.ambush(0, '有怪物！') },
   { l: '离开', f: X => X.say() }] }; }));
 const HAND_EVENTS = Object.keys(ADV_EVENTS).filter(id => !/^[nfbtr]\d/.test(id));
 const EV_BY_TYPE = {}; for (const id in ADV_EVENTS) (EV_BY_TYPE[ADV_EVENTS[id].type] = EV_BY_TYPE[ADV_EVENTS[id].type] || []).push(id);
@@ -3082,10 +3082,34 @@ function advCtx(S, run, lines) { // 事件结果工具
     attr: (a, n) => { S.attrs[a] += n; rw.gains[a] = (rw.gains[a] || 0) + n; rw.pts += n; return `${AN[a]} <span class="g">+${n}</span>`; },
     item: (st, k, n) => { X.put(st, k, n); return `获得 <span class="y">${lootLabel(st, k)}×${n}</span>`; },
     put: (st, k, n) => { if (st === 'petEggs') S.petEggs += n; else if (st === 'maiPages') S.maiPages = (S.maiPages | 0) + n; else { S[st] = S[st] || {}; S[st][k] = (S[st][k] || 0) + n; } const key = st + ':' + k; rw.items[key] = (rw.items[key] || 0) + n; },
-    loot: (rolls, cats, bonus) => { const got = []; for (let i = 0; i < rolls; i++) { let e, g = 0; do { e = lootRoll(S, Math.min(8, t + (bonus || 0) + (run.dk === 'mijing' ? 2 : 0)), run.dk); } while (cats && !cats.includes(e.st) && ++g < 60);
-        if (e.st === 'gear') { const gr = rollGear(S, t + (bonus || 0)); const key = `${gr.k}|${gr.set}|${gr.q}`; if (S.gearBag.length < bagCap(S)) { S.gearBag.push(gr); rw.items['gear:' + key] = (rw.items['gear:' + key] || 0) + 1; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span>`); } else { const price = gearPrice(gr); S.gold += price; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span><small>（包满自动卖+${price}金）</small>`); } }
-        else { const n = e.n > 1 ? ri(1, e.n) : 1; X.put(e.st, e.k, n); got.push(`${lootLabel(e.st, e.k)}×${n}`); } }
-      return `获得 <span class="y">${got.join(' ')}</span>`; },
+    loot: async (rolls, cats, bonus) => { const got = [];
+        // v967 服务端版（在线才走）
+        if (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn()) {
+          try {
+            const r = await MHXY.api('/api/roll/adv_loot', 'POST', { rolls, cats, bonus: bonus||0, tier: t, dk: run.dk });
+            if (r.ok && r.json && r.json.ok) {
+              if (typeof MHXY.setBaseRev === 'function' && r.json.rev) MHXY.setBaseRev(r.json.rev);
+              for (const d of (r.json.drops || [])) {
+                if (d.skip) { // gear 走本地
+                  const gr = rollGear(S, t + (bonus || 0)); const key = `${gr.k}|${gr.set}|${gr.q}`;
+                  if (S.gearBag.length < bagCap(S)) { S.gearBag.push(gr); rw.items['gear:' + key] = (rw.items['gear:' + key] || 0) + 1; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span>`); }
+                  else { const price = gearPrice(gr); S.gold += price; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span><small>（包满自动卖+${price}金）</small>`); }
+                } else {
+                  // 服务端已发放到 D1，本地同步
+                  X.put(d.st, d.k, d.n);
+                  got.push(`${lootLabel(d.st, d.k)}×${d.n}`);
+                }
+              }
+              commit();
+              return `获得 <span class="y">${got.join(' ')}</span>`;
+            }
+          } catch(e) {}
+        }
+        // 离线回落：原本地逻辑
+        for (let i = 0; i < rolls; i++) { let e, g = 0; do { e = lootRoll(S, Math.min(8, t + (bonus || 0) + (run.dk === 'mijing' ? 2 : 0)), run.dk); } while (cats && !cats.includes(e.st) && ++g < 60);
+          if (e.st === 'gear') { const gr = rollGear(S, t + (bonus || 0)); const key = `${gr.k}|${gr.set}|${gr.q}`; if (S.gearBag.length < bagCap(S)) { S.gearBag.push(gr); rw.items['gear:' + key] = (rw.items['gear:' + key] || 0) + 1; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span>`); } else { const price = gearPrice(gr); S.gold += price; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span><small>（包满自动卖+${price}金）</small>`); } }
+          else { const n = e.n > 1 ? ri(1, e.n) : 1; X.put(e.st, e.k, n); got.push(`${lootLabel(e.st, e.k)}×${n}`); } }
+        return `获得 <span class="y">${got.join(' ')}</span>`; },
     take: (st, k, n) => { if ((S[st][k] -= n) <= 0) delete S[st][k]; },
     hurt: k => { if (hasSt(S, k)) return `（已${STATUS[k].name}）`; addStatus(S, k); run.newSt = (run.newSt || []).concat(k); return `<span class="r">${STATUS[k].icon}${STATUS[k].name}</span>`; },
     cure: k => { if (!hasSt(S, k)) return false; cureStatus(S, k); return true; },
@@ -3102,7 +3126,7 @@ function advBattleSetup(S, run) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.
   const mf = fighter(m.name, m.attrs, false, m.skills); mf.inflict = m.st || null; mf.realm = S.realm|0; // v87：AI仙力攻击用
   const b = new Battle(playerFighter(S, true), mf); b.unlimited = true; return b; // 打怪回合无限，直到分胜负
 }
-function advBattleSettle(S, run, b) { // 冒险战斗结算
+async function advBattleSettle(S, run, b) { // 冒险战斗结算
   const diff = DIFFS[run.dk], m = run.ev.mon, rk = RANKS[m.rank];
   const win = b.winner === b.A, res = { battle: b, win, newSt: [] };
   carryOut(S, b.A, res);
@@ -3136,7 +3160,7 @@ function advBattleSettle(S, run, b) { // 冒险战斗结算
         }
       }
     }
-    const rolls = randRound([0.35, 0.6, 1, 1.5, 2.5][m.rank]); if (rolls) lines.push(X.loot(rolls, null, m.rank >= 3 ? 1 : 0));
+    const rolls = randRound([0.35, 0.6, 1, 1.5, 2.5][m.rank]); if (rolls) lines.push(await X.loot(rolls, null, m.rank >= 3 ? 1 : 0));
   } else { // 战败：沿用冒险战败规则
     const lostSta = S.stamina, lostGold = Math.floor(S.gold * K.DEATH_GOLD_PCT), x = diff.xpL;
     if ((S.protect | 0) > 0) { // 🛡️新人保护：免除战败惩罚（不扣属性、体力不清零、不扣金元、不染伤病）
@@ -3155,16 +3179,16 @@ function advBattleSettle(S, run, b) { // 冒险战斗结算
   }
   return { battle: b, win, lines: lines.filter(Boolean) };
 }
-function advFight(S, run) { const b = advBattleSetup(S, run).auto(); return advBattleSettle(S, run, b); }
+async function advFight(S, run) { const b = advBattleSetup(S, run).auto(); return await advBattleSettle(S, run, b); }
 function advEnd(S, why) { const run = S.run; S.run = null; S.advVit = 0; const g = run.grid; return { dk: run.dk, why, rew: run.rew, steps: g ? g.moves : run.step, total: g ? (run.evCount | 0) : run.steps, grid: !!g, defeat: !!run.defeat, newSt: run.newSt || [] }; } // v182 格子：steps=走格数，total=触发事件数
-function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _tp=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_tp) { S._trigFail=0; const _sc=[['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],['空气粘稠，呼吸不畅','金色雷纹在云中若隐若现','雷声如鼓，声声催心'],['灵气倒卷，阵法纹路浮现','云层裂开，白光倾泻','虚空嗡鸣，如大道低语'],['十里之内，鸟兽绝迹','雷光如瀑，倾天而下','威压先至，骨骼作响'],['天地灵气一空','云开一线，天眼似开','万籁俱寂，只闻心跳'],['凡尘涤荡，浊气尽散','雷柱接天，直贯九霄','天道之音，响彻神魂'],['仙器共鸣，嗡嗡作响','九彩劫云，遮天蔽日','法则碎片，四散飞溅'],['小世界灵气被抽空','虚空裂缝，蔓延天际','空间涟漪，层层荡开'],['数个小世界震动','劫云蔽星，日月无光','法则碰撞，星火四溅'],['三千世界战栗','灭世洪流，席卷星海','雷威吞声，万物噤声']]; const _s=_sc[Math.min(11,S.realm|0)]||_sc[0]; log('warn',C.thunderCloud(S)+' '+_s[0]+'。'+_s[1]+'。'+_s[2]+'……<br>雷云判定中……'); const _sp=Math.min(1,0.01+0.01*S._succFail); if(Math.random()<_sp){S.thunderOk=true;S._succFail=0;S._trigFail=0;log('good','⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破契机已到，随时可破');commit();} else {S._succFail++;log('info','<span style="filter:brightness(0)">🌫️</span> 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>');} } else { S._trigFail++; } } } catch(_){} // v674 冒险移动完整文案
+async function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _tp=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_tp) { S._trigFail=0; const _sc=[['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],['空气粘稠，呼吸不畅','金色雷纹在云中若隐若现','雷声如鼓，声声催心'],['灵气倒卷，阵法纹路浮现','云层裂开，白光倾泻','虚空嗡鸣，如大道低语'],['十里之内，鸟兽绝迹','雷光如瀑，倾天而下','威压先至，骨骼作响'],['天地灵气一空','云开一线，天眼似开','万籁俱寂，只闻心跳'],['凡尘涤荡，浊气尽散','雷柱接天，直贯九霄','天道之音，响彻神魂'],['仙器共鸣，嗡嗡作响','九彩劫云，遮天蔽日','法则碎片，四散飞溅'],['小世界灵气被抽空','虚空裂缝，蔓延天际','空间涟漪，层层荡开'],['数个小世界震动','劫云蔽星，日月无光','法则碰撞，星火四溅'],['三千世界战栗','灭世洪流，席卷星海','雷威吞声，万物噤声']]; const _s=_sc[Math.min(11,S.realm|0)]||_sc[0]; log('warn',C.thunderCloud(S)+' '+_s[0]+'。'+_s[1]+'。'+_s[2]+'……<br>雷云判定中……'); const _sp=Math.min(1,0.01+0.01*S._succFail); if(Math.random()<_sp){S.thunderOk=true;S._succFail=0;S._trigFail=0;log('good','⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破契机已到，随时可破');commit();} else {S._succFail++;log('info','<span style="filter:brightness(0)">🌫️</span> 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>');} } else { S._trigFail++; } } } catch(_){} // v674 冒险移动完整文案
   const run = S.run; if (!run) return null; if (S.dead) return { end: advEnd(S, 'dead') };
   const chs = advChoices(S), c = chs[i]; if (!c || c.dis) return { err: 'bad' };
   const out = { lines: [], ev: run.ev };
   if (c.retreat) { out.lines.push('撤退'); out.end = advEnd(S, 'retreat'); return out; }
   if (run.ev.type === 'fight') {
-    if (i === 1) { const p = fleeP(S, run.ev.mon); if (R() < p) { out.lines.push('逃跑成功'); const _t = run.grid.tiles[run.grid.py][run.grid.px]; _t.evDone = 1; _t.ev = null; run.ev = null; run.last = out.lines; return out; } else { out.lines.push('<span class="r">逃跑失败</span>'); const f = advFight(S, run); out.battle = f.battle; out.lines.push(...f.lines); } }
-    else { const f = advFight(S, run); out.battle = f.battle; out.lines.push(...f.lines); }
+    if (i === 1) { const p = fleeP(S, run.ev.mon); if (R() < p) { out.lines.push('逃跑成功'); const _t = run.grid.tiles[run.grid.py][run.grid.px]; _t.evDone = 1; _t.ev = null; run.ev = null; run.last = out.lines; return out; } else { out.lines.push('<span class="r">逃跑失败</span>'); const f = await advFight(S, run); out.battle = f.battle; out.lines.push(...f.lines); } }
+    else { const f = await advFight(S, run); out.battle = f.battle; out.lines.push(...f.lines); }
     if (run.defeat || S.dead) { out.end = advEnd(S, 'defeat'); return out; }
   } else if (run.ev.type === 'guarded') { // v185 守宝：潜行获取，被发现则转战斗
     const mon = run.ev.mon, loot = run.ev.loot, tile = () => run.grid.tiles[run.grid.py][run.grid.px];
@@ -3182,7 +3206,7 @@ function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunder
     const E = ADV_EVENTS[run.ev.id], ch = E.ch[i], X = advCtx(S, run);
     if (ch.cost) { const g = Math.max(1, Math.round(advUnitGold(run.dk) * ch.cost)); S.gold -= g; out.lines.push(`金元 -${g}`); }
     const ok = ch.a ? R() < advCheckP(S, run.dk, ch.a) : true; if (ch.a) out.lines.push(`${AN[ch.a]}检定${ok ? '<span class="g">成功</span>' : '<span class="r">失败</span>'}`);
-    out.lines.push(ch.f(X, ok));
+    out.lines.push(await ch.f(X, ok));
     if (run.pending) { const pd = run.pending; run.pending = null; advNewEvent(S, run, true, pd.bump, pd.text); if (run.grid) { const _t = run.grid.tiles[run.grid.py][run.grid.px]; _t.ev = run.ev; } run.last = out.lines; return out; } // 伏击：本步变为战斗
   }
   if (run.grid) { // v182 格子模式：事件解决后继续走格子；终点 BOSS 打赢即通关（v184：事件存格子上，解决后标记完成）
@@ -3195,12 +3219,12 @@ function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunder
   if (run.step >= run.steps) { out.lines.push('抵达终点'); out.end = advEnd(S, 'done'); return out; }
   run.step++; advNewEvent(S, run); run.last = out.lines; return out;
 }
-function advAuto(S, dk, policy) { // 模拟用：自动走完一轮（默认：打怪、选成功率最高的检定、不撤退）
+async function advAuto(S, dk, policy) { // 模拟用：自动走完一轮（默认：打怪、选成功率最高的检定、不撤退）
   if (!advStart(S, dk)) return null; let r, guard = 0;
   const dirs = ['up', 'down', 'left', 'right'];
   while (S.run && guard++ < 300) {
     if (S.run.grid && !S.run.ev) { const m = advMove(S, dirs[Math.floor(R() * 4)]); if (m && m.end) return m.end; continue; } // v182 格子：随机走
-    const chs = advChoices(S); const i = policy ? policy(S, chs) : (S.run.ev.type === 'fight' ? 0 : chs.map((c, j) => ({ j, p: c.retreat || c.dis ? -1 : c.hint.includes('%') ? parseFloat(c.hint.split(' ')[1]) / 100 : c.l.match(/离开|赶路|作罢|放弃|不/) ? 0.3 : 0.6 })).sort((a, b) => b.p - a.p)[0].j); r = advChoose(S, i); if (r && r.end) return r.end; }
+    const chs = advChoices(S); const i = policy ? policy(S, chs) : (S.run.ev.type === 'fight' ? 0 : chs.map((c, j) => ({ j, p: c.retreat || c.dis ? -1 : c.hint.includes('%') ? parseFloat(c.hint.split(' ')[1]) / 100 : c.l.match(/离开|赶路|作罢|放弃|不/) ? 0.3 : 0.6 })).sort((a, b) => b.p - a.p)[0].j); r = await advChoose(S, i); if (r && r.end) return r.end; }
   return S.run ? advEnd(S, 'stuck') : null;
 }
 function pkStart(S, oppRealm) {
@@ -6464,6 +6488,103 @@ function sheetStallList(x, y) {
 const CASINO_CUR = { sp2: { name: '下品灵石', icon: '🌒', zone: 'stone' }, sp3: { name: '中品灵石', icon: '🌗', zone: 'stone' }, sp4: { name: '上品灵石', icon: '💎', zone: 'stone' }, sp5: { name: '极品灵石', icon: '💠', zone: 'stone' }, xianyu: { name: '仙玉', icon: MAGATAMA, zone: 'jade' } };
 function casinoBal(ck) { return ck === 'xianyu' ? (S.xianyu||0) : (S.ores[ck]||0); }
 function casinoTakeBet() {
+// v967 赌场服务端版：获取下注信息（不扣款，服务端扣）
+function casinoGetBet() {
+  const _csel = $('casino_cur'); const _ck = _csel ? _csel.value : (S._casinoCur || 'sp2');
+  const _bet = Math.max(1, Math.floor(+($('casino_bet')||{}).value||0));
+  const _bal = casinoBal(_ck);
+  if (_bet <= 0 || _bal < _bet) {
+    const _cnm = _ck==='xianyu' ? '仙玉' : (CASINO_CUR[_ck]||{}).name || '货币';
+    try { alert(_cnm + '不足（拥有 ' + _bal + '）'); } catch(e) {}
+    return null;
+  }
+  return { ck: _ck, bet: _bet, ci: CASINO_CUR[_ck] };
+}
+// v967 调用服务端赌场（在线才走，离线回落本地）
+async function casinoServerPlay(game, choice) {
+  const _b = casinoGetBet();
+  if (!_b) return null;
+  if (typeof MHXY === 'undefined' || !MHXY.isLoggedIn || !MHXY.isLoggedIn()) return { local:true, bet:_b };
+  try {
+    const r = await MHXY.api('/api/roll/casino', 'POST', { game, ck:_b.ck, bet:_b.bet, choice });
+    if (!r.ok || !r.json || !r.json.ok) return { local:true, bet:_b };
+    if (typeof MHXY.setBaseRev === 'function' && r.json.rev) MHXY.setBaseRev(r.json.rev);
+    return { bet:_b, srv:r.json };
+  } catch(e) { return { local:true, bet:_b }; }
+}
+// v967 服务端赢后：收手 / 双倍
+async function casinoServerCollect() {
+  try {
+    const r = await MHXY.api('/api/roll/casino_collect', 'POST', {});
+    if (r.ok && r.json && r.json.ok) {
+      if (typeof MHXY.setBaseRev === 'function' && r.json.rev) MHXY.setBaseRev(r.json.rev);
+      // 同步本地：服务端已发放，本地加上
+      const _p = window._casinoSrvPending;
+      if (_p) {
+        if (_p.ck === 'xianyu') S.xianyu = (S.xianyu||0) + _p.amount;
+        else S.ores[_p.ck] = (S.ores[_p.ck]||0) + _p.amount;
+        window._casinoSrvPending = null;
+      }
+      commit();
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+async function casinoServerDouble(guess) {
+// v967 服务端版 casinoPay：赢了走 pending（收手/双倍），输了直接展示
+function casinoPayServer(win) {
+  const _cn = win.ck==='xianyu' ? MAGATAMA : (win.ci.icon||'');
+  if (win.amount > 0) {
+    window._casinoSrvPending = { ck:win.ck, amount:win.amount };
+    openSheet(`<h2>${win.title}</h2><div class="hint">${win.text} <b class="y">赢 ${win.amount} ${_cn}${win.ci.name}</b></div><div class="hint">收手落袋，还是搏一把双倍？</div><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-casino-srv-collect style="flex:1">收手</button><button class="btn danger" data-casino-srv-double style="flex:1">双倍！<br><small>猜单双</small></button></div>`);
+    return;
+  }
+  commit();
+  try { if (typeof thunderGatherJudge === 'function') thunderGatherJudge(); } catch(_) {}
+  openSheet(`<h2>${win.title}</h2><div class="hint">${win.text} <b style="color:#f66">输 ${win.bet} ${_cn}${win.ci.name}</b></div><div class="row"><button class="btn gold full" data-casino-again="${win.game}">再来一把</button></div><div class="row"><button class="btn full" data-casino-back>返回赌场</button></div>`);
+}
+// v967 服务端收手按钮
+async function casinoSrvCollectUI() {
+  const _p = window._casinoSrvPending;
+  if (!_p) return;
+  const _ok = await casinoServerCollect();
+  const _cn = _p.ck==='xianyu' ? MAGATAMA : ((CASINO_CUR[_p.ck]||{}).icon||'');
+  const _nm = _p.ck==='xianyu' ? '仙玉' : ((CASINO_CUR[_p.ck]||{}).name||'');
+  try { if (_ok && typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.20); } catch(_) {}
+  openSheet(`<h2>💰 落袋</h2><div class="hint">${_ok ? `赢 <b class="y">${_p.amount} ${_cn}${_nm}</b> 已到账` : '网络异常，稍后在背包确认'}</div><div class="row"><button class="btn full" data-casino-back>返回赌场</button></div>`);
+  render();
+}
+// v967 服务端双倍按钮
+function casinoSrvDoubleUI() {
+  const _p = window._casinoSrvPending;
+  if (!_p) return;
+  openSheet(`<h2>🎲 双倍一搏</h2><div class="hint">当前奖金 <b class="y">${_p.amount}</b>。猜中翻倍，猜错全输！</div><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-casino-srv-guess="odd" style="flex:1">单</button><button class="btn gold" data-casino-srv-guess="even" style="flex:1">双</button></div><div class="row"><button class="btn full" data-casino-srv-collect>不搏了，收手</button></div>`);
+}
+async function casinoSrvGuessUI(guess) {
+  const _r = await casinoServerDouble(guess);
+  if (!_r) { openSheet(`<h2>🎲 双倍</h2><div class="hint">网络异常，请重试</div><div class="row"><button class="btn full" data-casino-back>返回赌场</button></div>`); return; }
+  const _p = window._casinoSrvPending;
+  if (_r.win) {
+    if (_p) _p.amount = _r.amount;
+    window._casinoSrvPending = _p;
+    openSheet(`<h2>🎲 双倍成功！</h2><div class="hint">🎲${_r.num}</div><div class="hint">奖金翻到 <b class="y">${_r.amount}</b>！继续搏还是收手？</div><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-casino-srv-collect style="flex:1">收手</button><button class="btn danger" data-casino-srv-double style="flex:1">再双倍！</button></div>`);
+  } else {
+    window._casinoSrvPending = null;
+    commit();
+    openSheet(`<h2>🎲 双倍</h2><div class="hint">🎲${_r.num} 搏输了，奖金清零</div><div class="row"><button class="btn full" data-casino-back>返回赌场</button></div>`);
+  }
+  render();
+}
+  try {
+    const r = await MHXY.api('/api/roll/casino_double', 'POST', { guess });
+    if (r.ok && r.json && r.json.ok) {
+      if (typeof MHXY.setBaseRev === 'function' && r.json.rev) MHXY.setBaseRev(r.json.rev);
+      return r.json;
+    }
+  } catch(e) {}
+  return null;
+}
   const _csel = $('casino_cur'); const _ck = _csel ? _csel.value : (S._casinoCur || 'sp2');
   const _bet = Math.max(1, Math.floor(+($('casino_bet')||{}).value||0));
   const _bal = casinoBal(_ck);
@@ -6946,7 +7067,7 @@ function doAdventure(dk) {
   }
   log('pk', `🗺️ ${DIFFS[dk].name}${dk.startsWith('wx_') ? '🖐️五行' : ''}冒险（-${DIFFS[dk].cost} 体力${dk.startsWith('wx_') ? ` -${C.WX_COST_XIAN} 仙力` : ''}，6×6 格子探索）`); afterAct(); commit(); sheetRun();
 }
-function doAdvChoose(i) {
+async function doAdvChoose(i) {
   const ev = S.run && S.run.ev;
   if (ev && ev.type === 'fight' && i === 0) { // 冒险战斗：进手动战斗界面再选燃血/燃法/仙力
     const run = S.run;
@@ -6961,7 +7082,7 @@ function doAdvChoose(i) {
     try { if (typeof renderCombat === 'function') renderCombat(); else render(); } catch(_) {}
     return;
   }
-  const r = C.advChoose(S, i); if (!r || r.err) return;
+  const r = await C.advChoose(S, i); if (!r || r.err) return;
   const head = ev.type === 'fight' ? `⚔️ ${monCard(ev.mon)}` : ev.type === 'guarded' ? `🗺️ 守怪宝藏` : `🗺️ ${C.ADV_EVENTS[ev.id].t}`;
   log(r.battle && !r.battle.winner.isPlayer ? 'bad' : 'good', `${head}<br>${r.lines.join('；')}` + (r.battle ? `<details><summary>战斗记录（${r.battle.round} 回合）</summary>${r.battle.lines.join('')}</details>` : ''));
   if (r.end) { showAdvEnd(r); return; }
@@ -9004,10 +9125,32 @@ function arenaTickChampion(a) { // v247 结算擂主守擂奖励；v248 日榜�
   }
   return msg;
 }
-function doArena() { // v245 擂台：所有境界可见；v246 每个境界独立擂台；v247 守擂时间制；v255 日榜前20发宝箱
+async function doArena() { // v245 擂台：所有境界可见；v246 每个境界独立擂台；v247 守擂时间制；v255 日榜前20发宝箱
   if (S.dead || S.stamina < K.COST_PK) { toastLog('sys', '体力不足或已死亡'); return; }
   const a = arenaData();
-  const settleMsg = arenaCheckReset(a); // v246 检查榜单周期重置；v250 返回日结消息
+  arenaCheckReset(a, false); // v967 轻量日期滚动；结算走服务端
+  let settleMsg = '';
+  // v967 服务端擂台结算（在线才走）
+  if (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn()) {
+    try {
+      const r = await MHXY.api('/api/roll/arena_settle', 'POST', {});
+      if (r.ok && r.json && r.json.ok) {
+        if (typeof MHXY.setBaseRev === 'function' && r.json.rev) MHXY.setBaseRev(r.json.rev);
+        const _gains = r.json.gains || [];
+        for (const _g of _gains) {
+          // 服务端已发放到 D1，本地同步
+          if (_g.st === 'inv') S.inv[_g.k] = (S.inv[_g.k]||0) + _g.n;
+          else if (S[_g.st] && typeof S[_g.st] === 'object') S[_g.st][_g.k] = (S[_g.st][_g.k]||0) + _g.n;
+        }
+        if (_gains.length) commit();
+        const _msgs = r.json.msgs || [];
+        if (_msgs.length) settleMsg = _msgs.join('<br>');
+      }
+    } catch(e) {}
+  } else {
+    // 离线回落：本地结算
+    settleMsg = arenaCheckReset(a, true) || '';
+  }
   const tickMsg = arenaTickChampion(a); // v247 守擂结算
   const cr = S.realm | 0;
   const ch = a.champion;
@@ -9072,11 +9215,12 @@ function arenaPeriodSettle(a, period, periodKey, score, topN, chestKey, chestNam
   const periodName = { week: '周', month: '月', year: '年' }[period];
   return `🏆 擂台${periodName}榜结算：第 <b class="y">${rank} 名</b>，获得${chestName} <b class="g">×${count}</b>`;
 }
-function arenaCheckReset(a) {
+function arenaCheckReset(a, doSettle) {
   const k = arenaPeriodKeys();
   let msgs = [];
+  doSettle = doSettle !== false;
   if (!a.day || a.day.date !== k.day) {
-    if (a.day && a.day.date && !a.day.settled) {
+    if (doSettle && a.day && a.day.date && !a.day.settled) {
       const msg = arenaDailySettle(a, a.day.date, a.day.score | 0);
       if (msg) msgs.push(msg);
       a.day.settled = true;
@@ -9084,21 +9228,21 @@ function arenaCheckReset(a) {
     a.day = { date: k.day, score: 0 };
   }
   if (!a.week || a.week.start !== k.week) {
-    if (a.week && a.week.start) {
+    if (doSettle && a.week && a.week.start) {
       const msg = arenaPeriodSettle(a, 'week', a.week.start, a.week.score | 0, 100, 'chestN', '🎀精致盲盒');
       if (msg) msgs.push(msg);
     }
     a.week = { start: k.week, score: 0 };
   }
   if (!a.month || a.month.ym !== k.month) {
-    if (a.month && a.month.ym) {
+    if (doSettle && a.month && a.month.ym) {
       const msg = arenaPeriodSettle(a, 'month', a.month.ym, a.month.score | 0, 200, 'chestR', '🎁稀有宝箱');
       if (msg) msgs.push(msg);
     }
     a.month = { ym: k.month, score: 0 };
   }
   if (!a.year || a.year.y !== k.year) {
-    if (a.year && a.year.y) {
+    if (doSettle && a.year && a.year.y) {
       const msg = arenaPeriodSettle(a, 'year', a.year.y, a.year.score | 0, 500, 'chestA', '💎高级宝箱');
       if (msg) msgs.push(msg);
     }
@@ -9537,9 +9681,9 @@ function doPkActionGo(act) {
   };
   doOne(0);
 }
-function finishAdvBattle() {
+async function finishAdvBattle() {
   const run = S.run, b = pk.battle;
-  const r = C.advBattleSettle(S, run, b);
+  const r = await C.advBattleSettle(S, run, b);
   const head = `⚔️ ${monCard(run.ev.mon)}`;
   log(r.win ? 'good' : 'bad', `${head}<br>${r.lines.join('；')}` + `<details><summary>战斗记录（${b.round} 回合）</summary>${b.lines.join('')}</details>`);
   pk = null;
@@ -10033,82 +10177,99 @@ document.addEventListener('click', e => {
   else if (d.stalllist) { const _p = String(d.stalllist).split(','); sheetStallList(+_p[0], +_p[1]); }
   else if (d.stallback) { const _p = String(d.stallback).split(','); sheetStall(+_p[0], +_p[1]); }
   else if (d.stalldo) { const _p = String(d.stalldo).split(':'); const _kind = _p[0], _key = _p[1]; const _sx = +d.sx, _sy = +d.sy; const _q = $('sq_stall_' + _key); const _pr = $('sp_stall_' + _key); const _qty = _q ? Math.max(1, Math.floor(+_q.value)) : 1; const _price = _pr ? Math.max(1, Math.floor(+_pr.value)) : 1; const _cur = stallCur(_sx, _sy).key; const _have = _kind === 'ore' ? (S.ores[_key]||0) : (S.mats[_key]||0); if (_qty > 0 && _qty <= _have) { if (_kind === 'ore') S.ores[_key] -= _qty; else S.mats[_key] -= _qty; const _rk = _sx + ',' + _sy; if (!S.stalls) S.stalls = {}; if (!S.stalls[_rk]) S.stalls[_rk] = { until: Date.now() + 3600000, items: [] }; if (!S.stalls[_rk].items) S.stalls[_rk].items = []; const _nm = _kind === 'ore' ? ((ORES[_key]||{}).name || _key) : ((MATS[_key]||{}).name || _key); S.stalls[_rk].items.push({ kind: _kind, key: _key, name: _nm, qty: _qty, price: _price, cur: _cur }); commit(); sheetStall(_sx, _sy); } }
-  else if (d.casino) { const _b = casinoTakeBet(); if (_b) { const _choice = d.casino; const _bd = { ck:_b.ck, bet:_b.bet, ci:_b.ci }; S._diceBet = _bd; S._diceChoice = _choice;
-    // 摇骰动画
+  else if (d.casino) { (async () => { const _choice = d.casino;
+    let _sumGuess = 10; if (_choice==='sum') _sumGuess = Math.max(4, Math.min(17, Math.floor(+($('dice_sum')||{}).value||10)));
+    const _sr = await casinoServerPlay('dice', { type:_choice, sum:_sumGuess });
+    if (!_sr) return;
+    if (_sr.local) { // 离线回落：原本地逻辑
+      const _b = casinoTakeBet(); if (!_b) return; const _bd = { ck:_b.ck, bet:_b.bet, ci:_b.ci };
+      let _html = `<h2>🎲 摇骰中...</h2><div class="hint" style="font-size:32px" id="dice_anim">🎲 🎲 🎲</div><div class="row"><button class="btn full" disabled>开盅中...</button></div>`;
+      openSheet(_html); let _ticks = 0;
+      const _iv = setInterval(() => { _ticks++; const _e = $('dice_anim');
+        if (_e) _e.innerHTML = `🎲 ${1+Math.floor(Math.random()*6)} ${1+Math.floor(Math.random()*6)} ${1+Math.floor(Math.random()*6)}`;
+        if (_ticks >= 8) { clearInterval(_iv);
+          const _d1 = 1+Math.floor(Math.random()*6), _d2 = 1+Math.floor(Math.random()*6), _d3 = 1+Math.floor(Math.random()*6);
+          const _sum = _d1+_d2+_d3; const _isTriple = (_d1===_d2 && _d2===_d3);
+          let _mult = 0; if (_choice==='triple' && _isTriple) _mult = 24; else if (_choice==='sum') { if (_sumGuess===_sum) _mult = 10; } else if (!_isTriple) { if (_choice==='big' && _sum>=11 && _sum<=17) _mult = 2; else if (_choice==='small' && _sum>=4 && _sum<=10) _mult = 2; }
+          const _amt = _mult>0 ? _bd.bet*_mult : 0;
+          casinoPay({ ck:_bd.ck, bet:_bd.bet, ci:_bd.ci, amount:_amt, title:'🎲 开盅', game:'dice', text:`🎲 ${_d1} ${_d2} ${_d3} (和${_sum}) ` + (_isTriple?'豹子！':(_sum>=11?'大':'小')) });
+        } }, 120);
+      return;
+    }
+    // 服务端版：动画后展示服务端的骰子
+    const _bd = _sr.bet, _o = _sr.srv.outcome, _win = _sr.srv.win|0;
+    // 本地扣注显示（服务端已扣，本地同步）
+    if (_bd.ck === 'xianyu') S.xianyu -= _bd.bet; else S.ores[_bd.ck] -= _bd.bet;
     let _html = `<h2>🎲 摇骰中...</h2><div class="hint" style="font-size:32px" id="dice_anim">🎲 🎲 🎲</div><div class="row"><button class="btn full" disabled>开盅中...</button></div>`;
-    openSheet(_html);
-    let _ticks = 0;
-    const _iv = setInterval(() => {
-      _ticks++;
-      const _e = $('dice_anim');
+    openSheet(_html); let _ticks = 0;
+    const _iv = setInterval(() => { _ticks++; const _e = $('dice_anim');
       if (_e) _e.innerHTML = `🎲 ${1+Math.floor(Math.random()*6)} ${1+Math.floor(Math.random()*6)} ${1+Math.floor(Math.random()*6)}`;
-      if (_ticks >= 8) {
-        clearInterval(_iv);
-        const _d1 = 1+Math.floor(Math.random()*6), _d2 = 1+Math.floor(Math.random()*6), _d3 = 1+Math.floor(Math.random()*6);
-        const _sum = _d1+_d2+_d3; const _isTriple = (_d1===_d2 && _d2===_d3);
-        let _mult = 0; if (_choice==='triple' && _isTriple) _mult = 24; else if (_choice==='sum') { const _guess = Math.max(4, Math.min(17, Math.floor(+($('dice_sum')||{}).value||10))); if (_guess===_sum) _mult = 10; } else if (!_isTriple) { if (_choice==='big' && _sum>=11 && _sum<=17) _mult = 2; else if (_choice==='small' && _sum>=4 && _sum<=10) _mult = 2; } // v460 猜点数
-        const _amt = _mult>0 ? _bd.bet*_mult : 0;
-        casinoPay({ ck:_bd.ck, bet:_bd.bet, ci:_bd.ci, amount:_amt, title:'🎲 开盅', game:'dice', text:`🎲 ${_d1} ${_d2} ${_d3} (和${_sum}) ` + (_isTriple?'豹子！':(_sum>=11?'大':'小')) });
-      }
-    }, 120);
-  } }
+      if (_ticks >= 8) { clearInterval(_iv);
+        const _txt = `🎲 ${_o.dice[0]} ${_o.dice[1]} ${_o.dice[2]} (和${_o.sum}) ` + (_o.isTriple?'豹子！':(_o.sum>=11?'大':'小'));
+        casinoPayServer({ ck:_bd.ck, bet:_bd.bet, ci:_bd.ci, amount:_win, title:'🎲 开盅', game:'dice', text:_txt, srvWin:_sr.srv });
+      } }, 120);
+  })(); }
   else if (d.casinoback !== undefined) { if (typeof sheetCasino==='function') sheetCasino(); }
   // v424 灵兽斗
-  else if (d.casinoBeast !== undefined) { const _b = casinoTakeBet(); if (_b) { const _pick = +d.casinoBeast; const _pair = S._beastPair || ['青龙','白虎'];
+  else if (d.casinoBeast !== undefined) { (async () => { const _pick = +d.casinoBeast;
+    const _sr = await casinoServerPlay('beast', { pick:_pick });
+    if (!_sr) return;
     const _icons = { '青龙':'🐉', '白虎':'🐯', '朱雀':'🐦', '玄龟':'🐢', '灵狐':'🦊' };
-    let _hp = [100, 100];
+    if (_sr.local) { const _b = casinoTakeBet(); if (!_b) return; const _pair = S._beastPair || ['青龙','白虎'];
+      let _hp = [100, 100];
+      openSheet(`<h2>🐉 灵兽斗</h2><div class="hint" id="beast_log">${_icons[_pair[0]]||'🐉'}${_pair[0]} VS ${_icons[_pair[1]]||'🐯'}${_pair[1]}<br>战斗开始！</div><div class="row"><button class="btn full" disabled>激战中...</button></div>`);
+      let _round = 0;
+      const _iv = setInterval(() => { _round++; const _atk = Math.floor(Math.random()*2); const _dmg = 15 + Math.floor(Math.random()*20);
+        _hp[1-_atk] = Math.max(0, _hp[1-_atk] - _dmg); const _e = $('beast_log');
+        if (_e) _e.innerHTML += `<br>${_icons[_pair[_atk]]}${_pair[_atk]} 攻击，造成 ${_dmg} 伤害！（${_pair[0]}:${_hp[0]} / ${_pair[1]}:${_hp[1]}）`;
+        if (_hp[0] <= 0 || _hp[1] <= 0 || _round >= 8) { clearInterval(_iv);
+          const _winner = _hp[0] > _hp[1] ? 0 : (_hp[1] > _hp[0] ? 1 : Math.floor(Math.random()*2));
+          const _win = _pick === _winner; if (_win) S._beastWin = (S._beastWin|0)+1;
+          const _amt = _win ? Math.floor(_b.bet*1.8) : 0;
+          setTimeout(() => casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🐉 灵兽斗', game:'beast', text:`${_icons[_pair[0]]}${_pair[0]} VS ${_icons[_pair[1]]}${_pair[1]}<br>胜者 <b>${_pair[_winner]}</b>` }), 800);
+        } }, 600);
+      return;
+    }
+    const _bd = _sr.bet, _o = _sr.srv.outcome, _win = _sr.srv.win|0;
+    if (_bd.ck === 'xianyu') S.xianyu -= _bd.bet; else S.ores[_bd.ck] -= _bd.bet;
+    const _pair = _o.pair;
     openSheet(`<h2>🐉 灵兽斗</h2><div class="hint" id="beast_log">${_icons[_pair[0]]||'🐉'}${_pair[0]} VS ${_icons[_pair[1]]||'🐯'}${_pair[1]}<br>战斗开始！</div><div class="row"><button class="btn full" disabled>激战中...</button></div>`);
-    let _round = 0;
-    const _iv = setInterval(() => {
-      _round++;
-      const _atk = Math.floor(Math.random()*2);
-      const _dmg = 15 + Math.floor(Math.random()*20);
-      _hp[1-_atk] = Math.max(0, _hp[1-_atk] - _dmg);
-      const _e = $('beast_log');
-      if (_e) _e.innerHTML += `<br>${_icons[_pair[_atk]]}${_pair[_atk]} 攻击，造成 ${_dmg} 伤害！（${_pair[0]}:${_hp[0]} / ${_pair[1]}:${_hp[1]}）`;
-      if (_hp[0] <= 0 || _hp[1] <= 0 || _round >= 8) {
-        clearInterval(_iv);
-        const _winner = _hp[0] > _hp[1] ? 0 : (_hp[1] > _hp[0] ? 1 : Math.floor(Math.random()*2));
-        const _win = _pick === _winner;
-        if (_win) S._beastWin = (S._beastWin|0)+1;
-        const _amt = _win ? Math.floor(_b.bet*1.8) : 0;
-        setTimeout(() => casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🐉 灵兽斗', game:'beast', text:`${_icons[_pair[0]]}${_pair[0]} VS ${_icons[_pair[1]]}${_pair[1]}<br>胜者 <b>${_pair[_winner]}</b>` }), 800);
-      }
-    }, 600);
-  } }
+    let _round = 0; const _hp = [100, 100];
+    const _iv = setInterval(() => { _round++; const _atk = Math.floor(Math.random()*2); const _dmg = 15 + Math.floor(Math.random()*20);
+      _hp[1-_atk] = Math.max(0, _hp[1-_atk] - _dmg); const _e = $('beast_log');
+      if (_e) _e.innerHTML += `<br>${_icons[_pair[_atk]]}${_pair[_atk]} 攻击，造成 ${_dmg} 伤害！`;
+      if (_round >= 6) { clearInterval(_iv);
+        setTimeout(() => casinoPayServer({ ck:_bd.ck, bet:_bd.bet, ci:_bd.ci, amount:_win, title:'🐉 灵兽斗', game:'beast', text:`${_icons[_pair[0]]}${_pair[0]} VS ${_icons[_pair[1]]}${_pair[1]}<br>胜者 <b>${_pair[_o.winner]}</b>` }), 600);
+      } }, 500);
+  })(); }
   // v424 仙缘机
-  else if (d.casinoSlots !== undefined) { const _b = casinoTakeBet(); if (_b) { S._casinoPlays = (S._casinoPlays|0)+1;
-    const _diff = S._slotsDiff || 'safe'; // v459 难度
+  else if (d.casinoSlots !== undefined) { (async () => {
+    const _diff = S._slotsDiff || 'safe';
+    const _sr = await casinoServerPlay('slots', { diff:_diff });
+    if (!_sr) return;
+    if (_sr.local) { // 离线回落：跳转到原逻辑太长，直接提示
+      openSheet(`<h2>🎰 仙缘机</h2><div class="hint">离线时仙缘机暂不可用，请登录后使用</div><div class="row"><button class="btn full" data-casino-back>返回赌场</button></div>`);
+      return;
+    }
+    const _bd = _sr.bet, _o = _sr.srv.outcome, _win = _sr.srv.win|0;
+    if (_bd.ck === 'xianyu') S.xianyu -= _bd.bet; else S.ores[_bd.ck] -= _bd.bet;
+    S._casinoPlays = (S._casinoPlays|0)+1;
+    const _final = _o.symbols;
     const _syms = _diff === 'risk' ? ['⚔️','💎','🌀','🗡️','💠','⭐','🌙','🔥'] : ['⚔️','💎','🌀','🗡️','💠','⭐'];
-    const _n = _syms.length;
     const _tripleMult = _diff === 'risk' ? 20 : 10;
-    const _final = [_syms[Math.floor(Math.random()*_n)], _syms[Math.floor(Math.random()*_n)], _syms[Math.floor(Math.random()*_n)]];
-    openSheet(`<h2>🎰 仙缘机</h2><div class="hint">点下面的停，亲自定格每一格！三格同符 1:${_tripleMult}，两格同 1:2</div><div class="hint" style="font-size:36px" id="slots_anim">🎰 🎰 🎰</div><div class="row" id="slots_stoprow" style="display:flex;gap:6px"><button class="btn gold" data-slotstop="0" style="flex:1">停左</button><button class="btn gold" data-slotstop="1" style="flex:1">停中</button><button class="btn gold" data-slotstop="2" style="flex:1">停右</button></div>`); // v449 手动按停；v459 难度
+    openSheet(`<h2>🎰 仙缘机</h2><div class="hint">点下面的停，亲自定格每一格！三格同符 1:${_tripleMult}，两格同 1:2</div><div class="hint" style="font-size:36px" id="slots_anim">🎰 🎰 🎰</div><div class="row" id="slots_stoprow" style="display:flex;gap:6px"><button class="btn gold" data-slotstop="0" style="flex:1">停左</button><button class="btn gold" data-slotstop="1" style="flex:1">停中</button><button class="btn gold" data-slotstop="2" style="flex:1">停右</button></div>`);
     let _stop = [false, false, false];
     window._slotsStop = function(i) { _stop[i] = true; const _btns = document.querySelectorAll('[data-slotstop]'); if (_btns[i]) { _btns[i].disabled = true; _btns[i].textContent = '已停'; } if (_stop[0] && _stop[1] && _stop[2] && window._slotsIv) { clearInterval(window._slotsIv); window._slotsIv = null;
-      let _amt = 0; let _isTriple = false; let _txt_jp = ''; // v461
-      if (_final[0]===_final[1] && _final[1]===_final[2]) { _amt = _b.bet*_tripleMult; _isTriple = true; S._slotsTriple = (S._slotsTriple|0)+1;
-        // v461 奖池暴击：三同15%概率掏空25%奖池
-        if ((S._jackpot|0) > 0 && Math.random() < 0.15) { const _jpWin = Math.max(1, Math.floor((S._jackpot|0)*0.25)); S._jackpot -= _jpWin; _amt += _jpWin; _txt_jp = ` 🏆奖池暴击+${_jpWin}`; }
-        // v461 每日幸运：三同含幸运符，1.5倍
-        const _lk = casinoLucky(); if (_final.includes(_lk)) { const _lkBonus = Math.floor(_amt*0.5); _amt += _lkBonus; _txt_jp += ` 🍀幸运${_lk}+${_lkBonus}`; }
-      }
-      else if (_final[0]===_final[1] || _final[1]===_final[2] || _final[0]===_final[2]) _amt = _b.bet*2;
+      let _txt_jp = '';
+      if (_o.jpWin > 0) _txt_jp = ` 🏆奖池暴击+${_o.jpWin}`;
+      if (_o.luckyBonus > 0) _txt_jp += ` 🍀幸运${_o.lucky}+${_o.luckyBonus}`;
       const _e2 = $('slots_anim'); if (_e2) _e2.innerHTML = _final.join(' ');
-      // v459 连胜加成；v461 VIP
-      let _streakBonus = 0;
-      if (_amt > 0) { S._slotsStreak = (S._slotsStreak|0)+1; const _st = S._slotsStreak; let _mult = _st>=5 ? 2.0 : _st>=3 ? 1.5 : _st>=2 ? 1.2 : 1.0; _mult += casinoVip().bonus; if (_mult > 1) { _streakBonus = Math.floor(_amt*(_mult-1)); _amt += _streakBonus; } }
-      else { S._slotsStreak = 0; }
-      const _txt = `${_final[0]} ${_final[1]} ${_final[2]}` + _txt_jp + (_streakBonus>0 ? ` <span class="y">🔥${S._slotsStreak}连胜 +${_streakBonus}</span>` : '');
+      const _txt = `${_final[0]} ${_final[1]} ${_final[2]}` + _txt_jp;
       setTimeout(() => {
-        if (_amt > 0) { // v459 赢后双倍：先选收手/双倍
-          window._slotsPending = { ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🎰 仙缘机', game:'slots', text:_txt, doubles:0, skipDouble:true, skipStreak:true };
-          openSheet(`<h2>🎰 仙缘机</h2><div class="hint">${_txt}</div><div class="hint">赢 <b class="y">${_amt}</b>！收手落袋，还是搏一把双倍？</div><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-slots-collect style="flex:1">收手</button><button class="btn danger" data-slots-double style="flex:1">双倍！<br><small>猜单双</small></button></div>`);
-        } else {
-          casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🎰 仙缘机', game:'slots', text:_txt, skipDouble:true, skipStreak:true });
-        }
+        casinoPayServer({ ck:_bd.ck, bet:_bd.bet, ci:_bd.ci, amount:_win, title:'🎰 仙缘机', game:'slots', text:_txt });
       }, 500);
     } };
+    const _n = _syms.length;
     window._slotsIv = setInterval(() => {
       const _e = $('slots_anim');
       if (_e) {
@@ -10120,7 +10281,7 @@ document.addEventListener('click', e => {
         _e.innerHTML = _d.join(' ');
       }
     }, 100);
-  } }
+  })(); }
   else if (d.slotstop !== undefined) { if (typeof window._slotsStop === 'function') window._slotsStop(+d.slotstop); } // v449 手动停格
   else if (d.slotsDiff) { S._slotsDiff = d.slotsDiff; if (typeof save==='function') save(); if (typeof casinoSlots==='function') casinoSlots(); } // v459 选难度
   else if (d.slotsCollect !== undefined) { const _p = window._slotsPending; window._slotsPending = null; if (_p) casinoPay(_p); } // v459 收手
@@ -10129,15 +10290,39 @@ document.addEventListener('click', e => {
   // v460 通用赢后双倍
   else if (d.casinoCollect !== undefined) { const _p = window._casinoPending; window._casinoPending = null; if (_p) { _p._doubled = true; casinoPay(_p); } }
   else if (d.casinoDouble !== undefined) { const _p = window._casinoPending; if (_p) { openSheet(`<h2>${_p.title} · 双倍一搏</h2><div class="hint">当前奖金 <b class="y">${_p.amount}</b>。猜中翻倍，猜错全输！</div><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-casino-guess="odd" style="flex:1">单</button><button class="btn gold" data-casino-guess="even" style="flex:1">双</button></div><div class="row"><button class="btn full" data-casino-collect>不搏了，收手</button></div>`); } }
+  else if (d.casinoSrvCollect !== undefined) { casinoSrvCollectUI(); }
+  else if (d.casinoSrvDouble !== undefined) { casinoSrvDoubleUI(); }
+  else if (d.casinoSrvGuess) { casinoSrvGuessUI(d.casinoSrvGuess); }
   else if (d.casinoGuess) { const _p = window._casinoPending; if (_p) { const _n3 = 1+Math.floor(Math.random()*10); const _win = (d.casinoGuess==='odd') === (_n3%2===1); if (_win) { _p.amount *= 2; _p._doubled = true; window._casinoPending = _p; openSheet(`<h2>${_p.title} · 双倍成功！</h2><div class="hint">${_p.text} 🎲${_n3}</div><div class="hint">奖金翻到 <b class="y">${_p.amount}</b>！继续搏还是收手？</div><div class="row" style="display:flex;gap:6px"><button class="btn gold" data-casino-collect style="flex:1">收手</button><button class="btn danger" data-casino-double style="flex:1">再双倍！</button></div>`); } else { _p.text += ` 🎲${_n3}搏输了`; _p.amount = 0; S._casinoStreak = 0; window._casinoPending = null; _p._doubled = true; casinoPay(_p); } } }
   // v424 猜灵石
-  else if (d.casinoBowls !== undefined) { const _b = window._bowlsBet; const _pick = +d.casinoBowls; if (_b && _pick >= 0) { const _hide = window._bowlsHide|0; const _win = _pick === _hide; const _amt = _win ? _b.bet*2 : 0; const _bowls = ['🥣','🥣','🥣']; _bowls[_hide] = '💎'; window._bowlsBet = null; casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🥣 猜灵石', game:'bowls', text:`${_bowls.join(' ')}` }); } } // v461 洗牌后选
-  else if (d.casinoBowlsShuffle !== undefined) { const _b = casinoTakeBet(); if (_b) { window._bowlsBet = _b; window._bowlsHide = Math.floor(Math.random()*3);
+  else if (d.casinoBowls !== undefined) { (async () => { const _pick = +d.casinoBowls; const _b0 = window._bowlsBet;
+    if (!_b0 || _pick < 0) return;
+    // v967 服务端版：洗牌时已下注（服务端扣），这里只发 pick
+    const _sr = await casinoServerPlay('bowls', { pick:_pick });
+    if (!_sr) return;
+    window._bowlsBet = null;
+    if (_sr.local) { const _hide = window._bowlsHide|0; const _win = _pick === _hide; const _amt = _win ? _b0.bet*2 : 0; const _bowls = ['🥣','🥣','🥣']; _bowls[_hide] = '💎'; casinoPay({ ck:_b0.ck, bet:_b0.bet, ci:_b0.ci, amount:_amt, title:'🥣 猜灵石', game:'bowls', text:`${_bowls.join(' ')}` }); return; }
+    const _bd = _sr.bet, _o = _sr.srv.outcome, _win = _sr.srv.win|0;
+    // 注意：洗牌时服务端已扣注，这里不同步扣（避免重复）
+    const _bowls = ['🥣','🥣','🥣']; _bowls[_o.hide] = '💎';
+    casinoPayServer({ ck:_bd.ck, bet:_bd.bet, ci:_bd.ci, amount:_win, title:'🥣 猜灵石', game:'bowls', text:`${_bowls.join(' ')}` });
+  })(); } // v461 洗牌后选
+  else if (d.casinoBowlsShuffle !== undefined) { const _b = casinoGetBet(); if (_b) { window._bowlsBet = _b; window._bowlsHide = Math.floor(Math.random()*3);
     openSheet(`<h2>🥣 洗牌中...</h2><div class="hint" style="font-size:32px" id="bowls_anim">🥣<small>1</small> 🥣<small>2</small> 🥣<small>3</small></div><div class="hint">盯紧编号！灵石在哪只碗下？</div>`);
     let _ticks = 0; let _order = [1,2,3]; const _iv = setInterval(() => { _ticks++; const _a = Math.floor(Math.random()*3); let _c = Math.floor(Math.random()*3); if (_c===_a) _c=(_c+1)%3; const _t=_order[_a]; _order[_a]=_order[_c]; _order[_c]=_t; const _e = $('bowls_anim'); if (_e) _e.innerHTML = _order.map(n=>`🥣<small>${n}</small>`).join(' '); if (_ticks >= 18) { clearInterval(_iv); openSheet(`<h2>🥣 猜灵石</h2><div class="hint" style="font-size:36px">🥣 🥣 🥣</div><div class="hint">洗好了！凭刚才的编号选一只碗。</div><div class="grid2"><button class="btn gold" data-casino-bowls="0">🥣 左</button><button class="btn gold" data-casino-bowls="1">🥣 中</button><button class="btn gold" data-casino-bowls="2">🥣 右</button></div>`); } }, 150);
   } } // v461 洗牌动画；v462 编号可见
   // v424 射覆
-  else if (d.casinoNum) { const _b = casinoTakeBet(); if (_b) { const _n = 1+Math.floor(Math.random()*10); const _mode = d.casinoNum; let _win = false, _mult = 0; if (_mode==='odd' && _n%2===1) { _win=true; _mult=2; } else if (_mode==='even' && _n%2===0) { _win=true; _mult=2; } else if (_mode==='exact') { const _guess = Math.max(1, Math.min(10, Math.floor(+($('casino_num')||{}).value||5))); if (_guess===_n) { _win=true; _mult=9; } } const _amt = _win ? _b.bet*_mult : 0; casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🎯 射覆', game:'number', text:`开 ${_n}` }); } }
+  else if (d.casinoNum) { (async () => { const _mode = d.casinoNum;
+    let _guess = 5; if (_mode==='exact') _guess = Math.max(1, Math.min(10, Math.floor(+($('casino_num')||{}).value||5)));
+    const _sr = await casinoServerPlay('number', { type:_mode, num:_guess });
+    if (!_sr) return;
+    if (_sr.local) { const _b = casinoTakeBet(); if (!_b) return; const _n = 1+Math.floor(Math.random()*10); let _win = false, _mult = 0;
+      if (_mode==='odd' && _n%2===1) { _win=true; _mult=2; } else if (_mode==='even' && _n%2===0) { _win=true; _mult=2; } else if (_mode==='exact') { if (_guess===_n) { _win=true; _mult=9; } }
+      const _amt = _win ? _b.bet*_mult : 0; casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🎯 射覆', game:'number', text:`开 ${_n}` }); return; }
+    const _bd = _sr.bet, _o = _sr.srv.outcome, _win = _sr.srv.win|0;
+    if (_bd.ck === 'xianyu') S.xianyu -= _bd.bet; else S.ores[_bd.ck] -= _bd.bet;
+    casinoPayServer({ ck:_bd.ck, bet:_bd.bet, ci:_bd.ci, amount:_win, title:'🎯 射覆', game:'number', text:`开 ${_o.num}` });
+  })(); }
   // v424 翻仙牌
   else if (d.casinoCard) { const _b = casinoTakeBet(); if (_b) { const _cards = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']; const _c = _cards[Math.floor(Math.random()*13)]; const _v = _cards.indexOf(_c); const _isBig = _v >= 6; const _pickBig = d.casinoCard==='big'; const _win = _pickBig === _isBig; const _amt = _win ? _b.bet*2 : 0; casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🃏 翻仙牌', game:'card', text:`翻出 <b>${_c}</b> (${_isBig?'大':'小'})` }); } }
   else if (d.casinoSuit) { const _b = casinoTakeBet(); if (_b) { const _suits = ['♠','♥','♣','♦']; const _s = _suits[Math.floor(Math.random()*4)]; const _cards = ['2','3','4','5','6','7','8','9','10','J','Q','K','A']; const _c = _cards[Math.floor(Math.random()*13)]; const _win = d.casinoSuit === _s; const _amt = _win ? _b.bet*4 : 0; casinoPay({ ck:_b.ck, bet:_b.bet, ci:_b.ci, amount:_amt, title:'🃏 翻仙牌', game:'card', text:`翻出 <b>${_s}${_c}</b>` }); } } // v460 猜花色
