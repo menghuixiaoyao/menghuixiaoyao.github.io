@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v971</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v972</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3043,12 +3043,14 @@ function advRetreat(S) { const run = S.run; if (!run || !run.grid) return null; 
 // 共享地图：固定布局，tile 状态全服共享，先到先得。未登录时走本地随机地图。
 async function advSharedInit(S) {
   if (!MHXY.isLoggedIn || !MHXY.isLoggedIn()) return false;
+  const dk = (S.run && S.run.dk) || 'easy';
   try {
-    var hb = await MHXY.api('/api/advmap/heartbeat', { method: 'POST', body: {} });
+    var hb = await MHXY.api('/api/advmap/heartbeat?dk=' + encodeURIComponent(dk), { method: 'POST', body: {} });
     if (!hb.ok || !hb.json || !hb.json.ok) return false;
-    var st = await MHXY.api('/api/advmap/state');
+    var st = await MHXY.api('/api/advmap/state?dk=' + encodeURIComponent(dk));
     if (!st.ok || !st.json || !st.json.ok) return false;
     S.run.shared = {
+      dk: dk,
       tiles: st.json.tiles,           // 6x6 [{t, state, respawn_in}]
       players: st.json.players || [], // 其他玩家 [{username, player_no, x, y}]
       on: true
@@ -3069,14 +3071,20 @@ async function advSharedInit(S) {
 }
 function advSharedStop() {
   if (window._advPoll) { clearInterval(window._advPoll); window._advPoll = null; }
-  try { if (MHXY.isLoggedIn && MHXY.isLoggedIn()) MHXY.api('/api/advmap/leave', { method: 'POST', body: {} }); } catch (_) {}
+  try {
+    if (MHXY.isLoggedIn && MHXY.isLoggedIn()) {
+      const dk = (S.run && S.run.shared && S.run.shared.dk) || 'easy';
+      MHXY.api('/api/advmap/leave?dk=' + encodeURIComponent(dk), { method: 'POST', body: {} });
+    }
+  } catch (_) {}
 }
 function advSharedPoll(S) {
   if (window._advPoll) clearInterval(window._advPoll);
   window._advPoll = setInterval(async function() {
     try {
       if (!S.run || !S.run.shared || !S.run.shared.on) { clearInterval(window._advPoll); window._advPoll = null; return; }
-      var st = await MHXY.api('/api/advmap/state');
+      const dk = S.run.shared.dk || 'easy';
+      var st = await MHXY.api('/api/advmap/state?dk=' + encodeURIComponent(dk));
       if (st.ok && st.json && st.json.ok) {
         S.run.shared.tiles = st.json.tiles;
         S.run.shared.players = st.json.players || [];
@@ -3100,7 +3108,8 @@ function advSharedPoll(S) {
 function advSharedHeartbeat(x, y) {
   try {
     if (MHXY.isLoggedIn && MHXY.isLoggedIn() && S.run && S.run.shared && S.run.shared.on) {
-      MHXY.api('/api/advmap/heartbeat', { method: 'POST', body: { x: x, y: y } });
+      const dk = S.run.shared.dk || 'easy';
+      MHXY.api('/api/advmap/heartbeat?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: x, y: y } });
     }
   } catch (_) {}
 }
@@ -9953,7 +9962,8 @@ document.addEventListener('click', e => {
           }
           // 异步 claim
           window._advMoveCd = _now;
-          MHXY.api('/api/advmap/claim', { method: 'POST', body: { x: _gx, y: _gy } }).then(function(r) {
+          const _dk = (_run.shared && _run.shared.dk) || 'easy';
+          MHXY.api('/api/advmap/claim?dk=' + encodeURIComponent(_dk), { method: 'POST', body: { x: _gx, y: _gy } }).then(function(r) {
             if (r.ok && r.json && r.json.ok) {
               // claim 成功：更新本地 tile 状态，执行移动
               _st.state = 'cleared';
@@ -9961,7 +9971,7 @@ document.addEventListener('click', e => {
             } else {
               try { toastLog('sys', '💨 慢了一步，被别人抢先了'); } catch(_) {}
               // 刷新共享状态
-              MHXY.api('/api/advmap/state').then(function(sr) {
+              MHXY.api('/api/advmap/state?dk=' + encodeURIComponent(_dk)).then(function(sr) {
                 if (sr.ok && sr.json && sr.json.ok && S.run && S.run.shared) {
                   S.run.shared.tiles = sr.json.tiles;
                   S.run.shared.players = sr.json.players || [];
