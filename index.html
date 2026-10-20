@@ -8913,7 +8913,9 @@ async function doBuy(kind, k, n) {
       if (resp.ok && j && j.ok) {
         const store = kind === 'med' ? 'meds' : kind === 'mat' ? 'mats' : 'ores';
         const skey = kind === 'spirit' ? 'sp1' : k;
-        S.gold = (S.gold|0) - j.cost;
+        // v972 服务端返回权威金元余额，直接采用（修复本地虚高问题）
+        if (typeof j.gold === 'number') S.gold = j.gold;
+        else S.gold = (S.gold|0) - j.cost;
         if (!S[store]) S[store] = {};
         S[store][skey] = (S[store][skey]|0) + j.n;
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
@@ -8923,9 +8925,15 @@ async function doBuy(kind, k, n) {
         commit(); const _sy = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy;
         return;
       }
-      if ((j||{}).error === 'no_money' || !resp.netErr) {
+      if ((j||{}).error === 'no_money') {
         sheetShop('金元不足。');
         return; // 服务端已响应，不回落
+      }
+      if (!resp.netErr) {
+        // v972 服务端返回其他错误时显示真实原因，不再一律报金元不足
+        const _err = (j||{}).error || ('HTTP ' + resp.status);
+        sheetShop('购买失败：' + _err);
+        return;
       }
       // 网络异常 → 回落本地
     } catch(e) { /* 回落本地 */ }
