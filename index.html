@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v981</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v982</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3357,8 +3357,9 @@ function pkSettle(S, pk, chosen) {
       }
       const _bl = '⚡ 与雷云激战' + (koWin ? '，<span class="g">击溃雷云</span>' : (surviveWin ? (_survivePass ? '，<span class="g">扛过十回合，雷云散去</span>' : '，<span class="r">扛过雷云但道基不稳</span>') : '，<span class="r">不敌雷云</span>'));
       pk = null;
-      S.thunderOk = false; S._trigFail = 0; S._succFail = 0;
+      S._trigFail = 0; S._succFail = 0; // v982 thunderOk 不在这里清，移到问心展示成功后（修 Bug#35）
       if (!win) {
+        S.thunderOk = false; // 失败才清按钮
         try { const _ds = C.applyFailState(S, fromRealm); log('bad', _bl + '<br>⚡ 倒在天雷之下，突破失败……沦为【' + (_ds || S.degraded) + '】。'); } catch(_){ log('bad', _bl + '<br>⚡ 突破失败。'); }
       } else {
         try {
@@ -3374,11 +3375,25 @@ function pkSettle(S, pk, chosen) {
             _trib.quiz = _quiz;
             // 保存trib供后续使用
             try { S._pendingTrib = _trib; S._pendingFromRealm = fromRealm; } catch(_){}
-            try { if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_quiz); else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_quiz); } catch(_){}
+            // v982 修 Bug#35：问心展示失败给可见报错，不再静默吞；成功才清 thunderOk，失败回滚保留按钮
+            let _quizShown = false, _quizErr = '';
+            try {
+              if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_quiz);
+              else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_quiz);
+              else throw new Error('sheetTribQuiz 未定义');
+              _quizShown = true;
+            } catch(_qe){ _quizErr = (_qe && _qe.message) || String(_qe); }
+            if (_quizShown) {
+              S.thunderOk = false;
+            } else {
+              S.thunderOk = true; // 回滚：按钮保留，玩家可重试
+              try { log('bad', '⚡ 问心展示失败：' + (_quizErr || '未知错误') + '<br>突破按钮已保留，请截图联系管理或重进游戏重试。'); } catch(_){}
+            }
             try { commit(); } catch(_){}
             return;
           }
           // 兜底：直接突破
+          S.thunderOk = false;
           const r = C.applyBtSuccess(S, fromRealm, _trib);
           const _gs = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : '';
           log('good', _bl + '<br>⚡ <b>突破成功！</b>踏入【' + (r.realm || '') + '】！' + _gs);
@@ -8551,6 +8566,8 @@ window.doTribQuizAnswer = function(qi, oi) {
   tqAns[qi] = oi;
   if (Object.keys(tqAns).length < tqQuiz.qs.length) { sheetTribQuiz(tqQuiz); return; }
   const quiz = tqQuiz; tqQuiz = null;
+  // v982 问心完成，清理 _pendingTrib
+  try { delete S._pendingTrib; delete S._pendingFromRealm; } catch(_){}
   const r = C.finishTribQuiz(S, quiz, quiz.qs.map((_, i) => tqAns[i]));
   closeSheet();
   if (r.pending === 'demon') { // v739 答题后遇心魔战斗
@@ -10540,7 +10557,29 @@ document.addEventListener('click', e => {
   else if (t.id === 'debugBtn') sheetDebug();
 });
 
-load(); applyDebug(); renderLog(); afterAct(); render(); save();
+load(); applyDebug(); renderLog(); afterAct();
+// v982 修 Bug#35：_pendingTrib 真恢复——读档时若问心未完成且境界未推进，重弹问心
+try {
+  if (S && S._pendingTrib && S._pendingTrib.quiz && (S.realm|0) === (S._pendingFromRealm|0)) {
+    const _pq = S._pendingTrib.quiz;
+    // 延迟一点等 UI 就绪
+    setTimeout(function() {
+      try {
+        if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_pq);
+        else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_pq);
+        try { log('warn', '⚡ 检测到未完成的问心，已为你重新弹出。'); } catch(_){}
+      } catch(_qe) {
+        try { log('bad', '⚡ 问心恢复失败：' + ((_qe && _qe.message) || _qe)); } catch(_){}
+      }
+    }, 800);
+    // 确保按钮可见
+    try { S.thunderOk = true; } catch(_){}
+  } else if (S && S._pendingTrib) {
+    // 境界已推进，清理死状态
+    try { delete S._pendingTrib; delete S._pendingFromRealm; } catch(_){}
+  }
+} catch(_){}
+render(); save();
 // v960 寄售行转线上：本地寄售物品退回背包，NPC 市场清空（一次性迁移）
 try {
   if (S && !S._mkt960mig) {
