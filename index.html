@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v980</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v981</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -11421,13 +11421,13 @@ function onClick(d, t, e){
     api('/api/profile/x_handle', { method:'POST', body:{ x_handle:_xh } }).then(function(r){
       if (r.ok && r.json && r.json.ok) {
         glog('good', '🌐 已绑定 X：@' + escH(r.json.x_handle));
-        // 显示验证码
+        // 显示验证码（点黄色字复制）
         var code = r.json.verify_code;
         if (code) {
           var row = document.getElementById('mhxyXVerifyRow');
           var span = document.getElementById('mhxyXCode');
           if (row && span) {
-            span.innerHTML = '发一条推文包含 <b class="y" id="mhxyXCodeText">' + escH(code) + '</b> <button class="btn" style="padding:4px 8px;font-size:12px" data-mhxyxcopy>复制</button>（至少附 2 张游戏截图），把推文链接粘贴到下面点验证';
+            span.innerHTML = '发一条推文包含 <b class="y" id="mhxyXCodeText" data-mhxyxcopy style="cursor:pointer;text-decoration:underline" title="点我复制">' + escH(code) + '</b>（至少附 2 张游戏截图），把推文链接粘贴到下面点验证';
             row.style.display = 'flex';
           }
         }
