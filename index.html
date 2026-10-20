@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v982</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v983</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3044,7 +3044,7 @@ function advRetreat(S) { const run = S.run; if (!run || !run.grid) return null; 
 // ======== v971 全服共享冒险地图 ========
 // 共享地图：固定布局，tile 状态全服共享，先到先得。未登录时走本地随机地图。
 async function advSharedInit(S) {
-  if (!MHXY.isLoggedIn || !MHXY.isLoggedIn()) return false;
+  if (!MHXY.loggedIn || !MHXY.loggedIn()) return false;
   const dk = (S.run && S.run.dk) || 'easy';
   try {
     var hb = await MHXY.api('/api/advmap/heartbeat?dk=' + encodeURIComponent(dk), { method: 'POST', body: {} });
@@ -3074,7 +3074,7 @@ async function advSharedInit(S) {
 function advSharedStop() {
   if (window._advPoll) { clearInterval(window._advPoll); window._advPoll = null; }
   try {
-    if (MHXY.isLoggedIn && MHXY.isLoggedIn()) {
+    if (MHXY.loggedIn && MHXY.loggedIn()) {
       const dk = (S.run && S.run.shared && S.run.shared.dk) || 'easy';
       MHXY.api('/api/advmap/leave?dk=' + encodeURIComponent(dk), { method: 'POST', body: {} });
     }
@@ -3109,7 +3109,7 @@ function advSharedPoll(S) {
 // 移动时同步位置到服务端（心跳）
 function advSharedHeartbeat(x, y) {
   try {
-    if (MHXY.isLoggedIn && MHXY.isLoggedIn() && S.run && S.run.shared && S.run.shared.on) {
+    if (MHXY.loggedIn && MHXY.loggedIn() && S.run && S.run.shared && S.run.shared.on) {
       const dk = S.run.shared.dk || 'easy';
       MHXY.api('/api/advmap/heartbeat?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: x, y: y } });
     }
@@ -3160,7 +3160,7 @@ function advCtx(S, run, lines) { // 事件结果工具
     put: (st, k, n) => { if (st === 'petEggs') S.petEggs += n; else if (st === 'maiPages') S.maiPages = (S.maiPages | 0) + n; else { S[st] = S[st] || {}; S[st][k] = (S[st][k] || 0) + n; } const key = st + ':' + k; rw.items[key] = (rw.items[key] || 0) + n; },
     loot: async (rolls, cats, bonus) => { const got = [];
         // v967 服务端版（在线才走）
-        if (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn()) {
+        if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) {
           try {
             const r = await MHXY.api('/api/roll/adv_loot', 'POST', { rolls, cats, bonus: bonus||0, tier: t, dk: run.dk });
             if (r.ok && r.json && r.json.ok) {
@@ -6111,7 +6111,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
       const tab = window._chatTab;
       try { const _mf = JSON.parse(localStorage.getItem('msgFilter') || '{"world":1,"sect":1,"team":1,"diary":1}'); if (tab && _mf[tab] === 0) { cf.innerHTML = `<div class="cfbox"><div class="cftop"><button class="cfclose" data-cfclose>✖️</button></div><div class="cfmsgs"><div class="hint">该频道已在设置中关闭</div></div><div class="cfresize"></div></div>`; const _cc2 = cf.querySelector('[data-cfclose]'); if (_cc2) _cc2.onclick = () => { try { localStorage.setItem('chatFloatOn','0'); } catch(_){} cf.classList.remove('on'); }; return; } } catch(_) {} // v641 频道过滤
       let msgs = '', hint = '', canSend = true;
-      const _loggedIn = (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn());
+      const _loggedIn = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn());
       if (tab === 'world') {
         if (_loggedIn) {
           // v973 真人世界聊天：显示服务端消息
@@ -6617,7 +6617,7 @@ function casinoGetBet() {
 async function casinoServerPlay(game, choice) {
   const _b = casinoGetBet();
   if (!_b) return null;
-  if (typeof MHXY === 'undefined' || !MHXY.isLoggedIn || !MHXY.isLoggedIn()) return { local:true, bet:_b };
+  if (typeof MHXY === 'undefined' || !MHXY.loggedIn || !MHXY.loggedIn()) return { local:true, bet:_b };
   try {
     const r = await MHXY.api('/api/roll/casino', 'POST', { game, ck:_b.ck, bet:_b.bet, choice });
     if (!r.ok || !r.json || !r.json.ok) return { local:true, bet:_b };
@@ -9284,7 +9284,7 @@ async function doArena() { // v245 擂台：所有境界可见；v246 每个境�
   arenaCheckReset(a, false); // v967 轻量日期滚动；结算走服务端
   let settleMsg = '';
   // v967 服务端擂台结算（在线才走）
-  if (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn()) {
+  if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) {
     try {
       const r = await MHXY.api('/api/roll/arena_settle', 'POST', {});
       if (r.ok && r.json && r.json.ok) {
@@ -10596,7 +10596,7 @@ if (S.forceReinc) setTimeout(() => doReincarnate(true), 500); // 刷新后仍有
 // AFK横幅每10秒刷新一次
 setInterval(() => { try { if (S.afk) render(); } catch(e) {} }, 10000);
 // 世界聊天NPC每60秒35%概率发言（v960 寄售NPC购买已删除，转线上）
-setInterval(() => { try { const _li = (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn()); if (!_li && Math.random() < 0.35) { C.chatNpc(S); } save(); } catch(e) {} }, 60000); // v973 登录后停掉 NPC 世界聊天刷屏
+setInterval(() => { try { const _li = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (!_li && Math.random() < 0.35) { C.chatNpc(S); } save(); } catch(e) {} }, 60000); // v973 登录后停掉 NPC 世界聊天刷屏
 
 /* ---------- 联机对战 v92：WebSocket 1v1 ---------- */
 const NET_URL = 'ws://localhost:8080'; // 上线时改成正式服务器地址
