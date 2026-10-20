@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v977</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v978</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1714,6 +1714,8 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
   const afkSecs = Math.floor((Date.now() - S.afk.start + dbgMs) / 1000);
   S.afk = null;
   if (afkSecs > 0) { S.stats = S.stats || {}; S.stats.afkSecs = (S.stats.afkSecs || 0) + afkSecs; S.stats.afkSecsTotal = (S.stats.afkSecsTotal || 0) + afkSecs; } // 本世闭关（轮回清零）+ 历世累计（不清零）
+  // v978 X 验证用户闭关 1.1 倍
+  try { if (typeof isXVerified === 'function' && isXVerified() && gain > 0) gain = Math.floor(gain * 1.1); } catch(_) {}
   if (gain > 0) { if (isMana) S.mana = Math.min(C.manaCapEff(S), S.mana + gain); else S.xp += gain; }
   if (S.hpCur != null && afkSecs > 0) { // v187 闭关调息：每秒恢复 10% 生命上限
     const hpMaxR = C.bumpPeak(S) * 5, curR = Math.floor(S.hpCur);
@@ -8432,6 +8434,14 @@ function doCheckin(force) {
   }
   const r = C.checkin(S, force);
   if (!r.ok) { toastLog('sys', '今日已签到，明天再来吧。'); return; }
+  // v978 X 验证用户签到体力翻倍
+  try {
+    if (typeof isXVerified === 'function' && isXVerified() && r.gain > 0) {
+      S.stamina = (S.stamina|0) + r.gain;
+      r.gain = r.gain * 2;
+      log('gold', '🎖️ <span class="y">X 认证</span>加成：签到体力翻倍！');
+    }
+  } catch(_) {}
   try { auc3Daily(S); } catch(e) {} // 拍卖行三日循环结算
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
   log('gold', `📅 ${force ? '<span class="pu">[测试]</span> ' : ''}签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
@@ -10999,8 +11009,16 @@ async function afterLogin(){
   await ensurePresence();
   pkWsConnect();
   await checkCloud();
+  // v978 缓存 X 验证状态
+  try {
+    var _pr = await api('/api/profile/me');
+    if (_pr.ok && _pr.json && _pr.json.ok) {
+      try { localStorage.setItem('mhxy_xv', _pr.json.x_verified ? '1' : '0'); } catch(_) {}
+    }
+  } catch(_) {}
   panel();
 }
+function isXVerified(){ try { return localStorage.getItem('mhxy_xv') === '1'; } catch(_) { return false; } }
 
 /* ---------- 云存档同步 ---------- */
 function markDirty(saveKey){
@@ -11424,7 +11442,10 @@ function onClick(d, t, e){
     glog('sys', '🌐 正在验证…');
     api('/api/profile/x_verify', { method:'POST', body:{ tweet_url:_url } }).then(function(r){
       if (r.ok && r.json && r.json.ok) {
-        if (r.json.verified) glog('good', '🌐 X 验证通过 ✅');
+        if (r.json.verified) {
+          glog('good', '🌐 X 验证通过 ✅');
+          try { localStorage.setItem('mhxy_xv', '1'); } catch(_) {}
+        }
         else glog('bad', '🌐 ' + escH(r.json.hint || '验证失败'));
       } else {
         var _e = (r.json||{}).error;
