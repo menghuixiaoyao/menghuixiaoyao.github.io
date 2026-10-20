@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v974</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v975</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6099,7 +6099,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         if (_loggedIn) {
           // v973 真人世界聊天：显示服务端消息
           const _srv = (window._srvChat || []).slice(-20);
-          msgs = _srv.map(m => `<div class="chat-msg"><b style="color:#7ec8ff">${esc(m.n || m.username || '道友')}</b>：${esc(m.t || m.text)}</div>`).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
+          msgs = _srv.map(m => { var _xh = m.xHandle ? '<span style="color:#1d9bf0">@' + esc(m.xHandle) + '</span> ' : ''; return `<div class="chat-msg"><b style="color:#7ec8ff">${_xh}${esc(m.n || m.username || '道友')}</b>：${esc(m.t || m.text)}</div>`; }).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
           // 确保连接 WS 并拉取历史
           try { if (typeof chatWsConnect === 'function') chatWsConnect(); } catch(_) {}
           try { if (typeof chatHistoryToCache === 'function') chatHistoryToCache(); } catch(_) {}
@@ -10907,6 +10907,7 @@ function panel(){
       + '<div class="row"><button class="btn gold full" data-mhxyguest>一键游客登录</button></div>'
       + '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
       + '<input id="mhxyP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
+      + '<div class="row"><input id="mhxyX" maxlength="16" placeholder="X 用户名（注册必填，如 @feyelo）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="grid2"><button class="btn full" data-mhxylogin>登录</button><button class="btn full" data-mhxyreg>注册</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
   } else {
@@ -10922,6 +10923,7 @@ function panel(){
       + '<button class="btn full" data-mhxydown>⬇️ 下载云档</button>'
       + '</div>'
       + '<div class="row" id="mhxyGmRow" style="display:none"><button class="btn gold full" data-mhxygm>🛠️ GM 管理</button></div>'
+      + '<div class="row" style="display:flex;gap:6px"><input id="mhxyXSet" maxlength="16" placeholder="X 用户名（如 @feyelo）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn" data-mhxyxset>绑定</button></div>'
       + (isGuest()
         ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
         : '')
@@ -10962,14 +10964,15 @@ async function doLogin(){
   }
 }
 async function doRegister(){
-  var u = val('mhxyU'), p = val('mhxyP');
+  var u = val('mhxyU'), p = val('mhxyP'), x = val('mhxyX');
   if (!u || !p){ glog('bad', '🌐 请填写用户名和密码'); return; }
-  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p } });
+  if (!x){ glog('bad', '🌐 注册必须填写 X 用户名'); return; }
+  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p, x_handle:x } });
   if ((r.status === 201 || r.ok) && r.json && r.json.ok){
     glog('good', '🌐 注册成功：<b class="y">' + escH(u) + '</b> #' + r.json.player_no + '，请登录');
   } else {
     var err = (r.json||{}).error || r.status;
-    glog('bad', '🌐 注册失败' + (r.netErr ? '（网络不通）' : err === 'username_taken' ? '（用户名已被占用）' : err === 'bad_username' ? '（用户名3-16位，字母/数字/下划线/中文）' : err === 'bad_password' ? '（密码至少6位）' : '：' + escH(err)));
+    glog('bad', '🌐 注册失败' + (r.netErr ? '（网络不通）' : err === 'username_taken' ? '（用户名已被占用）' : err === 'bad_username' ? '（用户名3-16位，字母/数字/下划线/中文）' : err === 'bad_password' ? '（密码至少6位）' : err === 'x_handle_required' ? '（必须填写 X 用户名）' : '：' + escH(err)));
   }
 }
 async function doUpgrade(){
@@ -11097,7 +11100,7 @@ async function onlinePlayers(){
 }
 
 /* ---------- 真人聊天 ---------- */
-function chatName(m){ return escH(m.username || '?') + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; }
+function chatName(m){ var xh = m.xHandle ? '<span style="color:#1d9bf0">@' + escH(m.xHandle) + '</span> ' : ''; return xh + escH(m.username || '?') + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; }
 function chatMsgHtml(m){
   return '<div class="chat-msg"><b style="color:#7ec8ff">' + chatName(m) + '</b>：' + escH(m.text) + '</div>';
 }
@@ -11377,6 +11380,16 @@ function onClick(d, t, e){
   if ('mhxygm' in d){ gmPanel(); return true; }
   if ('mhxygmset' in d){ gmDoSet(); return true; }
   if ('mhxygmgive' in d){ gmDoGive(); return true; }
+  if ('mhxyxset' in d){
+    var _xh = val('mhxyXSet');
+    if (!_xh){ glog('bad', '🌐 请填写 X 用户名'); return true; }
+    api('/api/profile/x_handle', { method:'POST', body:{ x_handle:_xh } }).then(function(r){
+      if (r.ok && r.json && r.json.ok) glog('good', '🌐 已绑定 X：@' + escH(r.json.x_handle));
+      else glog('bad', '🌐 绑定失败：' + escH((r.json||{}).error || r.status));
+      try { panel(); } catch(_) {}
+    });
+    return true;
+  }
   if ('mhxychat' in d){ chatPanel(); return true; }
   if ('mhxychatsend' in d){ chatSend(); return true; }
   if ('mhxypk' in d){ pkPanel(); return true; }
