@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v978</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v979</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -11427,7 +11427,7 @@ function onClick(d, t, e){
           var row = document.getElementById('mhxyXVerifyRow');
           var span = document.getElementById('mhxyXCode');
           if (row && span) {
-            span.innerHTML = '发一条推文包含验证码 <b class="y">' + escH(code) + '</b>，把推文链接粘贴到下面点验证';
+            span.innerHTML = '发一条推文包含 <b class="y">' + escH(code) + '</b>（至少附 2 张游戏截图），把推文链接粘贴到下面点验证';
             row.style.display = 'flex';
           }
         }
