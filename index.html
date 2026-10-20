@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v976</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v977</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10924,7 +10924,7 @@ function panel(){
       + '</div>'
       + '<div class="row" id="mhxyGmRow" style="display:none"><button class="btn gold full" data-mhxygm>🛠️ GM 管理</button></div>'
       + '<div class="row" style="display:flex;gap:6px"><input id="mhxyXSet" maxlength="16" placeholder="X 用户名（如 @feyelo）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn" data-mhxyxset>绑定</button></div>'
-      + '<div class="row" id="mhxyXVerifyRow" style="display:none;gap:6px"><span class="hint" id="mhxyXCode" style="flex:1"></span><button class="btn gold" data-mhxyxverify>我已发帖，验证</button></div>'
+      + '<div class="row" id="mhxyXVerifyRow" style="display:none;flex-direction:column;gap:6px"><span class="hint" id="mhxyXCode"></span><div style="display:flex;gap:6px"><input id="mhxyTweetUrl" placeholder="推文链接（x.com/你的号/status/…）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-mhxyxverify>验证</button></div></div>'
       + (isGuest()
         ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
         : '')
@@ -11409,7 +11409,7 @@ function onClick(d, t, e){
           var row = document.getElementById('mhxyXVerifyRow');
           var span = document.getElementById('mhxyXCode');
           if (row && span) {
-            span.innerHTML = '发一条推文包含验证码 <b class="y">' + escH(code) + '</b>，然后点验证';
+            span.innerHTML = '发一条推文包含验证码 <b class="y">' + escH(code) + '</b>，把推文链接粘贴到下面点验证';
             row.style.display = 'flex';
           }
         }
@@ -11419,13 +11419,17 @@ function onClick(d, t, e){
     return true;
   }
   if ('mhxyxverify' in d){
+    var _url = val('mhxyTweetUrl');
+    if (!_url){ glog('bad', '🌐 请粘贴推文链接'); return true; }
     glog('sys', '🌐 正在验证…');
-    api('/api/profile/x_verify', { method:'POST', body:{} }).then(function(r){
+    api('/api/profile/x_verify', { method:'POST', body:{ tweet_url:_url } }).then(function(r){
       if (r.ok && r.json && r.json.ok) {
         if (r.json.verified) glog('good', '🌐 X 验证通过 ✅');
-        else glog('bad', '🌐 ' + escH(r.json.hint || '未找到验证码推文'));
+        else glog('bad', '🌐 ' + escH(r.json.hint || '验证失败'));
       } else {
-        glog('bad', '🌐 验证失败：' + escH((r.json||{}).error || r.status));
+        var _e = (r.json||{}).error;
+        var _msg = _e === 'no_tweet_url' ? '请粘贴推文链接' : _e === 'bad_tweet_url' ? '推文链接格式不对' : _e === 'author_mismatch' ? '推文作者与绑定的 X 号不一致' : escH(_e || r.status);
+        glog('bad', '🌐 验证失败：' + _msg);
       }
     });
     return true;
