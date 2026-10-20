@@ -6094,8 +6094,18 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
       const tab = window._chatTab;
       try { const _mf = JSON.parse(localStorage.getItem('msgFilter') || '{"world":1,"sect":1,"team":1,"diary":1}'); if (tab && _mf[tab] === 0) { cf.innerHTML = `<div class="cfbox"><div class="cftop"><button class="cfclose" data-cfclose>✖️</button></div><div class="cfmsgs"><div class="hint">该频道已在设置中关闭</div></div><div class="cfresize"></div></div>`; const _cc2 = cf.querySelector('[data-cfclose]'); if (_cc2) _cc2.onclick = () => { try { localStorage.setItem('chatFloatOn','0'); } catch(_){} cf.classList.remove('on'); }; return; } } catch(_) {} // v641 频道过滤
       let msgs = '', hint = '', canSend = true;
+      const _loggedIn = (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn());
       if (tab === 'world') {
-        msgs = (S.chatLog || []).slice(-20).map(m => m.announce ? `<div class="chat-announce" style="font-size:11px">📢 ${esc(m.t)}</div>` : `<div class="chat-msg"><b style="color:#7ec8ff">${esc(m.n)}</b>：${esc(m.t)}</div>`).join('') || '<div class="hint">暂无消息</div>';
+        if (_loggedIn) {
+          // v973 真人世界聊天：显示服务端消息
+          const _srv = (window._srvChat || []).slice(-20);
+          msgs = _srv.map(m => `<div class="chat-msg"><b style="color:#7ec8ff">${esc(m.n || m.username || '道友')}</b>：${esc(m.t || m.text)}</div>`).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
+          // 确保连接 WS 并拉取历史
+          try { if (typeof chatWsConnect === 'function') chatWsConnect(); } catch(_) {}
+          try { if (typeof chatHistoryToCache === 'function') chatHistoryToCache(); } catch(_) {}
+        } else {
+          msgs = (S.chatLog || []).slice(-20).map(m => m.announce ? `<div class="chat-announce" style="font-size:11px">📢 ${esc(m.t)}</div>` : `<div class="chat-msg"><b style="color:#7ec8ff">${esc(m.n)}</b>：${esc(m.t)}</div>`).join('') || '<div class="hint">暂无消息</div>';
+        }
       } else if (tab === 'sect') {
         if (!S.sect) { hint = '尚未开设宗门（仙缘→开设宗门）'; canSend = false; }
         else msgs = (S.sectChat || []).slice(-20).map(m => `<div class="chat-msg"><b style="color:#7ec8ff">${esc(m.n)}</b>：${esc(m.t)}</div>`).join('') || '<div class="hint">宗门频道暂无消息</div>';
@@ -6110,7 +6120,18 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
       cf.querySelectorAll('[data-ctab]').forEach(b => b.onclick = () => { window._chatTab = b.dataset.ctab; window.renderChatFloat(); });
       const _cc = cf.querySelector('[data-cfclose]'); if (_cc) _cc.onclick = (e) => { e.stopPropagation(); try { localStorage.setItem('chatFloatOn', '0'); } catch(_){} const _cf = document.getElementById('chatFloat'); if (_cf) _cf.classList.remove('on'); const _ctb = document.getElementById('chatToggleBtn'); if (_ctb) _ctb.style.opacity = '0.4'; }; // v513；v575 输入栏常驻
       const sendBtn = cf.querySelector('[data-cfsend]'); const inp = cf.querySelector('#cfInput');
-      const doSend = () => { const v = (inp.value || '').trim(); if (!v) return; if (tab === 'world' && typeof C.chatSend === 'function') { C.chatSend(S, v); } else if (tab === 'sect') { S.sectChat.push({n:'我', t:v.slice(0,100), time:Date.now()}); if (S.sectChat.length > 50) S.sectChat = S.sectChat.slice(-50); } save(); window.renderChatFloat(); };
+      const doSend = () => { const v = (inp.value || '').trim(); if (!v) return;
+        // v973 登录时世界频道走真人聊天
+        if (tab === 'world' && _loggedIn) {
+          try {
+            MHXY.api('/api/chat/send', { method:'POST', body:{ text:v.slice(0,200), realm: (typeof curRealm === 'function' ? curRealm() : 0) } }).then(function(r) {
+              if (r.ok && r.json && r.json.ok) { inp.value = ''; try { chatHistoryToCache(); } catch(_) {} }
+              else if (r.status === 429) { try { toastLog('sys', '发言太快，3秒后再试'); } catch(_) {} }
+            });
+          } catch(_) {}
+          return;
+        }
+        if (tab === 'world' && typeof C.chatSend === 'function') { C.chatSend(S, v); } else if (tab === 'sect') { S.sectChat.push({n:'我', t:v.slice(0,100), time:Date.now()}); if (S.sectChat.length > 50) S.sectChat = S.sectChat.slice(-50); } save(); window.renderChatFloat(); };
       if (sendBtn) sendBtn.onclick = doSend;
       if (inp) inp.onkeydown = e => { if (e.key === 'Enter') doSend(); };
       const box = cf.querySelector('.cfmsgs'); if (box) box.scrollTop = box.scrollHeight;
@@ -10526,7 +10547,7 @@ if (S.forceReinc) setTimeout(() => doReincarnate(true), 500); // 刷新后仍有
 // AFK横幅每10秒刷新一次
 setInterval(() => { try { if (S.afk) render(); } catch(e) {} }, 10000);
 // 世界聊天NPC每60秒35%概率发言（v960 寄售NPC购买已删除，转线上）
-setInterval(() => { try { if (Math.random() < 0.35) { C.chatNpc(S); } save(); } catch(e) {} }, 60000);
+setInterval(() => { try { const _li = (typeof MHXY !== 'undefined' && MHXY.isLoggedIn && MHXY.isLoggedIn()); if (!_li && Math.random() < 0.35) { C.chatNpc(S); } save(); } catch(e) {} }, 60000); // v973 登录后停掉 NPC 世界聊天刷屏
 
 /* ---------- 联机对战 v92：WebSocket 1v1 ---------- */
 const NET_URL = 'ws://localhost:8080'; // 上线时改成正式服务器地址
@@ -11090,10 +11111,25 @@ async function chatHistory(){
     var ms = r.json.messages || [];
     box.innerHTML = ms.map(chatMsgHtml).join('') || '<div class="hint">暂无消息，道友先开个头吧。</div>';
     box.scrollTop = box.scrollHeight;
+    try { window._srvChat = ms; } catch(_) {}
   } else {
     box.innerHTML = '<div class="hint">历史加载失败' + (r.netErr ? '（网络不通）' : '') + '</div>';
   }
 }
+// v973 悬浮窗世界频道：拉取真人聊天历史到缓存
+async function chatHistoryToCache(){
+  try {
+    var r = await api('/api/chat/history');
+    if (r.ok && r.json && r.json.ok){
+      window._srvChat = r.json.messages || [];
+      // 如果悬浮窗在世界频道，刷新显示
+      try {
+        if (window._chatTab === 'world' && document.getElementById('chatFloat') && document.getElementById('chatFloat').classList.contains('on') && typeof window.renderChatFloat === 'function') window.renderChatFloat();
+      } catch(_) {}
+    }
+  } catch(_){}
+}
+try { window.chatHistoryToCache = chatHistoryToCache; } catch(_){}
 function chatWsConnect(){
   if (!loggedIn() || M.chatWs) return;
   var tok = ls(LK.tok); if (!tok) return;
@@ -11107,11 +11143,19 @@ function chatWsConnect(){
       if (m.type === 'history' && box && Array.isArray(m.messages)){
         box.innerHTML = m.messages.map(chatMsgHtml).join('') || '<div class="hint">暂无消息</div>';
         box.scrollTop = box.scrollHeight;
+        try { window._srvChat = m.messages; } catch(_) {}
       } else if (m.type === 'chat' && m.message && box){
         var tmp = document.createElement('div'); tmp.innerHTML = chatMsgHtml(m.message);
         while (tmp.firstChild) box.appendChild(tmp.firstChild);
         while (box.children.length > 60) box.removeChild(box.firstChild);
         box.scrollTop = box.scrollHeight;
+        // v973 同步到悬浮窗缓存并刷新
+        try {
+          if (!Array.isArray(window._srvChat)) window._srvChat = [];
+          window._srvChat.push(m.message);
+          if (window._srvChat.length > 50) window._srvChat = window._srvChat.slice(-50);
+          if (window._chatTab === 'world' && document.getElementById('chatFloat') && document.getElementById('chatFloat').classList.contains('on') && typeof window.renderChatFloat === 'function') window.renderChatFloat();
+        } catch(_) {}
       }
     };
     ws.onclose = function(){ if (M.chatWs === ws) M.chatWs = null; };
