@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v970</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v971</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3039,6 +3039,71 @@ function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件�
   t.seen = 1; return { moved: true };
 }
 function advRetreat(S) { const run = S.run; if (!run || !run.grid) return null; return { lines: ['撤退'], end: advEnd(S, 'retreat') }; }
+// ======== v971 全服共享冒险地图 ========
+// 共享地图：固定布局，tile 状态全服共享，先到先得。未登录时走本地随机地图。
+async function advSharedInit(S) {
+  if (!MHXY.isLoggedIn || !MHXY.isLoggedIn()) return false;
+  try {
+    var hb = await MHXY.api('/api/advmap/heartbeat', { method: 'POST', body: {} });
+    if (!hb.ok || !hb.json || !hb.json.ok) return false;
+    var st = await MHXY.api('/api/advmap/state');
+    if (!st.ok || !st.json || !st.json.ok) return false;
+    S.run.shared = {
+      tiles: st.json.tiles,           // 6x6 [{t, state, respawn_in}]
+      players: st.json.players || [], // 其他玩家 [{username, player_no, x, y}]
+      on: true
+    };
+    // 同步本地位置到服务端位置
+    if (S.run.grid && st.json.my_pos) { S.run.grid.px = st.json.my_pos.x; S.run.grid.py = st.json.my_pos.y; }
+    // v971 共享模式：本地 tile 类型以服务端为准（事件触发用）
+    if (S.run.grid && S.run.grid.tiles) {
+      for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
+        if (st.json.tiles[_y] && st.json.tiles[_y][_x]) {
+          S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
+        }
+      }
+    }
+    advSharedPoll(S);
+    return true;
+  } catch (_) { return false; }
+}
+function advSharedStop() {
+  if (window._advPoll) { clearInterval(window._advPoll); window._advPoll = null; }
+  try { if (MHXY.isLoggedIn && MHXY.isLoggedIn()) MHXY.api('/api/advmap/leave', { method: 'POST', body: {} }); } catch (_) {}
+}
+function advSharedPoll(S) {
+  if (window._advPoll) clearInterval(window._advPoll);
+  window._advPoll = setInterval(async function() {
+    try {
+      if (!S.run || !S.run.shared || !S.run.shared.on) { clearInterval(window._advPoll); window._advPoll = null; return; }
+      var st = await MHXY.api('/api/advmap/state');
+      if (st.ok && st.json && st.json.ok) {
+        S.run.shared.tiles = st.json.tiles;
+        S.run.shared.players = st.json.players || [];
+        // v971 轮询时也同步 tile 类型
+        if (S.run.grid && S.run.grid.tiles) {
+          for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
+            if (st.json.tiles[_y] && st.json.tiles[_y][_x]) {
+              S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
+            }
+          }
+        }
+        // 如果冒险面板开着，刷新显示
+        if (typeof sheetRun === 'function' && S.run && S.run.grid) {
+          try { sheetRun(); } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }, 5000);
+}
+// 移动时同步位置到服务端（心跳）
+function advSharedHeartbeat(x, y) {
+  try {
+    if (MHXY.isLoggedIn && MHXY.isLoggedIn() && S.run && S.run.shared && S.run.shared.on) {
+      MHXY.api('/api/advmap/heartbeat', { method: 'POST', body: { x: x, y: y } });
+    }
+  } catch (_) {}
+}
 function advStart(S, dk) {
   const diff = DIFFS[dk]; if (!diff || S.dead || S.run || S.stamina < diff.cost) return null;
   const isWx = dk.startsWith('wx_');
@@ -3180,7 +3245,7 @@ async function advBattleSettle(S, run, b) { // 冒险战斗结算
   return { battle: b, win, lines: lines.filter(Boolean) };
 }
 async function advFight(S, run) { const b = advBattleSetup(S, run).auto(); return await advBattleSettle(S, run, b); }
-function advEnd(S, why) { const run = S.run; S.run = null; S.advVit = 0; const g = run.grid; return { dk: run.dk, why, rew: run.rew, steps: g ? g.moves : run.step, total: g ? (run.evCount | 0) : run.steps, grid: !!g, defeat: !!run.defeat, newSt: run.newSt || [] }; } // v182 格子：steps=走格数，total=触发事件数
+function advEnd(S, why) { const run = S.run; try { if (typeof advSharedStop === 'function') advSharedStop(); } catch(_) {} S.run = null; S.advVit = 0; const g = run.grid; return { dk: run.dk, why, rew: run.rew, steps: g ? g.moves : run.step, total: g ? (run.evCount | 0) : run.steps, grid: !!g, defeat: !!run.defeat, newSt: run.newSt || [] }; } // v182 格子：steps=走格数，total=触发事件数
 async function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _tp=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_tp) { S._trigFail=0; const _sc=[['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],['空气粘稠，呼吸不畅','金色雷纹在云中若隐若现','雷声如鼓，声声催心'],['灵气倒卷，阵法纹路浮现','云层裂开，白光倾泻','虚空嗡鸣，如大道低语'],['十里之内，鸟兽绝迹','雷光如瀑，倾天而下','威压先至，骨骼作响'],['天地灵气一空','云开一线，天眼似开','万籁俱寂，只闻心跳'],['凡尘涤荡，浊气尽散','雷柱接天，直贯九霄','天道之音，响彻神魂'],['仙器共鸣，嗡嗡作响','九彩劫云，遮天蔽日','法则碎片，四散飞溅'],['小世界灵气被抽空','虚空裂缝，蔓延天际','空间涟漪，层层荡开'],['数个小世界震动','劫云蔽星，日月无光','法则碰撞，星火四溅'],['三千世界战栗','灭世洪流，席卷星海','雷威吞声，万物噤声']]; const _s=_sc[Math.min(11,S.realm|0)]||_sc[0]; log('warn',C.thunderCloud(S)+' '+_s[0]+'。'+_s[1]+'。'+_s[2]+'……<br>雷云判定中……'); const _sp=Math.min(1,0.01+0.01*S._succFail); if(Math.random()<_sp){S.thunderOk=true;S._succFail=0;S._trigFail=0;log('good','⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破契机已到，随时可破');commit();} else {S._succFail++;log('info','<span style="filter:brightness(0)">🌫️</span> 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>');} } else { S._trigFail++; } } } catch(_){} // v674 冒险移动完整文案
   const run = S.run; if (!run) return null; if (S.dead) return { end: advEnd(S, 'dead') };
   const chs = advChoices(S), c = chs[i]; if (!c || c.dis) return { err: 'bad' };
@@ -3403,7 +3468,7 @@ function pkSettle(S, pk, chosen) {
 try { (typeof window !== 'undefined' ? window : globalThis).pkSettle = pkSettle; } catch(_) {} // v727 顶层导出pkSettle给script#2用
 
 // v960：本地寄售函数（consignList/consignCancel/consignBuy/consignTick/genMarket）已删除，转线上
-Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advChoices, advChoose, advAuto, advCtx, advNewEvent, lootTable, lootRoll, lootLabel, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, premiumChance, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
+Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advNewEvent, lootTable, lootRoll, lootLabel, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, premiumChance, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
   alcRate, potCountProbs, gradeProbs, brew, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
   genMonster, genOpponent, adventure, advBattleSetup, advBattleSettle, advEnd, advMove, advRetreat, sneakP, guardedLoot, pkStart, pkSurrender, pkSettle, applyZhenxiu, applyBtSuccess, applyFailState }); // v688 导出突破函数
 G.Core = C;
@@ -7007,13 +7072,32 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   const run = S.run; if (!run || !run.grid) return;
   const d = DIFFS[run.dk], g = run.grid, ev = run.ev, chs = ev ? C.advChoices(S) : [];
   const TICON = { start: '🟫', empty: '⬜', fight: '⚔️', fortune: '✨', chest: '🎁', gchest: '🎁', gherb: '🌿', trap: '⚠️', rest: '⛺' };
+  const shared = run.shared && run.shared.on ? run.shared : null;
+  // v971 其他玩家位置索引
+  const otherAt = {};
+  if (shared && shared.players) {
+    shared.players.forEach(function(p) { otherAt[p.x + ',' + p.y] = p; });
+  }
   let cells = '';
   for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
     const t = g.tiles[y][x], isP = x === g.px && y === g.py;
+    // v971 共享模式：tile 类型取服务端，本地 grid 只记位置
+    let tileT = t.t, tileCleared = false, tileRespawn = 0;
+    if (shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x]) {
+      const st = shared.tiles[y][x];
+      tileT = st.t; tileCleared = st.state === 'cleared'; tileRespawn = st.respawn_in | 0;
+    }
     let icon = '❓', cls = '';
     if (isP) { icon = `<img src="${avatarUrl()}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block">`; cls = ' me'; }
-    else if (t.t === 'exit') { icon = '🚪'; cls = ' exit'; }
-    else if (t.seen) icon = TICON[t.t] || '⬜';
+    else if (otherAt[x + ',' + y]) {
+      // v971 显示其他玩家
+      const op = otherAt[x + ',' + y];
+      icon = `<div style="font-size:10px;line-height:1;text-align:center">🧑<br><span style="font-size:8px">${String(op.username || '').slice(0, 4)}</span></div>`;
+      cls = ' other';
+    }
+    else if (tileT === 'exit') { icon = '🚪'; cls = ' exit'; }
+    else if (tileCleared) { icon = '<span style="opacity:0.35">💨</span>'; cls = ' cleared'; }
+    else if (t.seen || shared) icon = TICON[tileT] || '⬜';
     const _dist = Math.abs(x - g.px) + Math.abs(y - g.py);
     const _cheb = Math.max(Math.abs(x - g.px), Math.abs(y - g.py)); // v764 斜走用切比雪夫距离
     const _hasSk = S.skills && S.skills.includes('shukuchi');
@@ -7066,7 +7150,10 @@ function doAdventure(dk) {
     log('bad', `☠️ 毒发：进入冒险，生命 -${Math.round(loss)}（中毒时上限的10%）`);
     if (S.attrs.vit <= 0) { C.die(S, 'poison'); closeSheet(); afterAct(); commit(); return; }
   }
-  log('pk', `🗺️ ${DIFFS[dk].name}${dk.startsWith('wx_') ? '🖐️五行' : ''}冒险（-${DIFFS[dk].cost} 体力${dk.startsWith('wx_') ? ` -${C.WX_COST_XIAN} 仙力` : ''}，6×6 格子探索）`); afterAct(); commit(); sheetRun();
+  log('pk', `🗺️ ${DIFFS[dk].name}${dk.startsWith('wx_') ? '🖐️五行' : ''}冒险（-${DIFFS[dk].cost} 体力${dk.startsWith('wx_') ? ` -${C.WX_COST_XIAN} 仙力` : ''}，6×6 格子探索）`); afterAct(); commit();
+  // v971 全服共享地图：异步接入，成功后刷新面板
+  try { C.advSharedInit(S).then(function(ok) { if (ok && S.run) { try { sheetRun(); } catch (_) {} } }); } catch (_) {}
+  sheetRun();
 }
 async function doAdvChoose(i) {
   const ev = S.run && S.run.ev;
@@ -9816,9 +9903,12 @@ document.addEventListener('click', e => {
     try {
       const _now = Date.now();
       if (window._advMoveCd && _now - window._advMoveCd < 1000) return; // 1秒内不重复移动
-      window._advMoveCd = _now;
       const _gx = +d.advx, _gy = +d.advy, _run = S.run, _gr = _run && _run.grid;
-      if (_gr) {
+      if (!_gr) return;
+      // v971 共享地图：奖励格先 claim，成功才移动
+      const _shared = _run.shared && _run.shared.on ? _run.shared : null;
+      const _doMove = function() {
+        window._advMoveCd = Date.now();
         const _dx = _gx - _gr.px, _dy = _gy - _gr.py;
         const _cheb = Math.max(Math.abs(_dx), Math.abs(_dy));
         const _dist = Math.abs(_dx) + Math.abs(_dy);
@@ -9848,9 +9938,43 @@ document.addEventListener('click', e => {
           if (_r.ev && _r.ev.exitBoss) { /* 终点事件在sheetRun显示 */ }
           try { commit(); } catch(_) {}
           try { sheetRun(_r); } catch(_) {}
+          // v971 移动后同步位置到服务端
+          try { C.advSharedHeartbeat(_gx, _gy); } catch(_) {}
+          return;
+        }
+      }; // end _doMove
+      // v971 共享地图 claim 检查
+      if (_shared && _shared.tiles && _shared.tiles[_gy] && _shared.tiles[_gy][_gx]) {
+        const _st = _shared.tiles[_gy][_gx];
+        if (['fight', 'gchest', 'gherb'].indexOf(_st.t) >= 0) {
+          if (_st.state === 'cleared') {
+            try { toastLog('sys', '💨 来晚了一步，这个格子刚被别人清理了'); } catch(_) {}
+            return;
+          }
+          // 异步 claim
+          window._advMoveCd = _now;
+          MHXY.api('/api/advmap/claim', { method: 'POST', body: { x: _gx, y: _gy } }).then(function(r) {
+            if (r.ok && r.json && r.json.ok) {
+              // claim 成功：更新本地 tile 状态，执行移动
+              _st.state = 'cleared';
+              _doMove();
+            } else {
+              try { toastLog('sys', '💨 慢了一步，被别人抢先了'); } catch(_) {}
+              // 刷新共享状态
+              MHXY.api('/api/advmap/state').then(function(sr) {
+                if (sr.ok && sr.json && sr.json.ok && S.run && S.run.shared) {
+                  S.run.shared.tiles = sr.json.tiles;
+                  S.run.shared.players = sr.json.players || [];
+                  try { sheetRun(); } catch(_) {}
+                }
+              });
+            }
+          });
           return;
         }
       }
+      // 非共享模式或非奖励格：直接移动
+      _doMove();
     } catch(_) {}
   }
   else if (d.advretreat !== undefined) doAdvRetreat();
