@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v973</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v974</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10921,6 +10921,7 @@ function panel(){
       + '<button class="btn full" data-mhxysync>☁️ 同步存档</button>'
       + '<button class="btn full" data-mhxydown>⬇️ 下载云档</button>'
       + '</div>'
+      + '<div class="row" id="mhxyGmRow" style="display:none"><button class="btn gold full" data-mhxygm>🛠️ GM 管理</button></div>'
       + (isGuest()
         ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
         : '')
@@ -10928,6 +10929,13 @@ function panel(){
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
   }
   try{ openSheet(html); }catch(_){}
+  // v974 GM 按钮：仅服主显示
+  try {
+    gmCheck().then(function(isGm){
+      var row = document.getElementById('mhxyGmRow');
+      if (row) row.style.display = isGm ? 'block' : 'none';
+    });
+  } catch(_) {}
 }
 function val(id){ var el = null; try{ el = document.getElementById(id); }catch(_){} return el ? (el.value || '').trim() : ''; }
 
@@ -11092,6 +11100,57 @@ async function onlinePlayers(){
 function chatName(m){ return escH(m.username || '?') + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; }
 function chatMsgHtml(m){
   return '<div class="chat-msg"><b style="color:#7ec8ff">' + chatName(m) + '</b>：' + escH(m.text) + '</div>';
+}
+/* ---------- GM 管理面板（v974） ---------- */
+async function gmCheck(){
+  try {
+    var r = await api('/api/gm/check');
+    return r.ok && r.json && r.json.ok && r.json.is_gm;
+  } catch(_) { return false; }
+}
+function gmPanel(){
+  openSheet('<h2>🛠️ GM 管理</h2><div class="hint">直接修改服务端存档（绕过防作弊限制）。仅服主可见。</div>'
+    + '<div class="hint">设数值：</div>'
+    + '<div class="row" style="display:flex;gap:6px">'
+    + '<select id="gmField" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
+    + '<option value="gold">金元</option><option value="xianyu">仙玉</option><option value="petEggs">宠物蛋</option>'
+    + '<option value="level">等级</option><option value="realm">境界</option><option value="mana">法力</option>'
+    + '<option value="xp">经验</option><option value="lifespan">寿元</option>'
+    + '</select>'
+    + '<input id="gmValue" type="number" placeholder="数值" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
+    + '<button class="btn gold" data-mhxygmset>设置</button></div>'
+    + '<div class="hint" style="margin-top:8px">发物品：</div>'
+    + '<div class="row" style="display:flex;gap:6px">'
+    + '<select id="gmStore" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
+    + '<option value="ores">矿石</option><option value="mats">材料</option><option value="meds">药品</option>'
+    + '<option value="elixirs">丹药</option><option value="inv">杂物</option><option value="eggs">蛋</option>'
+    + '</select>'
+    + '<input id="gmKey" placeholder="物品key" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
+    + '<input id="gmN" type="number" value="99" style="width:70px;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
+    + '<button class="btn gold" data-mhxygmgive>发放</button></div>'
+    + '<div id="gmMsg" class="hint" style="margin-top:8px"></div>'
+    + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
+}
+async function gmDoSet(){
+  var f = val('gmField'), v = val('gmValue');
+  var msg = document.getElementById('gmMsg');
+  if (!v) { if (msg) msg.textContent = '请输入数值'; return; }
+  var r = await api('/api/gm/set', { method:'POST', body:{ field:f, value:parseInt(v,10) } });
+  if (msg) {
+    if (r.ok && r.json && r.json.ok) msg.textContent = '✅ 已设置 ' + f + ' = ' + r.json.value;
+    else msg.textContent = '❌ 失败：' + ((r.json||{}).error || r.status);
+  }
+  if (r.ok && r.json && r.json.ok) { try { syncNow(false); } catch(_) {} }
+}
+async function gmDoGive(){
+  var s = val('gmStore'), k = val('gmKey'), n = val('gmN');
+  var msg = document.getElementById('gmMsg');
+  if (!k) { if (msg) msg.textContent = '请输入物品key'; return; }
+  var r = await api('/api/gm/give', { method:'POST', body:{ store:s, key:k, n:parseInt(n,10)||1 } });
+  if (msg) {
+    if (r.ok && r.json && r.json.ok) msg.textContent = '✅ 已发放 ' + k + ' ×' + r.json.n + '（现有 ' + r.json.total + '）';
+    else msg.textContent = '❌ 失败：' + ((r.json||{}).error || r.status);
+  }
 }
 function chatPanel(){
   M.chatOpen = true;
@@ -11315,6 +11374,9 @@ function onClick(d, t, e){
   if ('mhxylogout' in d){ doLogout(); return true; }
   if ('mhxysync' in d){ syncNow(true); return true; }
   if ('mhxydown' in d){ downloadSave(false).then(function(){ panel(); }); return true; }
+  if ('mhxygm' in d){ gmPanel(); return true; }
+  if ('mhxygmset' in d){ gmDoSet(); return true; }
+  if ('mhxygmgive' in d){ gmDoGive(); return true; }
   if ('mhxychat' in d){ chatPanel(); return true; }
   if ('mhxychatsend' in d){ chatSend(); return true; }
   if ('mhxypk' in d){ pkPanel(); return true; }
