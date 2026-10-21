@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1009</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1010</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5235,7 +5235,8 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         if (_loggedIn) {
           // v973 真人世界聊天：显示服务端消息
           const _srv = (window._srvChat || []).slice(-20);
-          msgs = _srv.map(m => { var _xh = m.xHandle ? '<span style="color:#1d9bf0">@' + esc(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : ''; return `<div class="chat-msg"><b style="color:#7ec8ff">${_xh}${esc(m.n || m.username || '道友')}</b>：${esc(m.t || m.text)}</div>`; }).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
+          const _dispName = m => { if (m.rname) return m.rname; if (m.roleName) return m.roleName; try { const ps = window._worldPlayers || []; for (const p of ps) { if (p && p.player_no != null && m.playerNo != null && String(p.player_no) === String(m.playerNo) && p.username) return p.username; } } catch(_) {} return m.n || m.username || '道友'; }; // v1010 道号优先
+          msgs = _srv.map(m => { var _xh = (m.xHandle && !m.xHidden && !m.x_hide) ? '<span style="color:#1d9bf0">@' + esc(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : (((m.xHidden || m.x_hide) && m.xVerified) ? '<span style="color:#1d9bf0">✓</span> ' : ''); return `<div class="chat-msg"><b style="color:#7ec8ff">${_xh}${esc(_dispName(m))}</b>：${esc(m.t || m.text)}</div>`; }).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
           // 确保连接 WS 并拉取历史
           try { if (typeof chatWsConnect === 'function') chatWsConnect(); } catch(_) {}
           try { if (typeof chatHistoryToCache === 'function') chatHistoryToCache(); } catch(_) {}
@@ -10280,10 +10281,11 @@ var M = {
 /* ---------- 主面板 ---------- */
 function xRowInputHtml(){ return '<input id="mhxyXSet" maxlength="16" placeholder="X 用户名（如 @feyelo）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn" data-mhxyxset>绑定</button>'; }
 function xRowHtml(){ var h = ''; try { h = localStorage.getItem('mhxy_xh') || ''; } catch(_) {}
-  if (h) return '<span style="flex:1">𝕏 已绑定 <span style="color:#1d9bf0">@' + escH(String(h).replace(/^@/, '')) + '</span> <span style="color:#7ee787">✓</span></span><button class="btn" data-mhxyxrebind>换绑</button>';
+  if (h) return '<span style="flex:1">𝕏 已绑定 <span style="color:#1d9bf0">@' + escH(String(h).replace(/^@/, '')) + '</span> <span style="color:#7ee787">✓</span></span>';
   return xRowInputHtml(); }
+function xHideRowHtml(){ var hid = ''; try { hid = localStorage.getItem('mhxy_xhide') || ''; } catch(_) {} var on = hid === '1'; return '<span style="flex:1">👁 X 账号在聊天中：' + (on ? '<b class="y">已隐藏</b>（只显示 ✓）' : '<b>公开显示</b>') + '</span><button class="btn" data-mhxyxhide>' + (on ? '改为显示' : '隐藏') + '</button>'; } // v1010 X 隐藏开关
 function refreshXRow(){ var row = document.getElementById('mhxyXRow'); if (!row) return; row.innerHTML = xRowHtml();
-  api('/api/profile/me').then(function(r){ if (r.ok && r.json && r.json.ok){ var h = r.json.x_handle || r.json.xHandle || ''; try { if (h) localStorage.setItem('mhxy_xh', h); else localStorage.removeItem('mhxy_xh'); if (r.json.x_verified != null) localStorage.setItem('mhxy_xv', r.json.x_verified ? '1' : '0'); } catch(_) {} var row2 = document.getElementById('mhxyXRow'); if (row2) row2.innerHTML = xRowHtml(); } });
+  api('/api/profile/me').then(function(r){ if (r.ok && r.json && r.json.ok){ var h = r.json.x_handle || r.json.xHandle || ''; try { if (h) localStorage.setItem('mhxy_xh', h); else localStorage.removeItem('mhxy_xh'); if (r.json.x_verified != null) localStorage.setItem('mhxy_xv', r.json.x_verified ? '1' : '0'); } catch(_) {} var row2 = document.getElementById('mhxyXRow'); if (row2) row2.innerHTML = xRowHtml(); try { if (r.json.x_hide != null) localStorage.setItem('mhxy_xhide', r.json.x_hide ? '1' : '0'); } catch(_) {} var _hr2 = document.getElementById('mhxyXHideRow'); if (_hr2) _hr2.innerHTML = xHideRowHtml(); } });
 }
 function panel(){
   var html;
@@ -10309,6 +10311,7 @@ function panel(){
       + '</div>'
       + '<div class="row" id="mhxyGmRow" style="display:none"><button class="btn gold full" data-mhxygm>🛠️ GM 管理</button></div>'
       + '<div class="row" id="mhxyXRow" style="display:flex;gap:6px;align-items:center">' + xRowHtml() + '</div>'
+      + '<div class="row" id="mhxyXHideRow" style="display:flex;gap:6px;align-items:center">' + xHideRowHtml() + '</div>'
       + '<div class="row" id="mhxyXVerifyRow" style="display:none;flex-direction:column;gap:6px"><span class="hint" id="mhxyXCode"></span><div style="display:flex;gap:6px"><input id="mhxyTweetUrl" placeholder="推文链接（x.com/你的号/status/…）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-mhxyxverify>验证</button></div></div>'
       + (isGuest()
         ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
@@ -10512,7 +10515,8 @@ async function onlinePlayers(){
 }
 
 /* ---------- 真人聊天 ---------- */
-function chatName(m){ var xh = m.xHandle ? '<span style="color:#1d9bf0">@' + escH(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : ''; return xh + escH(m.username || '?') + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; }
+function chatDispName(m){ if (!m) return '?'; if (m.rname) return m.rname; if (m.roleName) return m.roleName; try { var ps = window._worldPlayers || []; for (var i = 0; i < ps.length; i++){ var p = ps[i]; if (p && p.player_no != null && m.playerNo != null && String(p.player_no) === String(m.playerNo) && p.username) return p.username; } } catch(_) {} return m.username || m.n || '?'; } // v1010 道号优先
+function chatName(m){ var _hid = m.xHidden || m.x_hide; var xh = (m.xHandle && !_hid) ? '<span style="color:#1d9bf0">@' + escH(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : ((_hid && m.xVerified) ? '<span style="color:#1d9bf0">✓</span> ' : ''); return xh + escH(chatDispName(m)) + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; } // v1010 隐藏时只显 ✓
 function chatMsgHtml(m){
   return '<div class="chat-msg"><b style="color:#7ec8ff">' + chatName(m) + '</b>：' + escH(m.text) + '</div>';
 }
@@ -10810,6 +10814,7 @@ function onClick(d, t, e){
     });
     return true;
   }
+  if ('mhxyxhide' in d){ var _cur = ''; try { _cur = localStorage.getItem('mhxy_xhide') || ''; } catch(_) {} var _to = _cur === '1' ? 0 : 1; api('/api/profile/x_hide', { method:'POST', body:{ x_hide: _to } }).then(function(r){ if (r.ok && r.json && r.json.ok){ try { localStorage.setItem('mhxy_xhide', _to ? '1' : '0'); } catch(_) {} var _hr = document.getElementById('mhxyXHideRow'); if (_hr) _hr.innerHTML = xHideRowHtml(); glog('good', _to ? '🌐 X 账号已隐藏（聊天中只显示 ✓）' : '🌐 X 账号已改为公开显示'); } else { glog('bad', '🌐 X 显示设置失败：' + ((r.json && r.json.error) || ('HTTP ' + r.status))); } }).catch(function(){ glog('bad', '🌐 X 显示设置失败：网络异常'); }); return true; } // v1010
   if ('mhxyxrebind' in d){ var _xr = document.getElementById('mhxyXRow'); if (_xr) _xr.innerHTML = xRowInputHtml(); return true; }
   if ('mhxyxset' in d){
     var _xh = val('mhxyXSet');
