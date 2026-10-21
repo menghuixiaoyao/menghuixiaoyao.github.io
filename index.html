@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1010</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1011</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1710,7 +1710,8 @@ function doAfkChoose(type) {
   if (!type) {
     const _luo = C.maiLuo(S), _xp = (S.maiShuXp|0);
     const _lgT = window.LG ? `\\n🌟灵根${window.LG.name(S)}：闭关收益 ${window.LG.afkTxt(S)}` : '';
-    const isVein = confirm(`🧘 选择闭关地点：\\n\\n🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）+ 开脉术经验 ${_xp}（闭关每秒 +${_luo + _xp}）${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每秒+${2 + _luo + _xp}法力，每分钟1%被挑战）\\n取消 = 🏔️ 洞府闭关（安全，每秒+${1 + _luo + _xp}法力）`);
+    const _isXian = (S.realm|0) >= 8, _gainTxt = _isXian ? '仙力' : '法力';
+    const isVein = confirm(`🧘 选择闭关地点：\\n\\n🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）+ 开脉术经验 ${_xp}（闭关每秒 +${_luo + _xp}）${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每秒+${2 + _luo + _xp}${_gainTxt}，每分钟1%被挑战）\\n取消 = 🏔️ 洞府闭关（安全，每秒+${1 + _luo + _xp}${_gainTxt}）`);
     type = isVein ? 'vein' : 'cave';
   }
   // 开关：如果已在该闭关中则出关，否则进入（切换时先结算）
@@ -5000,11 +5001,11 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           if (isTrainCell) {
             if (w.px === x && w.py === y) {
               if ((S.stamina|0) <= 0) { // v564 体力耗尽点⛰️区直接进闭关二选一，不再弹体力不足
-                const _im = (S.realm|0) === 0;
+                const _im = (S.realm|0) === 0, _ix = (S.realm|0) >= 8;
                 const _ct = _im ? 'wushu' : 'cave', _vt = _im ? 'ningqi' : 'vein';
                 const _cn = _im ? '🥋 习武' : '🏔️ 洞府闭关', _vn = _im ? '🌀 凝气' : '⛰️ 灵脉闭关';
-                const _cd = _im ? '每分钟+1经验，安全' : '每秒+1法力，安全无风险';
-                const _vd = _im ? '每小时凝气判定，攒引气入体' : '每秒+2法力，可凝气🌀，每分钟1%被挑战';
+                const _cd = _im ? '每分钟+1经验，安全' : (_ix ? '每秒+1仙力，参悟法则，安全无风险' : '每秒+1法力，安全无风险');
+                const _vd = _im ? '每小时凝气判定，攒引气入体' : (_ix ? '每秒+2仙力，参悟法则，每分钟1%被挑战' : '每秒+2法力，可凝气🌀，每分钟1%被挑战');
                 if (typeof openSheet === 'function') openSheet(`<h2>⛰️ 闭关</h2><div class="grid2"><button class="btn" onclick="window._afkFromMap('${_ct}','${_cn}')">${_cn}<br><small>${_cd}</small></button><button class="btn" onclick="window._afkFromMap('${_vt}','${_vn}')">${_vn}<br><small>${_vd}</small></button></div>`);
                 return;
               }
@@ -5177,11 +5178,11 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (typeof isPortal2 !== 'undefined' && isPortal2 && typeof sheetAdventure === 'function') { sheetAdventure(); return; }
             if (typeof isShop2 !== 'undefined' && isShop2 && typeof sheetShop === 'function') { sheetShop(); return; }
             if (typeof isTrain2 !== 'undefined' && isTrain2) { // v463 改洞府/灵脉闭关二选一；v464 描述写详细
-              const _isMortal = (S.realm|0) === 0;
+              const _isMortal = (S.realm|0) === 0, _isXian = (S.realm|0) >= 8;
               const _caveT = _isMortal ? 'wushu' : 'cave', _veinT = _isMortal ? 'ningqi' : 'vein';
               const _caveN = _isMortal ? '🥋 习武' : '🏔️ 洞府闭关', _veinN = _isMortal ? '🌀 凝气' : '⛰️ 灵脉闭关';
-              const _caveD = _isMortal ? '每分钟+1经验，安全' : '每秒+1法力，安全无风险';
-              const _veinD = _isMortal ? '每小时凝气判定，攒引气入体' : '每秒+2法力，可凝气🌀，每分钟1%被挑战';
+              const _caveD = _isMortal ? '每分钟+1经验，安全' : (_isXian ? '每秒+1仙力，参悟法则，安全无风险' : '每秒+1法力，安全无风险');
+              const _veinD = _isMortal ? '每小时凝气判定，攒引气入体' : (_isXian ? '每秒+2仙力，参悟法则，每分钟1%被挑战' : '每秒+2法力，可凝气🌀，每分钟1%被挑战');
               if (typeof openSheet === 'function') openSheet(`<h2>⛰️ 闭关</h2><div class="grid2"><button class="btn" onclick="window._afkFromMap('${_caveT}','${_caveN}')">${_caveN}<br><small>${_caveD}</small></button><button class="btn" onclick="window._afkFromMap('${_veinT}','${_veinN}')">${_veinN}<br><small>${_veinD}</small></button></div><div class="hint" style="margin-top:8px">🌫️ 天地灵气 <b class="y">${C.qiTierName(C.qiNow())}</b>（${Math.round(C.qiNow())}/100）· 闭关收益 ×${C.qiFactor().toFixed(2)}。灵气全服同享：衰则末法、盛则潮汐。往灵脉投灵石可聚灵——</div><div class="grid2" style="grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px"><button class="btn" data-juling="sp1:1">聚灵·灵气石×1<br><small>持有 ${S.ores.sp1|0} · +1</small></button><button class="btn" data-juling="sp1:10">聚灵·灵气石×10<br><small>+10</small></button><button class="btn" data-juling="sp2:1">聚灵·下品×1<br><small>持有 ${S.ores.sp2|0} · +4</small></button><button class="btn" data-juling="sp2:10">聚灵·下品×10<br><small>+40</small></button></div>`);
               return;
             }
