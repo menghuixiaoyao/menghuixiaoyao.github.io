@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1000</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1001</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4148,7 +4148,7 @@ window.doHerbGather = async function() { // v666 一次采1株
         S.herbs[j.key] = (S.herbs[j.key]|0) + 1;
         if (S.herbGarden) S.herbGarden.h = Math.max(0, (S.herbGarden.h|0) - 1);
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        const hn = j.key === 'lq1' ? '一品灵草' : '二品灵草';
+        const hn = j.key === 'lq1' ? '地品灵草' : '天品灵草';
         log('good', `🌱 在田药园采集：${hn}×1（剩余${S.herbGarden ? S.herbGarden.h|0 : 0}株）`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openHerbSheet();
@@ -4162,11 +4162,11 @@ window.doHerbGather = async function() { // v666 一次采1株
   herbTick(S);
   const hg = S.herbGarden;
   if ((hg.h|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
-  const hk = Math.random() < 0.7 ? 'lq1' : 'lq2'; // 一品灵草/二品灵草
+  const hk = Math.random() < 0.7 ? 'lq1' : 'lq2'; // 地品灵草/天品灵草
   if (!S.herbs) S.herbs = {};
   S.herbs[hk] = (S.herbs[hk]|0) + 1;
   hg.h--;
-  const hn = hk === 'lq1' ? '一品灵草' : '二品灵草';
+  const hn = hk === 'lq1' ? '地品灵草' : '天品灵草';
   log('good', `🌱 在田药园采集：${hn}×1（剩余${hg.h}株）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openHerbSheet();
@@ -4343,11 +4343,18 @@ window.doRanchGather = function() {
   commit(); renderWorldMap();
   if (typeof toastLog === 'function') toastLog('good', `收获成功：肉×${mn} 蛋×${en}`);
 }; // v541
+// v1001 矿区三档：一档(金丹-)60% / 二档(元婴+)30% / 三档(仙人+)10%，未解锁落回最高已解锁档
+window._mineTier = function() {
+  const r = Math.random();
+  let t = r < 0.6 ? 0 : r < 0.9 ? 1 : 2;
+  const mx = (S.realm|0) >= 8 ? 2 : (S.realm|0) >= 4 ? 1 : 0;
+  return Math.min(t, mx);
+};
 window.doReserveHerb = async function() { // v558 采草药；v666 一次采1株
   // v962 彻底版：登录在线时走服务端掷骰发放（系统记账，不限流）；网络失败/未登录回落本地逻辑
   if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
     try {
-      const r = await MHXY.api('/api/roll/gather', {method:'POST', body:{}});
+      const r = await MHXY.api('/api/roll/gather', {method:'POST', body:{from:'reserve'}});
       const j = r && r.json;
       if (r.ok && j && j.key) {
         if (!S.herbs) S.herbs = {};
@@ -4368,11 +4375,11 @@ window.doReserveHerb = async function() { // v558 采草药；v666 一次采1株
   reserveTick(S);
   const rn = S.reserveNode;
   if ((rn.h|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有草药'); return; }
-  const hk = Math.random() < 0.7 ? 'lq1' : 'lq2';
+  const hk = ['lq1', 'lq2', 'lq3'][window._mineTier()]; // v1001 三档
   if (!S.herbs) S.herbs = {};
   S.herbs[hk] = (S.herbs[hk]|0) + 1;
   rn.h--;
-  const hn = hk === 'lq1' ? '一品灵草' : '二品灵草';
+  const hn = ({ lq1: '地品灵草', lq2: '天品灵草', lq3: '仙品灵草' })[hk];
   log('good', `🌿 在灵脉矿区采集：${hn}×1（剩余${rn.h}株）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
@@ -4403,8 +4410,8 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
   reserveTick(S);
   const rn = S.reserveNode;
   if ((rn.o|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
-  const oreKeys = Object.keys(C.ORES || {});
-  const k = oreKeys[Math.floor(Math.random() * oreKeys.length)];
+  const _opool = [['iron', 'copper'], ['silver', 'gold'], ['sp1', 'sp2', 'sp3']][window._mineTier()]; // v1001 三档
+  const k = _opool[Math.floor(Math.random() * _opool.length)];
   let knm = '矿石';
   if (k) { if (!S.ores) S.ores = {}; S.ores[k] = (S.ores[k]|0) + 1; knm = (C.ORES[k] && C.ORES[k].name) || k; }
   rn.o--;
@@ -4439,7 +4446,7 @@ window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
   const rn = S.reserveNode;
   if ((rn.v|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
   const veinNames = ['低级灵脉', '中级灵脉', '高级灵脉'];
-  const vtn = rn.vt | 0;
+  const vtn = window._mineTier(); // v1001 三档：每次采集掷档
   if (!S.veins) S.veins = [0, 0, 0];
   S.veins[vtn] = (S.veins[vtn] | 0) + 1;
   rn.v--;
@@ -4458,7 +4465,7 @@ window.doReserveGather = function() {
   const vn = rn.v | 0;
   if (vn > 0) {
     if (!S.veins) S.veins = [0, 0, 0];
-    S.veins[rn.vt | 0] = (S.veins[rn.vt | 0] | 0) + vn;
+    for (let _vi = 0; _vi < vn; _vi++) { const _vt2 = window._mineTier(); S.veins[_vt2] = (S.veins[_vt2] | 0) + 1; }
   }
   // 草药：随机种类
   const herbKeys = Object.keys(C.HERBS || {});
@@ -4472,18 +4479,18 @@ window.doReserveGather = function() {
     const k = oreKeys[Math.floor(Math.random() * oreKeys.length)];
     if (k) { S.ores[k] = (S.ores[k] | 0) + 1; ores.push(k); }
   }
-  const hn = rn.h, on = rn.o, vnn = rn.v | 0, vtn = rn.vt | 0;
+  const hn = rn.h, on = rn.o, vnn = rn.v | 0, vtn = 0;
   rn.h = 0; rn.o = 0; rn.v = 0;
-  log('good', `⛏️ 在灵脉矿区采集：草药×${hn}、矿石×${on}` + (vnn > 0 ? `、${veinNames[vtn]}×${vnn}` : ''));
+  log('good', `⛏️ 在灵脉矿区采集：草药×${hn}、矿石×${on}` + (vnn > 0 ? `、灵脉×${vnn}` : ''));
   commit(); renderWorldMap();
-  if (typeof toastLog === 'function') toastLog('good', `采集成功：草药×${hn} 矿石×${on}` + (vnn > 0 ? ` ${veinNames[vtn]}×${vnn}` : ''));
+  if (typeof toastLog === 'function') toastLog('good', `采集成功：草药×${hn} 矿石×${on}` + (vnn > 0 ? ` 灵脉×${vnn}` : ''));
 }; // v536
 // v666 三区采集面板（逐个采集，采后刷新数量）
 window.openReserveSheet = function() {
   try {
     reserveTick(S); const rn = S.reserveNode;
     const _vn = ['低级灵脉','中级灵脉','高级灵脉'];
-    const vtxt = (rn.v|0) > 0 ? _vn[rn.vt|0] + '×' + rn.v : '无';
+    const vtxt = (rn.v|0) > 0 ? '灵脉×' + rn.v : '无';
     openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="gatherProgWrap('采灵脉中……',doReserveVein)" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button><button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
@@ -6675,7 +6682,7 @@ function auc3Daily(S) {
 function auc3GenNpcItem(S) {
   // NPC随机拍品：矿石或药草
   const ores = [['iron', '铁矿', '⚫', 20], ['copper', '铜矿', '🟤', 50], ['silver', '银矿', '⚪', 120], ['gold', '金矿', '🟡', 300], ['sp1', '灵气石', '🪨', 100]];
-  const herbs = [['lq1', '一品灵草', '🌿', 30], ['lq2', '二品灵草', '🌱', 80]];
+  const herbs = [['lq1', '地品灵草', '🌿', 30], ['lq2', '天品灵草', '🌱', 80], ['lq3', '仙品灵草', '🌿', 200]];
   const pool = Math.random() < 0.6 ? ores : herbs;
   const it = pool[Math.floor(Math.random() * pool.length)];
   const qty = 1 + Math.floor(Math.random() * 5);
