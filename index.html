@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1001</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1002</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4137,6 +4137,12 @@ function herbHas(S) {
   herbTick(S);
   return (S.herbGarden.h > 0);
 }
+// v1002 草药品阶配色：地品蓝 / 天品黄 / 仙品红（Ye 定）
+window._herbHtml = function(key, name) {
+  const c = { lq1: '#6db3ff', lq2: '#ffd94d', lq3: '#ff5f57' }[key];
+  const n = name || ({ lq1: '地品灵草', lq2: '天品灵草', lq3: '仙品灵草' })[key] || key;
+  return c ? '<b style="color:' + c + '">' + n + '</b>' : n;
+};
 window.doHerbGather = async function() { // v666 一次采1株
   // v966 彻底版：登录在线时走服务端
   if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
@@ -4148,7 +4154,7 @@ window.doHerbGather = async function() { // v666 一次采1株
         S.herbs[j.key] = (S.herbs[j.key]|0) + 1;
         if (S.herbGarden) S.herbGarden.h = Math.max(0, (S.herbGarden.h|0) - 1);
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        const hn = j.key === 'lq1' ? '地品灵草' : '天品灵草';
+        const hn = window._herbHtml(j.key);
         log('good', `🌱 在田药园采集：${hn}×1（剩余${S.herbGarden ? S.herbGarden.h|0 : 0}株）`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openHerbSheet();
@@ -4166,7 +4172,7 @@ window.doHerbGather = async function() { // v666 一次采1株
   if (!S.herbs) S.herbs = {};
   S.herbs[hk] = (S.herbs[hk]|0) + 1;
   hg.h--;
-  const hn = hk === 'lq1' ? '地品灵草' : '天品灵草';
+  const hn = window._herbHtml(hk);
   log('good', `🌱 在田药园采集：${hn}×1（剩余${hg.h}株）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openHerbSheet();
@@ -4361,10 +4367,10 @@ window.doReserveHerb = async function() { // v558 采草药；v666 一次采1株
         S.herbs[j.key] = (S.herbs[j.key]|0) + 1;
         if (S.reserveNode) S.reserveNode.h = j.remaining;
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        log('good', `🌿 在灵脉矿区采集：${j.name}×1（剩余${j.remaining}株）`);
+        log('good', `🌿 在灵脉矿区采集：${window._herbHtml(j.key, j.name)}×1（剩余${j.remaining}株）`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openReserveSheet();
-        if (typeof toastLog === 'function') toastLog('good', `采集${j.name}×1`);
+        if (typeof toastLog === 'function') toastLog('good', `采集${window._herbHtml(j.key, j.name)}×1`);
         return;
       }
       if (j && j.error === 'no_herb') { if (typeof toastLog === 'function') toastLog('sys', '没有草药'); return; }
@@ -4379,7 +4385,7 @@ window.doReserveHerb = async function() { // v558 采草药；v666 一次采1株
   if (!S.herbs) S.herbs = {};
   S.herbs[hk] = (S.herbs[hk]|0) + 1;
   rn.h--;
-  const hn = ({ lq1: '地品灵草', lq2: '天品灵草', lq3: '仙品灵草' })[hk];
+  const hn = window._herbHtml(hk);
   log('good', `🌿 在灵脉矿区采集：${hn}×1（剩余${rn.h}株）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
@@ -4399,7 +4405,7 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
         log('good', `⛏️ 在灵脉矿区采集：${j.name}×1（剩余${j.remaining}块）`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openReserveSheet();
-        if (typeof toastLog === 'function') toastLog('good', `采集${j.name}×1`);
+        if (typeof toastLog === 'function') toastLog('good', `采集${window._herbHtml(j.key, j.name)}×1`);
         return;
       }
       if (j && j.error === 'no_ore') { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
