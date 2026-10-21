@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v989</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v990</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6325,8 +6325,11 @@ function starChartHtml() {
     const ps = STAR_PTS.filter(p => p[0] === m && p[1] === view);
     if (ps.length < 3) continue;
     const n = Math.max(2, Math.ceil(ps.length / 5));
-    for (let k = 0; k < n; k++) {
-      const q = starPos(cal, ext, ps[Math.floor((k + 0.5) * ps.length / n)]);
+    const idxs = new Set();
+    for (let k = 0; k < n; k++) idxs.add(Math.floor((k + 0.5) * ps.length / n));
+    idxs.add(ps.length - 1); // v990 末端（指尖/趾尖）必落一朵云
+    for (const ix of idxs) {
+      const q = starPos(cal, ext, ps[ix]);
       inner += `<svg style="position:absolute;left:${q[0].toFixed(2)}%;top:${q[1].toFixed(2)}%;width:30px;height:30px;margin:-15px 0 0 -15px;overflow:visible;filter:drop-shadow(0 0 3px rgba(255,205,92,.75))" viewBox="0 0 24 24"><path d="${STAR_CLOUD}" fill="none" stroke="#ffcd5c" stroke-width="1.7" stroke-linecap="round"/></svg>`;
     }
   }
