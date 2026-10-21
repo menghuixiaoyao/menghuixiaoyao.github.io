@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1007</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1008</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5237,6 +5237,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           try { if (typeof chatHistoryToCache === 'function') chatHistoryToCache(); } catch(_) {}
         } else {
           msgs = (S.chatLog || []).filter(m => m.sys || m.announce).slice(-20).map(m => m.announce ? `<div class="chat-announce" style="font-size:11px">📢 ${esc(m.t)}</div>` : `<div class="chat-msg"><b style="color:#7ec8ff">${esc(m.n)}</b>：${esc(m.t)}</div>`).join('') || '<div class="hint">暂无消息</div>';
+          msgs = '<div class="hint" style="color:#ffb84d">⚠️ 未登录真人联机：这里是游戏内通告，发言进不了世界（菜单 → 真人联机 登录）</div>' + msgs; // v1008
         }
       } else if (tab === 'sect') {
         if (!S.sect) { hint = '尚未开设宗门（仙缘→开设宗门）'; canSend = false; }
@@ -5506,6 +5507,7 @@ function renderActions() {
     ${((S.realm|0) >= 8 || (S.dongfuGrids|0) + (S.xianfuGrids|0) > 0) ? `<div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act" data-a="cave" style="flex:1;padding:2px;min-height:0"><span class="t" style="font-size:10px">🏔️ 洞府</span><span class="s" style="font-size:8px">${(S.dongfuGrids|0)+(S.xianfuGrids|0)>0 ? `${S.dongfuGrids|0}格${(S.xianfuGrids|0)>0?`+${S.xianfuGrids|0}仙府`:''}` : '仙家洞府'}</span></button></div>` : ''}
     <div id="chatInputRow" style="display:flex;grid-column:1/-1;gap:6px;align-items:center"><input id="cfInput" maxlength="100" placeholder="说点什么…" style="flex:1;padding:6px 8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff;font-size:12px"><button data-cfsend style="padding:6px 12px;border-radius:6px;background:#c9a227;color:#000;font-size:12px;flex:none">发送</button></div>`; // v475 功能区整体缩小；v509 聊天输入放功能栏
   setTimeout(() => {
+    const _cfi = $('cfInput'); if (_cfi && !_cfi._bound) { _cfi._bound = 1; _cfi.onkeydown = e => { if (e.key === 'Enter') { const _sb = document.querySelector('[data-cfsend]'); if (_sb) _sb.click(); } }; } // v1008 回车发送
     const bb2 = $('burnBloodBtn'); if (bb2) bb2.onclick = () => { S.burnBlood = !S.burnBlood; save(); render(); toastLog('sys', `🔥燃血已${S.burnBlood ? '开启' : '关闭'}`); };
     /* burnSpiritBtn2 replaced by tier buttons */
     const aeb = $('afkExitBtn'); if (aeb) aeb.onclick = () => { let gain = 0; try { gain = afkExit(S, 'manual'); } catch(e) {} S.afk = null; try { const lbl = C.resLbl(S); log('good', gain > 0 ? `🛌 出关，获得 <span class="g">${lbl} +${gain}</span>` : `🛌 出关（无收益）`); } catch(e) {} save(); render(); };
@@ -7564,12 +7566,12 @@ function sheetChat() {
     const _n0 = srv.length;
     setTimeout(() => { const b = $('chatBox'); const i2 = $('chatInput'); if (b && document.body.contains(b) && ((window._srvChat || []).length !== _n0) && !(i2 && document.activeElement === i2 && i2.value)) sheetChat(); }, 1500);
   } else {
-    hint = '登录真人联机后接入真人世界，与天下道友畅谈。';
+    hint = '⚠️ 还没登录真人联机：这里只显示游戏内通告，发言不会进入世界频道。';
     log = (S.chatLog || []).filter(m => m.sys || m.announce).map(m => m.announce ? `<div class="chat-announce">📢【全服通告】${esc(m.t)}</div>` : `<div class="chat-sys">📢 ${esc(m.t)}</div>`).join('') || '<div class="hint">暂无通告</div>';
   }
   openSheet(`<h2>💬 世界聊天</h2><div class="hint">${hint}</div>
     <div id="chatBox" style="max-height:300px;overflow-y:auto;border:1px solid #444;border-radius:8px;padding:8px;margin-bottom:8px;background:#111">${log}</div>
-    <div class="row" style="display:flex;gap:6px"><input id="chatInput" maxlength="100" placeholder="说点什么…" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-chatsend>发送</button></div>
+    ${_li ? '<div class="row" style="display:flex;gap:6px"><input id="chatInput" maxlength="100" placeholder="说点什么…" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-chatsend>发送</button></div>' : '<div class="row"><button class="btn gold full" data-mhxy>🌐 未登录真人联机——点此登录，登录后发言才进世界</button></div>'}
     <div class="row"><button class="btn full" data-close>关闭</button></div>`);
   const box = $('chatBox'); if (box) box.scrollTop = box.scrollHeight;
   const inp = $('chatInput'); if (inp) inp.focus();
@@ -9875,7 +9877,7 @@ document.addEventListener('click', e => {
     } catch(_) { sheetConsign('list', '网络不通，稍后再试。', consignSec); }
   })(); }
   else if ('chatsend' in d) { const inp = $('chatInput'); const v = inp ? (inp.value || '').trim() : ''; if (v) { const _li2 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_li2 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { if (inp) inp.value = ''; try { chatHistoryToCache(); } catch(_) {} setTimeout(() => { if ($('chatBox')) sheetChat(); }, 600); } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录真人联机'); } else { toastLog('sys', '发送失败'); } }); } else { toastLog('sys', '请先登录真人联机再发言'); } } }
-  else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v && typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value=''; save(); if (window.renderChatFloat) window.renderChatFloat(); } }
+  else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v) { const _tab2 = window._chatTab || 'world'; const _li3 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_tab2 === 'world' && _li3 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { inp.value = ''; try { window._srvChat = (window._srvChat || []).concat([{ n: (MHXY.myName ? MHXY.myName() : '我'), t: v.slice(0, 200) }]); } catch(_) {} if (window.renderChatFloat) window.renderChatFloat(); try { chatHistoryToCache(); } catch(_) {} } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } else { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } }); } else { if (_tab2 === 'world') toastLog('sys', '未登录真人联机：这条只留在本机，先去真人联机登录'); if (typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value = ''; save(); if (window.renderChatFloat) window.renderChatFloat(); } } } } // v1008 主界面输入框按频道/登录态分流（原写死本地）
   else if (d.menutab) sheetMenu(d.menutab);
   else if (t.id === 'debugBtn') sheetDebug();
 });
