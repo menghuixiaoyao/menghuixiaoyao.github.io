@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1006</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1007</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3919,7 +3919,7 @@ function arrayTick(S) {
               const _p = _pool[Math.floor(Math.random()*_pool.length)]; // v924 随机
               if (_p === 'h') { rn.h--; a.storage.h = (a.storage.h|0) + 1; }
               else if (_p === 'o') { rn.o--; a.storage.o = (a.storage.o|0) + 1; }
-              else { rn.v--; a.storage.v = (a.storage.v|0) + 1; a.storage.vt = rn.vt|0; }
+              else { if (!Array.isArray(rn.vs)) rn.vs = [rn.v|0, 0, 0]; const _avt = (rn.vs[2]|0) > 0 ? 2 : (rn.vs[1]|0) > 0 ? 1 : 0; if ((rn.vs[_avt]|0) > 0) rn.vs[_avt]--; rn.v = Math.max(0, (rn.v|0) - 1); a.storage.v = (a.storage.v|0) + 1; a.storage.vt = _avt; } // v1007 按档扣
             }
           } catch(_) {}
         } else if (a.map === 'world' && a.x === 2 && a.y === 0) {
@@ -4122,18 +4122,25 @@ window.destroyArray = function(id) {
     commit(); closeSheet(); renderWorldMap();
   } catch(e) {}
 };
-function reserveTick(S) { // v666 叠加：每分钟各+1，上限99，无人采集一直累积
+function reserveTick(S) { // 草药/矿石每分钟+1 上限99；灵脉按大小刷新：小型1分钟/中型10分钟/巨型30分钟一条（v1007）
   const now = Date.now();
   if (!S.reserveNode) S.reserveNode = { h: 0, o: 0, v: 0, vt: 0, t: now };
   const rn = S.reserveNode;
   if (!rn.t) rn.t = now; else if (rn.t > now) rn.t = now; // 兼容旧存档
+  if (!Array.isArray(rn.vs)) { rn.vs = [(rn.v|0), 0, 0]; rn.vAcc = [0, 0, 0]; rn.vTickT = rn.t; } // v1007 旧库存折算为小型
+  if (!Array.isArray(rn.vAcc)) rn.vAcc = [0, 0, 0];
+  if (!rn.vTickT || rn.vTickT > now) rn.vTickT = now;
+  const vmins = (now - rn.vTickT) / 60000;
+  if (vmins > 0) {
+    rn.vTickT = now;
+    rn.vAcc[0] += vmins; rn.vAcc[1] += vmins / 10; rn.vAcc[2] += vmins / 30;
+    for (let _t = 0; _t < 3; _t++) { const _add = Math.floor(rn.vAcc[_t]); if (_add > 0) { rn.vs[_t] = Math.min(99, (rn.vs[_t]|0) + _add); rn.vAcc[_t] -= _add; if (rn.vs[_t] >= 99) rn.vAcc[_t] = 0; } }
+    rn.v = (rn.vs[0]|0) + (rn.vs[1]|0) + (rn.vs[2]|0);
+  }
   const mins = Math.floor((now - rn.t) / 60000);
   if (mins <= 0) return;
-  const hadV = (rn.v|0) > 0;
   rn.h = Math.min(99, (rn.h|0) + mins);
   rn.o = Math.min(99, (rn.o|0) + mins);
-  rn.v = Math.min(99, (rn.v|0) + mins);
-  if (!hadV && rn.v > 0) rn.vt = Math.floor(Math.random() * 3); // 新长出的灵脉重定品阶
   rn.t += mins * 60000;
 }
 function reserveHas(S) {
@@ -4446,7 +4453,7 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${knm}×1`);
 };
-window._veinYield = function(t) { // 灵脉产出表：小型 sp1/sp2/sp3、中型 sp3/sp4/sp5 均匀三选一；大型 上品45%/极品35%/仙玉20%（仙玉概率最低）；成功返回产出名，背包满返回 null
+window._veinYield = function(t) { // 灵脉产出表：小型 sp1/sp2/sp3、中型 sp3/sp4/sp5 均匀三选一；巨型 上品45%/极品35%/仙玉20%（仙玉概率最低）；成功返回产出名，背包满返回 null
   const pools = [['sp1', 'sp2', 'sp3'], ['sp3', 'sp4', 'sp5']];
   let k;
   if (t === 2) { const _x = Math.random(); k = _x < 0.45 ? 'sp4' : _x < 0.80 ? 'sp5' : 'xy'; }
@@ -4463,24 +4470,28 @@ window.doEatVein = function(t) { // v1003 吃灵脉（存量灵脉道具，产�
     const got = window._veinYield(t);
     if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
     S.veins[t]--;
-    const names = ['小型灵脉', '中型灵脉', '大型灵脉'];
+    const names = ['小型灵脉', '中型灵脉', '巨型灵脉'];
     log('good', `💎 吃下${names[t]}：得 ${got}`);
     if (typeof toastLog === 'function') toastLog('good', `吃下${names[t]}：${got}`);
     commit(); openReserveSheet();
   } catch(_) {}
 };
-window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
+window._veinGate = function(t) { return t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); }; // v1007 中型元婴可采、巨型仙人可采
+window._autoVeinTier = function() { try { reserveTick(S); const rn = S.reserveNode; if (!rn || !Array.isArray(rn.vs)) return -1; for (const t of [2, 1, 0]) { if ((rn.vs[t]|0) > 0 && window._veinGate(t)) return t; } } catch(_) {} return -1; };
+window.doReserveVein = async function(t) { // v558 采灵脉；v1007 按大小采集
+  const _want = (typeof t === 'number') ? t : window._autoVeinTier();
+  if (_want >= 0 && !window._veinGate(_want)) { if (typeof toastLog === 'function') toastLog('sys', _want === 1 ? '元婴境方可采中型灵脉' : '仙人境方可采巨型灵脉'); return; }
   // v966 彻底版：登录在线时走服务端
   if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
     try {
-      const resp = await MHXY.api('/api/roll/vein', {method:'POST', body:{}});
+      const resp = await MHXY.api('/api/roll/vein', {method:'POST', body:{tier: _want}});
       const j = resp && resp.json;
       if (resp.ok && j && j.ok) {
-        const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉'];
-        const vtn = j.key|0;
+        const veinNames = ['小型灵脉', '中型灵脉', '巨型灵脉'];
+        const vtn = Math.max(0, (typeof j.key === 'number') ? (j.key|0) : _want);
         const got = window._veinYield(vtn); // v1005 采灵脉直接出灵石/仙玉
         if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
-        if (S.reserveNode) S.reserveNode.v = Math.max(0, (S.reserveNode.v|0) - 1);
+        if (S.reserveNode) { const _rn = S.reserveNode; if (!Array.isArray(_rn.vs)) _rn.vs = [_rn.v|0, 0, 0]; const _dt = ((_rn.vs[vtn]|0) > 0) ? vtn : _want; if (_dt >= 0 && (_rn.vs[_dt]|0) > 0) _rn.vs[_dt]--; _rn.v = (_rn.vs[0]|0) + (_rn.vs[1]|0) + (_rn.vs[2]|0); }
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
         log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（剩余${S.reserveNode ? S.reserveNode.v|0 : 0}条）`);
         thunderGatherJudge();
@@ -4493,13 +4504,14 @@ window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
   }
   reserveTick(S);
   const rn = S.reserveNode;
-  if ((rn.v|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
-  const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉'];
-  const vtn = window._mineTier(); // v1001 三档：每次采集掷档
+  if (!Array.isArray(rn.vs)) rn.vs = [rn.v|0, 0, 0];
+  const vtn = (typeof t === 'number') ? t : window._autoVeinTier();
+  if (vtn < 0 || (rn.vs[vtn]|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
+  const veinNames = ['小型灵脉', '中型灵脉', '巨型灵脉'];
   const got = window._veinYield(vtn); // v1005 直接出货
   if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
-  rn.v--;
-  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（剩余${rn.v}条）`);
+  rn.vs[vtn]--; rn.v = (rn.vs[0]|0) + (rn.vs[1]|0) + (rn.vs[2]|0);
+  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（该档剩余${rn.vs[vtn]}条）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采${veinNames[vtn]}：${got}`);
@@ -4509,12 +4521,13 @@ window.doReserveGather = function() {
   const rn = S.reserveNode;
   if (rn.h <= 0 && rn.o <= 0) { if (typeof toastLog === 'function') toastLog('sys', '资源还未刷新'); return; }
   const herbs = [], ores = [];
-  const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉']; // v538
+  const veinNames = ['小型灵脉', '中型灵脉', '巨型灵脉']; // v538
   // 灵脉
   const vn = rn.v | 0;
   const _vy = {};
-  if (vn > 0) {
-    for (let _vi = 0; _vi < vn; _vi++) { const _g2 = window._veinYield(window._mineTier()); if (_g2) _vy[_g2] = (_vy[_g2] | 0) + 1; }
+  if (vn > 0 && Array.isArray(rn.vs)) {
+    for (let _t = 0; _t < 3; _t++) { const _n = rn.vs[_t]|0; rn.vs[_t] = 0; for (let _vi = 0; _vi < _n; _vi++) { const _g2 = window._veinYield(_t); if (_g2) _vy[_g2] = (_vy[_g2] | 0) + 1; } }
+    rn.v = 0;
   }
   // 草药：随机种类
   const herbKeys = Object.keys(C.HERBS || {});
@@ -4538,9 +4551,9 @@ window.doReserveGather = function() {
 window.openReserveSheet = function() {
   try {
     reserveTick(S); const rn = S.reserveNode;
-    const _vn = ['小型灵脉','中型灵脉','大型灵脉'];
+    const _vn = ['小型灵脉','中型灵脉','巨型灵脉'];
     const vtxt = (rn.v|0) > 0 ? '灵脉×' + rn.v : '无';
-    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="gatherProgWrap('采灵脉中……',doReserveVein)" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button>${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，大型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '大型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openHerbSheet = function() {
@@ -5244,8 +5257,10 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         if (tab === 'world' && _loggedIn) {
           try {
             MHXY.api('/api/chat/send', { method:'POST', body:{ text:v.slice(0,200), realm: (typeof curRealm === 'function' ? curRealm() : 0) } }).then(function(r) {
-              if (r.ok && r.json && r.json.ok) { inp.value = ''; try { chatHistoryToCache(); } catch(_) {} }
+              if (r.ok && r.json && r.json.ok) { inp.value = ''; try { window._srvChat = (window._srvChat || []).concat([{ n: '我', t: v.slice(0, 200) }]); window.renderChatFloat(); } catch(_) {} try { chatHistoryToCache(); } catch(_) {} }
               else if (r.status === 429) { try { toastLog('sys', '发言太快，3秒后再试'); } catch(_) {} }
+              else if (r.status === 401) { try { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } catch(_) {} }
+              else { try { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } catch(_) {} }
             });
           } catch(_) {}
           return;
@@ -6231,9 +6246,11 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   // v971 其他玩家位置索引
   const otherAt = {};
   if (shared && shared.players) {
-    shared.players.forEach(function(p) { otherAt[p.x + ',' + p.y] = p; });
+    shared.players.forEach(function(p) { const _k = p.x + ',' + p.y; (otherAt[_k] = otherAt[_k] || []).push(p); }); // v1007 同格多人全记
   }
   let cells = '';
+  const _coHere = otherAt[g.px + ',' + g.py];
+  const _coLine = (_coHere && _coHere.length) ? `<div class="hint">🧑 同格道友：${_coHere.map(function(p) { return String(p.username || ''); }).join('、')}</div>` : '';
   for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
     const t = g.tiles[y][x], isP = x === g.px && y === g.py;
     // v971 共享模式：tile 类型取服务端，本地 grid 只记位置
@@ -6243,11 +6260,11 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       tileT = st.t; tileCleared = st.state === 'cleared'; tileRespawn = st.respawn_in | 0;
     }
     let icon = '❓', cls = '';
-    if (isP) { icon = `<img src="${avatarUrl()}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block">`; cls = ' me'; }
+    if (isP) { icon = `<img src="${avatarUrl()}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block">`; cls = ' me'; const _co = otherAt[x + ',' + y]; if (_co && _co.length) icon += `<span style="position:absolute;right:0;bottom:0;background:rgba(0,0,0,.68);color:#ffd94d;font-size:8px;line-height:1.3;padding:0 3px;border-radius:4px">🧑×${_co.length}</span>`; }
     else if (otherAt[x + ',' + y]) {
       // v971 显示其他玩家
-      const op = otherAt[x + ',' + y];
-      icon = `<div style="font-size:10px;line-height:1;text-align:center">🧑<br><span style="font-size:8px">${String(op.username || '').slice(0, 4)}</span></div>`;
+      const _ops = otherAt[x + ',' + y]; const op = _ops[0];
+      icon = `<div style="font-size:10px;line-height:1;text-align:center">🧑${_ops.length > 1 ? '×' + _ops.length : ''}<br><span style="font-size:8px">${String(op.username || '').slice(0, 4)}</span></div>`;
       cls = ' other';
     }
     else if (tileT === 'exit') { icon = '🚪'; cls = ' exit'; }
@@ -6261,7 +6278,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     // v767 无技能只能正交1格；有缩地/大挪移才能斜走
     const _isOrth = (x === g.px || y === g.py);
     const _adj = !isP && ((_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDist));
-    cells += isP ? `<button class="acell${cls}" data-advself="1">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`); // v768 点自己看状态
+    cells += isP ? `<button class="acell${cls}" data-advself="1" style="position:relative">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`); // v768 点自己看状态
   }
   const scene = ev
     ? (ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monCard(ev.mon, '挡住去路')}`
@@ -6270,7 +6287,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     : `<span style="color:var(--dim)">点格子移动，踩开 ❓ 格子触发事件；随时可撤退。</span>`; // v774 取消终点门
   openSheet(`<h2>🗺️ ${d.name}冒险 <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
     (out && out.lines && out.lines.length ? `<div class="hint">${out.lines.join('；')}${out.battle ? `<details><summary>战斗记录（${out.battle.round} 回合）</summary>${out.battle.lines.join('')}</details>` : ''}</div>` : '') +
-    `<div class="agrid">${cells}</div>` +
+    `<div class="agrid">${cells}</div>${_coLine}` +
     `<div class="scene">${scene}</div>` +
     (ev ? `<div class="grid2">${chs.map((c, i) => `<button class="btn ${c.retreat ? '' : i === 0 ? 'gold' : ''}" data-advc="${i}" ${c.dis ? 'disabled' : ''} style="line-height:1.3">${c.l}${c.hint ? `<br><small>${c.hint}</small>` : ''}</button>`).join('')}</div><div class="hint" style="text-align:center">也可直接走开，事件留在格子上，回来再处理</div>` : '') +
     `<div class="row" style="display:flex;gap:8px"><button class="btn gold" data-dazuo style="flex:1">🧘 调息（1体力回10%生命）</button><button class="btn" data-tpscroll style="flex:1" ${(S.meds.tpscroll|0) > 0 ? '' : 'disabled'}>📜 传送卷×${S.meds.tpscroll|0}</button></div>` +
@@ -9857,7 +9874,7 @@ document.addEventListener('click', e => {
       else sheetConsign('list', ((r.json || {}).error === 'no_item') ? '物品不足（存档可能已同步变动）。' : '上架失败。', consignSec);
     } catch(_) { sheetConsign('list', '网络不通，稍后再试。', consignSec); }
   })(); }
-  else if ('chatsend' in d) { const inp = $('chatInput'); const v = inp ? (inp.value || '').trim() : ''; if (v) { const _li2 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_li2 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { if (inp) inp.value = ''; try { chatHistoryToCache(); } catch(_) {} setTimeout(() => { if ($('chatBox')) sheetChat(); }, 600); } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else { toastLog('sys', '发送失败'); } }); } else { toastLog('sys', '请先登录真人联机再发言'); } } }
+  else if ('chatsend' in d) { const inp = $('chatInput'); const v = inp ? (inp.value || '').trim() : ''; if (v) { const _li2 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_li2 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { if (inp) inp.value = ''; try { chatHistoryToCache(); } catch(_) {} setTimeout(() => { if ($('chatBox')) sheetChat(); }, 600); } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录真人联机'); } else { toastLog('sys', '发送失败'); } }); } else { toastLog('sys', '请先登录真人联机再发言'); } } }
   else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v && typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value=''; save(); if (window.renderChatFloat) window.renderChatFloat(); } }
   else if (d.menutab) sheetMenu(d.menutab);
   else if (t.id === 'debugBtn') sheetDebug();
@@ -10616,6 +10633,8 @@ async function chatSend(){
     }
   } else if (r.status === 429){
     glog('bad', '🌐 发言太快，3秒后再试');
+  } else if (r.status === 401){
+    glog('bad', '🌐 登录已过期，请到真人联机重新登录后再发言');
   } else {
     glog('bad', '🌐 发送失败' + (r.netErr ? '（网络不通）' : ''));
   }
