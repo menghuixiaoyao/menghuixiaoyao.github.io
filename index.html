@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1004</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1005</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4426,19 +4426,20 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${knm}×1`);
 };
-window.doEatVein = function(t) { // v1003 吃灵脉：小型出灵气石/下品/中品，中型出中品/上品/极品，大型出上品/极品/仙玉
+window._veinYield = function(t) { // v1005 灵脉产出表（Ye 定）：小型 sp1/sp2/sp3，中型 sp3/sp4/sp5，大型 sp4/sp5/仙玉；成功返回产出名，背包满返回 null
+  const pools = [['sp1', 'sp2', 'sp3'], ['sp3', 'sp4', 'sp5'], ['sp4', 'sp5', 'xy']];
+  const k = pools[t][Math.floor(Math.random() * 3)];
+  if (k === 'xy') { S.xianyu = (S.xianyu|0) + 1; return '仙玉×1'; }
+  const added = C.gainItem(S, 'ores', k, 1);
+  if (added <= 0) return null;
+  return C.ORES[k].name + '×1';
+};
+window.doEatVein = function(t) { // v1003 吃灵脉（存量灵脉道具，产出同 _veinYield）
   try {
     if (!S.veins) S.veins = [0, 0, 0];
     if ((S.veins[t]|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有这条灵脉'); return; }
-    const pools = [['sp1', 'sp2', 'sp3'], ['sp3', 'sp4', 'sp5'], ['sp4', 'sp5', 'xy']];
-    const k = pools[t][Math.floor(Math.random() * 3)];
-    let got = '';
-    if (k === 'xy') { S.xianyu = (S.xianyu|0) + 1; got = '仙玉×1'; }
-    else {
-      const added = C.gainItem(S, 'ores', k, 1);
-      if (added <= 0) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
-      got = C.ORES[k].name + '×1';
-    }
+    const got = window._veinYield(t);
+    if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
     S.veins[t]--;
     const names = ['小型灵脉', '中型灵脉', '大型灵脉'];
     log('good', `💎 吃下${names[t]}：得 ${got}`);
@@ -4455,14 +4456,14 @@ window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
       if (resp.ok && j && j.ok) {
         const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉'];
         const vtn = j.key|0;
-        if (!S.veins) S.veins = [0, 0, 0];
-        S.veins[vtn] = (S.veins[vtn]|0) + 1;
+        const got = window._veinYield(vtn); // v1005 采灵脉直接出灵石/仙玉
+        if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
         if (S.reserveNode) S.reserveNode.v = Math.max(0, (S.reserveNode.v|0) - 1);
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        log('good', `💎 在灵脉矿区采集：${veinNames[vtn]}×1（剩余${S.reserveNode ? S.reserveNode.v|0 : 0}条）`);
+        log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（剩余${S.reserveNode ? S.reserveNode.v|0 : 0}条）`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openReserveSheet();
-        if (typeof toastLog === 'function') toastLog('good', `采集${veinNames[vtn]}×1`);
+        if (typeof toastLog === 'function') toastLog('good', `采${veinNames[vtn]}：${got}`);
         return;
       }
       if ((j||{}).error === 'no_vein' || !resp.netErr) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
@@ -4473,13 +4474,13 @@ window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
   if ((rn.v|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
   const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉'];
   const vtn = window._mineTier(); // v1001 三档：每次采集掷档
-  if (!S.veins) S.veins = [0, 0, 0];
-  S.veins[vtn] = (S.veins[vtn] | 0) + 1;
+  const got = window._veinYield(vtn); // v1005 直接出货
+  if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
   rn.v--;
-  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]}×1（剩余${rn.v}条）`);
+  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（剩余${rn.v}条）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
-  if (typeof toastLog === 'function') toastLog('good', `采集${veinNames[vtn]}×1`);
+  if (typeof toastLog === 'function') toastLog('good', `采${veinNames[vtn]}：${got}`);
 };
 window.doReserveGather = function() {
   // v536 采集保留地资源；v542 免费；v558 保留兼容
@@ -4489,9 +4490,9 @@ window.doReserveGather = function() {
   const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉']; // v538
   // 灵脉
   const vn = rn.v | 0;
+  const _vy = {};
   if (vn > 0) {
-    if (!S.veins) S.veins = [0, 0, 0];
-    for (let _vi = 0; _vi < vn; _vi++) { const _vt2 = window._mineTier(); S.veins[_vt2] = (S.veins[_vt2] | 0) + 1; }
+    for (let _vi = 0; _vi < vn; _vi++) { const _g2 = window._veinYield(window._mineTier()); if (_g2) _vy[_g2] = (_vy[_g2] | 0) + 1; }
   }
   // 草药：随机种类
   const herbKeys = Object.keys(C.HERBS || {});
@@ -4505,11 +4506,11 @@ window.doReserveGather = function() {
     const k = oreKeys[Math.floor(Math.random() * oreKeys.length)];
     if (k) { S.ores[k] = (S.ores[k] | 0) + 1; ores.push(k); }
   }
-  const hn = rn.h, on = rn.o, vnn = rn.v | 0, vtn = 0;
+  const hn = rn.h, on = rn.o, vnn = rn.v | 0, vtn = 0; const _vyTxt = Object.keys(_vy).map(k => k + (_vy[k] > 1 ? '（' + _vy[k] + '）' : '')).join('、');
   rn.h = 0; rn.o = 0; rn.v = 0;
-  log('good', `⛏️ 在灵脉矿区采集：草药×${hn}、矿石×${on}` + (vnn > 0 ? `、灵脉×${vnn}` : ''));
+  log('good', `⛏️ 在灵脉矿区采集：草药×${hn}、矿石×${on}` + (vnn > 0 ? `、灵脉产出 ${_vyTxt}` : ''));
   commit(); renderWorldMap();
-  if (typeof toastLog === 'function') toastLog('good', `采集成功：草药×${hn} 矿石×${on}` + (vnn > 0 ? ` 灵脉×${vnn}` : ''));
+  if (typeof toastLog === 'function') toastLog('good', `采集成功：草药×${hn} 矿石×${on}` + (vnn > 0 ? ` 灵脉产出 ${_vyTxt}` : ''));
 }; // v536
 // v666 三区采集面板（逐个采集，采后刷新数量）
 window.openReserveSheet = function() {
