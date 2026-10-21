@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1008</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1009</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4631,6 +4631,7 @@ function npcPos(S) {
         if (window._wmLX === undefined) { window._wmLX = wm.px; window._wmLY = wm.py; }
         else if (window._wmLX !== wm.px || window._wmLY !== wm.py) {
           window._wmLX = wm.px; window._wmLY = wm.py;
+          try { if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) MHXY.api('/api/world/heartbeat', { method:'POST', body:{ x: wm.px|0, y: wm.py|0 } }); } catch(_) {} // v1009 移动即报位置
           if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) {
             S._trigFail = S._trigFail|0;
             const _tp = Math.min(1, 0.10 + 0.10*S._trigFail);
@@ -4647,6 +4648,8 @@ function npcPos(S) {
       }
     } catch(_){}
     const _npcs = (typeof S !== 'undefined' && typeof npcPos === 'function') ? npcPos(S) : [];
+    const _plAt = {}; // v1009 真人玩家位置（同 NPC 一样画在地图上）
+    try { (window._worldPlayers || []).forEach(function(p) { const _k = p.x + ',' + p.y; (_plAt[_k] = _plAt[_k] || []).push(p); }); } catch(_) {}
     let cells = '';
     for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) {
       const isP = x === wm.px && y === wm.py;
@@ -4686,6 +4689,7 @@ function npcPos(S) {
           _cellIcon = `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${_cellIcon}<span style="position:absolute;top:-2px;right:-2px;font-size:10px" title="采集阵${_arr.guarded ? '(神识守卫)' : ''}">🧭</span></div>`;
         }
       } catch(_) {}
+      try { const _pl = _plAt[x + ',' + y]; if (_pl && _pl.length) { if (isP) { _cellIcon = `<div style="position:relative;width:100%;height:100%">${_cellIcon}<span style="position:absolute;bottom:-2px;right:-2px;font-size:10px" title="同格道友：${_pl.map(function(p){ return String(p.username || ''); }).join('、')}">🧑×${_pl.length}</span></div>`; } else { _cellIcon = `<div style="font-size:10px;line-height:1;text-align:center" title="${_pl.map(function(p){ return String(p.username || ''); }).join('、')}">🧑${_pl.length > 1 ? '×' + _pl.length : ''}<br><span style="font-size:8px">${String(_pl[0].username || '').slice(0, 4)}</span></div>`; } } } catch(_) {} // v1009 真人玩家标记
       cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isFormationTalisman ? '制阵室·画符台' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${_cellIcon}</div>`; // v713 修title泄漏；v790 阵符坊
     }
     grid.innerHTML = cells;
@@ -10471,15 +10475,32 @@ try{
 }catch(_){}
 
 /* ---------- 在线状态 ---------- */
+function myPos(){ try { var w = (typeof S !== 'undefined' && S && S.worldMap) || { px: 2, py: 3 }; return { x: w.px|0, y: w.py|0 }; } catch(_) { return { x: 0, y: 0 }; } }
 async function ensurePresence(){
   if (!loggedIn()) return;
   var realm = curRealm();
-  await api('/api/world/register', { method:'POST', body:{ realm:realm, x:0, y:0 } });
+  var _p0 = myPos();
+  await api('/api/world/register', { method:'POST', body:{ realm:realm, x:_p0.x, y:_p0.y } });
   if (M.hbTimer) clearInterval(M.hbTimer);
   M.hbTimer = setInterval(function(){
     if (!loggedIn()){ stopPresence(); return; }
-    api('/api/world/heartbeat', { method:'POST', body:{ x:0, y:0 } });
+    var _p = myPos();
+    api('/api/world/heartbeat', { method:'POST', body:{ x:_p.x, y:_p.y } });
   }, 30000);
+  // v1009 每15秒拉一次在线玩家位置，变了才重绘地图
+  var pollPlayers = function(){
+    if (!loggedIn()) return;
+    api('/api/world/state').then(function(r){
+      if (!r.ok || !r.json) return;
+      var me = myAid();
+      var ps = (r.json.players || []).filter(function(p){ return p.online && p.accountId !== me && typeof p.x === 'number' && typeof p.y === 'number'; });
+      var sig = ps.map(function(p){ return p.accountId + ':' + p.x + ',' + p.y; }).join('|');
+      if (sig !== M._plSig) { M._plSig = sig; window._worldPlayers = ps; try { if (typeof renderWorldMap === 'function') renderWorldMap(); } catch(_) {} }
+    }).catch(function(){});
+  };
+  if (M.plTimer) clearInterval(M.plTimer);
+  M.plTimer = setInterval(pollPlayers, 15000);
+  pollPlayers();
 }
 function stopPresence(){ if (M.hbTimer){ clearInterval(M.hbTimer); M.hbTimer = null; } }
 async function onlinePlayers(){
