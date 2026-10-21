@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1003</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1004</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4367,10 +4367,10 @@ window.doReserveHerb = async function() { // v558 采草药；v666 一次采1株
         S.herbs[j.key] = (S.herbs[j.key]|0) + 1;
         if (S.reserveNode) S.reserveNode.h = j.remaining;
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        log('good', `🌿 在灵脉矿区采集：${window._herbHtml(j.key, j.name)}×1（剩余${j.remaining}株）`);
+        log('good', `🌿 在灵脉矿区采集：${window._herbHtml(j.key)}×1（剩余${j.remaining}株）`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openReserveSheet();
-        if (typeof toastLog === 'function') toastLog('good', `采集${window._herbHtml(j.key, j.name)}×1`);
+        if (typeof toastLog === 'function') toastLog('good', `采集${window._herbHtml(j.key)}×1`);
         return;
       }
       if (j && j.error === 'no_herb') { if (typeof toastLog === 'function') toastLog('sys', '没有草药'); return; }
@@ -5079,7 +5079,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         else if (isCookRefine2) ci.innerHTML = '🍳 <b>灶台</b> 🪙 <b>点金台</b> · <u>点我选择</u>'; // v458
         else if (isBeastGarden2) ci.innerHTML = '🐾 <b>兽园</b> · <u>点我驯兽</u>'; // v465
         else if (isCasino2) ci.innerHTML = '🎲 <b>赌场</b> · <u>点我进入</u>';
-        else if (isReserve2) { try { reserveTick(S); const _rn = S.reserveNode; const _r = []; if (_rn.h>0) _r.push('草药×'+_rn.h); if (_rn.o>0) _r.push('矿石×'+_rn.o); if ((_rn.v|0)>0) _r.push(['小型灵脉','中型灵脉','大型灵脉'][_rn.vt|0]+'×'+_rn.v); ci.innerHTML = '⛏️ <b>灵脉矿区</b>' + (_r.length ? '（'+_r.join('、')+'）' : '（待刷新）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '⛏️ <b>灵脉矿区</b> · <u>点我采集</u>'; } } // v553
+        else if (isReserve2) { try { reserveTick(S); const _rn = S.reserveNode; const _r = []; if (_rn.h>0) _r.push('草药×'+_rn.h); if (_rn.o>0) _r.push('矿石×'+_rn.o); if ((_rn.v|0)>0) _r.push('灵脉×'+_rn.v); ci.innerHTML = '⛏️ <b>灵脉矿区</b>' + (_r.length ? '（'+_r.join('、')+'）' : '（待刷新）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '⛏️ <b>灵脉矿区</b> · <u>点我采集</u>'; } } // v553
         else if (isHerb2) { try { herbTick(S); const _hg = S.herbGarden; ci.innerHTML = '🌱 <b>田药园</b>' + (_hg.h>0 ? '（草药×'+_hg.h+'）' : '（待生长）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '🌱 <b>田药园</b> · <u>点我采集</u>'; } } // v553
         else if (isRanch2) { try { ranchTick(S); const _rc = S.ranch; const _r2 = []; if (_rc.m>0) _r2.push('肉×'+_rc.m); if (_rc.e>0) _r2.push('蛋×'+_rc.e); ci.innerHTML = '🥚 <b>养殖园</b>' + (_r2.length ? '（'+_r2.join('、')+'）' : '（待产出）') + ' · <u>点我收获</u>'; } catch(e) { ci.innerHTML = '🥚 <b>养殖园</b> · <u>点我收获</u>'; } } // v553
         else {
