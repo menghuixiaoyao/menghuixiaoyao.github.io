@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v996</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v997</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6332,6 +6332,7 @@ function starChartHtml() {
   C.SZ_SEATS.forEach((st, i) => { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const k = Math.round(C.szProg(S, i) / 10 * names.length); for (let j = 0; j < k; j++) litSet.add(names[j]); });
   const lit = litSet.size;
   const fullSeats = C.szFullCount(S);
+  const grand = fullSeats >= 13;
   const cur = C.SZ_SEATS.findIndex((_, i) => C.szProg(S, i) < 10);
   let sel = (window._starSeat === undefined) ? (cur < 0 ? 12 : cur) : window._starSeat;
   let inner = '', frontier = null;
@@ -6351,21 +6352,23 @@ function starChartHtml() {
   const colL = [0, 1, 2, 3, 4, 5, 6].map(swirl).join('');
   const colR = [7, 8, 9, 10, 11, 12].map(swirl).join('');
   const sq = g === 'm' && view === 1;
+  const fx = !grand ? '' : `<div style="position:absolute;inset:0;border-radius:8px;background:radial-gradient(ellipse 62% 46% at 50% 42%,rgba(255,196,74,.30),rgba(255,196,74,.10) 55%,transparent 75%);pointer-events:none"></div><div style="position:absolute;left:50%;top:${sq ? '1%' : '0.5%'};width:${sq ? '26%' : '52%'};aspect-ratio:1/1;transform:translateX(-50%);border:2px solid rgba(255,214,110,.85);border-radius:50%;box-shadow:0 0 18px rgba(255,205,92,.55),inset 0 0 14px rgba(255,205,92,.35);pointer-events:none"></div>`;
   const body = sq
-    ? `<div style="position:relative;width:100%"><img src="star/${g}_back.jpg" style="width:100%;display:block;border-radius:8px">${inner}</div>`
-    : `<div style="position:relative;display:inline-block;height:52vh"><img src="star/${g}${view ? '_back' : '_front'}.jpg" style="height:100%;display:block;border-radius:8px">${inner}</div>`;
+    ? `<div style="position:relative;width:100%"><img src="star/${g}_back.jpg" style="width:100%;display:block;border-radius:8px">${fx}${inner}</div>`
+    : `<div style="position:relative;display:inline-block;height:52vh"><img src="star/${g}${view ? '_back' : '_front'}.jpg" style="height:100%;display:block;border-radius:8px">${fx}${inner}</div>`;
   const st = C.SZ_SEATS[sel], p = C.szProg(S, sel);
   const pages = S.maiPages | 0, pills = S.inv['mai'] | 0;
   const card = p >= 10
     ? `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin-top:5px">气旋已开满，此座星点全亮。</div>`
     : `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">气旋已开 ${p} / 10 · 再吃 ${10 - p} 张残页开满，或用开脉丹整开</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃残页开气旋</button><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹整开</button></div>`;
   return `<style>@keyframes starPulse{0%{transform:scale(.55);opacity:1}70%{transform:scale(1.3);opacity:.2}100%{transform:scale(1.3);opacity:0}}</style>`
+    + (grand ? `<div style="border:1px solid rgba(255,205,92,.75);border-radius:12px;box-shadow:0 0 22px rgba(255,190,70,.35),inset 0 0 34px rgba(255,190,70,.10);padding:8px 6px">` : `<div>`)
     + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-right:10px"><span style="font-size:14px">✦ <b class="y">神藏星图</b></span><span style="font-size:12px">已开 ${lit} / 361</span></div>`
-    + `<div style="font-size:12px;color:#aaa6bd;margin-bottom:6px">神藏 ${fullSeats} 全开${cur < 0 ? ' · 十三座全开' : ` · 第 ${cur + 1} 座开启中`}</div>`
+    + `<div style="font-size:12px;color:#aaa6bd;margin-bottom:6px">神藏 ${fullSeats} 全开${cur < 0 ? ' · 十三座全开 · 大圆满' : ` · 第 ${cur + 1} 座开启中`}</div>`
     + `<div style="display:flex;gap:8px;margin-bottom:8px">${tg('front', '正面')}${tg('back', '背面')}</div>`
     + `<div style="display:flex;gap:2px;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:2px;width:52px;flex:none">${colL}</div><div style="flex:1;text-align:center;min-width:0">${body}</div><div style="display:flex;flex-direction:column;gap:2px;width:52px;flex:none">${colR}</div></div>`
     + `<div style="display:flex;align-items:center;gap:14px;background:#1e1b2c;border-radius:8px;padding:6px 12px;margin-top:8px;font-size:12px"><span style="display:flex;align-items:center;gap:4px">${szSpiralSvg(1, false, 18)} 小气旋 ×${C.szSmallCount(S)}</span><span style="display:flex;align-items:center;gap:4px">${szSpiralSvg(1, true, 22)} 大气旋 ×${fullSeats}</span><span>残页 ×${pages}</span><span>丹 ×${pills}</span></div>`
-    + `<div style="background:#201c30;border:1px solid #46406a;border-radius:10px;padding:12px;margin-top:8px">${card}</div>`;
+    + `<div style="background:#201c30;border:1px solid #46406a;border-radius:10px;padding:12px;margin-top:8px">${card}</div></div>`;
 }
 function doFeedSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const need = 10 - C.szProg(S, i); const r = C.useMaiPages(S, Math.min(need, S.maiPages | 0), i); if (r.n > 0) { log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[i].name}</b> 气旋 ${C.szProg(S, i)}/10${C.szProg(S, i) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); } commit(); sheetChar(); }
 function doPillSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const got = C.drinkMai(S, 1, i); if (got > 0) { log('good', `🌀 服用开脉丹，<b class="y">${C.SZ_SEATS[i].name}</b> 整座开启！`); } commit(); sheetChar(); }
