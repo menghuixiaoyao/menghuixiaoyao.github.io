@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1002</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1003</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4426,6 +4426,26 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${knm}×1`);
 };
+window.doEatVein = function(t) { // v1003 吃灵脉：小型出灵气石/下品/中品，中型出中品/上品/极品，大型出上品/极品/仙玉
+  try {
+    if (!S.veins) S.veins = [0, 0, 0];
+    if ((S.veins[t]|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有这条灵脉'); return; }
+    const pools = [['sp1', 'sp2', 'sp3'], ['sp3', 'sp4', 'sp5'], ['sp4', 'sp5', 'xy']];
+    const k = pools[t][Math.floor(Math.random() * 3)];
+    let got = '';
+    if (k === 'xy') { S.xianyu = (S.xianyu|0) + 1; got = '仙玉×1'; }
+    else {
+      const added = C.gainItem(S, 'ores', k, 1);
+      if (added <= 0) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
+      got = C.ORES[k].name + '×1';
+    }
+    S.veins[t]--;
+    const names = ['小型灵脉', '中型灵脉', '大型灵脉'];
+    log('good', `💎 吃下${names[t]}：得 ${got}`);
+    if (typeof toastLog === 'function') toastLog('good', `吃下${names[t]}：${got}`);
+    commit(); openReserveSheet();
+  } catch(_) {}
+};
 window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
   // v966 彻底版：登录在线时走服务端
   if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
@@ -4433,7 +4453,7 @@ window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
       const resp = await MHXY.api('/api/roll/vein', {method:'POST', body:{}});
       const j = resp && resp.json;
       if (resp.ok && j && j.ok) {
-        const veinNames = ['低级灵脉', '中级灵脉', '高级灵脉'];
+        const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉'];
         const vtn = j.key|0;
         if (!S.veins) S.veins = [0, 0, 0];
         S.veins[vtn] = (S.veins[vtn]|0) + 1;
@@ -4451,7 +4471,7 @@ window.doReserveVein = async function() { // v558 采灵脉；v666 一次采1条
   reserveTick(S);
   const rn = S.reserveNode;
   if ((rn.v|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
-  const veinNames = ['低级灵脉', '中级灵脉', '高级灵脉'];
+  const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉'];
   const vtn = window._mineTier(); // v1001 三档：每次采集掷档
   if (!S.veins) S.veins = [0, 0, 0];
   S.veins[vtn] = (S.veins[vtn] | 0) + 1;
@@ -4466,7 +4486,7 @@ window.doReserveGather = function() {
   const rn = S.reserveNode;
   if (rn.h <= 0 && rn.o <= 0) { if (typeof toastLog === 'function') toastLog('sys', '资源还未刷新'); return; }
   const herbs = [], ores = [];
-  const veinNames = ['低级灵脉', '中级灵脉', '高级灵脉']; // v538
+  const veinNames = ['小型灵脉', '中型灵脉', '大型灵脉']; // v538
   // 灵脉
   const vn = rn.v | 0;
   if (vn > 0) {
@@ -4495,9 +4515,9 @@ window.doReserveGather = function() {
 window.openReserveSheet = function() {
   try {
     reserveTick(S); const rn = S.reserveNode;
-    const _vn = ['低级灵脉','中级灵脉','高级灵脉'];
+    const _vn = ['小型灵脉','中型灵脉','大型灵脉'];
     const vtxt = (rn.v|0) > 0 ? '灵脉×' + rn.v : '无';
-    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="gatherProgWrap('采灵脉中……',doReserveVein)" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button><button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">每分钟生长1个，上限99 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div><button class="btn gold full" onclick="gatherProgWrap('采灵脉中……',doReserveVein)" ${(rn.v|0)>0?'':'disabled'}>💎 采灵脉<br><small>${vtxt}</small></button>${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，大型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '大型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openHerbSheet = function() {
@@ -5059,7 +5079,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         else if (isCookRefine2) ci.innerHTML = '🍳 <b>灶台</b> 🪙 <b>点金台</b> · <u>点我选择</u>'; // v458
         else if (isBeastGarden2) ci.innerHTML = '🐾 <b>兽园</b> · <u>点我驯兽</u>'; // v465
         else if (isCasino2) ci.innerHTML = '🎲 <b>赌场</b> · <u>点我进入</u>';
-        else if (isReserve2) { try { reserveTick(S); const _rn = S.reserveNode; const _r = []; if (_rn.h>0) _r.push('草药×'+_rn.h); if (_rn.o>0) _r.push('矿石×'+_rn.o); if ((_rn.v|0)>0) _r.push(['低级灵脉','中级灵脉','高级灵脉'][_rn.vt|0]+'×'+_rn.v); ci.innerHTML = '⛏️ <b>灵脉矿区</b>' + (_r.length ? '（'+_r.join('、')+'）' : '（待刷新）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '⛏️ <b>灵脉矿区</b> · <u>点我采集</u>'; } } // v553
+        else if (isReserve2) { try { reserveTick(S); const _rn = S.reserveNode; const _r = []; if (_rn.h>0) _r.push('草药×'+_rn.h); if (_rn.o>0) _r.push('矿石×'+_rn.o); if ((_rn.v|0)>0) _r.push(['小型灵脉','中型灵脉','大型灵脉'][_rn.vt|0]+'×'+_rn.v); ci.innerHTML = '⛏️ <b>灵脉矿区</b>' + (_r.length ? '（'+_r.join('、')+'）' : '（待刷新）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '⛏️ <b>灵脉矿区</b> · <u>点我采集</u>'; } } // v553
         else if (isHerb2) { try { herbTick(S); const _hg = S.herbGarden; ci.innerHTML = '🌱 <b>田药园</b>' + (_hg.h>0 ? '（草药×'+_hg.h+'）' : '（待生长）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '🌱 <b>田药园</b> · <u>点我采集</u>'; } } // v553
         else if (isRanch2) { try { ranchTick(S); const _rc = S.ranch; const _r2 = []; if (_rc.m>0) _r2.push('肉×'+_rc.m); if (_rc.e>0) _r2.push('蛋×'+_rc.e); ci.innerHTML = '🥚 <b>养殖园</b>' + (_r2.length ? '（'+_r2.join('、')+'）' : '（待产出）') + ' · <u>点我收获</u>'; } catch(e) { ci.innerHTML = '🥚 <b>养殖园</b> · <u>点我收获</u>'; } } // v553
         else {
@@ -5078,7 +5098,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
               const _r = [];
               if (_rn.h > 0) _r.push('草药×' + _rn.h);
               if (_rn.o > 0) _r.push('矿石×' + _rn.o);
-              if ((_rn.v|0) > 0) _r.push(['低级灵脉','中级灵脉','高级灵脉'][_rn.vt|0] + '×' + _rn.v);
+              if ((_rn.v|0) > 0) _r.push('灵脉×' + _rn.v);
               _parts.push('⛏️ <b>灵脉矿区</b>' + (_r.length ? '：' + _r.join('、') : '（待刷新）'));
             } catch(e) { _parts.push('⛏️ <b>灵脉矿区</b>'); }
           }
