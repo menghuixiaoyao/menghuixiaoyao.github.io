@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v986</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v987</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7426,11 +7426,12 @@ function doBreakthrough() {
     if (r.trib.demonMet && r.trib.demon) { const d = r.trib.demon, _dr = d.battle.round | 0, _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : ''; log(d.win ? 'good' : 'bad', `👹 心魔来袭${_cu}，激战 ${_dr} 回合，${d.win ? '<b>斩灭心魔，道心稳固！</b>' : '<b class="r">不敌心魔，道心受损……</b>'}`); try { if (window.TRIB_OMEN) window.TRIB_OMEN.beat(S, d.win ? 'dWin' : 'dLose'); } catch(_) {} }
   }
   if (r.pending === 'quiz') { commit(); render(); sheetTribQuiz(r.trib.quiz); return; } // v174 心魔问心：弹出答题面板
-  if (r.ok) { S.yinQi = 0; const _gs = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : `全属性 <span class="y">×${r.mult||'?'}</span>`; log('good', `⚡ <b>突破成功！</b>踏入【${r.realm}】，${_gs}法力上限 <span class="g">×2</span>！${S.realm === 1 ? '引气入体' : '凝气'}已耗尽（0/10缕）。`); sealAwakenCheck(); } // v116 突破成功清零引气入体
+  if (r.ok) { S.yinQi = 0; const _gs = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : `全属性 <span class="y">×${r.mult||'?'}</span>`; log('good', `⚡ <b>突破成功！</b>踏入【${r.realm}】，${_gs}法力上限 <span class="g">×2</span>！${S.realm === 1 ? '引气入体' : '凝气'}已耗尽（0/10缕）。`); try { if (window.TRIB_OMEN) window.TRIB_OMEN.beat(S, 'win'); } catch(_) {} sealAwakenCheck(); } // v116 突破成功清零引气入体
   else if (r.tribFail === 'thunder') log('bad', `⚡ 倒在第${r.trib.thunder.failAt}道天雷之下，突破失败……道途已断，沦为【${r.degraded || S.degraded}】（卡9级后期），折寿 <span class="r">${r.lifeLost}</span> 年。`); // v589
   else if (r.tribFail === 'demon') log('bad', `👹 心魔难斩，突破失败……道途已断，沦为【${r.degraded || S.degraded}】（卡9级后期），折寿 <span class="r">${r.lifeLost}</span> 年。`); // v589
   else if (r.degraded) log('bad', `⚡ 突破失败……道途受损，沦为【${r.degraded}】，气运可提高成功率。`); // v597 失败进降级状态
   else log('bad', `⚡ 突破失败……退回 <span class="r">${r.back} 级</span>（当前 Lv.${S.level}），气运可提高成功率。`);
+  if (!r.ok) { try { if (window.TRIB_OMEN) window.TRIB_OMEN.beat(S, 'fail'); } catch(_) {} }
   afterAct(); commit(); render();
 }
 // v174 心魔问心答题面板
@@ -7499,7 +7500,7 @@ window.doTribQuizAnswer = function(qi, oi) {
     }).filter(Boolean).join('<br>');
   }
   log(pass ? 'good' : 'bad', `👹 心魔${quiz.qs.length}问，答对 <b class="${pass ? 'g' : 'r'}">${n}</b> 道${pass ? '——<b>道心稳固，心魔退散！</b>' : '——<b class="r">道心动摇……</b>'}${_wrongDetail}`);
-  if (r.ok) { S.yinQi = 0; const _gs2 = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : `全属性 <span class="y">×${r.mult||'?'}</span>`; log('good', `⚡ <b>突破成功！</b>踏入【${r.realm}】，${_gs2}法力上限 <span class="g">×2</span>！${S.realm === 1 ? '引气入体' : '凝气'}已耗尽（0/10缕）。`); sealAwakenCheck(); }
+  if (r.ok) { S.yinQi = 0; const _gs2 = r.grade ? `结成【<b class="y">${r.grade}</b>】，全属性 <span class="y">×${r.mult}</span>！` : `全属性 <span class="y">×${r.mult||'?'}</span>`; log('good', `⚡ <b>突破成功！</b>踏入【${r.realm}】，${_gs2}法力上限 <span class="g">×2</span>！${S.realm === 1 ? '引气入体' : '凝气'}已耗尽（0/10缕）。`); try { if (window.TRIB_OMEN) window.TRIB_OMEN.beat(S, 'win'); } catch(_) {} sealAwakenCheck(); }
   else log('bad', `👹 心魔问心失败……退回 <span class="r">${r.back} 级</span>（当前 Lv.${S.level}），折寿 <span class="r">${r.lifeLost}</span> 年。`);
   afterAct(); commit(); render();
 }
