@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1018</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1019</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2403,8 +2403,8 @@ const SZ_SEATS = [ // v993 神藏：座序=境界名序；mer=STAR_NMER 经序�
   { name: '尊者神藏', short: '尊者', mer: [8], merName: '膀胱经', cnt: 67 },
   { name: '主宰大圆满神藏', short: '主宰', mer: [0, 1], merName: '任督二脉', cnt: 52 },
 ];
-const szProg = (S, i) => { const a = Array.isArray(S.shenzang) ? S.shenzang : []; return Math.max(0, Math.min(10, Math.floor(+a[i] || 0))); };
-const szSetProg = (S, i, v) => { if (!Array.isArray(S.shenzang) || S.shenzang.length !== 13) S.shenzang = new Array(13).fill(0); S.shenzang[i] = Math.max(0, Math.min(10, Math.floor(v))); };
+const szProg = (S, i) => { const a = Array.isArray(S.shenzang) ? S.shenzang : []; return Math.max(0, Math.min(10, +a[i] || 0)); }; // v1019: 允许小数（一丹一点位）
+const szSetProg = (S, i, v) => { if (!Array.isArray(S.shenzang) || S.shenzang.length !== 13) S.shenzang = new Array(13).fill(0); S.shenzang[i] = Math.max(0, Math.min(10, +v || 0)); }; // v1019: 允许小数
 const szFullCount = S => SZ_SEATS.reduce((n, _, i) => n + (szProg(S, i) >= 10 ? 1 : 0), 0);
 const szSmallCount = S => SZ_SEATS.reduce((n, _, i) => { const p = szProg(S, i); return n + (p > 0 && p < 10 ? p : 0); }, 0);
 function szSyncMai(S) { // v993：虚络=神藏总进度（0-130）；虚脉=全开座数
@@ -2420,13 +2420,13 @@ function useSha(S) { // 吞噬煞气：需吞魔技能；每次+1个法力上限
   if (C.useFali(S)) { const add = manaMax(S); S.mana = Math.floor(S.mana + add); manaGained = add; const nc = C.manaCap(S); S.shaExcess = Math.max(0, S.mana - nc); }
   return { ok: true, manaGained };
 }
-function drinkMai(S, n, seatIdx) { // v993：服用开脉丹：每颗整开一座神藏（优先指定座，其次座序第一座未满）
+function drinkMai(S, n, seatIdx) { // v1019：一颗开脉丹只点亮一个穴位（优先指定座，其次座序第一座未满）
   const have = S.inv['mai'] || 0; n = Math.min(n || 1, have);
   if (n <= 0) return 0;
   let used = 0; const order = [];
   if (seatIdx !== undefined && seatIdx !== null && szProg(S, seatIdx) < 10) order.push(seatIdx);
   for (let i = 0; i < 13; i++) if (!order.includes(i)) order.push(i);
-  for (const i of order) { if (used >= n) break; if (szProg(S, i) < 10) { szSetProg(S, i, 10); used++; } }
+  for (const i of order) { while (used < n && szProg(S, i) < 10) { const _step = 10 / SZ_SEATS[i].cnt; szSetProg(S, i, Math.min(10, szProg(S, i) + _step)); used++; } if (used >= n) break; }
   if (used > 0) { S.inv['mai'] = have - used; if (!S.inv['mai']) delete S.inv['mai']; szSyncMai(S); }
   return used;
 }
@@ -6883,7 +6883,7 @@ function starChartHtml() {
   });
   if (frontier) inner += `<span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border:2px solid rgba(255,215,106,.9);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#ffd76a"></span>`;
   const tg = (v, lab) => `<button class="btn sm" data-starview="${v}" style="flex:1;padding:5px 0;${(view === (v === 'back' ? 1 : 0)) ? 'border-color:var(--gold);color:var(--gold)' : 'opacity:.65'}">${lab}</button>`;
-  const swirl = i => { const p = C.szProg(S, i), st = C.SZ_SEATS[i]; return `<button data-seat="${i}" style="background:${i === sel ? 'rgba(255,205,92,.08)' : 'none'};border:none;padding:2px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;border-radius:8px">${szSpiralSvg(p / 10, p >= 10, 34)}<span style="font-size:11px;line-height:1.15;color:${p > 0 ? 'var(--gold)' : '#8a86a0'}">${st.short}</span><span style="font-size:9px;color:#6d6a84">${p}/10</span></button>`; };
+  const swirl = i => { const p = C.szProg(S, i), st = C.SZ_SEATS[i]; return `<button data-seat="${i}" style="background:${i === sel ? 'rgba(255,205,92,.08)' : 'none'};border:none;padding:2px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;border-radius:8px">${szSpiralSvg(p / 10, p >= 10, 34)}<span style="font-size:11px;line-height:1.15;color:${p > 0 ? 'var(--gold)' : '#8a86a0'}">${st.short}</span><span style="font-size:9px;color:#6d6a84">${Math.floor(p)}/10</span></button>`; };
   const colL = [0, 1, 2, 3, 4, 5, 6].map(swirl).join('');
   const colR = [7, 8, 9, 10, 11, 12].map(swirl).join('');
   const sq = g === 'm' && view === 1;
