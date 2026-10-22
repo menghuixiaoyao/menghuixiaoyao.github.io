@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1015</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1016</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10509,7 +10509,7 @@ document.addEventListener('click', e => {
     } catch(_) { sheetConsign('list', '网络不通，稍后再试。', consignSec); }
   })(); }
   else if ('chatsend' in d) { const inp = $('chatInput'); const v = inp ? (inp.value || '').trim() : ''; if (v) { const _li2 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_li2 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { if (inp) inp.value = ''; try { chatHistoryToCache(); } catch(_) {} setTimeout(() => { if ($('chatBox')) sheetChat(); }, 600); } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录真人联机'); } else { toastLog('sys', '发送失败'); } }); } else { toastLog('sys', '请先登录真人联机再发言'); } } }
-  else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v) { const _tab2 = window._chatTab || 'world'; const _li3 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_tab2 === 'world' && _li3 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { inp.value = ''; try { window._srvChat = (window._srvChat || []).concat([{ n: (MHXY.myName ? MHXY.myName() : '我'), t: v.slice(0, 200) }]); } catch(_) {} if (window.renderChatFloat) window.renderChatFloat(); try { chatHistoryToCache(); } catch(_) {} } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } else { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } }); } else { if (_tab2 === 'world') toastLog('sys', '未登录真人联机：这条只留在本机，先去真人联机登录'); if (typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value = ''; save(); if (window.renderChatFloat) window.renderChatFloat(); } } } } // v1008 主界面输入框按频道/登录态分流（原写死本地）
+  else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v) { var _cfOpen1016 = false; try { var _cfEl1016 = document.getElementById('chatFloat'); _cfOpen1016 = !!(_cfEl1016 && _cfEl1016.classList.contains('on')); } catch(_) {} var _tab2 = _cfOpen1016 ? (window._chatTab || 'world') : 'world'; /* v1016: 悬浮窗未开时主界面发言强制走world，修静默丢消息 */ const _li3 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_tab2 === 'world' && _li3 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { inp.value = ''; try { window._srvChat = (window._srvChat || []).concat([{ n: (MHXY.myName ? MHXY.myName() : '我'), t: v.slice(0, 200) }]); } catch(_) {} if (window.renderChatFloat) window.renderChatFloat(); try { chatHistoryToCache(); } catch(_) {} } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } else { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } }); } else { if (_tab2 === 'world') toastLog('sys', '未登录真人联机：这条只留在本机，先去真人联机登录'); if (typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value = ''; save(); if (window.renderChatFloat) window.renderChatFloat(); } } } } // v1008 主界面输入框按频道/登录态分流（原写死本地）
   else if (d.menutab) sheetMenu(d.menutab);
   else if (t.id === 'debugBtn') sheetDebug();
 });
@@ -10827,6 +10827,28 @@ if (typeof window.doReleasePet !== 'function') {
       if (typeof sheetChar === 'function') sheetChar();
     } catch(e) {}
   };
+}
+
+if (typeof window.shenshiPanel !== 'function') {
+  // v1016 兜底：blk1 v887 的同名函数偶发被吞，在此补一份
+  window.shenshiPanel = function() { // v887 化神神识：3格内资源远程收取
+  try {
+    if ((S.realm|0) < 5) { log('bad', '需化神境界才能神识外放'); return; }
+    const wm = S.worldMap || { px: 2, py: 3 };
+    const _spots = [
+      { x: 4, y: 3, name: '⛏️灵脉矿区', fn: 'openReserveSheet' },
+      { x: 3, y: 2, name: '🌱田药园', fn: 'openHerbSheet' },
+      { x: 2, y: 0, name: '🥚养殖园', fn: 'openRanchSheet' }
+    ].filter(s => {
+      const _d = Math.max(Math.abs(s.x - wm.px), Math.abs(s.y - wm.py));
+      return _d >= 1 && _d <= 3;
+    });
+    if (!_spots.length) { log('bad', '👁️ 神识范围内（3格）没有资源点'); return; }
+    openSheet(`<h2>👁️ 神识外放</h2><div class="hint">化神神识覆盖3格，远程收取资源</div>` +
+      _spots.map(s => `<div class="row"><div class="lab">${s.name} <small>(${s.x},${s.y})</small></div><button class="btn gold" onclick="window.${s.fn}()">收取</button></div>`).join('') +
+      `<div class="row"><button class="btn full" onclick="closeSheet()">关闭</button></div>`);
+  } catch(e) {}
+}
 }
 
 /* ================= 联机模块 v959 =================
