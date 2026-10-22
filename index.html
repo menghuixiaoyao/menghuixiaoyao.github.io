@@ -194,7 +194,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="bcBanner"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1011</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1012</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -899,7 +899,7 @@ function doManualLevelUp(S) {
 }
 function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n; S.qixi = (S.qixi|0) + n * 2;  try { if (typeof claimFlowerSS === 'function') { const _g = claimFlowerSS(S); if (_g > 0) { try { log('good', `🌸 花开加神识+${_g}`); } catch(_){} } } } catch(_){} return n; } // v944 轮回清零，无永久累积 神识+1/级，气息+2/级 神识+2/级，轮回清零，与气息对称 // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v932 神识+5/级不清零（花可跨世累积）；v928 气息+2/级，轮回清零
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
-const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
+const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); r = Math.min(0.95, Math.max(0.01, r * (1 + fateMod(S, 'break')))); return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
 const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {q, opts, ans}
   { q: '新入仙途的道友，初始有几点体力？', opts: ['3 点', '5 点', '10 点', '20 点'], ans: 1 },
@@ -1052,7 +1052,7 @@ function tribStrikes(S, trib) { // v988 雷劫分层（老板定版五档）：�
 try { window.tribStrikes = tribStrikes; } catch(_) {}
 function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗；v632 10回合制；v634 战胜雷云品质+1；v893 功德护体减伤
   const fa = fightAttrs(S, false);
-  let pw = pwOverride != null ? pwOverride : tribPower(S);
+  let pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib'));
   const _meritCut = (S.realm|0) >= 6 ? Math.min(0.30, Math.floor((S.merit|0) / 10) * 0.01) : 0; // 每10功德减伤1%，上限30%
   if (_meritCut > 0) { pw = pw * (1 - _meritCut); try { log('good', `🙏 功德护体！雷劫威力 <span class="g">-${Math.round(_meritCut * 100)}%</span>（功德 ${S.merit}）`); } catch(_) {} }
   const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.5 * pw))); // v635 普通品质1-3回合可战胜，圆满极最强
@@ -1086,7 +1086,7 @@ function demonTrib(S) { // v172 心魔劫：心魔属性为玩家战斗属性九
 // v654 雷劫/心魔手动战斗
 function startThunderBattle(S, trib, fromRealm, pwOverride) {
   const fa = fightAttrs(S, false);
-  const pw = pwOverride != null ? pwOverride : tribPower(S);
+  const pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib'));
   const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.5 * pw))); // v635 同thunderTrib
   const thunder = fighter('⚡雷云', tattrs, false, []);
   const b = new Battle(playerFighter(S, false), thunder);
@@ -1493,7 +1493,8 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   S.lifeChoice = null; // v98 轮回：生活技能重选（各技能等级/经验全保留）
   S.lifeChoices = []; // v98 轮回：清空生活技能选择，重选（各技能等级/经验全保留）
   if (S.stats) { S.stats.afkSecs = 0; S.stats.adv = 0; S.stats.advWin = 0; S.stats.pk = 0; S.stats.pkWin = 0; S.stats.checkins = 0; } // 轮回清零本世战绩/签到/闭关，历世累计保留
-  return { ok: true, n, from, keepAttr, maiGain, seal: _seal, expired: _expired };
+  const _fate = drawFateSign(S); // v1012 宿命签：入新一世抽一签
+  return { ok: true, n, from, keepAttr, maiGain, seal: _seal, expired: _expired, fate: _fate };
 }
 /* ---------- 榜单 ---------- */
 const RANK_PLAYER_NAMES = ['剑啸江湖','一叶知秋','夜雨声烦','君莫笑','逍遥散人','青衫仗剑','月下独酌','风清扬','令狐冲','小龙女','杨过','郭靖','黄蓉','张无忌','赵敏','韦小宝','虚竹','段誉','王语嫣','乔峰','阿朱','西门吹雪','叶孤城','陆小凤','花满楼','楚留香','李寻欢','阿飞','沈浪','萧十一郎','傅红雪','叶开','陆小凤','花满楼','司空摘星','朱七七','沈珊姑','白飞飞','林诗音','孙小红','老实和尚','古松居士','木道人','石鹤','严独鹤','高立','金七两','丁鹏','柳若松','谢晓峰','燕十三','慕容秋荻','小丽','孙小蝶','林仙儿','白飞飞','朱七七','沈珊姑','赵香灵','丁白云','花寡妇','屠娇娇','燕南天','邀月','怜星','江小鱼','花无缺','铁心兰','苏樱','张菁','顾人玉','黑蜘蛛','萧咪咪','哈哈儿','杜杀','李大嘴','阴九幽','轩辕三光','欧阳丁','白开心','黄鸡大师','恶通天','慕容九','江玉郎','江别鹤','花月奴','夜帝','南宫协','王云梦','柴玉关','独孤一鹤','阎铁珊','霍天青','霍休','上官飞燕','柳余恨','金九龄','公孙大娘','欧阳情','孙秀青','石秀雪','马秀真','叶秀珠'];
@@ -2188,7 +2189,7 @@ function feedBeastPill(S, q) { // 喂食灵兽丹：出战灵宠得经验（可�
 
 /* ---------- 炼药 ---------- */
 const boostOf = (lu, sp) => ((lu && LU[lu] && LU[lu].alc) || 0) + ((sp && ORES[sp] && ORES[sp].alc) || 0);
-function alcRate(S, lu, sp) { const base = clamp(K.ALC_BASE_RATE + (S.alc.lv - 1) * K.ALC_RATE_PER_LV + lifeAttrRate(S, 'alc'), 0, K.ALC_RATE_MAX), b = boostOf(lu, sp); return b ? Math.min(K.ALC_BOOST_RATE_MAX, base + b) : base; }
+function alcRate(S, lu, sp) { const base = clamp(clamp(K.ALC_BASE_RATE + (S.alc.lv - 1) * K.ALC_RATE_PER_LV + lifeAttrRate(S, 'alc'), 0, K.ALC_RATE_MAX) * (1 + fateMod(S, 'brew')), 0, K.ALC_RATE_MAX), b = boostOf(lu, sp); return b ? Math.min(K.ALC_BOOST_RATE_MAX, base + b) : base; }
 function potCountProbs(S) { return null; } // 已改为1-10枚随机，不再用概率表
 function gradeProbs(S, lu, sp) { const q5 = Math.min(K.Q5_MAX, K.Q5_BASE + S.alc.lv * K.Q5_PER_LV); const q4 = Math.min(K.Q4_MAX, K.Q4_BASE + S.alc.lv * K.Q4_PER_LV); const q3 = Math.min(K.ALC_BOOST_Q3_MAX, Math.min(K.Q3_MAX, K.Q3_BASE + S.alc.lv * K.Q3_PER_LV + lifeAttrQ(S, 'alc')) + boostOf(lu, sp)); const q2 = Math.min(K.Q2, Math.max(0, 1 - q5 - q4 - q3)); return { q5, q4, q3, q2, q1: Math.max(0, 1 - q5 - q4 - q3 - q2) }; }
 /* ---------- v998 丹毒 / 变异丹 ---------- */
@@ -3727,6 +3728,23 @@ function swordBonus(S) { // 本命飞剑战斗加成：每级全属性+1%，剑�
 const GEAR_RULES = { bumie: { n: '不灭', d: '每场战斗首次受到致命伤害时，保留 1 点生命' }, shiling: { n: '噬灵', d: '普通攻击击杀敌人时，回复 10% 最大生命' }, lianzhu: { n: '连珠', d: '普通攻击暴击时，追加一击 50% 伤害' }, beishui: { n: '背水', d: '生命低于 30% 时，受到的伤害降低 25%' } };
 function equipRules(S) { const out = []; try { for (const sl in (S.equip || {})) { const g = S.equip[sl]; if (g && g.rule && GEAR_RULES[g.rule]) out.push(g.rule); } } catch(_) {} return out; }
 Object.assign(C, { DESTINY_STARS, destinyStar, SWORD_TAGS, swordBonus, GEAR_RULES, equipRules });
+// ===== v1012 P1 宿命签：轮回随机一签，一正一负，随世生效；轮回次数越高签档越高 =====
+const FATE_SIGNS = [
+  { k:'danxin', tier:0, n:'丹心命', t:'丹道顺遂，劫火亦盛', mods:{ brew:0.12, trib:0.06 } },
+  { k:'dunfeng', tier:0, n:'钝锋命', t:'劫难迟钝，破境亦钝', mods:{ trib:-0.10, break:-0.05 } },
+  { k:'wendao', tier:0, n:'稳道命', t:'道心稳固，丹火难驭', mods:{ break:0.06, brew:-0.08 } },
+  { k:'jiehuo', tier:1, n:'劫火命', t:'劫火淬体，丹炉易炸', mods:{ trib:-0.15, brew:-0.12 } },
+  { k:'pojun2', tier:1, n:'破军命', t:'破境如竹，天威亦重', mods:{ break:0.10, trib:0.10 } },
+  { k:'lingquan', tier:1, n:'灵泉命', t:'丹泉涌流，境关迟滞', mods:{ brew:0.18, break:-0.06 } },
+  { k:'tiandu', tier:2, n:'天妒命', t:'天资遭妒，破境如飞', mods:{ break:0.15, trib:0.18 } },
+  { k:'dansheng', tier:2, n:'丹圣命', t:'丹道通圣，劫数加身', mods:{ brew:0.25, trib:0.12 } },
+  { k:'panshi', tier:2, n:'磐石命', t:'劫下磐石，关前迟步', mods:{ trib:-0.22, break:-0.08 } }
+];
+function fateSignOf(S) { return (S && S.fateSign) ? (FATE_SIGNS.find(f => f.k === S.fateSign) || null) : null; }
+function fateMod(S, key) { const f = fateSignOf(S); return (f && f.mods && typeof f.mods[key] === 'number') ? f.mods[key] : 0; }
+function fateModText(f) { if (!f || !f.mods) return ''; const L = { brew:'炼丹成功率', trib:'雷劫威力', break:'突破成功率' }; return Object.keys(f.mods).map(k => L[k] + (f.mods[k] > 0 ? ' +' : ' ') + Math.round(f.mods[k] * 100) + '%').join(' · '); }
+function drawFateSign(S) { const cnt = (S.sealLife|0); const tier = cnt >= 6 ? 2 : cnt >= 3 ? 1 : 0; const pool = FATE_SIGNS.filter(f => f.tier === tier); const f = pool[Math.floor(Math.random() * pool.length)] || pool[0]; S.fateSign = f.k; return f; }
+Object.assign(C, { FATE_SIGNS, fateSignOf, fateMod, fateModText, drawFateSign });
 try { G._bx = { Battle: Battle, fighter: fighter, playerFighter: playerFighter, fightAttrs: fightAttrs, tribPower: tribPower, ATTRS: ATTRS }; } catch(_){}
 C.thunderCloud = function(S) { // v687 6档黑云
   try {
@@ -3742,7 +3760,7 @@ C.thunderCloud = function(S) { // v687 6档黑云
 };
 C.startThunderBattle = function(S, trib, fromRealm, pwOverride) {
   const fa = fightAttrs(S, false);
-  const pw = pwOverride != null ? pwOverride : tribPower(S);
+  const pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib'));
   const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.5 * pw)));
   const thunder = fighter('⚡雷云', tattrs, false, []);
   const b = new Battle(playerFighter(S, false), thunder);
@@ -6591,6 +6609,7 @@ function sheetChar() {
   const setBonusHtml = _sbTop.length ? `<span style="font-weight:normal;font-size:12px">${_sbTop.join(' ')}</span>` : '';
   html += `<div style="font-size:13px;font-weight:bold;margin-bottom:6px;display:flex;gap:6px;align-items:center"><span style="width:44px;flex:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.name || '无名道友')}</span><div style="flex:1;min-width:0;display:flex;gap:6px;align-items:center"><button class="act primary" style="flex:none;padding:6px 8px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">${S.level === C.REALM_MAX_LV - 1 ? '⬆️突破圆满' : '⬆️升级'}</span></button><span style="flex:1;text-align:center">${C.realmTxt(S)}</span>${S.dead ? '' : '<button class="act" style="flex:none;padding:6px 6px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">🔄轮回</span></button>'}</div><span style="flex:none;font-size:11px;font-weight:normal">👁️<b>${C.fmtN(S.shenshi|0)}</b>${(typeof flowerIcons === 'function' ? flowerIcons(S) : '') ? ` <span class="y">${flowerIcons(S)} <span style="margin-left:4px">${(typeof qixiIcon === 'function' ? qixiIcon(S) : '👣')}<b>${C.fmtN(S.qixi|0)}</b></span></span>` : ''}</span>${setBonusHtml}</div>`; // v570 名字对齐头像正中；v571 阶段对齐经验条正中；v581 神识放阶段右边
   try { const _ds = C.destinyStar(S); html += `<div class="row" style="padding:4px 0"><div class="lab">🌠 命星<small>${_ds.t}</small></div><div class="lab"><b class="pu">${_ds.n}</b></div></div>`; } catch(_) {}
+  try { const _fs = C.fateSignOf(S); if (_fs) html += `<div class="row" style="padding:4px 0"><div class="lab">🎴 宿命签<small>${_fs.t}</small></div><div class="lab" style="text-align:right"><b class="y">${_fs.n}</b><br><small>${C.fateModText(_fs)}</small></div></div>`; } catch(_) {} // v1012
   { xyInit(); const _xyt = xyTotal(); html += `<div class="row" style="padding:4px 0"><div class="lab">💞 仙缘<small>♂ ${S.xianyuan.m|0} · ♀ ${S.xianyuan.f|0} · 共 ${_xyt}</small></div><div class="lab">🔗 编号<small>${S.bindNum}</small></div><button class="btn sm" data-a="xianyuan">仙缘</button></div>`; }
   html += `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:3.5px;margin-bottom:4px;margin-left:0;margin-right:0;font-size:12px"><span style="white-space:nowrap">⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : 'g'}">${S.lifespan|0}</b>年</span><span style="white-space:nowrap;text-align:center">🧪丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b><small> ${C.toxTier(S.danDu|0)}</small></span><span class="stam" style="text-align:center">体力 <b style="font-size:12px">${S.stamina|0}</b></span><span style="white-space:nowrap;text-align:center">🌫️灵气 <b>${C.qiNow()}</b><small> ${C.qiTierName(C.qiNow())}</small></span><span style="text-align:center;position:relative;left:-15px">🍗饱食 <b class="${S.hunger >= 60 ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b></span></div>`;
   if ((S.realm|0) >= 1 && window.LG) html += `<div class="row" style="padding:4px 0"><div class="lab">🌟 灵根<small>${window.LG.name(S)}</small></div>${S.faZeDone5 ? '<div class="lab">🌈 <b class="y">混元道体</b></div>' : ''}${(S.realm|0) >= 6 ? `<div class="lab">🙏 功德金身<small>功德 <b class="y">${S.merit|0}</b> · 减伤 ${Math.min(30, Math.floor((S.merit|0)/10))}%${(S.merit|0) >= 100 ? ' · 突破+5%' : ''}</small></div>` : ''}</div>`; // v867 灵根显示；v906 功德金身放灵根一排
@@ -8044,6 +8063,7 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
   const _sealTxt = (keepAttr && r.seal) ? `${_sealAu2 ? `<img src="${_sealAu2}" style="width:24px;height:24px;border-radius:50%;vertical-align:-4px;object-fit:cover"> ` : ''}<b>${AN[keepAttr]} ${r.seal.value}</b> 已封存为前世遗物 <b class="y">${r.seal.playerName || r.seal.name}</b>（存入背包），` : '';
   const _expTxt = (r.expired && r.expired.length) ? `<br><span style="color:var(--dim)">🌫️ 前世遗物【${r.expired.map(x => x.name).join('】【')}】久未觉醒，已随风消散…</span>` : '';
   log('good', `🔄 <b>轮回重修</b>（${r.from}第 ${r.n} 次）：回到凡人 Lv.1，${_sealTxt}全属性重置为 1，<b class="r">已学技能已遗忘</b>（可用技能书重学）。${r.n > 0 ? `加成已记入${r.from}池，突破后升级全属性 +${1 + rb}。` : '凡人轮回不计加成，练气及以上每境10次有效。'}` + (r.maiGain > 0 ? `<br>🌀 获得 <span class="g">开脉丹 ×${r.maiGain}</span>（每个池子1颗）` : '') + ((keepAttr && r.seal) ? `<br><small style="color:var(--dim)">每次突破有50%概率觉醒胎中之谜，届时需输入印记主题方可继承。</small>` : '') + _expTxt);
+  if (r.fate) log('sys', `🎴 宿命签：<b class="y">${r.fate.n}</b>——${r.fate.t}（${C.fateModText(r.fate)}，随此世生效）`); // v1012
   afterAct(); commit(); render();
   // v131 轮回后可重选性别头像
   setTimeout(() => sheetGender(), 500);
@@ -10543,7 +10563,7 @@ function gmPanel(){
     + '<div class="row" style="display:flex;gap:6px">'
     + '<select id="gmStore" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
     + '<option value="ores">矿石</option><option value="mats">材料</option><option value="meds">药品</option>'
-    + '<option value="elixirs">丹药</option><option value="inv">杂物</option><option value="eggs">蛋</option>'
+    + '<option value="elixirs">丹药</option><option value="inv">杂物</option><option value="eggs">蛋</option><option value="maiPages">脉络残页</option>'
     + '</select>'
     + '<input id="gmKey" placeholder="物品key" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
     + '<input id="gmN" type="number" value="99" style="width:70px;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
@@ -10567,7 +10587,7 @@ async function gmDoSet(){
   if (r.ok && r.json && r.json.ok) { try { syncNow(false); } catch(_) {} }
 }
 async function gmDoGive(){
-  var s = val('gmStore'), k = val('gmKey'), n = val('gmN');
+  var s = val('gmStore'), k = val('gmKey'), n = val('gmN'); if (s === 'maiPages' && !k) k = '*'; // v1012 脉络残页无 key
   var msg = document.getElementById('gmMsg');
   if (!k) { if (msg) msg.textContent = '请输入物品key'; return; }
   var r = await api('/api/gm/give', { method:'POST', body:{ store:s, key:k, n:parseInt(n,10)||1 } });
