@@ -192,9 +192,10 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 </head>
 <body>
 <div id="bcBanner"></div>
+<button id="encBanner" data-encopen="1" style="display:none;width:calc(100% - 20px);margin:6px 10px;padding:9px 12px;border:1px solid #b8860b;border-radius:8px;background:rgba(184,134,11,.15);color:#ffd75e;font-size:13px;text-align:center;cursor:pointer">🌀 奇遇降临 · 点我处理</button>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1012</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1013</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -899,7 +900,7 @@ function doManualLevelUp(S) {
 }
 function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n; S.qixi = (S.qixi|0) + n * 2;  try { if (typeof claimFlowerSS === 'function') { const _g = claimFlowerSS(S); if (_g > 0) { try { log('good', `🌸 花开加神识+${_g}`); } catch(_){} } } } catch(_){} return n; } // v944 轮回清零，无永久累积 神识+1/级，气息+2/级 神识+2/级，轮回清零，与气息对称 // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v932 神识+5/级不清零（花可跨世累积）；v928 气息+2/级，轮回清零
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
-const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); r = Math.min(0.95, Math.max(0.01, r * (1 + fateMod(S, 'break')))); return r; }; // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
+const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); r = Math.min(0.95, Math.max(0.01, r * (1 + fateMod(S, 'break')))); if (S.tabooAwake) r = Math.min(0.95, r + 0.05); return r; }; // v1013 禁忌苏醒 // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
 const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {q, opts, ans}
   { q: '新入仙途的道友，初始有几点体力？', opts: ['3 点', '5 点', '10 点', '20 点'], ans: 1 },
@@ -1052,7 +1053,7 @@ function tribStrikes(S, trib) { // v988 雷劫分层（老板定版五档）：�
 try { window.tribStrikes = tribStrikes; } catch(_) {}
 function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗；v632 10回合制；v634 战胜雷云品质+1；v893 功德护体减伤
   const fa = fightAttrs(S, false);
-  let pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib'));
+  let pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib')) * (S.tabooAwake ? 0.95 : 1);
   const _meritCut = (S.realm|0) >= 6 ? Math.min(0.30, Math.floor((S.merit|0) / 10) * 0.01) : 0; // 每10功德减伤1%，上限30%
   if (_meritCut > 0) { pw = pw * (1 - _meritCut); try { log('good', `🙏 功德护体！雷劫威力 <span class="g">-${Math.round(_meritCut * 100)}%</span>（功德 ${S.merit}）`); } catch(_) {} }
   const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.5 * pw))); // v635 普通品质1-3回合可战胜，圆满极最强
@@ -1086,7 +1087,7 @@ function demonTrib(S) { // v172 心魔劫：心魔属性为玩家战斗属性九
 // v654 雷劫/心魔手动战斗
 function startThunderBattle(S, trib, fromRealm, pwOverride) {
   const fa = fightAttrs(S, false);
-  const pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib'));
+  const pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib')) * (S.tabooAwake ? 0.95 : 1);
   const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.5 * pw))); // v635 同thunderTrib
   const thunder = fighter('⚡雷云', tattrs, false, []);
   const b = new Battle(playerFighter(S, false), thunder);
@@ -1445,6 +1446,9 @@ function sealRemainLives(seal, curLife) { return Math.max(0, sealMaxLives(seal) 
 C.sealMaxLives = sealMaxLives; C.sealRemainLives = sealRemainLives;
 function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选定属性封存为物品（需突破觉醒胎中之谜+灵魂印记才能继承）；主宰轮回则前面各境池+1，否则次数记在轮回前所在境界（任何时候可用）
   if (S.dead) return { err: 'dead' };
+  const _outStar = (() => { try { return destinyStar(S).n; } catch(_) { return ''; } })(); // v1013 前世谱：记录将逝一世
+  const _outFate = (() => { const f = fateSignOf(S); return f ? f.n : ''; })();
+  const _outFrom = REALMS[S.realm | 0] || '';
   let n, from;
   if (!Array.isArray(S.reinc)) S.reinc = new Array(13).fill(0);
   const isPerfect = S.level >= REALM_MAX_LV;
@@ -1467,7 +1471,7 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
     _expired = S.sealed.filter(x => sealRemainLives(x, _sealLife) <= 0);
     if (_expired.length) S.sealed = S.sealed.filter(x => sealRemainLives(x, _sealLife) > 0);
   }
-  const _fromRealm = S.realm | 0; // 轮回前境界
+  const _fromRealm = S.realm | 0; const _fromLevel = S.level | 0; // 轮回前境界/等级（禁忌判主宰大圆满用）
   S.realm = 0; S.level = 1; S.xp = backXp; S.lifespan = 100; S.qixi = 0; S.shenshi = 1; S.flowerSetsClaimed = 0; // v938 轮回神识气息都清零
   // 轮回：选定属性封存为物品（不再直接继承），其他重置为1；不选则全重置为1
   let _seal = null;
@@ -1494,7 +1498,9 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   S.lifeChoices = []; // v98 轮回：清空生活技能选择，重选（各技能等级/经验全保留）
   if (S.stats) { S.stats.afkSecs = 0; S.stats.adv = 0; S.stats.advWin = 0; S.stats.pk = 0; S.stats.pkWin = 0; S.stats.checkins = 0; } // 轮回清零本世战绩/签到/闭关，历世累计保留
   const _fate = drawFateSign(S); // v1012 宿命签：入新一世抽一签
-  return { ok: true, n, from, keepAttr, maiGain, seal: _seal, expired: _expired, fate: _fate };
+  S.pastLives = Array.isArray(S.pastLives) ? S.pastLives : []; S.pastLives.push({ n, from: _outFrom, star: _outStar, fate: _outFate, seal: _seal ? String(_seal.value || _seal.name || '').slice(0, 30) : '' }); if (S.pastLives.length > 50) S.pastLives = S.pastLives.slice(-50); // v1013 前世谱
+  if (_fromRealm >= 12 && _fromLevel >= 10) S.taboo = Math.min(100, (S.taboo | 0) + 10); const _tabooAwoke = !S.tabooAwake && (S.taboo | 0) >= 100; if (_tabooAwoke) S.tabooAwake = true; // v1013 禁忌苏醒度：仅主宰大圆满轮回才 +10（Ye 定）
+  return { ok: true, n, from, keepAttr, maiGain, seal: _seal, expired: _expired, fate: _fate, taboo: S.taboo | 0, tabooAwoke: _tabooAwoke };
 }
 /* ---------- 榜单 ---------- */
 const RANK_PLAYER_NAMES = ['剑啸江湖','一叶知秋','夜雨声烦','君莫笑','逍遥散人','青衫仗剑','月下独酌','风清扬','令狐冲','小龙女','杨过','郭靖','黄蓉','张无忌','赵敏','韦小宝','虚竹','段誉','王语嫣','乔峰','阿朱','西门吹雪','叶孤城','陆小凤','花满楼','楚留香','李寻欢','阿飞','沈浪','萧十一郎','傅红雪','叶开','陆小凤','花满楼','司空摘星','朱七七','沈珊姑','白飞飞','林诗音','孙小红','老实和尚','古松居士','木道人','石鹤','严独鹤','高立','金七两','丁鹏','柳若松','谢晓峰','燕十三','慕容秋荻','小丽','孙小蝶','林仙儿','白飞飞','朱七七','沈珊姑','赵香灵','丁白云','花寡妇','屠娇娇','燕南天','邀月','怜星','江小鱼','花无缺','铁心兰','苏樱','张菁','顾人玉','黑蜘蛛','萧咪咪','哈哈儿','杜杀','李大嘴','阴九幽','轩辕三光','欧阳丁','白开心','黄鸡大师','恶通天','慕容九','江玉郎','江别鹤','花月奴','夜帝','南宫协','王云梦','柴玉关','独孤一鹤','阎铁珊','霍天青','霍休','上官飞燕','柳余恨','金九龄','公孙大娘','欧阳情','孙秀青','石秀雪','马秀真','叶秀珠'];
@@ -2134,7 +2140,7 @@ const SET_QMULT = GQ_SET; // 套装效果 × 同套装备的平均品质系数�
 const setQuality = S => { const q = {}; for (const sl in SLOTS) { const g = S.equip && S.equip[sl]; if (g && g.set) (q[g.set] = q[g.set] || []).push(SET_QMULT[g.q] || 1); } for (const k in q) q[k] = q[k].reduce((a, b) => a + b, 0) / q[k].length; return q; };
 const activeSets = S => { const c = setCounts(S), qm = setQuality(S), o = {}; for (const k in c) if (c[k] >= 2) o[k] = GEAR_SETS[k].v[Math.min(5, c[k]) - 2] * qm[k]; return o; }; /* {套装: 实际数值 = 件数档位 × 平均品质系数}；致命套只放大触发率 */
 const petActiveSets = pet => { const c = {}, q = {}; for (const sl in SLOTS) { const g = pet.peq && pet.peq[sl]; if (g && g.set) { c[g.set] = (c[g.set] || 0) + 1; (q[g.set] = q[g.set] || []).push(SET_QMULT[g.q] || 1); } } const o = {}; for (const k in c) if (c[k] >= 2) o[k] = GEAR_SETS[k].v[Math.min(5, c[k]) - 2] * (q[k].reduce((x, y) => x + y, 0) / q[k].length); return o; }; // 灵宠自身套装：与人物同规则（2/3/4/5 件档 × 平均品质系数）
-function gearAdd(S, a) { for (const sl in SLOTS) { const g = S.equip && S.equip[sl]; if (g && GEAR_SETS[g.set]) a[GEAR_SETS[g.set].attr] += g.v; } return a; }
+function gearAdd(S, a) { for (const sl in SLOTS) { const g = S.equip && S.equip[sl]; if (g && GEAR_SETS[g.set]) a[GEAR_SETS[g.set].attr] += g.v * refineMult(g); } return a; } // v1013 炼灵倍率
 function equipGear(S, id) { const i = S.gearBag.findIndex(g => g.id === id); if (i < 0) return false; const g = S.gearBag[i], sl = GEAR[g.k] && GEAR[g.k].slot; if (!sl || !SLOTS[sl]) return false; S.gearBag.splice(i, 1); if (S.equip[sl]) S.gearBag.push(S.equip[sl]); for (const k in S.equip) { if (k !== sl && S.equip[k] && GEAR[S.equip[k].k] && GEAR[S.equip[k].k].slot === sl) { S.gearBag.push(S.equip[k]); delete S.equip[k]; } } S.equip[sl] = g; return true; } // v714 同部位唯一性强制校验
 function unequipGear(S, sl) { if (!S.equip[sl]) return false; if (S.gearBag.length >= bagCap(S)) return 'full'; S.gearBag.push(S.equip[sl]); S.equip[sl] = null; return true; }
 const gearPrice = g => g.v * K.GEAR_SELL_PER_PT;
@@ -3745,6 +3751,269 @@ function fateMod(S, key) { const f = fateSignOf(S); return (f && f.mods && typeo
 function fateModText(f) { if (!f || !f.mods) return ''; const L = { brew:'炼丹成功率', trib:'雷劫威力', break:'突破成功率' }; return Object.keys(f.mods).map(k => L[k] + (f.mods[k] > 0 ? ' +' : ' ') + Math.round(f.mods[k] * 100) + '%').join(' · '); }
 function drawFateSign(S) { const cnt = (S.sealLife|0); const tier = cnt >= 6 ? 2 : cnt >= 3 ? 1 : 0; const pool = FATE_SIGNS.filter(f => f.tier === tier); const f = pool[Math.floor(Math.random() * pool.length)] || pool[0]; S.fateSign = f.k; return f; }
 Object.assign(C, { FATE_SIGNS, fateSignOf, fateMod, fateModText, drawFateSign });
+// ===== v1013 炼灵（一念永恒）：装备炼灵耗寿元，每层属性 +5%，10 层满（银纹5/金纹8/紫纹10） =====
+function refineMult(g) { return 1 + 0.05 * Math.min(10, (g && g.rl) | 0); }
+function refineTierName(rl) { rl |= 0; return rl >= 10 ? '紫纹' : rl >= 8 ? '金纹' : rl >= 5 ? '银纹' : ''; }
+function refineCost(S, g) { return 10 * (((g && g.rl) | 0) + 1) * Math.pow(2, S.realm | 0); }
+function refineGear(S, loc, key) {
+  let g = null;
+  if (loc === 'equip') g = S.equip && S.equip[key];
+  else g = (S.gearBag || []).find(x => x.id === key) || null;
+  if (!g) return { ok: false, err: '无此装备' };
+  const rl = g.rl | 0;
+  if (rl >= 10) return { ok: false, err: '炼灵已满（紫纹）' };
+  const cost = refineCost(S, g);
+  if ((S.lifespan || 0) <= cost) return { ok: false, err: '寿元不足（需 ' + cost + ' 年）' };
+  S.lifespan -= cost; g.rl = rl + 1;
+  return { ok: true, rl: g.rl, cost, tier: refineTierName(g.rl) };
+}
+Object.assign(C, { refineMult, refineTierName, refineCost, refineGear });
+// ===== v1013 全域奇遇：任何行动都可能触发，好坏相半，一环扣一环（加新奇遇=往表里加一行） =====
+// sc 场景池（any 通用 / train 修炼 / life 生活 / move 行路 / brew 炼丹 / retreat 闭关 / chain 链中段不直roll）
+// fx 词表：gold xianyu lifespan stamina mana danDu curseN maiPages petEggs sp1 sp2 sp3 herb repair
+const ENCOUNTERS = [
+// ---------- 通用 ----------
+{ id:'e_stone', sc:'any', text:'路边一块石头，形状像个元宝。', opts:[
+  { t:'搬回家', fx:[['gold',30]], msg:'搬开石头，底下压着 30 金元。' },
+  { t:'绕开走', fx:[], msg:'绕开了。走出十步，身后传来石头滚落的声音。' } ]},
+{ id:'e_oldwell', sc:'any', text:'一口枯井，井底隐隐有光。', opts:[
+  { t:'探头看', fx:[['sp1',2]], msg:'井底卡着 2 块下品灵石，够到了。' },
+  { t:'丢块石头', fx:[], msg:'咚的一声，深不见底，你默默离开。', next:'well2' } ]},
+{ id:'well2', sc:'chain', end:true, text:'石头落底前，你听见井下有人咳了一声。', opts:[
+  { t:'喊一声', fx:[['lifespan',10]], msg:'井底飘上一缕清气入体，寿元 +10 年。原来是位坐枯禅的前辈在借井修行。' },
+  { t:'悄悄离开', fx:[], msg:'你放轻脚步离开，不敢打扰。' } ]},
+{ id:'e_rain', sc:'any', text:'骤雨忽至，屋檐下挤满了躲雨的人。', opts:[
+  { t:'和老者拼伞', fx:[['gold',50]], msg:'老者是退隐的账房，临走塞给你 50 金元的伞钱。' },
+  { t:'冒雨赶路', fx:[['stamina',-2]], msg:'淋了个透，体力 -2，但雨里的灵气格外清新。', bad:true } ]},
+{ id:'e_beggar', sc:'any', text:'一个老乞丐伸手：行行好，赏口饭吃。', opts:[
+  { t:'给 20 金元', fx:[['gold',-20]], msg:'老乞丐千恩万谢，一瘸一拐走了。', next:'beggar2' },
+  { t:'不理会', fx:[], msg:'你绕开他，身后传来一声叹息。' } ]},
+{ id:'beggar2', sc:'chain', text:'又是那个老乞丐，这次他脚边放着个破碗，碗底有字。', opts:[
+  { t:'再给 50', fx:[['gold',-50]], msg:'他接过钱，把破碗推给你：碗底刻着半篇吐纳诀，你默记于心。', next:'beggar3' },
+  { t:'蹲下看字', fx:[['curseN',1]], msg:'字看一半，老乞丐收了碗：偷看，要沾因果。诅咒 +1 层。', bad:true } ]},
+{ id:'beggar3', sc:'chain', end:true, text:'城外破庙，老乞丐盘坐在蒲团上，气度俨然。', opts:[
+  { t:'执弟子礼', fx:[['lifespan',30],['xianyu',1]], msg:'老乞丐拂袖而起：三试皆过。此乃红尘炼心，赠你仙玉 1、寿元 30 年。' },
+  { t:'问他是谁', fx:[['gold',200]], msg:'他笑而不答，袖中滑出 200 金元落在你脚边，人已不见。' } ]},
+{ id:'e_sword1', sc:'any', text:'草丛里半截断剑，剑身锈迹下有寒光。', opts:[
+  { t:'拔出来', fx:[], msg:'断剑入手冰凉，夜里似乎听见它在响。', next:'sword2' },
+  { t:'埋了它', fx:[['gold',15]], msg:'刨坑时翻出前人埋的 15 金元。' } ]},
+{ id:'sword2', sc:'chain', text:'子时，断剑在匣中轻鸣，像有人在说话。', opts:[
+  { t:'以血饲剑', fx:[['lifespan',-5]], msg:'血渗入剑身，剑鸣止。剑中残灵记住了你的气息。', next:'sword3', bad:true },
+  { t:'镇纸压住', fx:[], msg:'压了一夜，第二天剑安静如初，只是匣上多了道刻痕。' } ]},
+{ id:'sword3', sc:'chain', end:true, text:'满月夜，断剑浮空三寸，残灵显形三息。', opts:[
+  { t:'许它新生', fx:[['repair',1]], msg:'残灵散前指向你的丹田：赠你一枚修复灵物，并说：剑虽断，道未断。' },
+  { t:'送它往生', fx:[['lifespan',20]], msg:'残灵化光而去，余辉入体，寿元 +20 年。' } ]},
+{ id:'e_cat', sc:'any', text:'一只黑猫蹲在墙头，脖子上挂着小铃铛。', opts:[
+  { t:'逗它', fx:[['stamina',1]], msg:'黑猫蹭了蹭你的手，心情大好，体力 +1。' },
+  { t:'看铃铛', fx:[['danDu',3]], msg:'铃铛是颗化掉的丹，你手上沾了丹毒 +3。', bad:true } ]},
+{ id:'e_cart', sc:'any', text:'一辆货车陷进泥里，车夫急得团团转。', opts:[
+  { t:'搭把手', fx:[['gold',40],['stamina',-1]], msg:'车推出来了，车夫硬塞 40 金元，你也出了一身汗。' },
+  { t:'围观', fx:[], msg:'看了一会儿，车夫自己把车推出来了。' } ]},
+{ id:'e_dream', sc:'any', text:'昨夜梦见一条大鱼，醒时枕边有水渍。', opts:[
+  { t:'去河边看看', fx:[['sp2',1]], msg:'河滩上搁浅着一块中品灵石，像是鱼吐出来的。' },
+  { t:'当个怪梦', fx:[['curseN',1]], msg:'一整天心神不宁，像被什么惦记上了。诅咒 +1 层。', bad:true } ]},
+{ id:'e_fox1', sc:'any', text:'灌木丛里一只白狐前腿被捕兽夹夹住，眼里含泪。', opts:[
+  { t:'救它', fx:[['stamina',-1]], msg:'你掰开夹子，白狐回头看了你三眼，窜入林中。', next:'fox2' },
+  { t:'离开', fx:[], msg:'你绕开了。有些缘分，错过就错过了。' } ]},
+{ id:'fox2', sc:'chain', text:'夜里窗外有轻叩声，一只白狐衔着个果子蹲在窗台。', opts:[
+  { t:'接过果子', fx:[['lifespan',15]], msg:'朱果入腹，暖流遍体，寿元 +15 年。白狐点头而去。', next:'fox3' },
+  { t:'挥手赶它', fx:[], msg:'白狐放下果子走了。果子三天后烂了，你有点后悔。' } ]},
+{ id:'fox3', sc:'chain', end:true, text:'月圆之夜，白狐在你门口放了三样东西：一颗丹、一封信、一根簪。', opts:[
+  { t:'取丹', fx:[['petEggs',1]], msg:'不是丹，是颗温热的灵宠蛋。狐仙的谢礼，向来出人意料。' },
+  { t:'读信', fx:[['maiPages',1]], msg:'信上只有一张脉络残页和一句话：恩已还，勿念。' } ]},
+{ id:'e_monk', sc:'any', text:'游方僧化缘，钵里只有半块干饼。', opts:[
+  { t:'分他干粮', fx:[['lifespan',8]], msg:'僧人合十：施主有善根。说完你的肩头轻了些，寿元 +8 年。' },
+  { t:'问路', fx:[], msg:'僧人指了路，又赠你四个字：慢即是快。' } ]},
+{ id:'e_chess', sc:'any', text:'茶摊上有盘残局，摊主说：破了这局，茶水免费。', opts:[
+  { t:'试一手', fx:[['gold',60]], msg:'你落子如飞，摊主拍案：等了三年了！赏金 60 元。' },
+  { t:'喝茶看棋', fx:[['stamina',-1]], msg:'看入了迷，回过神茶钱翻倍。体力 -1。', bad:true } ]},
+{ id:'e_paper', sc:'any', text:'风卷来一张黄纸，贴在你的腿上揭不下来。', opts:[
+  { t:'撕下来看', fx:[['curseN',1]], msg:'是张过期的悬赏令，撕下时沾了晦气。诅咒 +1 层。', bad:true },
+  { t:'带着走', fx:[['gold',45]], msg:'走到市集，纸自己掉了，有人捡去兑了赏金，分你一半 45 元。' } ]},
+{ id:'e_inn', sc:'any', text:'客栈只剩一间房，另一个赶考的书生也在等。', opts:[
+  { t:'让给他', fx:[['lifespan',12]], msg:'书生感激不尽，说他日高中必报。这一夜你睡在柴房，却睡得格外安稳，寿元 +12 年。' },
+  { t:'先到先得', fx:[['stamina',2]], msg:'你住了上房，一觉到天亮，体力 +2。' } ]},
+{ id:'e_child', sc:'any', text:'一个孩童蹲在路边哭，说他的风筝挂树上了。', opts:[
+  { t:'帮他取', fx:[['gold',25]], msg:'孩童的娘赶来，硬塞了 25 金元的谢礼。' },
+  { t:'给他买个新的', fx:[['gold',-15]], msg:'孩童破涕为笑，笑声传出去很远。你觉得值。' } ]},
+{ id:'e_omen', sc:'any', text:'乌鸦在头顶盘旋三圈，叫了四声。', opts:[
+  { t:'改道', fx:[], msg:'改道多走了一刻钟，一路无话。' },
+  { t:'照常走', fx:[['gold',-40]], msg:'踩塌了猎户的陷阱盖，赔了 40 金元修陷阱。', bad:true } ]},
+{ id:'e_scroll', sc:'any', text:'旧书摊上，一本无名册子被压在最底下。', opts:[
+  { t:'买下', fx:[['gold',-30],['maiPages',1]], msg:'册子里夹着一张脉络残页，摊主没发现。' },
+  { t:'翻两页', fx:[], msg:'全是账本流水，你放下了。' } ]},
+{ id:'e_drunk', sc:'any', text:'醉汉抱着酒坛睡在路中间，酒香里有药香。', opts:[
+  { t:'闻一闻', fx:[['danDu',4]], msg:'是药酒蒸汽，闻多了头晕，丹毒 +4。', bad:true },
+  { t:'扶他到路边', fx:[['sp1',3]], msg:'醉汉怀里掉出 3 块下品灵石，你捡起来放回他兜里——他摆摆手说赏你了。' } ]},
+{ id:'e_bee', sc:'any', text:'一窝野蜂在你必经的树洞里，蜂蜜晶莹。', opts:[
+  { t:'掏一把', fx:[['stamina',-3],['gold',35]], msg:'被蛰了三口，但这把蜜卖了 35 金元。体力 -3。', bad:true },
+  { t:'绕路', fx:[], msg:'绕开蜂窝，多走二里地。' } ]},
+{ id:'e_bell', sc:'any', text:'远山有钟声，数了数，十三下。', opts:[
+  { t:'凝神听完', fx:[['mana',20]], msg:'钟声涤荡心神，法力 +20。' },
+  { t:'捂住耳朵', fx:[], msg:'钟声停了，你总觉得错过了什么。' } ]},
+// ---------- 修炼 ----------
+{ id:'t_bottleneck', sc:'train', text:'修炼到滞涩处，耳边似有水声。', opts:[
+  { t:'顺水推舟', fx:[['mana',30]], msg:'滞涩忽通，法力 +30。' },
+  { t:'强行冲关', fx:[['danDu',5]], msg:'经脉一阵刺痛，丹毒 +5。今日不宜。', bad:true } ]},
+{ id:'t_butterfly', sc:'train', text:'一只蝶落在你膝头，翅上有字纹。', opts:[
+  { t:'静观', fx:[['lifespan',6]], msg:'蝶去时，你的呼吸慢了下来，寿元 +6 年。' },
+  { t:'伸手捉', fx:[], msg:'蝶飞了，字纹没看清。' } ]},
+{ id:'t_oldpine', sc:'train', text:'古松下打坐，松针落了你满身。', opts:[
+  { t:'收几根松针', fx:[['herb',2]], msg:'松针入药正好，得药草 2 株。' },
+  { t:'继续入定', fx:[['mana',15]], msg:'入定三寸，法力 +15。' } ]},
+{ id:'t_stoneinsc', sc:'train', text:'崖壁上有前人刻的半行字：道在……', opts:[
+  { t:'猜下半句', fx:[['curseN',1]], msg:'猜了一夜没睡，神思恍惚。诅咒 +1 层。', bad:true },
+  { t:'刻个印记离开', fx:[['gold',20]], msg:'后来有人悬赏这处刻字的位置，你的印记卖了 20 金元。' } ]},
+{ id:'t_twobirds', sc:'train', text:'两只灵雀在你头顶打架，掉下根羽毛。', opts:[
+  { t:'拾羽', fx:[['sp1',1]], msg:'羽毛里裹着 1 块下品灵石，不知哪只的私房。' },
+  { t:'劝架', fx:[['stamina',-1]], msg:'被啄了两口。体力 -1。', bad:true } ]},
+{ id:'t_fog', sc:'train', text:'雾起时，雾里有人影盘坐，与你相对。', opts:[
+  { t:'对坐', fx:[['mana',40]], msg:'雾散时对面无人，你的法力涨了 40。' },
+  { t:'出声问', fx:[], msg:'雾立刻散了。有些机缘，出声就破。' } ]},
+{ id:'t_ant', sc:'train', text:'一队蚂蚁绕着你打坐的地方排成个圆。', opts:[
+  { t:'看它们走完', fx:[['lifespan',5]], msg:'圆闭合时你心有所感，寿元 +5 年。' },
+  { t:'起身', fx:[], msg:'圆散了，蚂蚁各忙各的。' } ]},
+{ id:'t_heartdemon', sc:'train', text:'入定中，听见另一个自己在耳边说话。', opts:[
+  { t:'不理它', fx:[['mana',25]], msg:'声音渐消，法力 +25。心魔这一局，没赢你。' },
+  { t:'跟它聊聊', fx:[['curseN',1]], msg:'聊到天亮，它说：下次见。诅咒 +1 层。', bad:true } ]},
+// ---------- 生活 ----------
+{ id:'l_herbfind', sc:'life', text:'收拾药篓时，篓底压着株没见过的草。', opts:[
+  { t:'收起来', fx:[['herb',3]], msg:'是味偏门药草，得 3 株。' },
+  { t:'扔了', fx:[], msg:'扔完想起来，好像挺值钱。算了。' } ]},
+{ id:'l_merchant', sc:'life', text:'收摊的货郎问你：有一批急货，接不接？', opts:[
+  { t:'接', fx:[['gold',80],['stamina',-2]], msg:'忙到半夜，净赚 80 金元，体力 -2。' },
+  { t:'不接', fx:[], msg:'货郎摇头走了，说你错过了行情。' } ]},
+{ id:'l_spill', sc:'life', text:'手一滑，一瓢水泼在材料上。', opts:[
+  { t:'抢救', fx:[['gold',-25]], msg:'救回大半，还是损了 25 金元的材料。', bad:true },
+  { t:'将错就错', fx:[['sp1',2]], msg:'水里泡出了灵性，凝出 2 块下品灵石。祸兮福所倚。' } ]},
+{ id:'l_apprentice', sc:'life', text:'一个少年来拜师，眼睛亮得惊人。', opts:[
+  { t:'收下打杂', fx:[['gold',55]], msg:'少年手脚麻利，摊子多卖了 55 金元。' },
+  { t:'指点两句打发', fx:[['lifespan',7]], msg:'少年跪谢而去。你忽然觉得，传道也是修行，寿元 +7 年。' } ]},
+{ id:'l_rust', sc:'life', text:'工具上一层锈，锈的形状像地图。', opts:[
+  { t:'按图找找', fx:[['sp2',1]], msg:'在后院老井边挖出 1 块中品灵石。' },
+  { t:'磨掉', fx:[['stamina',-1]], msg:'磨了半天，工具锃亮，手也酸了。体力 -1。', bad:true } ]},
+{ id:'l_neighbor', sc:'life', text:'邻摊的老板娘送来一碗汤，说你脸色不好。', opts:[
+  { t:'喝了', fx:[['stamina',3]], msg:'汤里有人参须，体力 +3。' },
+  { t:'回赠灵石', fx:[['sp1',-1],['gold',40]], msg:'老板娘回赠一包她炒的灵豆，卖了 40 金元。' } ]},
+{ id:'l_wronggoods', sc:'life', text:'客人拿错了货，回来时多提了一兜东西。', opts:[
+  { t:'收下', fx:[['herb',2]], msg:'是一兜新鲜药草，2 株。客人说拿错是缘分。' },
+  { t:'追还回去', fx:[['gold',30]], msg:'客人感激，给了 30 金元的跑腿费。' } ]},
+{ id:'l_daydream', sc:'life', text:'忙里偷闲，你望着云发了会儿呆。', opts:[
+  { t:'继续呆', fx:[['mana',18]], msg:'云卷云舒，法力 +18。' },
+  { t:'干活', fx:[['gold',35]], msg:'一下午没停手，多赚 35 金元。' } ]},
+// ---------- 行路 ----------
+{ id:'m_fork', sc:'move', text:'岔路口有块界碑，一面写着近，一面写着静。', opts:[
+  { t:'走近路', fx:[['gold',-20]], msg:'近路有收费的关卡，交了 20 金元。', bad:true },
+  { t:'走静路', fx:[['lifespan',9]], msg:'静路上鸟鸣啾啾，走完神清气爽，寿元 +9 年。' } ]},
+{ id:'m_bridge', sc:'move', text:'独木桥中央坐着位老者，在钓鱼。', opts:[
+  { t:'等他收竿', fx:[['sp2',1]], msg:'老者钓起条银鱼，顺手赠你 1 块中品灵石压竿。' },
+  { t:'侧身挤过去', fx:[['stamina',-2]], msg:'差点掉河里，体力 -2。', bad:true } ]},
+{ id:'m_footprint', sc:'move', text:'雪地上一串脚印，到一棵树下忽然没了。', opts:[
+  { t:'上树看看', fx:[['petEggs',1]], msg:'树杈上有个窝，窝里一颗灵宠蛋还温着。' },
+  { t:'绕树三匝', fx:[['curseN',1]], msg:'绕完头晕，像被什么标记了。诅咒 +1 层。', bad:true } ]},
+{ id:'m_tea', sc:'move', text:'山道茶棚，瞎眼婆婆说：茶钱随喜。', opts:[
+  { t:'给 10 元', fx:[['gold',-10],['stamina',3]], msg:'茶极香，体力 +3。婆婆说：你印堂亮，要走运了。' },
+  { t:'喝白水', fx:[], msg:'白水也解渴。婆婆笑而不语。' } ]},
+{ id:'m_storm', sc:'move', text:'山风骤起，飞沙里有什么在闪。', opts:[
+  { t:'迎风去捡', fx:[['sp3',1],['stamina',-2]], msg:'是块上品灵石！也被沙打了满脸，体力 -2。' },
+  { t:'背风躲避', fx:[], msg:'风停后，闪光的东西已经不见了。' } ]},
+{ id:'m_injured', sc:'move', text:'路边躺着个受伤的散修，伤口发黑。', opts:[
+  { t:'救他', fx:[['herb',-2],['repair',1]], msg:'耗了 2 株药草。他醒后留下一枚修复灵物：渡劫失败的人，最懂这东西的贵重。' },
+  { t:'留药离开', fx:[['herb',-1]], msg:'你留下 1 株药草，成不成看他造化。' } ]},
+{ id:'m_lost', sc:'move', text:'雾里走岔了，来到一处从没见过的山谷。', opts:[
+  { t:'逛逛', fx:[['sp1',3]], msg:'谷里灵石裸露，捡了 3 块下品。' },
+  { t:'原路返回', fx:[['stamina',-2]], msg:'摸黑走回大路，体力 -2。', bad:true } ]},
+{ id:'m_shrine', sc:'move', text:'路边小庙，神像的眼睛是活的。', opts:[
+  { t:'上柱香', fx:[['lifespan',11]], msg:'香烟笔直上升，寿元 +11 年。' },
+  { t:'盯回去', fx:[['curseN',1]], msg:'对视三息，你先败下阵来。诅咒 +1 层。', bad:true } ]},
+// ---------- 炼丹 ----------
+{ id:'b_smell', sc:'brew', text:'丹炉里飘出的香气不对，甜里带苦。', opts:[
+  { t:'开炉看', fx:[['danDu',4]], msg:'火候过了，吸入丹毒 +4。这一炉废了半炉。', bad:true },
+  { t:'压火候', fx:[['sp1',1]], msg:'压住了。炉底凝出 1 块下品灵石，是药渣里的灵气。' } ]},
+{ id:'b_oldrecipe', sc:'brew', text:'垫炉脚的砖上，刻着半张古丹方。', opts:[
+  { t:'记下来', fx:[['maiPages',1]], msg:'丹方残篇的笔法，竟与脉络残页同源。收录 1 张。' },
+  { t:'垫回去', fx:[], msg:'砖归原位。有些东西，看见即是缘，拿走即是债。' } ]},
+{ id:'b_mouse', sc:'brew', text:'一只灵鼠蹲在药柜上，抱着你的药草啃。', opts:[
+  { t:'赶它', fx:[['herb',-2]], msg:'它叼走 2 株药草跑了。', bad:true },
+  { t:'喂它', fx:[['herb',-1],['petEggs',1]], msg:'灵鼠吃饱，从柜顶推下一颗灵宠蛋谢你。' } ]},
+{ id:'b_thunder', sc:'brew', text:'炼丹到一半，远处有雷声滚过。', opts:[
+  { t:'借雷炼丹', fx:[['danDu',-3]], msg:'雷意涤荡丹毒，丹毒 -3。这一炉丹香三里。' },
+  { t:'停火避雷', fx:[['stamina',-1]], msg:'等雷过去，丹也凉透了。体力 -1。', bad:true } ]},
+{ id:'b_visitor', sc:'brew', text:'有人敲门求丹，说他家老爷子等着救命。', opts:[
+  { t:'赠一颗', fx:[['lifespan',13]], msg:'三日后家属来谢，说老爷子醒了。你觉着寿元都长了些，+13 年。' },
+  { t:'按市价卖', fx:[['gold',90]], msg:'对方倾囊而出，90 金元。临走深深一揖。' } ]},
+{ id:'b_ash', sc:'brew', text:'炉灰里扒出一颗没化尽的丹，乌黑发亮。', opts:[
+  { t:'收起来', fx:[['danDu',2],['gold',65]], msg:'黑丹卖了 65 金元，就是手上丹毒 +2 搓不掉。', bad:true },
+  { t:'埋了', fx:[], msg:'埋进土里，来年那处草长得格外旺。' } ]},
+// ---------- 闭关 ----------
+{ id:'r_tick', sc:'retreat', text:'闭关中，听见洞外有幼兽呜咽。', opts:[
+  { t:'出洞看看', fx:[['petEggs',1]], msg:'一只被弃的幼兽蜷在洞口，你收下了它的蛋——它把蛋推给了你，转身跑了。' },
+  { t:'不理', fx:[['mana',20]], msg:'呜咽渐远，你的心境反而沉了下来，法力 +20。' } ]},
+{ id:'r_wall', sc:'retreat', text:'洞壁渗水，水痕像个小人盘坐。', opts:[
+  { t:'对痕打坐', fx:[['lifespan',14]], msg:'水痕干了又湿，你的寿元 +14 年。' },
+  { t:'堵住渗水', fx:[['stamina',-1]], msg:'堵了半日，道袍湿透。体力 -1。', bad:true } ]},
+{ id:'r_echo', sc:'retreat', text:'你在洞里咳了一声，回声咳了两声。', opts:[
+  { t:'再咳一声', fx:[['curseN',1]], msg:'回声笑了。诅咒 +1 层。这一关，闭得不安生。', bad:true },
+  { t:'闭目塞听', fx:[['mana',22]], msg:'到出关，回声再没出现。法力 +22。' } ]},
+{ id:'r_herb2', sc:'retreat', text:'出关时，洞口石缝里长出一株没见过的草。', opts:[
+  { t:'采了', fx:[['herb',2]], msg:'守关草，得 2 株。' },
+  { t:'留着', fx:[['lifespan',6]], msg:'留它继续长。你的心境，也像留了根，寿元 +6 年。' } ]},
+{ id:'r_snr', sc:'retreat', text:'隔壁洞府的呼噜声穿墙而来，极有韵律。', opts:[
+  { t:'和着韵律吐纳', fx:[['mana',35]], msg:'一夜吐纳抵三日，法力 +35。' },
+  { t:'敲墙', fx:[], msg:'呼噜停了，又起了。你叹了口气。' } ]},
+{ id:'r_time', sc:'retreat', text:'这一关，你总觉得时间比外面慢。', opts:[
+  { t:'顺势深修', fx:[['lifespan',18]], msg:'出关时须发长了一截，寿元 +18 年。' },
+  { t:'提前出关', fx:[['gold',30]], msg:'省下的时间拿去摆了半日摊，赚 30 金元。' } ]}
+];
+function encById(id) { return ENCOUNTERS.find(e => e.id === id) || null; }
+function encToday() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function rollEncounter(S) {
+  if (!S || S.dead || S.encPending) return null;
+  const today = encToday();
+  if (!S.encDay || S.encDay.d !== today) S.encDay = { d: today, n: 0 };
+  if (S.encDay.n >= 3) return null;
+  if (Math.random() >= 0.03) return null;
+  const pool = ENCOUNTERS.filter(e => e.sc !== 'chain');
+  if (!pool.length) return null;
+  let tw = 0; for (const e of pool) tw += e.w || 1;
+  let x = Math.random() * tw, pick = pool[0];
+  for (const e of pool) { x -= e.w || 1; if (x <= 0) { pick = e; break; } }
+  S.encPending = pick.id; S.encDay.n++; S.encDepth = 0;
+  return pick;
+}
+function applyEncFx(S, fx) {
+  for (const pair of (fx || [])) {
+    const k = pair[0], v = pair[1] | 0;
+    if (k === 'gold') S.gold = Math.max(0, (S.gold | 0) + v);
+    else if (k === 'xianyu') S.xianyu = Math.max(0, (S.xianyu | 0) + v);
+    else if (k === 'lifespan') S.lifespan = Math.max(1, (S.lifespan || 0) + v);
+    else if (k === 'stamina') S.stamina = Math.max(0, (S.stamina || 0) + v);
+    else if (k === 'mana') S.mana = Math.max(0, (S.mana || 0) + v);
+    else if (k === 'danDu') S.danDu = Math.max(0, (S.danDu | 0) + v);
+    else if (k === 'curseN') S.curseN = Math.max(0, (S.curseN | 0) + v);
+    else if (k === 'maiPages') S.maiPages = Math.max(0, (S.maiPages | 0) + v);
+    else if (k === 'petEggs') S.petEggs = Math.max(0, (S.petEggs | 0) + v);
+    else if (k === 'sp1' || k === 'sp2' || k === 'sp3') { S.ores = S.ores || {}; S.ores[k] = Math.max(0, (S.ores[k] | 0) + v); }
+    else if (k === 'herb') { S.mats = S.mats || {}; const _hks = ['h_str', 'h_agi', 'h_def', 'h_vit', 'h_int']; if (v >= 0) { const hk = _hks[Math.floor(Math.random() * 5)]; S.mats[hk] = (S.mats[hk] | 0) + v; } else { let _need = -v; for (const hk of _hks) { if (!_need) break; const _take = Math.min(S.mats[hk] | 0, _need); S.mats[hk] = (S.mats[hk] | 0) - _take; _need -= _take; } } }
+    else if (k === 'repair') { S.inv = S.inv || {}; const rk = 'repair' + Math.min(11, Math.max(0, S.realm | 0)); S.inv[rk] = (S.inv[rk] | 0) + v; }
+  }
+}
+function chooseEncOpt(S, i) {
+  const e = encById(S.encPending);
+  if (!e) { S.encPending = null; return null; }
+  const o = e.opts[i] || e.opts[0];
+  if (!o) { S.encPending = null; return null; }
+  applyEncFx(S, o.fx);
+  S.encTotal = (S.encTotal | 0) + 1;
+  if (o.bad) S.encBad = (S.encBad | 0) + 1;
+  S.encSeen = S.encSeen || {}; S.encSeen[e.id] = 1;
+  let next = null;
+  if (o.next && encById(o.next)) { S.encPending = o.next; S.encDepth = (S.encDepth | 0) + 1; next = encById(o.next); }
+  else { if (e.end && (S.encDepth | 0) >= 1) S.encChain = (S.encChain | 0) + 1; S.encPending = null; S.encDepth = 0; }
+  return { msg: o.msg || '', bad: !!o.bad, next };
+}
+Object.assign(C, { ENCOUNTERS, encById, rollEncounter, chooseEncOpt });
+
 try { G._bx = { Battle: Battle, fighter: fighter, playerFighter: playerFighter, fightAttrs: fightAttrs, tribPower: tribPower, ATTRS: ATTRS }; } catch(_){}
 C.thunderCloud = function(S) { // v687 6档黑云
   try {
@@ -3760,7 +4029,7 @@ C.thunderCloud = function(S) { // v687 6档黑云
 };
 C.startThunderBattle = function(S, trib, fromRealm, pwOverride) {
   const fa = fightAttrs(S, false);
-  const pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib'));
+  const pw = (pwOverride != null ? pwOverride : tribPower(S)) * (1 + fateMod(S, 'trib')) * (S.tabooAwake ? 0.95 : 1);
   const tattrs = {}; ATTRS.forEach(k => tattrs[k] = Math.max(1, Math.round(fa[k] * 0.5 * pw)));
   const thunder = fighter('⚡雷云', tattrs, false, []);
   const b = new Battle(playerFighter(S, false), thunder);
@@ -5362,6 +5631,7 @@ const potName = (a, g) => `<span class="q${g}">${C.GRADES[g]}${AN[a]}丹</span>`
 /* ---------- 状态面板 ---------- */
 function setBar(id, cur, max, txt) { $(id + 'Bar').style.width = (max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0) + '%'; $(id + 'Txt').textContent = txt; }
 function render() {
+  try { const _eb = document.getElementById('encBanner'); if (_eb) _eb.style.display = (typeof S !== 'undefined' && S && S.encPending) ? 'block' : 'none'; } catch(_) {} // v1013 奇遇横幅
   try { if (typeof window !== 'undefined' && !window.pk) { try { pk = null; } catch(_) {} } } catch(_) {} // v845 render开头同步：window.pk为空时本地pk也清，避免操作旧对象（v843条件太严，undefined没覆盖）
   try { // v802 全局兜底：心魔已死强制结算；v805 加调试日志
     const _G = (typeof G !== 'undefined' ? G : window);
@@ -6151,6 +6421,13 @@ const ACHIEVEMENTS = [
   { id: 'equip_legend', name: '神兵在手', desc: '拥有传说装备', check: () => S.gearBag && S.gearBag.some(g => g.q >= 4), reward: { gold: 500 } },
   { id: 'shatter', name: '碎玉', desc: '砸开过极品灵石', check: () => (S._shattered|0) >= 1, reward: { gold: 100 } },
   { id: 'first_aid', name: '妙手回春', desc: '使用过疗伤药', check: () => (S._usedMed|0) >= 1, reward: { gold: 50 } },
+  // v1013 奇遇成就
+  { id: 'enc1', name: '初遇奇缘', desc: '触发1次奇遇', check: () => (S.encTotal|0) >= 1, reward: { gold: 100 } },
+  { id: 'enc10', name: '奇遇连连', desc: '累计触发10次奇遇', check: () => (S.encTotal|0) >= 10, reward: { gold: 300 } },
+  { id: 'enc30', name: '命途多奇', desc: '累计触发30次奇遇', check: () => (S.encTotal|0) >= 30, reward: { xianyu: 2 } },
+  { id: 'encbad5', name: '命途多舛', desc: '遭遇5次坏奇遇', check: () => (S.encBad|0) >= 5, reward: { gold: 200 } },
+  { id: 'encchain', name: '环环相扣', desc: '走完一条奇遇链', check: () => (S.encChain|0) >= 1, reward: { gold: 300 } },
+  { id: 'enckinds', name: '见闻广博', desc: '见识20种不同奇遇', check: () => !!(S.encSeen && Object.keys(S.encSeen).length >= 20), reward: { xianyu: 2 } },
 ];
 function checkAchievements() {
   if (!S.achv) S.achv = {};
@@ -6610,6 +6887,7 @@ function sheetChar() {
   html += `<div style="font-size:13px;font-weight:bold;margin-bottom:6px;display:flex;gap:6px;align-items:center"><span style="width:44px;flex:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.name || '无名道友')}</span><div style="flex:1;min-width:0;display:flex;gap:6px;align-items:center"><button class="act primary" style="flex:none;padding:6px 8px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">${S.level === C.REALM_MAX_LV - 1 ? '⬆️突破圆满' : '⬆️升级'}</span></button><span style="flex:1;text-align:center">${C.realmTxt(S)}</span>${S.dead ? '' : '<button class="act" style="flex:none;padding:6px 6px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">🔄轮回</span></button>'}</div><span style="flex:none;font-size:11px;font-weight:normal">👁️<b>${C.fmtN(S.shenshi|0)}</b>${(typeof flowerIcons === 'function' ? flowerIcons(S) : '') ? ` <span class="y">${flowerIcons(S)} <span style="margin-left:4px">${(typeof qixiIcon === 'function' ? qixiIcon(S) : '👣')}<b>${C.fmtN(S.qixi|0)}</b></span></span>` : ''}</span>${setBonusHtml}</div>`; // v570 名字对齐头像正中；v571 阶段对齐经验条正中；v581 神识放阶段右边
   try { const _ds = C.destinyStar(S); html += `<div class="row" style="padding:4px 0"><div class="lab">🌠 命星<small>${_ds.t}</small></div><div class="lab"><b class="pu">${_ds.n}</b></div></div>`; } catch(_) {}
   try { const _fs = C.fateSignOf(S); if (_fs) html += `<div class="row" style="padding:4px 0"><div class="lab">🎴 宿命签<small>${_fs.t}</small></div><div class="lab" style="text-align:right"><b class="y">${_fs.n}</b><br><small>${C.fateModText(_fs)}</small></div></div>`; } catch(_) {} // v1012
+  try { const _tb = S.taboo | 0; if (_tb > 0) html += `<div class="row" style="padding:4px 0"><div class="lab">${S.tabooAwake ? '🌑 第十人' : '？？？'}<small>${S.tabooAwake ? '已苏醒，伴你而行' : (_tb < 40 ? '沉睡' : _tb < 70 ? '微动' : '低语')}</small></div><div class="lab" style="text-align:right"><b class="pu">苏醒 ${_tb}%</b>${S.tabooAwake ? '<br><small>突破成功率 +5% · 雷劫威力 -5%</small>' : ''}</div></div>`; } catch(_) {} // v1013 禁忌苏醒度
   { xyInit(); const _xyt = xyTotal(); html += `<div class="row" style="padding:4px 0"><div class="lab">💞 仙缘<small>♂ ${S.xianyuan.m|0} · ♀ ${S.xianyuan.f|0} · 共 ${_xyt}</small></div><div class="lab">🔗 编号<small>${S.bindNum}</small></div><button class="btn sm" data-a="xianyuan">仙缘</button></div>`; }
   html += `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:3.5px;margin-bottom:4px;margin-left:0;margin-right:0;font-size:12px"><span style="white-space:nowrap">⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : 'g'}">${S.lifespan|0}</b>年</span><span style="white-space:nowrap;text-align:center">🧪丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b><small> ${C.toxTier(S.danDu|0)}</small></span><span class="stam" style="text-align:center">体力 <b style="font-size:12px">${S.stamina|0}</b></span><span style="white-space:nowrap;text-align:center">🌫️灵气 <b>${C.qiNow()}</b><small> ${C.qiTierName(C.qiNow())}</small></span><span style="text-align:center;position:relative;left:-15px">🍗饱食 <b class="${S.hunger >= 60 ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b></span></div>`;
   if ((S.realm|0) >= 1 && window.LG) html += `<div class="row" style="padding:4px 0"><div class="lab">🌟 灵根<small>${window.LG.name(S)}</small></div>${S.faZeDone5 ? '<div class="lab">🌈 <b class="y">混元道体</b></div>' : ''}${(S.realm|0) >= 6 ? `<div class="lab">🙏 功德金身<small>功德 <b class="y">${S.merit|0}</b> · 减伤 ${Math.min(30, Math.floor((S.merit|0)/10))}%${(S.merit|0) >= 100 ? ' · 突破+5%' : ''}</small></div>` : ''}</div>`; // v867 灵根显示；v906 功德金身放灵根一排
@@ -6676,13 +6954,24 @@ function sheetChar() {
     html = starChartHtml();
   } else if (page === 5) {
     html = swordPageHtml();
+  } else if (page === 6) {
+    html = pastLivesHtml();
   } else {
     html = html + `<div style="height:40vh"></div>`;
   }
   html = `<div style="max-height:60vh;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain">` + html + `</div>`;
-  html += `<div class="row" style="padding:12px 0 0;background:var(--panel);display:flex;gap:8px"><button class="btn" data-charpage="1" style="flex:1;${page===1?'opacity:0.5':''}">基本</button><button class="btn" data-charpage="2" style="flex:1;${page===2?'opacity:0.5':''}">根基</button><button class="btn" data-charpage="3" style="flex:1;${page===3?'opacity:0.5':''}">宠物</button><button class="btn" data-charpage="4" style="flex:1;${page===4?'opacity:0.5':''}">星藏</button><button class="btn" data-charpage="5" style="flex:1;${page===5?'opacity:0.5':''}">本命</button><button class="btn full" data-close style="flex:2">关闭</button></div>`;
+  html += `<div class="row" style="padding:12px 0 0;background:var(--panel);display:flex;gap:8px"><button class="btn" data-charpage="1" style="flex:1;${page===1?'opacity:0.5':''}">基本</button><button class="btn" data-charpage="2" style="flex:1;${page===2?'opacity:0.5':''}">根基</button><button class="btn" data-charpage="3" style="flex:1;${page===3?'opacity:0.5':''}">宠物</button><button class="btn" data-charpage="4" style="flex:1;${page===4?'opacity:0.5':''}">星藏</button><button class="btn" data-charpage="5" style="flex:1;${page===5?'opacity:0.5':''}">本命</button><button class="btn" data-charpage="6" style="flex:1;${page===6?'opacity:0.5':''}">前世</button><button class="btn full" data-close style="flex:2">关闭</button></div>`;
   openSheet(html);
   $('sheet').classList.remove('full');
+}
+
+/* ---------- v1013 前世谱 ---------- */
+function pastLivesHtml() {
+  const list = Array.isArray(S.pastLives) ? S.pastLives.slice().reverse() : [];
+  let h = '<h3 style="margin:2px 0 6px">📜 前世谱</h3>';
+  if (!list.length) return h + '<div class="hint">尚未轮回，无前世可谱。</div>';
+  h += list.map(p => `<div class="row"><div class="lab">第 ${p.n} 世<small>${p.from || ''}</small></div><div class="lab" style="text-align:right"><small>${p.star ? '🌠 ' + p.star : ''}${p.fate ? ' · 🎴 ' + p.fate : ''}${p.seal ? '<br>印记：' + p.seal : ''}</small></div></div>`).join('');
+  return h;
 }
 
 /* ---------- v1006 本命飞剑 ---------- */
@@ -7216,7 +7505,7 @@ let lifeTab = 'cook', tameAttr = 'str', tameTargetId = 0, forgeSlot = 'weapon', 
 const VIG = n => `<b style="color:#7fd6ff">${n}</b>`;
 const needTxt = need => need.map(([st, k, n]) => { const have = S[st][k] || 0, nm = st === 'food' ? MEATS[k].name : st === 'eggs' ? EGGS[k].name : st === 'mats' ? (MATS[k] || LU[k]).name : st === 'prey' ? PREY[k].name : st === 'pages' ? PAGES[k].name : ORES[k].name; return `<span class="${have >= n ? '' : 'r'}">${nm}×${n}<small style="display:inline">(${have})</small></span>`; }).join(' + ');
 const dishName = k => { const d = C.dishOf(k); return d ? `<span class="${['', '', 'q2', 'q3'][d.q]}">${d.q > 1 ? C.QNAME[d.q] : ''}${d.name}</span>` : k; };
-const gearName = g => `<span class="gq${g.q || 1}" title="${C.GQNAME[g.q || 1]}">${C.gearItemName(g.k, g.set)}</span> <small style="display:inline">${AN[C.GEAR_SETS[g.set].attr]}+${g.v}</small>${g.rule && C.GEAR_RULES[g.rule] ? ` <span class="pu" title="${C.GEAR_RULES[g.rule].d}">【规则·${C.GEAR_RULES[g.rule].n}】</span>` : ''}`; // v1006 规则词条
+const gearName = g => `<span class="gq${g.q || 1}" title="${C.GQNAME[g.q || 1]}">${C.gearItemName(g.k, g.set)}</span> <small style="display:inline">${AN[C.GEAR_SETS[g.set].attr]}+${(g.rl|0) > 0 ? Math.round(g.v * C.refineMult(g)) : g.v}</small>${g.rule && C.GEAR_RULES[g.rule] ? ` <span class="pu" title="${C.GEAR_RULES[g.rule].d}">【规则·${C.GEAR_RULES[g.rule].n}】</span>` : ''}${(g.rl|0) > 0 ? ` <span class="y">炼灵${g.rl}${C.refineTierName(g.rl) ? '·' + C.refineTierName(g.rl) : ''}</span>` : ''}`; // v1006 规则词条 + v1013 炼灵纹
 const petSetTxt = pt => { const act = C.petActiveSets(pt), ks = Object.keys(act); return ks.length ? ks.map(k => `<span class="y">🛡️${C.GEAR_SETS[k].name}套 ${C.GEAR_SETS[k].fmt(act[k])}</span>`).join(' ') : '<small style="display:inline;color:var(--dim)">未激活（同套 2 件起）</small>'; };
 const setTxt = () => { const c = C.setCounts(S), qm = C.setQuality(S), act = C.activeSets(S), ks = Object.keys(C.GEAR_SETS).filter(k => c[k]); return (ks.length ? ks.map(k => { const G = C.GEAR_SETS[k], n = c[k]; if (n >= 2 && k === 'def') { const myDef = C.fightAttrs(S, false).def, pt = C.activePet(S); return `<span class="y">🛡️${G.name}套 ${n}件：${G.fmt(act[k])}</span> <small style="display:inline;color:var(--dim)">（${n}件档 ${Math.round(G.v[Math.min(5, n) - 2] * 100)}% × 品质 ${Math.round(qm[k] * 100) / 100}；你 防御 ${myDef} → ${myDef + C.setDefBoost(myDef, act[k])}${pt ? `；出战灵宠 防御 ${pt.attrs.def} → ${pt.attrs.def + C.setDefBoost(pt.attrs.def, act[k])}` : ''}）</small>`; } return n >= 2 ? `<span class="y">🛡️${G.name}套 ${n}件：${G.fmt(act[k])}</span> <small style="display:inline;color:var(--dim)">（${n}件档 ${G.fmt(G.v[Math.min(5, n) - 2]).replace(/^\D+/, '')} × 品质 ${Math.round(qm[k] * 100) / 100}）</small>` : `<small style="display:inline;color:var(--dim)">${G.name}套 1件（2件激活：${G.fmt(G.v[0])}）</small>`; }).join('<br>') : '<small style="display:inline;color:var(--dim)">未穿戴装备</small>') + `<small>同套 2/3/4/5 件逐级增强，效果 × 同套平均品质系数，可同时激活多套</small>`; };
 const BUFFN = b => b.k === 'luck' ? `气运 ×${b.v}` : `${AN[b.k]} +${Math.round(b.v * 100)}%`;
@@ -7264,8 +7553,8 @@ function sheetLife(tab) {
   if (tab === 'cook') body = Object.keys(C.DISHES).filter(k => !C.DISHES[k].zx).map(k => { const d = C.DISHES[k]; return `<div class="row"><div class="lab">${d.name}<small>${needTxt(d.need)}<br>饱食 +${d.hunger} · 体力 +${C.dishSta(k, 1)}/${C.dishSta(k, 2)}/${C.dishSta(k, 3)} · 精良/极品：${d.buff === 'luck' ? '气运 ×1.15/×1.3（10 点体力）' : AN[d.buff] + ' +10%/+20%（3 场战斗）'}</small></div>${btns(k, d.lv)}</div>`; }).join('') + `<div class="empty" style="padding:6px">做好的菜肴在背包中食用</div>` +
     `<h3>🍲 珍馐<small style="font-weight:normal;color:var(--dim)"> · PK 战前使用，最先手无视敏捷</small></h3>` + Object.keys(C.DISHES).filter(k => C.DISHES[k].zx).map(k => { const d = C.DISHES[k], n = (S.zx || {})[k] || 0; return `<div class="row"><div class="lab">${d.name}${n ? ` <b class="y">×${n}</b>` : ''}<small>${needTxt(d.need)}<br>${d.zxDesc}</small></div>${btns(k, d.lv)}</div>`; }).join('');
   else if (tab === 'forge') body = `<div class="grid2" style="grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:8px"><button class="btn ${forgeKind === 'char' ? 'on' : ''}" data-fkind="char" style="padding:6px 2px">🗡️ 人物装备</button><button class="btn ${forgeKind === 'pet' ? 'on' : ''}" data-fkind="pet" style="padding:6px 2px">🐾 灵宠装备</button></div>` + (forgeKind === 'pet' ? forgePetBody() :
-    `<h3>当前装备</h3><div class="row"><div class="lab">${setTxt()}</div></div>` + Object.keys(C.SLOTS).map(sl => { const g = S.equip[sl]; return `<div class="row"><div class="lab">${C.SLOTS[sl].name}：${g ? gearName(g) : '<small style="display:inline">空</small>'}</div>${g ? `<button class="btn" data-unequip="${sl}">卸下</button>` : ''}</div>`; }).join('') +
-    (S.gearBag.length ? `<h3>装备包（${S.gearBag.length}/${C.bagCap(S)}件）</h3>` + S.gearBag.map(g => `<div class="row"><div class="lab">${gearName(g)}</div><button class="btn gold" data-equip="${g.id}">装备</button><button class="btn" data-sellgear="${g.id}">卖 ${C.gearPrice(g)}金</button></div>`).join('') : '') +
+    `<h3>当前装备</h3><div class="row"><div class="lab">${setTxt()}</div></div>` + Object.keys(C.SLOTS).map(sl => { const g = S.equip[sl]; return `<div class="row"><div class="lab">${C.SLOTS[sl].name}：${g ? gearName(g) : '<small style="display:inline">空</small>'}</div>${g ? `<button class="btn" data-unequip="${sl}">卸下</button><button class="btn" data-refine="equip:${sl}">炼灵</button>` : ''}</div>`; }).join('') +
+    (S.gearBag.length ? `<h3>装备包（${S.gearBag.length}/${C.bagCap(S)}件）</h3>` + S.gearBag.map(g => `<div class="row"><div class="lab">${gearName(g)}</div><button class="btn gold" data-equip="${g.id}">装备</button><button class="btn" data-sellgear="${g.id}">卖 ${C.gearPrice(g)}金</button><button class="btn" data-refine="bag:${g.id}">炼灵</button></div>`).join('') : '') +
     `<h3>打造</h3><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${Object.keys(C.GEAR_SETS).map(st => `<button class="btn ${forgeSet === st ? 'on' : ''}" data-fset="${st}" style="padding:6px 2px;font-size:12px;line-height:1.3">${C.GEAR_SETS[st].name}套<br><small>+${AN[C.GEAR_SETS[st].attr]}</small></button>`).join('')}</div><div class="empty" style="padding:2px 0 6px;text-align:left">${C.GEAR_SETS[forgeSet].name}套（每件 +${AN[C.GEAR_SETS[forgeSet].attr]}）：2/3/4/5 件 ${C.GEAR_SETS[forgeSet].v.map(v => C.GEAR_SETS[forgeSet].fmt(v)).join(' / ')}</div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${Object.keys(C.SLOTS).map(sl => `<button class="btn ${forgeSlot === sl ? 'on' : ''}" data-fslot="${sl}" style="padding:6px 2px;font-size:12px;line-height:1.3">${C.SLOTS[sl].name}<br><small>${C.SET_ITEMS[forgeSet][sl]}</small></button>`).join('')}</div>` + Object.keys(C.GEAR).filter(k => C.GEAR[k].slot === forgeSlot).map(k => { const g = C.GEAR[k]; return `<div class="row"><div class="lab">${C.gearItemName(k, forgeSet)}<small>${AN[C.GEAR_SETS[forgeSet].attr]} +${[1, 2, 3, 4, 5].map(q => `<span class="gq${q}">${C.gearVal(k, q)}</span>`).join('/')} · ${needTxt(g.need)}</small><small>成功率 <b class="y">${C.pct(C.forgeRate(S, k))}</b> · 品质 ${C.forgeQProbs(S, k).map((p, i) => `<span class="gq${i + 1}">${C.GQNAME[i + 1]} ${C.pct(p)}</span>`).join(' ')}</small></div>${btns(k, g.lv)}</div>`; }).join(''));
   else if (tab === 'refine') body = `<div class="empty" style="padding:6px">双倍产出概率 ${C.pct(C.refineDouble(S))} · 极品灵石/灵露只能掉落</div>` + Object.keys(C.REFINES).map(k => { const r = C.REFINES[k]; return `<div class="row"><div class="lab">${r.name}${k.startsWith('r_gold') ? ' → 金矿×1' : ''}<small>${needTxt(r.need)}${r.pot ? ` · 回复${C.POTIONS[r.pot].res}上限 <span class="q1">30%</span>/<span class="q2">40%</span>/<span class="q3">50%</span>（品质 <span class="q3">极品</span> ${C.pct(qp.q3)} / <span class="q2">精良</span> ${C.pct(qp.q2)}）${r.pot === 'mp' ? ' · 场外使用' : ''}` : ''}</small></div>${btns(k, r.lv)}</div>`; }).join('');
   else { const ap = C.activePet(S), hp = C.hatchProbs(S);
@@ -7357,7 +7646,7 @@ function potSection() { const ks = Object.keys(S.elixirs || {}).filter(k => S.el
 function dishSection() { const ks = Object.keys(S.dishes).filter(k => S.dishes[k] > 0 && C.dishOf(k)); if (!ks.length) return '';
   return `<h3>🍲 菜肴</h3>` + ks.map(k => { const d = C.dishOf(k); return `<div class="row"><div class="lab">${dishName(k)} ×${S.dishes[k]}<small>饱食 +${d.hunger} · 体力 +${C.dishSta(d.d, d.q)}${d.q > 1 ? ' · 增益 ' + BUFFN(d.buff === 'luck' ? { k: 'luck', v: K.BUFF_LUCK[d.q] } : { k: d.buff, v: K.BUFF_ATTR[d.q] }) : ''}</small></div><button class="btn gold" data-dish="${k}" data-n="1">食用</button></div>`; }).join(''); }
 function gearSection() { const eq = Object.keys(C.SLOTS).filter(sl => S.equip[sl]); if (!eq.length && !S.gearBag.length) return '';
-  return `<h3>🗡️ 装备</h3><div class="row"><div class="lab">${setTxt()}</div></div>` + eq.map(sl => `<div class="row"><div class="lab">${C.SLOTS[sl].name}：${gearName(S.equip[sl])}<small>装备中（冒险/PK 生效）</small></div></div>`).join('') + (S.gearBag.length ? `<h3>装备包（${S.gearBag.length}/${C.bagCap(S)}件）</h3>` + S.gearBag.map(g => `<div class="row"><div class="lab">${gearName(g)}</div><button class="btn gold" data-equip="${g.id}">装备</button><button class="btn" data-sellgear="${g.id}">卖 ${C.gearPrice(g)}金</button></div>`).join('') : ''); }
+  return `<h3>🗡️ 装备</h3><div class="row"><div class="lab">${setTxt()}</div></div>` + eq.map(sl => `<div class="row"><div class="lab">${C.SLOTS[sl].name}：${gearName(S.equip[sl])}<small>装备中（冒险/PK 生效）</small></div></div>`).join('') + (S.gearBag.length ? `<h3>装备包（${S.gearBag.length}/${C.bagCap(S)}件）</h3>` + S.gearBag.map(g => `<div class="row"><div class="lab">${gearName(g)}</div><button class="btn gold" data-equip="${g.id}">装备</button><button class="btn" data-sellgear="${g.id}">卖 ${C.gearPrice(g)}金</button><button class="btn" data-refine="bag:${g.id}">炼灵</button></div>`).join('') : ''); }
 function sheetEbook(k, n) {
   const EB = C.EXP_BOOKS[k], LS = C.LIFE_SKILLS;
   openSheet(`<h2>使用 ${EB.name} ×${n}</h2><div class="hint">共 +${EB.xp * n} 经验，选择要提升的生活技能：</div>` + Object.keys(LS).map(t => { const l = C.lifeOf(S, t); if (!l) return ''; return `<div class="row"><div class="lab">${LS[t].icon}${LS[t].name} Lv.${l.lv} <small style="display:inline">· ${AN[LS[t].attr]}</small><small>经验 ${l.xp}/${C.alcNeed(l.lv)}</small></div><button class="btn gold" data-ebt="${t}" data-k="${k}" data-n="${n}">选择</button></div>`; }).join('') + `<button class="btn full" data-a="bag">返回背包</button>`);
@@ -8064,6 +8353,8 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
   const _expTxt = (r.expired && r.expired.length) ? `<br><span style="color:var(--dim)">🌫️ 前世遗物【${r.expired.map(x => x.name).join('】【')}】久未觉醒，已随风消散…</span>` : '';
   log('good', `🔄 <b>轮回重修</b>（${r.from}第 ${r.n} 次）：回到凡人 Lv.1，${_sealTxt}全属性重置为 1，<b class="r">已学技能已遗忘</b>（可用技能书重学）。${r.n > 0 ? `加成已记入${r.from}池，突破后升级全属性 +${1 + rb}。` : '凡人轮回不计加成，练气及以上每境10次有效。'}` + (r.maiGain > 0 ? `<br>🌀 获得 <span class="g">开脉丹 ×${r.maiGain}</span>（每个池子1颗）` : '') + ((keepAttr && r.seal) ? `<br><small style="color:var(--dim)">每次突破有50%概率觉醒胎中之谜，届时需输入印记主题方可继承。</small>` : '') + _expTxt);
   if (r.fate) log('sys', `🎴 宿命签：<b class="y">${r.fate.n}</b>——${r.fate.t}（${C.fateModText(r.fate)}，随此世生效）`); // v1012
+  if (r.tabooAwoke) log('sys', '🌑 <b>禁忌苏醒</b>——轮回深处沉睡的存在睁开了眼睛，自此伴你而行。（突破成功率 +5% · 雷劫威力 -5%，永久）'); // v1013
+  else if (r.taboo === 10) log('sys', '🌑 轮回深处，有什么东西动了一下。'); // v1013 禁忌初现
   afterAct(); commit(); render();
   // v131 轮回后可重选性别头像
   setTimeout(() => sheetGender(), 500);
@@ -8540,7 +8831,11 @@ function afterAct() { // 行动后：中毒掉生命、死亡结算、饥饿灵�
   if (S.dead) return;
   const e = C.afterAction(S);
   e.bites.forEach(b => log('bad', `🦷 ${petTag(b.pet)} 饿极了，<span class="r">狠狠咬了你一口</span>！生命 <span class="r">-${b.lost}</span>，灵宠饥饿 +${K.BITE_HUNGER}、忠诚 -${K.BITE_LOYAL}` + (b.st.length ? `，你陷入 ${stTxt(b.st)}` : '') + '。快喂它吃东西！'));
+  try { const _enc = C.rollEncounter(S); if (_enc) log('sys', '🌀 <b class="y">奇遇降临</b>——顶部横幅等你处理。'); } catch(_) {} // v1013 奇遇触发
 }
+function openEncSheet() { const e = C.encById(S.encPending); if (!e) { S.encPending = null; render(); return; } openSheet(`<h2>🌀 奇遇</h2><div style="font-size:14px;line-height:1.7;margin:8px 0">${e.text}</div>` + e.opts.map((o, i) => `<button class="btn full" style="margin-top:6px" data-encopt="${i}">${o.t}</button>`).join('')); } // v1013 奇遇
+function doEncOpt(i) { const r = C.chooseEncOpt(S, i | 0); if (!r) { closeSheet(); return; } log(r.bad ? 'bad' : 'good', `🌀 ${r.msg}`); if (r.next) { commit(); openEncSheet(); } else { commit(); closeSheet(); try { checkAchievements(); } catch(_) {} } } // v1013 奇遇
+function doRefineGear(spec) { const _p = String(spec).split(':'); const r = C.refineGear(S, _p[0], _p[0] === 'bag' ? +_p[1] : _p[1]); if (!r.ok) { toastLog('bad', '🔥 炼灵失败：' + r.err); return; } log('good', `🔥 炼灵成功：炼灵 ${r.rl}${r.tier ? '·' + r.tier : ''}（耗寿元 ${r.cost} 年，该装备属性 +${r.rl * 5}%）`); commit(); sheetLife('forge'); } // v1013 炼灵
 function doFood(kind, k, n) {
   const r = C.eatFood(S, kind, k, n, feedTo); if (!r) return; const it = (kind === 'egg' ? EGGS : MEATS)[k];
   if (r.pet) log('good', `🍼 给 ${petTag(r.pet)} 喂了 ${it.name} ×${r.n}，灵宠饥饿 <span class="g">+${r.hunger}</span>（${Math.round(r.pet.hunger)}）` + (r.loyal ? `，忠诚 <span class="g">+${r.loyal}</span>（${r.pet.loyal}）` : '') + (r.cured ? '。和灵宠亲昵一番，<span class="g">抑郁一扫而空</span>' : ''));
@@ -9299,6 +9594,9 @@ document.addEventListener('click', e => {
   if ('netpk' in d) { Net.queue(); return; }
   if (d.netact) { Net.act(d.netact); return; }
   if ('close' in d) { closeSheet(); return; }
+  if (d.refine) { doRefineGear(d.refine); return; }
+  if (d.encopen) { openEncSheet(); return; }
+  if (d.encopt !== undefined && d.encopt !== null && d.encopt !== '') { doEncOpt(parseInt(d.encopt, 10)); return; }
   if (d.charpage) { window._charPage = parseInt(d.charpage); sheetChar(); return; }
   if (d.starview) { window._starView = d.starview; sheetChar(); return; }
   if (d.seat !== undefined) { window._starSeat = +d.seat; sheetChar(); return; }
