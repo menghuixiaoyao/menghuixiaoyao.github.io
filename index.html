@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1037</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1038</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4408,12 +4408,15 @@ window.collectArray = async function(id) {
     const a = (S.arrays || []).find(v => v.id === id);
     if (!a || !a.storage) return;
     const st = a.storage;
+ // v1038 自愈旧污染：草药/蛋被误存为数字时先转回正道
+    if (typeof S.herbs === 'number' && S.herbs > 0) S.herbs = { lq1: S.herbs|0 };
+    if (typeof S.eggs === 'number' && S.eggs > 0) { S.petEggs = (S.petEggs|0) + (S.eggs|0); S.eggs = {}; }
     let got = [];
-    if ((st.h|0) > 0) { S.herbs = (S.herbs|0) + st.h; got.push('草药×' + st.h); st.h = 0; }
+    if ((st.h|0) > 0) { if (!S.herbs || typeof S.herbs !== 'object') S.herbs = {}; for (let _hi = 0; _hi < (st.h|0); _hi++) { const _hk = ['lq1', 'lq2', 'lq3'][(window._mineTier ? window._mineTier() : 0)] || 'lq1'; S.herbs[_hk] = (S.herbs[_hk]|0) + 1; } got.push('草药×' + st.h); st.h = 0; } // v1038 草药逐株入字典（矿区档位掷骰）
     if ((st.o|0) > 0) { S.ores = S.ores || {}; S.ores.sp1 = (S.ores.sp1|0) + st.o; got.push('矿石×' + st.o); st.o = 0; }
-    if ((st.v|0) > 0) { S.ores = S.ores || {}; S.ores['sv' + (st.vt|0)] = (S.ores['sv' + (st.vt|0)]|0) + st.v; got.push('灵脉×' + st.v); st.v = 0; }
-    if ((st.m|0) > 0) { S.meat = (S.meat|0) + st.m; got.push('肉×' + st.m); st.m = 0; }
-    if ((st.e|0) > 0) { S.eggs = (S.eggs|0) + st.e; got.push('蛋×' + st.e); st.e = 0; }
+    if ((st.v|0) > 0) { if (!Array.isArray(S.veins) || S.veins.length < 3) S.veins = [0, 0, 0]; const _vt2 = Math.min(2, Math.max(0, st.vt|0)); S.veins[_vt2] = (S.veins[_vt2]|0) + (st.v|0); got.push('灵脉×' + st.v); st.v = 0; } // v1038 灵脉入 S.veins
+    if ((st.m|0) > 0) { S.food = S.food || {}; S.food.rabbit = (S.food.rabbit|0) + (st.m|0); got.push('肉×' + st.m); st.m = 0; } // v1038 肉入 food.rabbit（与迁移口径一致）
+    if ((st.e|0) > 0) { S.petEggs = (S.petEggs|0) + (st.e|0); got.push('蛋×' + st.e); st.e = 0; } // v1038 蛋入 petEggs 计数，不动 eggs 字典
     if (got.length) log('good', `📦 从采集阵收取：${got.join('、')}`);
     else log('sys', '阵内空空如也');
     commit(); window.arrayPanel(id);
@@ -4441,11 +4444,15 @@ window.destroyArray = function(id) {
     if (!confirm(`确定拆除(${a.x},${a.y})的采集阵？库存将自动收取。`)) return;
     // 自动收取库存
     const st = a.storage || {};
-    if ((st.h|0) > 0) S.herbs = (S.herbs|0) + st.h;
+ // v1038 自愈旧污染：草药/蛋被误存为数字时先转回正道
+    if (typeof S.herbs === 'number' && S.herbs > 0) S.herbs = { lq1: S.herbs|0 };
+    if (typeof S.eggs === 'number' && S.eggs > 0) { S.petEggs = (S.petEggs|0) + (S.eggs|0); S.eggs = {}; }
+
+    if ((st.h|0) > 0) { if (!S.herbs || typeof S.herbs !== 'object') S.herbs = {}; for (let _hi = 0; _hi < (st.h|0); _hi++) { const _hk = ['lq1', 'lq2', 'lq3'][(window._mineTier ? window._mineTier() : 0)] || 'lq1'; S.herbs[_hk] = (S.herbs[_hk]|0) + 1; } } // v1038 草药逐株入字典
     if ((st.o|0) > 0) { S.ores = S.ores || {}; S.ores.sp1 = (S.ores.sp1|0) + st.o; }
-    if ((st.v|0) > 0) { S.ores = S.ores || {}; S.ores['sv' + (st.vt|0)] = (S.ores['sv' + (st.vt|0)]|0) + st.v; }
-    if ((st.m|0) > 0) S.meat = (S.meat|0) + st.m;
-    if ((st.e|0) > 0) S.eggs = (S.eggs|0) + st.e;
+    if ((st.v|0) > 0) { if (!Array.isArray(S.veins) || S.veins.length < 3) S.veins = [0, 0, 0]; const _vt3 = Math.min(2, Math.max(0, st.vt|0)); S.veins[_vt3] = (S.veins[_vt3]|0) + (st.v|0); } // v1038 灵脉入 S.veins
+    if ((st.m|0) > 0) { S.food = S.food || {}; S.food.rabbit = (S.food.rabbit|0) + (st.m|0); } // v1038 肉入 food.rabbit
+    if ((st.e|0) > 0) S.petEggs = (S.petEggs|0) + (st.e|0); // v1038 蛋入 petEggs 计数
     S.arrays.splice(idx, 1);
     log('good', `💥 采集阵已拆除，库存已收取`);
     commit(); closeSheet(); renderWorldMap();
@@ -4845,37 +4852,6 @@ window.doReserveVein = async function(t) { // v558 采灵脉；v1007 按大小�
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采${veinNames[vtn]}：${got}`);
 };
-window.doReserveGather = function() {
-  // v536 采集保留地资源；v542 免费；v558 保留兼容
-  const rn = S.reserveNode;
-  if (rn.h <= 0 && rn.o <= 0) { if (typeof toastLog === 'function') toastLog('sys', '资源还未刷新'); return; }
-  const herbs = [], ores = [];
-  const veinNames = ['小型灵脉', '中型灵脉', '巨型灵脉']; // v538
-  // 灵脉
-  const vn = rn.v | 0;
-  const _vy = {};
-  if (vn > 0 && Array.isArray(rn.vs)) {
-    for (let _t = 0; _t < 3; _t++) { const _n = rn.vs[_t]|0; rn.vs[_t] = 0; for (let _vi = 0; _vi < _n; _vi++) { const _g2 = window._veinYield(_t); if (_g2) _vy[_g2] = (_vy[_g2] | 0) + 1; } }
-    rn.v = 0;
-  }
-  // 草药：随机种类
-  const herbKeys = Object.keys(C.HERBS || {});
-  for (let i = 0; i < rn.h; i++) {
-    const k = herbKeys[Math.floor(Math.random() * herbKeys.length)];
-    if (k) { S.herbs[k] = (S.herbs[k] | 0) + 1; herbs.push(k); }
-  }
-  // 矿石：随机种类
-  const oreKeys = Object.keys(C.ORES || {});
-  for (let i = 0; i < rn.o; i++) {
-    const k = oreKeys[Math.floor(Math.random() * oreKeys.length)];
-    if (k) { S.ores[k] = (S.ores[k] | 0) + 1; ores.push(k); }
-  }
-  const hn = rn.h, on = rn.o, vnn = rn.v | 0, vtn = 0; const _vyTxt = Object.keys(_vy).map(k => k + (_vy[k] > 1 ? '（' + _vy[k] + '）' : '')).join('、');
-  rn.h = 0; rn.o = 0; rn.v = 0;
-  log('good', `⛏️ 在灵脉矿区采集：草药×${hn}、矿石×${on}` + (vnn > 0 ? `、灵脉产出 ${_vyTxt}` : ''));
-  commit(); renderWorldMap();
-  if (typeof toastLog === 'function') toastLog('good', `采集成功：草药×${hn} 矿石×${on}` + (vnn > 0 ? ` 灵脉产出 ${_vyTxt}` : ''));
-}; // v536
 // v666 三区采集面板（逐个采集，采后刷新数量）
 window.openReserveSheet = function() {
   try {
