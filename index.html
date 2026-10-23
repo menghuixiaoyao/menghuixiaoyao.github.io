@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1039</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1040</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5769,7 +5769,7 @@ function render() {
         _btBtn = (next ? `<button class="btn gold" data-breakthrough style="margin:4px 4px 0 0">⚡ 突破至${next}（三尸已斩，成功率 ${C.pct(C.breakthroughRate(S))}）</button>` : `<small class="y">已至最高境界【主宰】</small>`);
       }
     } else {
-      _btBtn = (next ? `<button class="btn gold" data-breakthrough style="margin:4px 4px 0 0">⚡ 突破至${next}（成功率 ${C.pct(C.breakthroughRate(S))}，${(S.realm|0) === 0 ? `引气入体 ${S.yinQi|0}/10缕` : `凝气 ${S.yinQi|0}/10缕`}，成功全属性×2；失败退 1~9 级（不清空）；需法力 100/100${(S.realm|0) >= 2 ? '；判定成功后渡⚡雷劫（压条越高雷越强，1000%最强：雷伤×2.5、天魔2.5倍属性），雷劫后必经👹心魔劫（问心答题，或与心魔斗法，失败退 1~9 级并折寿 10%）' + (((S.realm|0) === 2 || (S.realm|0) === 3) ? '；压条定品质：1000%圆满金丹极×2.2/900%圆满×2.0/700%完美×1.8/500%上品×1.6/超200%中品×1.4/否则下品×1.2；压条≤200%有1%概率天劫异变（撞上高阶雷劫，扛过按该档结丹）' : '') : ''}）</button>` : `<small class="y">已至最高境界【主宰】</small>`);
+      _btBtn = (next ? `<div style=\"margin:2px 0 0\"><small style=\"color:var(--dim)\">成功率 ${C.pct(C.breakthroughRate(S))} · ${(S.realm|0) === 0 ? `引气入体 ${S.yinQi|0}/10缕` : `凝气 ${S.yinQi|0}/10缕`} · 成功全属性×2 · 失败退 1~9 级（不清空） · 需法力 100/100${(S.realm|0) >= 2 ? '<br>判定成功后渡⚡雷劫（压条越高雷越强，1000%最强：雷伤×2.5、天魔2.5倍属性），雷劫后必经👹心魔劫（问心答题，或与心魔斗法，失败退 1~9 级并折寿 10%）' + (((S.realm|0) === 2 || (S.realm|0) === 3) ? '<br>压条定品质：1000%圆满金丹极×2.2/900%圆满×2.0/700%完美×1.8/500%上品×1.6/超200%中品×1.4/否则下品×1.2；压条≤200%有1%概率天劫异变（撞上高阶雷劫，扛过按该档结丹）' : '') : ''}</small></div><button class=\"btn gold\" data-breakthrough style=\"margin:4px 4px 0 0\">⚡ 突破至${next}</button>` : `<small class=\"y\">已至最高境界【主宰】</small>`);
     }
     rb.innerHTML = `🌟 <b>${C.REALMS[S.realm]}·大圆满</b> <small>轮回加成：升级全属性 +${1 + bonus}（已轮回 ${bonus} 次，各境上限 10）· 突破经验 +${btB}% 成功率</small><br>` +
       _btBtn +
