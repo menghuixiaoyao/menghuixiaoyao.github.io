@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1041</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1042</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -11093,6 +11093,7 @@ async function syncNow(manual){
     var r = await api('/api/save', { method:'PUT', body:{ base_rev:M.baseRev, save_json:sj, client_ts:Date.now() } });
     if (r.ok && r.json && r.json.ok){
       M.baseRev = r.json.rev; ls(LK.rev, String(M.baseRev));
+      try{ localStorage.setItem('mhxy_sowner', ls(LK.name) || ''); }catch(_){} // v1042 上传成功即绑定归属
       if (manual) glog('good', '🌐 存档已同步到云端（rev ' + M.baseRev + '）');
     } else if (r.status === 409){
       M.dirty = true; // 留着，下次手动处理
@@ -11104,18 +11105,16 @@ async function syncNow(manual){
   if (manual){ try{ panel(); }catch(_){} } // 刷新面板，rev 数字即反馈
 }
 async function checkCloud(){
-  // 登录后：云端 rev 比本地新 → 提示是否下载
+  // v1042 账号为准：登录后自动对齐该账号的云存档，不再弹窗、不需手动读档
   var r = await api('/api/save/meta');
   if (!r.ok || !r.json || !r.json.ok) return;
   if (!r.json.exists) return;
   var srv = r.json.rev | 0;
-  if (srv > M.baseRev){
-    var ok = false;
-    try{ ok = confirm('云端有更新的存档（rev ' + srv + '，本地 rev ' + M.baseRev + '），是否下载覆盖本地？'); }catch(_){}
-    if (ok) await downloadSave(true); else M.baseRev = srv, ls(LK.rev, String(srv));
-  } else if (srv < M.baseRev){
-    M.baseRev = srv; ls(LK.rev, String(srv));
-  }
+  var mine = false;
+  try{ var _nm = ls(LK.name) || ''; mine = !!_nm && (localStorage.getItem('mhxy_sowner') || '') === _nm; }catch(_){}
+  if (mine && srv <= M.baseRev){ if (srv < M.baseRev){ M.baseRev = srv; ls(LK.rev, String(srv)); } return; } // 本地就是本账号的档且不旧于云端
+  try{ var _sj = localStorage.getItem(M.saveKey); if (_sj) localStorage.setItem('mhxy_save_backup', _sj); }catch(_){} // 覆盖前备份本地档，可恢复
+  await downloadSave(true);
 }
 async function downloadSave(quiet){
   var r = await api('/api/save');
@@ -11126,6 +11125,7 @@ async function downloadSave(quiet){
       try{ localStorage.setItem(M.saveKey, r.json.save_json); }
       catch(_){ glog('bad', '🌐 本地写入失败'); return; }
       M.baseRev = r.json.rev; ls(LK.rev, String(M.baseRev));
+      try{ localStorage.setItem('mhxy_sowner', ls(LK.name) || ''); }catch(_){} // v1042 标记本地档归属账号
       M.dirty = false;
       glog('good', '🌐 已从云端下载存档（rev ' + M.baseRev + '），正在重载…');
       setTimeout(function(){ try{ location.reload(); }catch(_){} }, 800);
@@ -11563,7 +11563,8 @@ function init(){
       if (r.status === 401 && r.json && (r.json.error === 'session_replaced' || r.json.error === 'session_expired' || r.json.error === 'unauthorized')){
         // onReplaced 已在 api() 内处理 replaced；expired/unknown 在此清掉
         if (r.json.error !== 'session_replaced'){ clearAuth(false); showLoginGate(); } // v970 token失效弹门禁
-      }
+      } else if (r.ok && r.json && r.json.ok){ try{ checkCloud(); }catch(_){} } // v1042 自动登录同样对齐账号存档
+
     });
   } else {
     // v970 登录门禁：未登录先弹登录页，不进游戏
@@ -11626,8 +11627,10 @@ async function gateDoRegister(){
 async function gateAfterAuth(d){
   saveAuth(d);
   gateMsg('正在同步存档…');
-  // 首次登录：把本地存档绑账号上传云端
-  try{ await syncNow(true); }catch(_){}
+  // v1042 账号为准：云端已有该账号存档时不先上传本地（防覆盖错档），由 afterLogin→checkCloud 自动下载对齐；云端无档才把本地档绑账号上传
+  var _hasCloud = false;
+  try{ var _m = await api('/api/save/meta'); _hasCloud = !!(_m.ok && _m.json && _m.json.exists); }catch(_){}
+  if (!_hasCloud){ try{ await syncNow(true); }catch(_){} }
   hideLoginGate();
   await afterLogin();
 }
