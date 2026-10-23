@@ -4980,7 +4980,7 @@ function npcPos(S) {
       const isRanch = (x === 2 && y === 0) ? true : false; // v541 养殖园：肉和蛋
       const dur = (typeof S !== 'undefined' && S.furnaceDur) ? S.furnaceDur : { alc: 100, forge: 100, ding: 200 }; if (dur.ding == null) dur.ding = 200;
       const _npcQxG = _npcHere ? ((_npcHere[7]|0) || (_npcHere[5]*2)) : 999; const _mySSG = (typeof effShenshi === 'function' && typeof S !== 'undefined' && S) ? effShenshi(S) : 0; // v969 NPC格子图标神识判定，与信息栏v937一致
-      const icon = (isNpc && isP && _npcHere[2] && _npcQxG <= _mySSG) ? `<img src="${_npcHere[2]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block">` : isP ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" onerror="this.outerHTML='🧑'">` : isFurnace === 'both_alc' ? '<span style="font-size:20px">🏛️</span>' : isFurnace ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:20px">🔨</span><span style="font-size:8px;color:var(--dim)">${dur[isFurnace]||100}/100</span></div>` : isArena === 'pk' ? '<span style="font-size:20px">⚔️</span>' : isArena === 'arena' ? '<span style="font-size:20px">🏟️</span>' : isPortal ? '<span style="font-size:20px">🌀</span>' : isShop ? '<span style="font-size:20px">🏪</span>' : isTrainPortal ? '<span style="font-size:20px">⛰️</span>' : isStall ? '<span style="font-size:20px">🎪</span>' : isCasino ? '<span style="font-size:20px">🎲</span>' : isCultivate ? '<span style="font-size:13px">☯️🪷🕉️⚡⛰️</span>' : isCookRefine ? '<span style="font-size:16px">🍳🪙</span>' : isBeastGarden ? '<span style="font-size:20px">🐾</span>' : isFormationTalisman ? '<span style="font-size:16px">🧭📜</span>' : isReserveNode ? (reserveHas(S) ? '<span style="font-size:20px">🌿</span>' : '⬜') : isHerbGarden ? (herbHas(S) ? '<span style="font-size:20px">🌱</span>' : '⬜') : isRanch ? (ranchHas(S) ? '<span style="font-size:20px">🥚</span>' : '⬜') : '⬜'; // v540；v541 // v465 兽园；v536 保留地 // v456 大殿只显示🏛️；v457 修炼区五图标；v458 灶台点金台；v790 阵符坊
+      const icon = isP ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" onerror="this.outerHTML='🧑'">` : (isNpc && _npcHere[2] && _npcQxG <= _mySSG) ? `<img src="${_npcHere[2]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" title="${(_npcHere[3]||'') + ' ' + (_npcHere[6]||'')}">` : isFurnace === 'both_alc' ? '<span style="font-size:20px">🏛️</span>' : isFurnace ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:20px">🔨</span><span style="font-size:8px;color:var(--dim)">${dur[isFurnace]||100}/100</span></div>` : isArena === 'pk' ? '<span style="font-size:20px">⚔️</span>' : isArena === 'arena' ? '<span style="font-size:20px">🏟️</span>' : isPortal ? '<span style="font-size:20px">🌀</span>' : isShop ? '<span style="font-size:20px">🏪</span>' : isTrainPortal ? '<span style="font-size:20px">⛰️</span>' : isStall ? '<span style="font-size:20px">🎪</span>' : isCasino ? '<span style="font-size:20px">🎲</span>' : isCultivate ? '<span style="font-size:13px">☯️🪷🕉️⚡⛰️</span>' : isCookRefine ? '<span style="font-size:16px">🍳🪙</span>' : isBeastGarden ? '<span style="font-size:20px">🐾</span>' : isFormationTalisman ? '<span style="font-size:16px">🧭📜</span>' : isReserveNode ? (reserveHas(S) ? '<span style="font-size:20px">🌿</span>' : '⬜') : isHerbGarden ? (herbHas(S) ? '<span style="font-size:20px">🌱</span>' : '⬜') : isRanch ? (ranchHas(S) ? '<span style="font-size:20px">🥚</span>' : '⬜') : '⬜'; // v1057 NPC全图显示（神识可见） // v540；v541 // v465 兽园；v536 保留地 // v456 大殿只显示🏛️；v457 修炼区五图标；v458 灶台点金台；v790 阵符坊
       const furnaceAttr = isFurnace && !isP ? ` data-furnace="${isFurnace}"` : '';
       const arenaAttr = isArena && !isP ? ` data-arena="${isArena}"` : '';
       if (!isSwordCell(x, y)) { cells += `<div style="aspect-ratio:1;visibility:hidden"></div>`; continue; }
@@ -4998,7 +4998,22 @@ function npcPos(S) {
           _cellIcon = `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${_cellIcon}<span style="position:absolute;top:-2px;right:-2px;font-size:10px" title="采集阵${_arr.guarded ? '(神识守卫)' : ''}">🧭</span></div>`;
         }
       } catch(_) {}
-      try { const _pl = _plAt[x + ',' + y]; if (_pl && _pl.length) { if (isP) { _cellIcon = `<div style="position:relative;width:100%;height:100%">${_cellIcon}<span style="position:absolute;bottom:-2px;right:-2px;font-size:10px" title="同格道友：${_pl.map(function(p){ return String(p.username || ''); }).join('、')}">🧑×${_pl.length}</span></div>`; } else { _cellIcon = `<div style="font-size:10px;line-height:1;text-align:center" title="${_pl.map(function(p){ return String(p.username || ''); }).join('、')}">🧑${_pl.length > 1 ? '×' + _pl.length : ''}<br><span style="font-size:8px">${String(_pl[0].username || '').slice(0, 4)}</span></div>`; } } } catch(_) {} // v1009 真人玩家标记
+      try {
+        let _pl = _plAt[x + ',' + y];
+        // v1057 真人玩家可见规则（Ye 定）：神识外放10秒内，相邻格子、气息<神识才可见；同格始终可见
+        if (_pl && _pl.length && !isP) {
+          const _ssOn = Date.now() < (window._ssRevealUntil || 0);
+          const _mySS = (typeof effShenshi === 'function' && typeof S !== 'undefined' && S) ? effShenshi(S) : 0;
+          const _wmp = (typeof S !== 'undefined' && S.worldMap) || { px: 2, py: 3 };
+          if (!_ssOn) { _pl = null; }
+          else {
+            const _d = Math.max(Math.abs(x - _wmp.px), Math.abs(y - _wmp.py));
+            if (_d !== 1) { _pl = null; }
+            else { _pl = _pl.filter(function(p){ return ((p.level|0) * 2) < _mySS; }); if (!_pl.length) _pl = null; }
+          }
+        }
+        if (_pl && _pl.length) { if (isP) { _cellIcon = `<div style="position:relative;width:100%;height:100%">${_cellIcon}<span style="position:absolute;bottom:-2px;right:-2px;font-size:10px" title="同格道友：${_pl.map(function(p){ return String(p.username || ''); }).join('、')}">🧑×${_pl.length}</span></div>`; } else { _cellIcon = `<div style="font-size:10px;line-height:1;text-align:center" title="${_pl.map(function(p){ return String(p.username || ''); }).join('、')}">🧑${_pl.length > 1 ? '×' + _pl.length : ''}<br><span style="font-size:8px">${String(_pl[0].username || '').slice(0, 4)}</span></div>`; } }
+      } catch(_) {} // v1009 真人玩家标记；v1057 可见规则
       cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isFormationTalisman ? '制阵室·画符台' : isReserveNode ? '灵脉矿区' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${_cellIcon}</div>`; // v713 修title泄漏；v790 阵符坊
     }
     grid.innerHTML = cells;
@@ -5249,9 +5264,10 @@ window.doReleasePet = function(id) { // v893 放生灵宠+10功德；v894 锁定
     sheetChar();
   } catch(e) {}
 };
-window.shenshiPanel = function() { // v887 化神神识：3格内资源远程收取
+window.shenshiPanel = function() { // v887 化神神识：3格内资源远程收取；v1057 外放同时激活10秒玩家探查（相邻格气息<神识可见）
   try {
     if ((S.realm|0) < 5) { log('bad', '需化神境界才能神识外放'); return; }
+    try { window._ssRevealUntil = Date.now() + 10000; } catch(_) {} // v1057 神识外放10秒探查
     const wm = S.worldMap || { px: 2, py: 3 };
     const _spots = [
       { x: 4, y: 3, name: '⛏️灵脉矿区', fn: 'openReserveSheet' },
@@ -8041,7 +8057,7 @@ function doDebug(act) {
       let gain = 0, lbl = '', nqBonusDbg = 0, hcDbg = 0, defDbg = 0, defMultDbg = 0;
       const sc = (typeof C.setCounts === 'function' ? C.setCounts(S) : {});
       if (type === 'wushu') { const w2x = (sc.fatal || 0) >= 2 ? 2 : 1; gain = hrs * 60 * w2x; lbl = '经验'; }
-      else if (type === 'ningqi') { const hc = (sc.heal || 0), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1; let nqBonus = 0, nqAgain = 0; try { nqBonus = hi >= 0 ? (C.GEAR_SETS.heal.ningqi[hi] || 0) : 0; nqAgain = hi >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi] || 0) : 0; nqBonusDbg = nqBonus; hcDbg = hc; } catch(e) {} const nqRate = Math.min(0.95, (0.30 + nqBonus) * C.qiFactor()); for (let i = 0; i < hrs; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } lbl = '经验'; } // v116
+      else if (type === 'ningqi') { const hc = (sc.heal || 0), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1; let nqBonus = 0, nqAgain = 0; try { nqBonus = hi >= 0 ? (C.GEAR_SETS.heal.ningqi[hi] || 0) : 0; nqAgain = hi >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi] || 0) : 0; nqBonusDbg = nqBonus; hcDbg = hc; } catch(e) {} const nqRate = Math.min(0.95, (0.30 + nqBonus) * qiFactor()); for (let i = 0; i < hrs; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } lbl = '经验'; } // v116
       else { const isVein = type === 'vein'; const dc = (sc.def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1; let afkMult = 0; try { afkMult = di >= 0 ? (C.GEAR_SETS.def.afkMult[di] || 0) : 0; defDbg = dc; defMultDbg = afkMult; } catch(e) {} gain = Math.floor(hrs * 3600 * ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0)) * (1 + afkMult)); lbl = (typeof C.resLbl === 'function' ? C.resLbl(S) : '灵力'); if (isVein) { let nqB2 = 0, nqA2 = 0; try { const hc2 = (sc.heal || 0), hi2 = hc2 >= 2 ? Math.min(5, hc2) - 2 : -1; nqB2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqi[hi2] || 0) : 0; nqA2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi2] || 0) : 0; } catch(e) {} const nqR2 = Math.min(0.95, 0.30 + nqB2); let nqN2 = 0; for (let i = 0; i < hrs; i++) { if (Math.random() < nqR2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; if (nqA2 > 0 && Math.random() < nqA2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; } } } if (nqN2 > 0) log('good', (S.realm|0) >= 8 ? `⚖️ 参悟法则，法则之力 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）` : `🌀 灵脉凝气，凝气 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）`); } } // v89：每条络+1，每点开脉术经验+1；v202 灵脉每小时判定凝气
       if (gain > 0) { if (isMana) S.mana = Math.min(C.manaCapEff(S), S.mana + gain); else S.xp += gain; }
       S.stats = S.stats || {}; S.stats.afkSecs = (S.stats.afkSecs || 0) + hrs * 3600; S.stats.afkSecsTotal = (S.stats.afkSecsTotal || 0) + hrs * 3600;
@@ -10922,9 +10938,10 @@ if (typeof window.doReleasePet !== 'function') {
 
 if (typeof window.shenshiPanel !== 'function') {
   // v1016 兜底：blk1 v887 的同名函数偶发被吞，在此补一份
-  window.shenshiPanel = function() { // v887 化神神识：3格内资源远程收取
+  window.shenshiPanel = function() { // v887 化神神识：3格内资源远程收取；v1057 外放同时激活10秒玩家探查
   try {
     if ((S.realm|0) < 5) { log('bad', '需化神境界才能神识外放'); return; }
+    try { window._ssRevealUntil = Date.now() + 10000; } catch(_) {} // v1057 神识外放10秒探查
     const wm = S.worldMap || { px: 2, py: 3 };
     const _spots = [
       { x: 4, y: 3, name: '⛏️灵脉矿区', fn: 'openReserveSheet' },
