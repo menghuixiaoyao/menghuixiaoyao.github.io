@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1044</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1045</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -9049,32 +9049,35 @@ function sheetRedpacket() {
   openSheet(h);
   try { poolRefreshTxt(); } catch(_) {}
 }
-function doRedpacketSend(k) {
+function doRedpacketSend(k) { // v1045：改游戏内输入面板（原 prompt() 在手机上不弹、流程静默中止，发不了红包）
   if (rpCount(k) <= 0) { toastLog('bad', '没有这种红包皮，先去商会买'); return; }
   if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn()) { toastLog('bad', '先登录真人联机才能发红包'); return; }
-  const cname = RP_KINDS[k].name.replace('红包', '');
-  const bal = rpBalance(k);
-  const amtS = prompt(`放入多少${cname}？（最少 100，你有 ${bal}）`, '100');
-  if (amtS == null) return;
-  const amt = Math.floor(+amtS);
+  const it = RP_KINDS[k]; const cname = it.name.replace('红包', ''); const bal = rpBalance(k);
+  openSheet(`<h2>🧧 发红包 · ${it.name}</h2><div class="hint">皮 ${rpCount(k)} 个 · 我有 ${it.cur} ${bal} ${cname} · 发一个 +1 声望 · 24 小时没抢完的回收进天道池</div><div class="row"><div class="lab">放入数量<small>最少 100</small></div><input id="rpAmt" type="number" inputmode="numeric" style="width:120px;padding:9px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:15px;text-align:center" value="100"></div><div class="row"><div class="lab">抢的人数<small>最少 10 人 · 不能超过放入数量</small></div><input id="rpPpl" type="number" inputmode="numeric" style="width:120px;padding:9px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:15px;text-align:center" value="10"></div><div class="row"><button class="btn gold full" data-redsendgo="${k}">🧧 发出红包</button></div><div class="row"><button class="btn full" data-redopen>← 返回</button></div>`);
+}
+function doRedpacketSendGo(k) {
+  const it = RP_KINDS[k]; if (!it) return;
+  if (rpCount(k) <= 0) { toastLog('bad', '没有这种红包皮，先去商会买'); return; }
+  if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn()) { toastLog('bad', '先登录真人联机才能发红包'); return; }
+  const cname = it.name.replace('红包', ''); const bal = rpBalance(k);
+  const amt = Math.floor(+(document.getElementById('rpAmt') || {}).value);
   if (!(amt >= 100)) { toastLog('bad', '最少放入 100 个'); return; }
   if (amt > bal) { toastLog('bad', cname + '不足'); return; }
-  const pplS = prompt('设置多少人抢？（最少 10 人）', '10');
-  if (pplS == null) return;
-  const ppl = Math.floor(+pplS);
+  const ppl = Math.floor(+(document.getElementById('rpPpl') || {}).value);
   if (!(ppl >= 10)) { toastLog('bad', '最少 10 人抢'); return; }
   if (ppl > amt) { toastLog('bad', '人数不能超过放入数量（每人至少 1 个）'); return; }
   MHXY.api('/api/redpacket/send', { method: 'POST', body: { kind: k, amount: amt, people: ppl } }).then(r => {
     if (r && r.json && r.json.ok) { S.redPackets[k] = rpCount(k) - 1; rpDeduct(k, amt); try { addFame(1, '发红包'); } catch(_){} commit(); toastLog('gold', `🧧 ${RP_KINDS[k].name} 已发出：${amt} 个 · ${ppl} 人抢，24 小时有效！`); if (MHXY.panel) MHXY.panel(); }
-    else toastLog('bad', '红包通道尚未开放（等后端上线）');
+    else toastLog('bad', (r && r.json && r.json.error) ? '发送失败：' + r.json.error : '红包通道尚未开放（等后端上线）');
   }).catch(() => toastLog('bad', '红包发送失败（网络）'));
 }
-function doPoolDonate(k) {
-  const cname = RP_KINDS[k].name.replace('红包', '');
-  const bal = rpBalance(k);
-  const amtS = prompt(`捐多少${cname}进天道池？（你有 ${bal}）`, '100');
-  if (amtS == null) return;
-  const amt = Math.floor(+amtS);
+function doPoolDonate(k) { // v1045：同红包，改游戏内输入面板（原 prompt() 手机上不弹）
+  const it = RP_KINDS[k]; const cname = it.name.replace('红包', ''); const bal = rpBalance(k);
+  openSheet(`<h2>🏦 捐献补池 · ${cname}</h2><div class="hint">我有 ${it.cur} ${bal} ${cname} · 捐进天道池补灵气</div><div class="row"><div class="lab">捐献数量<small>至少 1</small></div><input id="poolAmt" type="number" inputmode="numeric" style="width:120px;padding:9px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:15px;text-align:center" value="100"></div><div class="row"><button class="btn gold full" data-pooldonatego="${k}">🏦 捐进天道池</button></div><div class="row"><button class="btn full" data-redopen>← 返回</button></div>`);
+}
+function doPoolDonateGo(k) {
+  const cname = RP_KINDS[k].name.replace('红包', ''); const bal = rpBalance(k);
+  const amt = Math.floor(+(document.getElementById('poolAmt') || {}).value);
   if (!(amt >= 1)) { toastLog('bad', '至少捐 1 个'); return; }
   if (amt > bal) { toastLog('bad', cname + '不足'); return; }
   if (!window.MHXY || !MHXY.api) { toastLog('bad', '未连接真人联机'); return; }
@@ -9912,9 +9915,11 @@ document.addEventListener('click', e => {
   if (d.rpbuy) { doRpBuy(d.rpbuy); return; }
   if (d.redopen !== undefined) { sheetRedpacket(); return; }
   if (d.redsend) { doRedpacketSend(d.redsend); return; }
+  if (d.redsendgo) { doRedpacketSendGo(d.redsendgo); return; }
   if (d.redback !== undefined) { if (window.MHXY && MHXY.panel) MHXY.panel(); return; }
   if (d.redpacket) { doRedpacket(d.redpacket); return; }
   if (d.pooldonate) { doPoolDonate(d.pooldonate); return; }
+  if (d.pooldonatego) { doPoolDonateGo(d.pooldonatego); return; }
   if (d.poolrefresh !== undefined) { poolRefreshTxt(); return; }
   if (d.steleclaim !== undefined) { doSteleClaim(); return; }
   if (d.spectate) { doSpectate(d.spectate, t.getAttribute('data-specmeta') || ''); return; }
