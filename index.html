@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1029</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1030</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -383,7 +383,7 @@ const K = {
 const ATTRS = ['agi', 'str', 'def', 'vit', 'int'];
 const AN = { agi: '敏捷', str: '力量', def: '防御', vit: '生命', int: '智力' };
 const GRADES = { 5: '完美', 4: '丹纹', 3: '上品', 2: '中品', 1: '下品' };
-// 技能：须在商店购买技能书习得（price），lv = AI 对手可习得的最低等级
+// 技能：由10张同名技能残页合成技能书习得（price），lv = AI 对手可习得的最低等级
 const SKILLS = {
   smash:    { name: '重击',   mp: 5,  price: 60,  lv: 2, desc: '1.6 倍物理伤害' },
   shield:   { name: '护盾',   mp: 6,  price: 90, lv: 3, desc: '获得 智力×3 点护盾' },
@@ -455,6 +455,7 @@ const PET_TALENT = {
   baihu:    { name: '狂袭', desc: '攻击后按 40%/30%/20%/10% 概率连续再击，最多 5 连击' }
 };
 // 灵宠品质（孵化时独立随机）：w 权重；grow 每升 1 级全属性自动 +grow；名字颜色即品质
+const PET_BREAK_MAX = [0, 1, 2, 3, 5, 8, 12, 999]; // 各品质突破上限次数（神=无上限）
 const PQLT = [
   { name: '普通', w: 30, grow: 1, color: '#bdbdbd', lvMax: 30 },
   { name: '优秀', w: 25, grow: 2, color: '#66bb6a', lvMax: 40 },
@@ -2045,15 +2046,17 @@ const activePets = S => { const ids = (Array.isArray(S.pet) ? S.pet : (S.pet != 
 const activePet = S => activePets(S)[0] || null;
 function setPet(S, id) { id = +id; if (!S.pets.some(p => p.id === id)) return false; let arr = (Array.isArray(S.pet) ? S.pet : (S.pet != null ? [S.pet] : [])).map(x => +x); const i = arr.indexOf(id); if (i >= 0) arr.splice(i, 1); else { if (arr.length >= 4) return false; arr.push(id); } S.pet = arr; return true; }
 const petXpNeed = lv => lv * K.PET_XP_PER_LV;
-function petGainXp(pet, n) { pet.xp += n; let ups = 0; const sks = [], tls = []; const sk = PET_SET[pet.k]; const lvMax = (PQLT[(pet.q | 0)] || PQLT[0]).lvMax || 100; while (pet.xp >= petXpNeed(pet.lv) && pet.lv < lvMax) { pet.xp -= petXpNeed(pet.lv); pet.lv++; pet.pts += K.PET_LV_PTS; const g = petQ(pet).grow; for (const a of ATTRS) pet.attrs[a] += g; ups++; if (sk && !(pet.skills || []).includes(sk) && R() < K.PET_SKILL_P) { (pet.skills = pet.skills || []).push(sk); sks.push(sk); } if (!pet.talent && pet.q === 7 && PET_TALENT[pet.k] && R() < K.TALENT_LEARN_P) { pet.talent = true; tls.push(PET_TALENT[pet.k].name); } } return { ups, sks, tls }; } // 每级 5 点自由属性点 + 按品质全属性成长 + 概率领悟本系套装技能；神级宠物升级 10% 领悟天赋神通
+function petEffLvMax(pet) { const base = (PQLT[(pet.q | 0)] || PQLT[0]).lvMax || 100; return base + ((pet.breakCount | 0) * 10); } // 突破每次+10级上限
+function petGainXp(pet, n) { pet.xp += n; let ups = 0; const sks = [], tls = []; const sk = PET_SET[pet.k]; const lvMax = petEffLvMax(pet); while (pet.xp >= petXpNeed(pet.lv) && pet.lv < lvMax) { pet.xp -= petXpNeed(pet.lv); pet.lv++; pet.pts += K.PET_LV_PTS; const g = petQ(pet).grow; for (const a of ATTRS) pet.attrs[a] += g; ups++; if (sk && !(pet.skills || []).includes(sk) && R() < K.PET_SKILL_P) { (pet.skills = pet.skills || []).push(sk); sks.push(sk); } if (!pet.talent && pet.q === 7 && PET_TALENT[pet.k] && R() < K.TALENT_LEARN_P) { pet.talent = true; tls.push(PET_TALENT[pet.k].name); } } return { ups, sks, tls }; } // 每级 5 点自由属性点 + 按品质全属性成长 + 概率领悟本系套装技能；神级宠物升级 10% 领悟天赋神通
 function petAssign(S, id, attr, n) { // 分配灵宠自由属性点
   const pet = S.pets.find(p => p.id === id); if (!pet || !AN[attr]) return 0;
   n = Math.min(Math.max(1, Math.floor(n || 1)), pet.pts); if (n <= 0) return 0;
   pet.pts -= n; pet.attrs[attr] += n; return n;
 }
-function devourPet(S, eaterId, foodId) { // 吞噬：吞噬者获得被吞噬灵宠的全部五项属性，被吞噬者永久移除；同品种同品质15%概率品质进阶1级
+function devourPet(S, eaterId, foodId) { // 吞噬：吞噬者获得被吞噬灵宠的全部五项属性，被吞噬者永久移除；同品种同品质15%概率品质进阶1级；每只限吞5次
   if (eaterId === foodId) return null;
   const eater = S.pets.find(p => p.id === eaterId), food = S.pets.find(p => p.id === foodId); if (!eater || !food) return null;
+  if ((eater.devourCount | 0) >= 5) return { err: '此灵宠已吞噬5次，达到上限' };
   const gains = {}; ATTRS.forEach(a => { gains[a] = food.attrs[a]; eater.attrs[a] += food.attrs[a]; });
   const _foodXp = food.xp | 0;
   S.pets = S.pets.filter(p => p.id !== foodId);
@@ -2062,6 +2065,7 @@ function devourPet(S, eaterId, foodId) { // 吞噬：吞噬者获得被吞噬灵
   let qup = false; const eq = (eater.q | 0);
   if (eq < PQLT.length - 1 && eater.k === food.k && (food.q | 0) === eq && R() < K.PET_DEVOUR_QUP) { eater.q = eq + 1; qup = true; }
   let _xpUp = null; if (_foodXp > 0) _xpUp = petGainXp(eater, _foodXp);
+  eater.devourCount = (eater.devourCount | 0) + 1;
   return { eater, food, gains, moved, sks, qup, xpGain: _foodXp, xpUp: _xpUp };
 }
 function battleAttrs(S) { // 冒险：出战灵宠的小额被动加成（不改变存档属性）
@@ -5511,7 +5515,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (typeof isCultivate2 !== 'undefined' && isCultivate2) { if ((S.stamina|0) <= 0) { try { alert('体力不足'); } catch(e) {} return; } if (typeof sheetTrain === 'function') { sheetTrain(); return; } } // v452 修炼区进修炼
             if (typeof isCookRefine2 !== 'undefined' && isCookRefine2) { if (typeof openSheet === 'function') openSheet(`<h2>🍳 灶台 · 🪙 点金台</h2><div class="grid2"><button class="btn" onclick="if(typeof sheetLife==='function')sheetLife('cook')">🍳 灶台<br><small>烹饪</small></button><button class="btn" onclick="if(typeof sheetLife==='function')sheetLife('refine')">🪙 点金台<br><small>炼金</small></button></div>`); return; } // v458
             if (typeof isBeastGarden2 !== 'undefined' && isBeastGarden2) { // v465 兽园；v467 加吞噬二选一
-              if (typeof openSheet === 'function') openSheet(`<h2>🐾 兽园</h2><div class="grid2"><button class="btn" onclick="window.sheetLife('tame')">🐾 驯兽<br><small>驯化灵宠</small></button><button class="btn" onclick="window.sheetBeastDevour()">☣️ 吞噬<br><small>宠物互噬</small></button></div>`); // v469 改window调用
+              if (typeof openSheet === 'function') openSheet(`<h2>🐾 兽园</h2><div class="grid2"><button class="btn" onclick="window.sheetLife('tame')">🐾 驯兽<br><small>驯化灵宠</small></button><button class="btn" onclick="window.sheetBeastDevour()">☣️ 吞噬<br><small>宠物互噬</small></button><button class="btn" onclick="window.sheetPetBreak()">💥 突破<br><small>冲破等级上限</small></button></div>`); // v469 改window调用
               return;
             }
             if (arena2 === 'pk' && typeof doPkChooseRealm === 'function') { doPkChooseRealm(); return; }
@@ -6755,8 +6759,6 @@ function sheetShop(msg) {
       <button class="btn gold" data-sell="${k}" data-kind="${kind}" data-n="${st[k]}">全部 +${st[k] * g.items[k].price}</button></div>`).join('') : `<div class="empty">暂无${g.noun}，修炼中${g.name}可得</div>`); }).join('') +
     `<h3>疗伤药</h3>` + Object.keys(C.MEDS).map(k => { const m = C.MEDS[k]; return `<div class="row"><div class="lab">💊 ${m.name} <span class="tag">${m.price} 金</span><small>${m.desc} · 拥有 ${S.meds[k] || 0}${m.cure === 'curse' ? ((S.curseN|0) > 0 ? ` · <span class="r">诅咒×${S.curseN}</span>` : '') : (C.hasSt(S, m.cure) ? ' · <span class="r">你正' + C.STATUS[m.cure].name + '</span>' : '')}</small></div>
       <button class="btn" data-buy="med" data-k="${k}" data-n="1" ${g >= m.price ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
-    `<h3>技能书</h3>` + Object.keys(SKILLS).map(k => { const sk = SKILLS[k], has = S.skills.includes(k); return `<div class="row"><div class="lab">《${sk.name}》 <span class="tag">${sk.price} 金</span><small>${sk.desc} · 耗 ${sk.mp} 法力</small></div>
-      ${has ? '<button class="btn" disabled>已习得</button>' : `<button class="btn gold" data-buy="skill" data-k="${k}" ${g >= sk.price ? '' : 'disabled'}>购买</button>`}</div>`; }).join('') +
     `<h3>🎒小型储物袋</h3><div class="row"><div class="lab">🎒 小型储物袋 <span class="tag">1000 金</span><small>物品包+100格（当前 ${S.pouch || 0} 只，每号限购1只）</small></div>
       ${(S.pouch || 0) >= 10 || S.ringBought ? '<button class="btn" disabled>已满</button>' : `<button class="btn gold" data-buy="ring" data-k="ring" ${g >= 1000 ? '' : 'disabled'}>购买</button>`}</div>` +
     `<h3>💍储物戒指（×2）</h3>` + [['sp2','🌒下品灵石'],['sp3','🌗中品灵石'],['sp4','💎上品灵石']].map(([sk, sn]) => `<div class="row"><div class="lab">💍 储物戒指 <span class="tag">${sn}×1</span><small>物品包与装备包上限×2（已拥有 ${S.rings || 0} 枚，每种灵石每号限购1枚）</small></div>${S['ringBought_' + sk] ? '<button class="btn" disabled>已购</button>' : `<button class="btn gold" data-buy="ring_stone" data-k="${sk}" ${(S.ores[sk] || 0) >= 1 ? '' : 'disabled'}>购买</button>`}</div>`).join('') +
@@ -7792,7 +7794,7 @@ function sheetBag() {
       return `<h3>${g.noun}</h3>` + (ks.length ? ks.map(k => `<div class="row"><div class="lab">${rarTxt(kind, k)} ×${st[k]}<small>商店收购价 ${g.items[k].price} 金/${g.unit}</small></div></div>`).join('') : `<div class="empty">暂无${g.noun}</div>`); }).join('') +
     `<h3>🍖 肉类</h3>` + (() => { const mks = Object.keys(MEATS).filter(k => (S.food[k] | 0) > 0); return mks.length ? mks.map(k => `<div class="row"><div class="lab">🍖 ${MEATS[k].name} ×${S.food[k]}<small>饱食 +${MEATS[k].hunger} · 体力 +${MEATS[k].sta}</small></div></div>`).join('') : '<div class="empty">暂无，打猎偶得</div>'; })() + // v437 背包显示肉类（食用仍在人物卡）
     bookSection() + dishSection() + potSection() + gearSection() + medSection() +
-    `<h3>已习得技能</h3><div class="row"><div class="lab">普通攻击 · 防御` + S.skills.map(k => ` · <span class="pu">${SKILLS[k].name}</span>`).join('') + `<small>更多技能书可在商店购买</small></div></div>` +
+    `<h3>已习得技能</h3><div class="row"><div class="lab">普通攻击 · 防御` + S.skills.map(k => ` · <span class="pu">${SKILLS[k].name}</span>`).join('') + `<small>技能书由10张同名技能残页合成</small></div></div>` +
 
     `<button class="btn full" data-close>关闭</button>`);
 }
@@ -7875,6 +7877,9 @@ function sheetRankInfo(idx) {
 }
 function sheetRank(tab) {
   tab = tab || 'level';
+  // 线上榜单：不再使用离线NPC模拟
+  openSheet(`<h2>🏆 修仙榜单</h2><div class="hint">榜单已接入真人数据（开发中）。</div><div class="empty">真人榜单即将上线</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  return;
   const list = C.getRankList(S, tab);
   _rankCache = list; _rankTab = tab;
   const valTxt = e => tab === 'level' ? `${C.REALMS[e.realm]} Lv.${e.level}` : tab === 'checkin' ? `${e.checkins || 0}次` : tab === 'afk' ? `${Math.floor((e.afkSecs || 0) / 3600)}小时` : C.fmtN(e.attrs[tab]);
@@ -8798,6 +8803,7 @@ function doDevour(eaterId, foodId) {
   if (f.locked) { log('bad', '🔒 该灵宠已锁定，不可吞噬'); return; } // v894
   if (!confirm(`确定让 ${PETS[e.k].name}#${e.id} 吞噬 ${PETS[f.k].name}#${f.id}？\n${PETS[f.k].name}#${f.id} 将永久消失！`)) return;
   const r = C.devourPet(S, eaterId, foodId); if (!r) return;
+  if (r.err) { log('bad', r.err); return; }
   log('gold', `🌀 ${petTag(r.eater)} 吞噬了 ${petTag(r.food)}，获得 ${gainsTxt(r.gains)}（总属性 ${C.total(r.eater.attrs)}）` + (r.xpGain > 0 ? `，经验 <span class="y">+${r.xpGain}</span>${r.xpUp && r.xpUp.ups ? `，<span class="y">升到 Lv.${r.eater.lv}！</span>` : ''}` : '') + (r.moved ? `，并接替出战` : '') + (r.sks && r.sks.length ? `，<span class="y">✨习得技能【${r.sks.map(sk => C.GEAR_SETS[sk].name).join('·')}】</span>` : '') + (r.xpUp && r.xpUp.sks.length ? `，<span class="y">✨领悟【${[...new Set(r.xpUp.sks)].map(sk => C.GEAR_SETS[sk].name).join('·')}】</span>` : '') + (r.xpUp && r.xpUp.tls.length ? `，<span class="y">🌟 领悟天赋神通【${[...new Set(r.xpUp.tls)].join('·')}】</span>` : '') + (r.qup ? `<br>🌟 <span class="g">品质进阶！${petTag(r.eater)}</span>` : ''));
   // v480 吞噬结果横幅，10秒消失
   try {
@@ -8845,6 +8851,31 @@ window.doAutoDevour = function() {
   } catch (_) {}
   commit(); if (typeof window.sheetBeastDevour==='function' && S.pets.length > 1) window.sheetBeastDevour(); else sheetBag();
 }; // v517
+function sheetPetBreak() {
+  const list = S.pets.filter(p => p.lv >= petEffLvMax(p));
+  if (!list.length) { openSheet(`<h2>💥 灵宠突破</h2><div class="empty">没有达到等级上限的灵宠</div>`); return; }
+  openSheet(`<h2>💥 灵宠突破</h2><div class="hint">突破后等级上限+10。神宠无上限，其他品质有次数限制。</div>` +
+    list.map(p => {
+      const q = (p.q|0), bc = (p.breakCount|0), mx = PET_BREAK_MAX[q];
+      const can = bc < mx;
+      return `<div class="row"><div class="lab">${petTag(p)} Lv.${p.lv}/${petEffLvMax(p)}<br><small>已突破${bc}次${mx>=999?'（无上限）':'/'+mx+'次'}</small></div><button class="btn"${can?'':' disabled'} onclick="window.doPetBreak(${p.id})">${can?'💥 突破':'已达上限'}</button></div>`;
+    }).join(''));
+}
+function doPetBreak(id) {
+  const p = S.pets.find(x => x.id === id); if (!p) return;
+  const q = (p.q|0), bc = (p.breakCount|0), mx = PET_BREAK_MAX[q];
+  if (bc >= mx) { log('bad', '已达突破上限'); return; }
+  if (p.lv < petEffLvMax(p)) { log('bad', '未达到等级上限'); return; }
+  // 突破消耗：100金 × (突破次数+1)
+  const cost = 100 * (bc + 1);
+  if ((S.gold|0) < cost) { log('bad', `金元不足，需${cost}金`); return; }
+  if (!confirm(`${petTag(p)} 突破？消耗${cost}金元，等级上限+10`)) return;
+  S.gold -= cost;
+  p.breakCount = bc + 1;
+  log('gold', `💥 ${petTag(p)} 突破成功！等级上限提升至 ${petEffLvMax(p)}（已突破${p.breakCount}次）`);
+  commit(); sheetPetBreak();
+}
+
 function doLu(k, n) {
   const r = C.useLu(S, k, n); if (!r) return;
   log('good', `💧 服用 ${rarTxt('farm', k)} ×${r.n}，获得 ${r.pts} 点属性：${gainsTxt(r.gains)}`);
