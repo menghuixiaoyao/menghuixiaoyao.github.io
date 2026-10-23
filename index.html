@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1050</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1051</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5035,6 +5035,11 @@ function cityMoveThunder() {
           const arena = c.dataset.arena;
           const x = +c.dataset.mx, y = +c.dataset.my;
           const w = S.worldMap;
+          // v1051 组队：队员跟随队长，不能自己移动
+          if (window._myTeam && !window._isTeamLeader){
+            try { if (typeof toastLog === 'function') toastLog('sys', '👥 组队跟随中，移动由队长控制'); else if (typeof glog === 'function') glog('sys', '👥 组队跟随中，移动由队长控制'); } catch(_){}
+            return;
+          }
           // v557 地图点NPC不再弹资料/PK（Ye取消），只走移动逻辑；NPC资料从信息栏"点我查看"进
           const isPortalCell = (x === 5 && y === 3);
           const isShopCell = (x === 2 && y === 3);
@@ -5054,7 +5059,7 @@ function cityMoveThunder() {
               const _maxDist = _hasDanuoyi ? 3 : (_hasShukuchi ? 2 : 1);
               const _dist = Math.abs(x - w.px) + Math.abs(y - w.py);
               if (_dist >= 1 && _dist <= _maxDist) {
-                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
               }
             }
             return;
@@ -5068,7 +5073,7 @@ function cityMoveThunder() {
               const _maxDist2 = _hasDanuoyi2 ? 3 : (_hasShukuchi2 ? 2 : 1);
               const _dist2 = Math.abs(x - w.px) + Math.abs(y - w.py);
               if (_dist2 >= 1 && _dist2 <= _maxDist2) {
-                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+                w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
               }
             }
             return;
@@ -5077,7 +5082,7 @@ function cityMoveThunder() {
             if (w.px === x && w.py === y) {
               if (typeof sheetAdventure === 'function') sheetAdventure();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
             }
             return;
           }
@@ -5319,7 +5324,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
               }
               if (typeof sheetTrain === 'function') sheetTrain();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
             }
             return;
           }
@@ -5327,7 +5332,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof sheetStall === 'function') sheetStall(x, y);
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
             }
             return;
           }
@@ -5335,7 +5340,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof sheetCasino === 'function') sheetCasino();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
             }
             return;
           }
@@ -5343,7 +5348,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof openReserveSheet === 'function') openReserveSheet(); // v666
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
             }
             return;
           }
@@ -5351,7 +5356,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof openHerbSheet === 'function') openHerbSheet(); // v666
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
             }
             return;
           }
@@ -5359,7 +5364,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
             if (w.px === x && w.py === y) {
               if (typeof openRanchSheet === 'function') openRanchSheet(); // v666
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
             }
             return;
           }
@@ -5369,7 +5374,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
               else if (arena === 'arena' && typeof doArena === 'function') doArena();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               if (typeof isSwordCell === 'function' && !isSwordCell(x, y)) return;
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
               if (typeof toastLog === 'function') toastLog('sys', '走到' + (arena === 'pk' ? 'PK台' : '擂台') + '旁，再点一次进入');
             }
             return;
@@ -5388,12 +5393,12 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
                 sheetLife(furnace);
               }
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
-              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); // v851
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
               if (typeof toastLog === 'function') toastLog('sys', '走到' + (furnace === 'both_alc' ? '大殿' : '炼器炉') + '旁，再点一次使用'); // v455 改名大殿
             }
             return;
           }
-          if (cityMoveOk(w, x, y)) { w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); }
+          if (cityMoveOk(w, x, y)) { w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); } // v1051 组队同步
         } catch (_) {}
       };
     });
@@ -5885,7 +5890,15 @@ function renderCombat() {
   $('combat').classList.add('on'); $('actions').classList.remove('main'); try { document.body.classList.add('combating'); } catch(_) {} // v837 战斗时body加类，隐藏顶部条
   const _wm = $('worldMapSec'); if (_wm) _wm.style.display = 'none'; // v337 战斗时隐藏地图
   const _petsHtml = f => (f.pets || []).map(p => fRow(p)).join('');
-  $('combat').innerHTML = `<div style="margin-bottom:14px">` + fRow(B) + _petsHtml(B) + `</div><div style="text-align:center;margin:10px 0;font-size:15px;font-weight:bold;color:var(--gold);letter-spacing:6px">⚔️ VS ⚔️ <button class=\"btn\" data-battlelog style=\"font-size:12px;padding:2px 8px;letter-spacing:normal\">📜</button></div>${pk.turnBanner ? `<div class="turnbanner ${pk.turnBanner.who}">${pk.turnBanner.txt}</div>` : ''}<div style="margin-top:14px">` + fRow(A) + _petsHtml(A) + `</div><div style="font-size:11px;color:var(--dim)">第 ${b.round + 1} 回合 · ${A.a.agi > B.a.agi ? '你敏捷更高，先手' : A.a.agi < B.a.agi ? '对手敏捷更高，先手' : '敏捷相同，随机先手'}</div>`;
+  // v1051 组队战标识：队长开战时显示队伍成员
+  var _teamTag = '';
+  try {
+    if (window._myTeam && window._isTeamLeader && window._myTeam.members && window._myTeam.members.length > 1){
+      var _tnames = window._myTeam.members.map(function(m){ return escH(m.username || '?'); }).join('、');
+      _teamTag = '<div style="text-align:center;margin:8px 0;font-size:13px;color:#7ec8ff">👥 组队战：' + _tnames + '</div>';
+    }
+  } catch(_){}
+  $('combat').innerHTML = _teamTag + `<div style="margin-bottom:14px">` + fRow(B) + _petsHtml(B) + `</div><div style="text-align:center;margin:10px 0;font-size:15px;font-weight:bold;color:var(--gold);letter-spacing:6px">⚔️ VS ⚔️ <button class=\"btn\" data-battlelog style=\"font-size:12px;padding:2px 8px;letter-spacing:normal\">📜</button></div>${pk.turnBanner ? `<div class="turnbanner ${pk.turnBanner.who}">${pk.turnBanner.txt}</div>` : ''}<div style="margin-top:14px">` + fRow(A) + _petsHtml(A) + `</div><div style="font-size:11px;color:var(--dim)">第 ${b.round + 1} 回合 · ${A.a.agi > B.a.agi ? '你敏捷更高，先手' : A.a.agi < B.a.agi ? '对手敏捷更高，先手' : '敏捷相同，随机先手'}</div>`;
   for (const f of [A, B, ...(A.pets||[]), ...(B.pets||[])]) if (f) { f._wasHit = 0; f._float = null; f._dodged = 0; f._lunge = null; }
   if (pk.zxPending) { // 战前珍馐：最先手，无视敏捷，每场限用 1 种
     const zxs = Object.keys(S.zx || {}).filter(k => S.zx[k] > 0 && DISHES[k] && DISHES[k].zx);
@@ -10978,6 +10991,7 @@ function panel(){
       + '<div class="grid2">'
       + '<button class="btn full" data-mhxychat>💬 真人聊天</button>'
       + '<button class="btn full" data-mhxypk>⚔️ 在线约战</button>'
+      + '<button class="btn full" data-mhxyteam>👥 组队</button>'
       + '</div>'
       + '<div class="grid2">'
       + '<button class="btn full" data-mhxysync>☁️ 同步存档</button>'
@@ -11365,6 +11379,149 @@ async function pkRefresh(){
   }).join('');
 }
 async function pkChallenge(targetId){
+/* ---------- 组队（v1051） ---------- */
+// v1051 组队：5人小队（人和宠物共用位置），队长带移动，组队战斗
+async function teamPanel(){
+  openSheet('<h2>👥 组队</h2><div class="hint">5人小队（人和宠物共用位置），队长带移动，组队战斗。</div>'
+    + '<div id="mhxyTeamInfo"><div class="hint">加载中…</div></div>'
+    + '<div id="mhxyTeamInvites"></div>'
+    + '<div id="mhxyTeamOnline"><div class="hint">加载在线道友…</div></div>'
+    + '<div class="row"><button class="btn full" data-mhxyteamrefresh>刷新</button></div>'
+    + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
+  teamRefresh();
+}
+async function teamRefresh(){
+  var r = await api('/api/world/team/state');
+  if (!r.ok || !r.json || !r.json.ok){
+    var _box = document.getElementById('mhxyTeamInfo');
+    if (_box) _box.innerHTML = '<div class="hint">队伍状态加载失败（网络不通）</div>';
+    return;
+  }
+  var team = r.json.team || null;
+  var invites = r.json.invites || [];
+  // v1051 存全局队伍状态
+  window._myTeam = team;
+  try { window._isTeamLeader = team ? (team.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
+  // 我的队伍
+  var infoBox = document.getElementById('mhxyTeamInfo');
+  if (infoBox){
+    if (!team){
+      infoBox.innerHTML = '<div class="hint">你还没有队伍</div>'
+        + '<div class="row"><button class="btn gold full" data-mhxyteamcreate>创建队伍</button></div>';
+    } else {
+      var h = '<div class="hint">我的队伍（' + (team.slotsUsed || 0) + '/5）' + (window._isTeamLeader ? '　<b class="y">你是队长</b>' : '') + '</div>';
+      h += (team.members || []).map(function(m){
+        var isL = m.isLeader ? ' <b class="y">队长</b>' : '';
+        var kickBtn = (window._isTeamLeader && !m.isLeader) ? ' <button class="btn sm red" data-mhxyteamkick="' + escH(m.accountId) + '">踢出</button>' : '';
+        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(m.username) + '</b><span style="color:#666">[' + (m.playerNo || '?') + ']</span>' + isL + '</span>' + kickBtn + '</div>';
+      }).join('');
+      h += (team.pets || []).map(function(p){
+        return '<div class="row"><span>🐾 ' + escH(p.name) + '<span style="color:#666">（' + escH(p.ownerId || '') + '的宠物）</span></span></div>';
+      }).join('');
+      if (window._isTeamLeader){
+        h += '<div class="row"><button class="btn red full" data-mhxyteamdisband>解散队伍</button></div>';
+      } else {
+        h += '<div class="row"><button class="btn full" data-mhxyteamleave>离开队伍</button></div>';
+      }
+      infoBox.innerHTML = h;
+    }
+  }
+  // 待处理的邀请
+  var invBox = document.getElementById('mhxyTeamInvites');
+  if (invBox){
+    if (invites.length){
+      invBox.innerHTML = '<div class="hint">待处理的邀请：</div>' + invites.map(function(iv){
+        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(iv.leaderName || '?') + '</b> 邀请你组队（' + (iv.slotsUsed || 0) + '/5）</span>'
+          + '<button class="btn gold sm" data-mhxyteamaccept="' + escH(iv.teamId) + '">接受</button>'
+          + '<button class="btn sm" data-mhxyteamdecline="' + escH(iv.teamId) + '">拒绝</button></div>';
+      }).join('');
+    } else {
+      invBox.innerHTML = '';
+    }
+  }
+  // 在线玩家（邀请）
+  var onlineBox = document.getElementById('mhxyTeamOnline');
+  if (onlineBox){
+    var ps = await onlinePlayers();
+    if (ps === null){
+      onlineBox.innerHTML = '<div class="hint">在线列表加载失败（网络不通）</div>';
+    } else if (!ps.length){
+      onlineBox.innerHTML = '<div class="hint">暂无其他道友在线</div>';
+    } else {
+      var canInvite = team && window._isTeamLeader && (team.slotsUsed || 0) < 5;
+      onlineBox.innerHTML = '<div class="hint">在线道友：</div>' + ps.slice(0, 30).map(function(p){
+        var btn = canInvite ? ' <button class="btn gold sm" data-mhxyteaminvite="' + escH(p.accountId) + '">邀请</button>' : '';
+        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(p.username) + '</b><span style="color:#666">[' + (p.playerNo || '?') + ']</span></span>' + btn + '</div>';
+      }).join('');
+    }
+  }
+}
+async function teamCreate(){
+  var r = await api('/api/world/team/create', { method:'POST', body:{} });
+  if (r.ok && r.json && r.json.ok){ glog('good', '👥 队伍创建成功'); teamRefresh(); }
+  else glog('bad', '👥 创建队伍失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+}
+async function teamInvite(targetId){
+  var r = await api('/api/world/team/invite', { method:'POST', body:{ target_account_id: targetId } });
+  if (r.ok && r.json && r.json.ok){ glog('good', '👥 邀请已发出'); }
+  else glog('bad', '👥 邀请失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+}
+async function teamAccept(teamId){
+  var r = await api('/api/world/team/accept', { method:'POST', body:{ team_id: teamId } });
+  if (r.ok && r.json && r.json.ok){ glog('good', '👥 已加入队伍'); teamRefresh(); }
+  else glog('bad', '👥 加入失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+}
+async function teamDecline(teamId){
+  var r = await api('/api/world/team/decline', { method:'POST', body:{ team_id: teamId } });
+  if (r.ok && r.json && r.json.ok){ teamRefresh(); }
+  else glog('bad', '👥 操作失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+}
+async function teamLeave(){
+  var r = await api('/api/world/team/leave', { method:'POST', body:{} });
+  if (r.ok && r.json && r.json.ok){ window._myTeam = null; window._isTeamLeader = false; glog('sys', '👥 已离开队伍'); teamRefresh(); }
+  else glog('bad', '👥 离开失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+}
+async function teamDisband(){
+  var r = await api('/api/world/team/disband', { method:'POST', body:{} });
+  if (r.ok && r.json && r.json.ok){ window._myTeam = null; window._isTeamLeader = false; glog('sys', '👥 队伍已解散'); teamRefresh(); }
+  else glog('bad', '👥 解散失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+}
+async function teamKick(targetId){
+  var r = await api('/api/world/team/kick', { method:'POST', body:{ target_account_id: targetId } });
+  if (r.ok && r.json && r.json.ok){ glog('sys', '👥 已踢出队员'); teamRefresh(); }
+  else glog('bad', '👥 踢出失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+}
+// v1051 组队：队长移动后同步全队位置
+function teamLeaderMoveSync(x, y){
+  try {
+    if (!window._myTeam || !window._isTeamLeader) return;
+    api('/api/world/team/move', { method:'POST', body:{ x:x, y:y } }).catch(function(){});
+  } catch(_){}
+}
+// v1051 组队：队员位置跟随轮询（3秒）——服务端已同步全队位置，队员拉取自己的更新本地
+setInterval(function(){
+  try {
+    if (!window._myTeam || window._isTeamLeader) return;
+    if (typeof loggedIn !== 'function' || !loggedIn()) return;
+    api('/api/world/state').then(function(r){
+      if (!r.ok || !r.json) return;
+      var ps = r.json.players || [];
+      var me = (typeof myAid === 'function') ? myAid() : '';
+      if (!me) return;
+      for (var i = 0; i < ps.length; i++){
+        if (ps[i] && ps[i].accountId === me){
+          var sx = ps[i].x, sy = ps[i].y;
+          if (sx != null && sy != null && typeof S !== 'undefined' && S && S.worldMap && (S.worldMap.px !== sx || S.worldMap.py !== sy)){
+            S.worldMap.px = sx; S.worldMap.py = sy;
+            if (typeof save === 'function') save();
+            if (typeof renderWorldMap === 'function') renderWorldMap();
+          }
+          break;
+        }
+      }
+    }).catch(function(){});
+  } catch(_){}
+}, 3000);
   var r = await api('/api/pk/challenge', { method:'POST', body:{ target_account_id:targetId, arena:false, take_attr:'str' } });
   if (r.ok && r.json && r.json.ok){
     M.challenging = r.json.challenge_id;
@@ -11558,6 +11715,15 @@ function onClick(d, t, e){
   if ('mhxypk' in d){ pkPanel(); return true; }
   if ('mhxypkrefresh' in d){ pkRefresh(); return true; }
   if (d.mhxypkgo){ pkChallenge(d.mhxypkgo); return true; }
+  if ('mhxyteam' in d){ teamPanel(); return true; }
+  if ('mhxyteamcreate' in d){ teamCreate(); return true; }
+  if ('mhxyteamleave' in d){ teamLeave(); return true; }
+  if ('mhxyteamdisband' in d){ teamDisband(); return true; }
+  if ('mhxyteamrefresh' in d){ teamRefresh(); return true; }
+  if (d.mhxyteaminvite){ teamInvite(d.mhxyteaminvite); return true; }
+  if (d.mhxyteamaccept){ teamAccept(d.mhxyteamaccept); return true; }
+  if (d.mhxyteamdecline){ teamDecline(d.mhxyteamdecline); return true; }
+  if (d.mhxyteamkick){ teamKick(d.mhxyteamkick); return true; }
   if ('close' in d && M.chatOpen){ closeChatWs(); }
   return false;
 }
