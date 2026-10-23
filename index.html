@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1052</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1053</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6884,11 +6884,25 @@ function starChartHtml() {
   const litSet = new Set();
   C.SZ_SEATS.forEach((st, i) => { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const k = Math.min(names.length, Math.round(C.szProg(S, i) / 10 * names.length) + C.szDan(S, i)); for (let j = 0; j < k; j++) litSet.add(names[j]); });
   const lit = litSet.size;
+  const MCOL = [{ c: '#ffe08a', g: 'rgba(255,224,138,' }, { c: '#ffb03a', g: 'rgba(255,176,58,' }, { c: '#e8ecf4', g: 'rgba(232,236,244,' }, { c: '#b9c4d6', g: 'rgba(185,196,214,' }, { c: '#d9b45b', g: 'rgba(217,180,91,' }, { c: '#f2a541', g: 'rgba(242,165,65,' }, { c: '#ff5a5a', g: 'rgba(255,90,90,' }, { c: '#ff8a5c', g: 'rgba(255,138,92,' }, { c: '#4dc9ff', g: 'rgba(77,201,255,' }, { c: '#5a7bff', g: 'rgba(90,123,255,' }, { c: '#ff6fa5', g: 'rgba(255,111,165,' }, { c: '#c95eff', g: 'rgba(201,94,255,' }, { c: '#2fd4c4', g: 'rgba(47,212,196,' }, { c: '#8be04e', g: 'rgba(139,224,78,' }]; // v1051 每经一色（五行配色）：任 督 肺 大肠 胃 脾 心 小肠 膀胱 肾 心包 三焦 胆 肝
+  let linesSvg = ''; // v1051 Ye 定：丹点满一条经络→黄线相连，没满不连（双侧经一侧一条；任督各一条）
+  { const chains = [];
+    const sidesOf = nm => { const cs = DOTS.filter(d => d[0] === nm && d[1] === view); if (!cs.length) return null; if (cs.length === 1) return [cs[0]]; const a = cs.reduce((p2, c) => (c[2] < p2[2] ? c : p2)); const b = cs.reduce((p2, c) => (c[2] > p2[2] ? c : p2)); return [a, b]; };
+    C.SZ_SEATS.forEach((st, i) => {
+      const dn = C.szDan(S, i); if (dn <= 0) return;
+      const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y);
+      const chainOf = (list, sIdx) => list.map(nm => { const s = sidesOf(nm); return s ? (s[sIdx] || s[0]) : null; }).filter(Boolean);
+      if (st.mer.length > 1) { if (dn >= 24) chains.push({ mer: 0, pts: chainOf(names.slice(0, 24), 0) }); if (dn >= st.cnt) chains.push({ mer: 1, pts: chainOf(names.slice(24), 0) }); }
+      else { const done = dn >= st.cnt * 2 ? 2 : (dn >= st.cnt ? 1 : 0); for (let sIdx = 0; sIdx < done; sIdx++) chains.push({ mer: st.mer[0], pts: chainOf(names, sIdx) }); }
+    });
+    const good = chains.filter(ch => ch.pts.length >= 2);
+    if (good.length) linesSvg = `<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 100 100" preserveAspectRatio="none">${good.map(ch => `<polyline points="${ch.pts.map(d => d[2] + ',' + d[3]).join(' ')}" fill="none" stroke="${MCOL[ch.mer].c}" stroke-opacity=".8" stroke-width="1.3" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}</svg>`;
+  }
   const fullSeats = C.szOpenCount(S);
   const grand = fullSeats >= 13;
   const cur = C.SZ_SEATS.findIndex((_, i) => C.szProg(S, i) < 10);
   let sel = (window._starSeat === undefined) ? (cur < 0 ? 12 : cur) : window._starSeat;
-  let inner = '', frontier = null;
+  let inner = linesSvg, frontier = null;
   for (let i = 0; i < 13 && !frontier; i++) { if (C.szProg(S, i) >= 10) continue; const names = []; STAR_NMER.forEach((m, ni) => { if (C.SZ_SEATS[i].mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); for (const ni of names) if (!litSet.has(ni)) { const dd = DOTS.find(x => x[0] === ni && x[1] === view); if (dd) { frontier = dd; break; } } }
   DOTS.forEach((d, di) => {
     if (d[1] !== view || !litSet.has(d[0])) return;
@@ -6896,10 +6910,12 @@ function starChartHtml() {
     const full = C.szProg(S, seatIdx) >= 10 || C.szDan(S, seatIdx) >= C.SZ_SEATS[seatIdx].cnt; // v1050 满座柔光：气旋满或丹点满（任一线独立完成）
     const h = (di * 2654435761 % 100 + 100) % 100;
     const r = (full ? 7 : 5) + (h % 4);
-    const glow = full ? `;box-shadow:0 0 10px 3px rgba(255,205,92,.65)` : (h > 62 ? `;box-shadow:0 0 ${6 + (h % 8)}px 2px rgba(255,205,92,.55)` : '');
-    inner += `<span style="position:absolute;left:${d[2]}%;top:${d[3]}%;width:${r}px;height:${r}px;margin:${(-r / 2).toFixed(1)}px 0 0 ${(-r / 2).toFixed(1)}px;border-radius:50%;background:#ffd76a${glow}"></span>`;
+    const mc = MCOL[STAR_NMER[d[0]]]; // v1051 Ye 定：每条经络一种颜色，点与线同色
+    const col = mc.c, glowC = mc.g;
+    const glow = full ? `;box-shadow:0 0 6px 1px ${glowC}.6)` : (h > 62 ? `;box-shadow:0 0 ${3 + (h % 4)}px 1px ${glowC}.5)` : ''); // v1051 Ye 定：点位光晕缩小
+    inner += `<span style="position:absolute;left:${d[2]}%;top:${d[3]}%;width:${r}px;height:${r}px;margin:${(-r / 2).toFixed(1)}px 0 0 ${(-r / 2).toFixed(1)}px;border-radius:50%;background:${col}${glow}"></span>`;
   });
-  if (frontier) inner += `<span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border:2px solid rgba(255,215,106,.9);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#ffd76a"></span>`;
+  if (frontier) inner += `<span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border:2px solid ${MCOL[STAR_NMER[frontier[0]]].g}.9);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:${MCOL[STAR_NMER[frontier[0]]].c}"></span>`;
   const tg = (v, lab) => `<button class="btn sm" data-starview="${v}" style="flex:1;padding:5px 0;${(view === (v === 'back' ? 1 : 0)) ? 'border-color:var(--gold);color:var(--gold)' : 'opacity:.65'}">${lab}</button>`;
   const swirl = i => { const p = C.szProg(S, i), st = C.SZ_SEATS[i]; return `<button data-seat="${i}" style="background:${i === sel ? 'rgba(255,205,92,.08)' : 'none'};border:none;padding:2px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;border-radius:8px">${szSpiralSvg(p / 10, p >= 10, 34)}<span style="font-size:11px;line-height:1.15;color:${p > 0 ? 'var(--gold)' : '#8a86a0'}">${st.short}</span><span style="font-size:9px;color:#6d6a84">${p}/10</span></button>`; };
   const colL = [0, 1, 2, 3, 4, 5, 6].map(swirl).join('');
