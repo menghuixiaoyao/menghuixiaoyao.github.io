@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1034</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1035</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6836,6 +6836,11 @@ function sheetAvatar(gender, cat) {
 }
 function avatarUrl() {
   if (S.avatarCustom) return S.avatarCustom;
+  // 图库头像 dataURL 丢失时，尝试从已加载的图库中按 ID 恢复
+  if (S.avatarGalleryId && window._avGallery) {
+    const g = window._avGallery.find(x => String(x.id) === String(S.avatarGalleryId));
+    if (g && g.data) { S.avatarCustom = g.data; try { save(); } catch(e) {} return g.data; }
+  }
   const set = (typeof AVATAR_SETS !== 'undefined' && AVATAR_SETS[S.avatarSet || 'r']) || AVATARS;
   if (!S.gender || !set[S.gender]) return AVATARS.m[0];
   return set[S.gender][S.avatar|0] || set[S.gender][0] || AVATARS.m[0];
@@ -9922,8 +9927,8 @@ document.addEventListener('click', e => {
   if (d.refine) { doRefineGear(d.refine); return; }
   if (d.avataredit) { S._avatarSettings = 1; S._pickSet = S.avatarSet || 'r'; S._pickGender = S.gender || 'm'; sheetAvatar(S._pickGender); return; }
   if (d.avatarset) { S._pickSet = d.avatarset; sheetAvatar(S._pickGender || S.gender || 'm'); return; }
-  if (d.clearavatar) { S.avatarCustom = null; save(); sheetAvatar(S._pickGender || S.gender || 'm'); return; }
-  if (d.avgal) { const e2 = (window._avGallery || []).find(x => String(x.id) === String(d.avgal)); if (e2 && e2.data) { S.avatarCustom = e2.data; S._avatarSettings = 0; save(); toastLog('good', '🖼️ 已换上玩家图库头像'); render(); sheetChar(); } return; }
+  if (d.clearavatar) { S.avatarCustom = null; S.avatarGalleryId = null; save(); sheetAvatar(S._pickGender || S.gender || 'm'); return; }
+  if (d.avgal) { const e2 = (window._avGallery || []).find(x => String(x.id) === String(d.avgal)); if (e2 && e2.data) { S.avatarCustom = e2.data; S.avatarGalleryId = e2.id; S._avatarSettings = 0; save(); toastLog('good', '🖼️ 已换上玩家图库头像'); render(); sheetChar(); } return; }
   if (d.avsubmit) { if (!S.avatarCustom) { toastLog('bad', '先上传一张自己的头像'); return; } if (!(window.MHXY && MHXY.loggedIn && MHXY.loggedIn())) { toastLog('bad', '先登录联机账号才能提交入库'); return; } const nmIn = prompt('给这张图取个名（入库后按此名展示，12 字内）', ''); if (nmIn === null) return; const avName = String(nmIn).trim().slice(0, 12); if (!avName) { toastLog('bad', '先取个名再入库'); return; } MHXY.api('POST', '/api/avatar/submit', { data: S.avatarCustom, name: avName }).then(j => { if (j && j.ok) toastLog('good', '📮 已提交入库，审核通过后全服可选'); else toastLog('bad', '📮 玩家图库尚未开放'); }).catch(() => toastLog('bad', '📮 玩家图库尚未开放')); return; }
   if (d.wearach !== undefined) { S.titleAch = d.wearach || ''; save(); try { if (window.MHXY && MHXY.loggedIn()) MHXY.api('/api/profile/title', { method: 'POST', body: { title: S.titleAch } }).catch(() => {}); } catch(_) {} sheetChar(); return; }
   if (d.stele !== undefined) { sheetStele(); return; }
