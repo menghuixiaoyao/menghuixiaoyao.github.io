@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1056</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1057</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8041,7 +8041,7 @@ function doDebug(act) {
       let gain = 0, lbl = '', nqBonusDbg = 0, hcDbg = 0, defDbg = 0, defMultDbg = 0;
       const sc = (typeof C.setCounts === 'function' ? C.setCounts(S) : {});
       if (type === 'wushu') { const w2x = (sc.fatal || 0) >= 2 ? 2 : 1; gain = hrs * 60 * w2x; lbl = '经验'; }
-      else if (type === 'ningqi') { const hc = (sc.heal || 0), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1; let nqBonus = 0, nqAgain = 0; try { nqBonus = hi >= 0 ? (C.GEAR_SETS.heal.ningqi[hi] || 0) : 0; nqAgain = hi >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi] || 0) : 0; nqBonusDbg = nqBonus; hcDbg = hc; } catch(e) {} const nqRate = Math.min(0.95, (0.30 + nqBonus) * qiFactor()); for (let i = 0; i < hrs; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } lbl = '经验'; } // v116
+      else if (type === 'ningqi') { const hc = (sc.heal || 0), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1; let nqBonus = 0, nqAgain = 0; try { nqBonus = hi >= 0 ? (C.GEAR_SETS.heal.ningqi[hi] || 0) : 0; nqAgain = hi >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi] || 0) : 0; nqBonusDbg = nqBonus; hcDbg = hc; } catch(e) {} const nqRate = Math.min(0.95, (0.30 + nqBonus) * C.qiFactor()); for (let i = 0; i < hrs; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } lbl = '经验'; } // v116
       else { const isVein = type === 'vein'; const dc = (sc.def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1; let afkMult = 0; try { afkMult = di >= 0 ? (C.GEAR_SETS.def.afkMult[di] || 0) : 0; defDbg = dc; defMultDbg = afkMult; } catch(e) {} gain = Math.floor(hrs * 3600 * ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0)) * (1 + afkMult)); lbl = (typeof C.resLbl === 'function' ? C.resLbl(S) : '灵力'); if (isVein) { let nqB2 = 0, nqA2 = 0; try { const hc2 = (sc.heal || 0), hi2 = hc2 >= 2 ? Math.min(5, hc2) - 2 : -1; nqB2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqi[hi2] || 0) : 0; nqA2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi2] || 0) : 0; } catch(e) {} const nqR2 = Math.min(0.95, 0.30 + nqB2); let nqN2 = 0; for (let i = 0; i < hrs; i++) { if (Math.random() < nqR2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; if (nqA2 > 0 && Math.random() < nqA2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; } } } if (nqN2 > 0) log('good', (S.realm|0) >= 8 ? `⚖️ 参悟法则，法则之力 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）` : `🌀 灵脉凝气，凝气 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）`); } } // v89：每条络+1，每点开脉术经验+1；v202 灵脉每小时判定凝气
       if (gain > 0) { if (isMana) S.mana = Math.min(C.manaCapEff(S), S.mana + gain); else S.xp += gain; }
       S.stats = S.stats || {}; S.stats.afkSecs = (S.stats.afkSecs || 0) + hrs * 3600; S.stats.afkSecsTotal = (S.stats.afkSecsTotal || 0) + hrs * 3600;
