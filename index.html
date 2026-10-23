@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1053</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1054</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6885,6 +6885,8 @@ function starChartHtml() {
   C.SZ_SEATS.forEach((st, i) => { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const k = Math.min(names.length, Math.round(C.szProg(S, i) / 10 * names.length) + C.szDan(S, i)); for (let j = 0; j < k; j++) litSet.add(names[j]); });
   const lit = litSet.size;
   const MCOL = [{ c: '#ffe08a', g: 'rgba(255,224,138,' }, { c: '#ffb03a', g: 'rgba(255,176,58,' }, { c: '#e8ecf4', g: 'rgba(232,236,244,' }, { c: '#b9c4d6', g: 'rgba(185,196,214,' }, { c: '#d9b45b', g: 'rgba(217,180,91,' }, { c: '#f2a541', g: 'rgba(242,165,65,' }, { c: '#ff5a5a', g: 'rgba(255,90,90,' }, { c: '#ff8a5c', g: 'rgba(255,138,92,' }, { c: '#4dc9ff', g: 'rgba(77,201,255,' }, { c: '#5a7bff', g: 'rgba(90,123,255,' }, { c: '#ff6fa5', g: 'rgba(255,111,165,' }, { c: '#c95eff', g: 'rgba(201,94,255,' }, { c: '#2fd4c4', g: 'rgba(47,212,196,' }, { c: '#8be04e', g: 'rgba(139,224,78,' }]; // v1051 每经一色（五行配色）：任 督 肺 大肠 胃 脾 心 小肠 膀胱 肾 心包 三焦 胆 肝
+  const danGrand = (typeof C.szVMaiCount === 'function' ? C.szVMaiCount(S) : 0) >= 26; // v1054 Ye 定：全满=虚脉26条全满→整图变金色，与气旋无关
+  const GOLD = { c: '#ffd76a', g: 'rgba(255,205,92,' };
   let linesSvg = ''; // v1051 Ye 定：丹点满一条经络→黄线相连，没满不连（双侧经一侧一条；任督各一条）
   { const chains = [];
     const sidesOf = nm => { const cs = DOTS.filter(d => d[0] === nm && d[1] === view); if (!cs.length) return null; if (cs.length === 1) return [cs[0]]; const a = cs.reduce((p2, c) => (c[2] < p2[2] ? c : p2)); const b = cs.reduce((p2, c) => (c[2] > p2[2] ? c : p2)); return [a, b]; };
@@ -6896,7 +6898,7 @@ function starChartHtml() {
       else { const done = dn >= st.cnt * 2 ? 2 : (dn >= st.cnt ? 1 : 0); for (let sIdx = 0; sIdx < done; sIdx++) chains.push({ mer: st.mer[0], pts: chainOf(names, sIdx) }); }
     });
     const good = chains.filter(ch => ch.pts.length >= 2);
-    if (good.length) linesSvg = `<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 100 100" preserveAspectRatio="none">${good.map(ch => `<polyline points="${ch.pts.map(d => d[2] + ',' + d[3]).join(' ')}" fill="none" stroke="${MCOL[ch.mer].c}" stroke-opacity=".8" stroke-width="1.3" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}</svg>`;
+    if (good.length) linesSvg = `<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 100 100" preserveAspectRatio="none">${good.map(ch => `<polyline points="${ch.pts.map(d => d[2] + ',' + d[3]).join(' ')}" fill="none" stroke="${danGrand ? GOLD.c : MCOL[ch.mer].c}" stroke-opacity=".95" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}</svg>`;
   }
   const fullSeats = C.szOpenCount(S);
   const grand = fullSeats >= 13;
@@ -6910,11 +6912,15 @@ function starChartHtml() {
     const full = C.szProg(S, seatIdx) >= 10 || C.szDan(S, seatIdx) >= C.SZ_SEATS[seatIdx].cnt; // v1050 满座柔光：气旋满或丹点满（任一线独立完成）
     const h = (di * 2654435761 % 100 + 100) % 100;
     const r = (full ? 7 : 5) + (h % 4);
-    const mc = MCOL[STAR_NMER[d[0]]]; // v1051 Ye 定：每条经络一种颜色，点与线同色
+    const mer0 = STAR_NMER[d[0]]; const mc = danGrand ? GOLD : MCOL[mer0]; // v1054：26条全满时整图金色
     const col = mc.c, glowC = mc.g;
     const glow = full ? `;box-shadow:0 0 6px 1px ${glowC}.6)` : (h > 62 ? `;box-shadow:0 0 ${3 + (h % 4)}px 1px ${glowC}.5)` : ''); // v1051 Ye 定：点位光晕缩小
     inner += `<span style="position:absolute;left:${d[2]}%;top:${d[3]}%;width:${r}px;height:${r}px;margin:${(-r / 2).toFixed(1)}px 0 0 ${(-r / 2).toFixed(1)}px;border-radius:50%;background:${col}${glow}"></span>`;
   });
+  { // v1054 Ye 定：开脉丹线也给一个「下一个穴」标记，用蓝色（落在当前选中座，丹未满时）
+    const st = C.SZ_SEATS[sel]; const dn = C.szDan(S, sel); const cap = st.mer.length > 1 ? 52 : st.cnt * 2;
+    if (dn > 0 && dn < cap) { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const k = Math.min(names.length, Math.round(C.szProg(S, sel) / 10 * names.length) + dn); if (k < names.length) { const dd = DOTS.find(x => x[0] === names[k] && x[1] === view); if (dd) inner += `<span style="position:absolute;left:${dd[2]}%;top:${dd[3]}%;width:15px;height:15px;margin:-7.5px 0 0 -7.5px;border:2px solid rgba(94,168,255,.95);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${dd[2]}%;top:${dd[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#5ea8ff"></span>`; } }
+  }
   if (frontier) inner += `<span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border:2px solid ${MCOL[STAR_NMER[frontier[0]]].g}.9);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:${MCOL[STAR_NMER[frontier[0]]].c}"></span>`;
   const tg = (v, lab) => `<button class="btn sm" data-starview="${v}" style="flex:1;padding:5px 0;${(view === (v === 'back' ? 1 : 0)) ? 'border-color:var(--gold);color:var(--gold)' : 'opacity:.65'}">${lab}</button>`;
   const swirl = i => { const p = C.szProg(S, i), st = C.SZ_SEATS[i]; return `<button data-seat="${i}" style="background:${i === sel ? 'rgba(255,205,92,.08)' : 'none'};border:none;padding:2px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;border-radius:8px">${szSpiralSvg(p / 10, p >= 10, 34)}<span style="font-size:11px;line-height:1.15;color:${p > 0 ? 'var(--gold)' : '#8a86a0'}">${st.short}</span><span style="font-size:9px;color:#6d6a84">${p}/10</span></button>`; };
@@ -6928,8 +6934,8 @@ function starChartHtml() {
   const st = C.SZ_SEATS[sel], p = C.szProg(S, sel);
   const pages = S.maiPages | 0, pills = S.inv['mai'] | 0;
   const card = p >= 10
-    ? `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin-top:5px">气旋已开满，此座星点全亮。</div>${C.szDan(S, sel) < C.szDanCap(sel) ? `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹开一穴</button></div>` : ''}`
-    : `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">气旋已开 ${p} / 10 · 再吃 ${10 - p} 张残页开满；开脉丹每颗开一穴（本座已亮 ${C.szLitCnt(S, sel)} / ${st.cnt} 穴）</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃残页开气旋</button><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>开脉丹开一穴</button></div>`;
+    ? `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin-top:5px">气旋已开满，此座星点全亮。</div>${C.szDan(S, sel) < C.szDanCap(sel) ? `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 1 && (C.szDanCap(sel) - C.szDan(S, sel)) > 1 ? '' : 'disabled'}>数量</button></div>` : ''}`
+    : `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">气旋已开 ${p} / 10 · 再吃 ${10 - p} 张残页开满；开脉丹每颗开一穴（本座已亮 ${C.szLitCnt(S, sel)} / ${st.cnt} 穴）</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃残页开气旋</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 1 && (10 - p) > 1 ? '' : 'disabled'}>数量</button></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 1 && (C.szDanCap(sel) - C.szDan(S, sel)) > 1 ? '' : 'disabled'}>数量</button></div>`;
   return `<style>@keyframes starPulse{0%{transform:scale(.55);opacity:1}70%{transform:scale(1.3);opacity:.2}100%{transform:scale(1.3);opacity:0}}</style>`
     + (grand ? `<div style="border:1px solid rgba(255,205,92,.75);border-radius:12px;box-shadow:0 0 22px rgba(255,190,70,.35),inset 0 0 34px rgba(255,190,70,.10);padding:8px 6px">` : `<div>`)
     + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-right:10px"><span style="font-size:14px">✦ <b class="y">神藏星图</b></span><span style="font-size:12px">已开 ${lit} / 361</span></div>`
@@ -6941,6 +6947,23 @@ function starChartHtml() {
 }
 function doFeedSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const need = 10 - C.szProg(S, i); const r = C.useMaiPages(S, Math.min(need, S.maiPages | 0), i); if (r.n > 0) { log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[i].name}</b> 气旋 ${C.szProg(S, i)}/10${C.szProg(S, i) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); } commit(); sheetChar(); }
 function doPillSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; if (C.szDan(S, i) >= C.szDanCap(i)) return; const got = C.drinkMai(S, 1, i); if (got > 0) { log('good', `🌀 服用开脉丹，<b class="y">${C.SZ_SEATS[i].name}</b> 开一穴（本座已亮 ${C.szLitCnt(S, i)}/${C.SZ_SEATS[i].cnt} 穴）`); } commit(); sheetChar(); }
+window.szQtyBack = function(bag) { if (bag) { try { sheetBag(); } catch(_) {} } else { try { sheetChar(); } catch(_) {} } };
+window.szQty = function(kind, seat, bag) { // v1054 Ye 定：残页/开脉丹可选数量（游戏内选量表，不用系统 prompt）
+  let max, title;
+  if (kind === 'page') { if (seat < 0) seat = C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10); if (seat < 0) return; max = Math.min(10 - C.szProg(S, seat), S.maiPages | 0); title = `🌀 脉络残页 · ${C.SZ_SEATS[seat].name}（还差 ${10 - C.szProg(S, seat)} 张开满 · 库存 ${S.maiPages | 0}）`; }
+  else if (seat >= 0) { max = Math.min(C.szDanCap(seat) - C.szDan(S, seat), S.inv['mai'] | 0); title = `🌀 开脉丹 · ${C.SZ_SEATS[seat].name}（还差 ${C.szDanCap(seat) - C.szDan(S, seat)} 颗 · 库存 ${S.inv['mai'] | 0}）`; }
+  else { max = S.inv['mai'] | 0; title = `🌀 开脉丹（按座序服用 · 库存 ${max}）`; }
+  if (max <= 0) return;
+  const opts = [...new Set([1, 3, 5, 10, max].filter(n2 => n2 >= 1 && n2 <= max))].sort((a, b) => a - b);
+  openSheet(`<h3 style="margin:2px 0 10px">${title}</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:8px">${opts.map(n2 => `<button class="btn ${n2 === max ? 'gold' : ''}" style="padding:10px 0" onclick="szUse('${kind}',${seat},${n2},${bag ? 1 : 0})">用 ${n2}${n2 === max ? '（全部）' : ''}</button>`).join('')}</div><button class="btn" style="width:100%;margin-top:10px;padding:9px 0" onclick="szQtyBack(${bag ? 1 : 0})">取消</button>`);
+};
+window.szUse = function(kind, seat, n, bag) { // v1054：按选定数量使用残页/开脉丹
+  if (kind === 'page') { const r = C.useMaiPages(S, n, seat); if (r.n > 0) log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[seat].name}</b> 气旋 ${C.szProg(S, seat)}/10${C.szProg(S, seat) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); }
+  else if (seat >= 0) { const got = C.drinkMai(S, n, seat); if (got > 0) log('good', `🌀 服用开脉丹 ×${got}，<b class="y">${C.SZ_SEATS[seat].name}</b> 已亮 ${C.szLitCnt(S, seat)}/${C.SZ_SEATS[seat].cnt} 穴`); }
+  else { const got = C.drinkMai(S, n); if (got > 0) log('good', `🌀 服用开脉丹 ×${got}（已亮 ${C.SZ_SEATS.reduce((t, _, i) => t + C.szSeatLitNames(S, i), 0)}/361 穴）`); }
+  commit();
+  if (bag) { try { sheetBag(); } catch(_) {} } else { try { sheetChar(); } catch(_) {} }
+};
 function sheetChar() {
   const a = S.attrs, fa = C.fightAttrs(S, false);
   const hpMax = C.bumpPeak(S) * 5;
@@ -7802,7 +7825,7 @@ function sheetBag() {
       : '') +
     ((S.inv['mai']|0) > 0 ? `<div class="row"><div class="lab">🌀 <b class="y">开脉丹</b> ×${S.inv['mai']}<small>服用：每颗开一穴（按座序点亮未亮的穴）、虚络 +1（不加气旋），当前虚络 ${S.maiVLuo|0} 条 · 虚脉 ${S.maiVMai|0} 条</small></div>
       <button class="btn gold" data-drinkmai="1">服用</button>
-      ${(S.inv['mai']|0) > 1 ? `<button class="btn gold" onclick="qtyPrompt('drinkmai','',${S.inv['mai']|0})">数量</button>` : ''}</div>` : '') +
+      ${(S.inv['mai']|0) > 1 ? `<button class="btn gold" onclick="szQty('pill',-1,true)">数量</button>` : ''}</div>` : '') +
     ((S.inv['butian']|0) > 0 ? `<div class="row"><div class="lab">🌟 <b class="y">补天丹</b> ×${S.inv['butian']}<small>服用：随机+1条灵根（上限5条），每境界限服1颗，当前${window.LG ? window.LG.name(S) : ''}</small></div>
       <button class="btn gold" data-drinkbutian="1">服用</button></div>` : '') +
     (Object.keys(C.MUT_PILLS).filter(id => (S.inv['mut_' + id]|0) > 0).map(id => `<div class="row"><div class="lab">🌀 <b class="y">${C.MUT_PILLS[id].name}</b> ×${S.inv['mut_' + id]}<small>${C.MUT_PILLS[id].desc}（变异丹 · 丹毒 +${C.MUT_PILLS[id].tox}）</small></div><button class="btn gold" data-mut="${id}">服用</button></div>`).join('')) +
@@ -9978,6 +10001,7 @@ document.addEventListener('click', e => {
   if (d.seat !== undefined) { window._starSeat = +d.seat; sheetChar(); return; }
   if (d.feedseat) { doFeedSeat(); return; }
   if (d.pillseat) { doPillSeat(); return; }
+  if (d.qtyseat) { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i >= 0) window.szQty(d.qtyseat, i, false); return; }
   if (d.a) { const fn = ({ close: () => closeSheet(), checkin: () => doCheckin(false), train: sheetTrain, alchemy: () => sheetAlchemy(), life: () => sheetLife(lifeTab), adventure: sheetAdventure, wxsynth: sheetWxSynth, pk: doPkChooseRealm, arena: doArena, xianyuan: doXianyuan, mail: doMail, sect: doSect, shop: () => sheetShop(), bag: sheetBag, cave: () => { const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0; if (_dg > 0 || _xg > 0) { if (typeof goBackCaveChoice === 'function') goBackCaveChoice(); } else { toastLog('sys', '🏔️ 洞府功能开发中，敬请期待'); } }, debug: () => doDebug(d.dbg), lvup: () => doLvUp(), reinc: () => doReincarnate(), breakthrough: () => doBreakthrough(), dazuo: () => doDazuo(), afkCave: () => doAfkChoose('cave'), afkVein: () => doAfkChoose('vein') })[d.a]; if (fn) fn(); }
   else if (d.advpage) sheetAdventure(+d.advpage);
   else if (d.adv) { petSay('battle', 0.3); doAdventure(d.adv); }
