@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1038</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1039</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4389,9 +4389,8 @@ window.collectArray = async function(id) {
         const got = [];
         for (const gg of (j.gains||[])) {
           if (!S[gg.st]) { S[gg.st] = gg.st === 'veins' ? [0,0,0] : {}; }
-          if (Array.isArray(S[gg.st])) { /* veins 不走此处 */ }
-          else { S[gg.st][gg.k] = (S[gg.st][gg.k]|0) + gg.n; }
-          got.push(`${gg.k}×${gg.n}`);
+          if (Array.isArray(S[gg.st])) { const _vi = Math.min(2, Math.max(0, gg.k|0)); S[gg.st][_vi] = (S[gg.st][_vi]|0) + (gg.n|0); got.push(`${['小型灵脉', '中型灵脉', '巨型灵脉'][_vi]}×${gg.n}`); } // v1039 灵脉按灵脉入账，不折灵石
+          else { S[gg.st][gg.k] = (S[gg.st][gg.k]|0) + gg.n; got.push(`${gg.k}×${gg.n}`); }
         }
         // 本地阵 storage 清零（与服务端一致）
         try { const a = (S.arrays||[]).find(v => v.id === id); if (a && a.storage) { a.storage.h = 0; a.storage.o = 0; a.storage.v = 0; a.storage.m = 0; a.storage.e = 0; } } catch(_){}
