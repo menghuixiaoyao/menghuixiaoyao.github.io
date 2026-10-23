@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1048</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1049</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2412,7 +2412,7 @@ const szSetProg = (S, i, v) => { if (!Array.isArray(S.shenzang) || S.shenzang.le
 const szDanArr = S => { if (!Array.isArray(S.shenzangDan) || S.shenzangDan.length !== 13) S.shenzangDan = new Array(13).fill(0); return S.shenzangDan; };
 const szDan = (S, i) => Math.max(0, Math.floor(szDanArr(S)[i] || 0));
 const szLitCnt = (S, i) => Math.min(SZ_SEATS[i].cnt, Math.round(szProg(S, i) / 10 * SZ_SEATS[i].cnt) + szDan(S, i)); // v1033 亮穴数=气旋比例亮+开脉丹开的穴（两条线分开）
-const szFullCount = S => SZ_SEATS.reduce((n, _, i) => n + (szProg(S, i) >= 10 ? 1 : 0), 0);
+const szFullCount = S => SZ_SEATS.reduce((n, _, i) => n + (szLitCnt(S, i) >= SZ_SEATS[i].cnt ? 1 : 0), 0); // v1049 Ye 定：点满一条经络（亮满一座，气旋/开脉丹/混合均可）即算一座全开→虚脉
 const szSmallCount = S => SZ_SEATS.reduce((n, _, i) => { const p = szProg(S, i); return n + (p > 0 && p < 10 ? p : 0); }, 0);
 function szSyncMai(S) { // v1043：虚络=气旋总进度+开脉丹开穴数（吃一颗虚络+1）；虚脉=全开座数
   let tot = 0; for (let i = 0; i < 13; i++) tot += szProg(S, i) + szDan(S, i);
@@ -6861,7 +6861,7 @@ function starChartHtml() {
   DOTS.forEach((d, di) => {
     if (d[1] !== view || !litSet.has(d[0])) return;
     const seatIdx = C.SZ_SEATS.findIndex(st => st.mer.includes(STAR_NMER[d[0]]));
-    const full = C.szProg(S, seatIdx) >= 10;
+    const full = C.szLitCnt(S, seatIdx) >= C.SZ_SEATS[seatIdx].cnt; // v1049 满座柔光同口径：亮满即满座
     const h = (di * 2654435761 % 100 + 100) % 100;
     const r = (full ? 7 : 5) + (h % 4);
     const glow = full ? `;box-shadow:0 0 10px 3px rgba(255,205,92,.65)` : (h > 62 ? `;box-shadow:0 0 ${6 + (h % 8)}px 2px rgba(255,205,92,.55)` : '');
