@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1075</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1076</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10946,13 +10946,16 @@ window.showPlayersAt = function(x, y){
     if (!list.length) return;
     var html = '<h2>🧑 同格道友（' + list.length + '人）</h2>';
     var _realmName = function(r){ var _n = ['凡人','练气','筑基','金丹','元婴','化神','大乘','渡劫','仙人','金仙','合体','尊者','主宰']; return _n[r|0] || ('境'+r); };
+    var _realmColor = ['#999','#7ec8ff','#7eff9e','#ffe27e','#ff9e7e','#d27eff','#7effff','#ff7e7e','#fff27e','#e6e6e6','#a0e7ff','#ffd700','#ff6b9d'];
     list.forEach(function(p, i){
       var nm = p.username || p.rname || p.roleName || '道友';
       var no = (p.player_no != null ? p.player_no : p.playerNo) || '?';
       var lv = (p.level != null ? p.level : '?');
       var rl = (p.realm != null ? _realmName(p.realm) : '');
+      var rc = _realmColor[p.realm|0] || '#999';
+      var _initial = String(nm).slice(0, 1);
       html += '<div class="row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #333">'
-        + '<span style="font-size:20px">🧑</span>'
+        + '<span style="width:32px;height:32px;border-radius:50%;background:' + rc + '33;border:2px solid ' + rc + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:' + rc + '">' + _initial.replace(/</g, '&lt;') + '</span>'
         + '<span style="flex:1"><b style="color:#7ec8ff">' + String(nm).replace(/</g, '&lt;') + '</b>'
         + '<span style="color:#666">[' + no + ']</span>'
         + '<span style="color:#999;font-size:12px"> ' + rl + ' Lv.' + lv + '</span></span></div>';
