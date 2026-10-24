@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1058</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1059</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1725,10 +1725,10 @@ function afkStart(S, type) { S.afk = { type, start: Date.now() }; }
 function doAfkChoose(type) {
   // 如果type没指定，弹窗让用户选
   if (!type) {
-    const _luo = C.maiLuo(S), _xp = (S.maiShuXp|0);
+    const _luo = C.maiLuo(S);
     const _lgT = window.LG ? `\\n🌟灵根${window.LG.name(S)}：闭关收益 ${window.LG.afkTxt(S)}` : '';
     const _isXian = (S.realm|0) >= 8, _gainTxt = _isXian ? '仙力' : '法力';
-    const isVein = confirm(`🧘 选择闭关地点：\\n\\n🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）+ 开脉术经验 ${_xp}（闭关每秒 +${_luo + _xp}）${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每秒+${2 + _luo + _xp}${_gainTxt}，每分钟1%被挑战）\\n取消 = 🏔️ 洞府闭关（安全，每秒+${1 + _luo + _xp}${_gainTxt}）`);
+    const isVein = confirm(`🧘 选择闭关地点：\\n\\n🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）（闭关每秒 +${_luo}）${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每秒+${2 + _luo}${_gainTxt}，每分钟1%被挑战）\\n取消 = 🏔️ 洞府闭关（安全，每秒+${1 + _luo}${_gainTxt}）`);
     type = isVein ? 'vein' : 'cave';
   }
   // 开关：如果已在该闭关中则出关，否则进入（切换时先结算）
@@ -1792,7 +1792,7 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
     const _lgAfk = 1 + lingGenAfkMult(S); // v867 灵根闭关加成：天灵根快，五灵根慢
     for (let i = 0; i < secs; i++) {
-      gain += ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0) + ((S.realm|0) >= 8 ? (S.xianfuEnergy|0) : (S.dongfuEnergy|0))) * (1 + afkMult) * _lgAfk; // v89：每条络+1，每点开脉术经验+1；v799 洞府灵气加成；v957 洞府灵气加法力、仙府灵气加仙力，按境界分开算
+      gain += ((isVein ? 2 : 1) + C.maiLuo(S) + ((S.realm|0) >= 8 ? (S.xianfuEnergy|0) : (S.dongfuEnergy|0))) * (1 + afkMult) * _lgAfk; // v89：每条络+1；v1059 Ye 定：开脉术经验不加闭关（只升级、给实脉）；v799 洞府灵气加成；v957 洞府灵气加法力、仙府灵气加仙力，按境界分开算
       if (isVein && Math.random() < 0.01 / 60) {
         const res = afkChallenge(S);
         if (res) logs.push(res);
@@ -7048,7 +7048,7 @@ function sheetChar() {
     if ((S.maiVLuo|0) >= 10 && typeof C.synthVMai === 'function') { let _sn2 = 0; while ((S.maiVLuo|0) >= 10 && C.synthVMai(S)) _sn2++; if (_sn2 > 0) { log('good', `🌀 虚络满10自动合成 <b class="g">虚脉 +${_sn2}</b>（当前 ${C.maiMult(S)} 倍）`); save(); } } // v443 打开经络面板时补合成（兜底v442之前攒的虚络）
     // v1055 Ye 定：脉络残页不再满10自动使用——攒着由玩家自己选数量、选座（原 v443 自动使用已去除）
     let p2 = `<div style="font-size:13px;margin-bottom:8px">🌀 <b class="y">经络总览</b></div>`;
-    p2 += `<div style="font-size:12px;line-height:1.8">虚络 ${S.maiVLuo|0}<span class="r">（开脉丹派生）</span> · 实络 ${S.maiRLuo|0}<span class="g">（永久）</span> · 虚脉 ${S.maiVMai|0}<span class="r">（经络条数）</span> · 实脉 ${C.maiRMaiEff(S)}<span class="g">（永久）</span><br>络：每条闭关+1/秒；脉：虚脉左右成对每对+1倍、任督各+1（最多14）·实脉每条+1倍（封顶13）·当前 ${C.maiMult(S)} 倍<br>📖开脉术 Lv.${C.maiShuLv(S)}（经验 ${S.maiShuXp|0}/${(C.maiShuLv(S)+1)*10}，每点闭关+1/秒，每10点升1级、实脉+1）</div>`;
+    p2 += `<div style="font-size:12px;line-height:1.8">虚络 ${S.maiVLuo|0}<span class="r">（开脉丹派生）</span> · 实络 ${S.maiRLuo|0}<span class="g">（永久）</span> · 虚脉 ${S.maiVMai|0}<span class="r">（经络条数）</span> · 实脉 ${C.maiRMaiEff(S)}<span class="g">（永久）</span><br>络：每条闭关+1/秒；脉：虚脉左右成对每对+1倍、任督各+1（最多14）·实脉每条+1倍（封顶13）·当前 ${C.maiMult(S)} 倍<br>📖开脉术 Lv.${C.maiShuLv(S)}（经验 ${S.maiShuXp|0}/${(C.maiShuLv(S)+1)*10}，每10点升1级、实脉+1）</div>`;
     if ((S.inv['sha']|0) > 0) {
       p2 += `<div class="row" style="margin-top:8px"><div class="lab">👹 <b class="y">煞气</b> ×${S.inv['sha']}<small>携带：${S.shaMode === 'def' ? `防御+${S.inv['sha']}%` : `攻击+${S.inv['sha']}%`}<br><button class="btn sm" data-shamode="atk" ${S.shaMode !== 'def' ? 'disabled' : ''}>⚔️转攻击</button> <button class="btn sm" data-shamode="def" ${S.shaMode === 'def' ? 'disabled' : ''}>🛡️转防御</button>${S.skills.includes('tunmo') ? '' : '<br><span class="r">吞噬需先习得《吞魔》（商店有售）</span>'}</small></div>${S.skills.includes('tunmo') ? `<button class="btn gold" data-sha="use">吞噬·法力+1上限</button>` : ''}</div>`;
     }
@@ -8058,7 +8058,7 @@ function doDebug(act) {
       const sc = (typeof C.setCounts === 'function' ? C.setCounts(S) : {});
       if (type === 'wushu') { const w2x = (sc.fatal || 0) >= 2 ? 2 : 1; gain = hrs * 60 * w2x; lbl = '经验'; }
       else if (type === 'ningqi') { const hc = (sc.heal || 0), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1; let nqBonus = 0, nqAgain = 0; try { nqBonus = hi >= 0 ? (C.GEAR_SETS.heal.ningqi[hi] || 0) : 0; nqAgain = hi >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi] || 0) : 0; nqBonusDbg = nqBonus; hcDbg = hc; } catch(e) {} const nqRate = Math.min(0.95, (0.30 + nqBonus) * qiFactor()); for (let i = 0; i < hrs; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } lbl = '经验'; } // v116
-      else { const isVein = type === 'vein'; const dc = (sc.def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1; let afkMult = 0; try { afkMult = di >= 0 ? (C.GEAR_SETS.def.afkMult[di] || 0) : 0; defDbg = dc; defMultDbg = afkMult; } catch(e) {} gain = Math.floor(hrs * 3600 * ((isVein ? 2 : 1) + C.maiLuo(S) + (S.maiShuXp|0)) * (1 + afkMult)); lbl = (typeof C.resLbl === 'function' ? C.resLbl(S) : '灵力'); if (isVein) { let nqB2 = 0, nqA2 = 0; try { const hc2 = (sc.heal || 0), hi2 = hc2 >= 2 ? Math.min(5, hc2) - 2 : -1; nqB2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqi[hi2] || 0) : 0; nqA2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi2] || 0) : 0; } catch(e) {} const nqR2 = Math.min(0.95, 0.30 + nqB2); let nqN2 = 0; for (let i = 0; i < hrs; i++) { if (Math.random() < nqR2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; if (nqA2 > 0 && Math.random() < nqA2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; } } } if (nqN2 > 0) log('good', (S.realm|0) >= 8 ? `⚖️ 参悟法则，法则之力 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）` : `🌀 灵脉凝气，凝气 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）`); } } // v89：每条络+1，每点开脉术经验+1；v202 灵脉每小时判定凝气
+      else { const isVein = type === 'vein'; const dc = (sc.def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1; let afkMult = 0; try { afkMult = di >= 0 ? (C.GEAR_SETS.def.afkMult[di] || 0) : 0; defDbg = dc; defMultDbg = afkMult; } catch(e) {} gain = Math.floor(hrs * 3600 * ((isVein ? 2 : 1) + C.maiLuo(S)) * (1 + afkMult)); lbl = (typeof C.resLbl === 'function' ? C.resLbl(S) : '灵力'); if (isVein) { let nqB2 = 0, nqA2 = 0; try { const hc2 = (sc.heal || 0), hi2 = hc2 >= 2 ? Math.min(5, hc2) - 2 : -1; nqB2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqi[hi2] || 0) : 0; nqA2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi2] || 0) : 0; } catch(e) {} const nqR2 = Math.min(0.95, 0.30 + nqB2); let nqN2 = 0; for (let i = 0; i < hrs; i++) { if (Math.random() < nqR2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; if (nqA2 > 0 && Math.random() < nqA2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; } } } if (nqN2 > 0) log('good', (S.realm|0) >= 8 ? `⚖️ 参悟法则，法则之力 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）` : `🌀 灵脉凝气，凝气 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）`); } } // v89：每条络+1；v1059 Ye 定：开脉术经验不加闭关（只升级、给实脉）；v202 灵脉每小时判定凝气
       if (gain > 0) { if (isMana) S.mana = Math.min(C.manaCapEff(S), S.mana + gain); else S.xp += gain; }
       S.stats = S.stats || {}; S.stats.afkSecs = (S.stats.afkSecs || 0) + hrs * 3600; S.stats.afkSecsTotal = (S.stats.afkSecsTotal || 0) + hrs * 3600;
       save(); render();
