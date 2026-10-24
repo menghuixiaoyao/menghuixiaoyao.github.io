@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1059</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1060</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10397,7 +10397,7 @@ document.addEventListener('click', e => {
   else if ('consign' in d) sheetConsign();
   else if ('char' in d) { window._charPage = 1; sheetChar(); }
   else if (d.gender) { S.gender = d.gender; S.avatar = 0; save(); sheetAvatar(d.gender); }
-  else if (d.avatar !== undefined) { S.avatar = parseInt(d.avatar)|0; if (S._avatarSettings) { S.avatarSet = S._pickSet || S.avatarSet || 'r'; S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} S._avatarSettings = 0; save(); toastLog('good', '🖼️ 头像已换上'); sheetChar(); } else { save(); sheetNameInput(); } }
+  else if (d.avatar !== undefined) { S.avatar = parseInt(d.avatar)|0; if (S._avatarSettings) { S.avatarSet = S._pickSet || S.avatarSet || 'r'; S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} S._avatarSettings = 0; save(); toastLog('good', '🖼️ 头像已换上'); sheetChar(); try { if (typeof renderActions === 'function') renderActions(); } catch(e) {} } else { save(); sheetNameInput(); } } // v1060 恢复 v1036：换头像强制刷新底部导航
   else if ('savename' in d) { const inp = $('nameInput'); const nm = inp ? inp.value.trim().slice(0, 12) : ''; if (nm) { S.name = nm; } save(); sheetLifeChoice(true); } // v204 取名后选生活技能
   else if (d.lifechoice) { const k = d.lifechoice, cur = S.lifeChoices || []; const i = cur.indexOf(k); if (i >= 0) cur.splice(i, 1); else if (cur.length < C.lifeChoiceMax(S)) cur.push(k); else toastLog('bad', '已达可选上限，境界提升可解锁更多'); S.lifeChoices = cur; save(); sheetLifeChoice(_lcFromName); } // v204
   else if ('lcdone' in d) { if (!(S.lifeChoices || []).length) { try { alert('至少选择 1 个生活技能'); } catch(e) { toastLog('bad', '至少选择 1 个生活技能'); } return; } const _hadPet = Array.isArray(S.pet) ? S.pet.length > 0 : S.pet != null; if (!S.lifeChoices.includes('tame') && _hadPet) { S.pet = Array.isArray(S.pet) ? [] : null; log('bad', '🔒 未选择驯兽技能，已卸下所有出战灵宠'); } S.life = S.life || {}; (S.lifeChoices || []).forEach(_k => { if (!S.life[_k]) S.life[_k] = { lv: 0, xp: 0 }; }); // v912 新选技能初始化
