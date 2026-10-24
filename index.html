@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1061</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1062</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -11451,7 +11451,7 @@ async function pkRefresh(){
 async function pkChallenge(targetId){
 /* ---------- 组队（v1051） ---------- */
 // v1051 组队：5人小队（人和宠物共用位置），队长带移动，组队战斗
-async function teamPanel(){
+window.teamPanel = async function(){ // v1062 直接挂 window（修 Safari 报 Can't find variable）
   openSheet('<h2>👥 组队</h2><div class="hint">5人小队（人和宠物共用位置），队长带移动，组队战斗。</div>'
     + '<div id="mhxyTeamInfo"><div class="hint">加载中…</div></div>'
     + '<div id="mhxyTeamInvites"></div>'
@@ -11459,7 +11459,7 @@ async function teamPanel(){
     + '<div class="row"><button class="btn full" data-mhxyteamrefresh>刷新</button></div>'
     + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
   teamRefresh();
-}
+}; // v1062 window.teamPanel 定义结束
 async function teamRefresh(){
   var r = await api('/api/world/team/state');
   if (!r.ok || !r.json || !r.json.ok){
@@ -11785,7 +11785,7 @@ function onClick(d, t, e){
   if ('mhxypk' in d){ pkPanel(); return true; }
   if ('mhxypkrefresh' in d){ pkRefresh(); return true; }
   if (d.mhxypkgo){ pkChallenge(d.mhxypkgo); return true; }
-  if ('mhxyteam' in d){ teamPanel(); return true; }
+  if ('mhxyteam' in d){ window.teamPanel(); return true; }
   if ('mhxyteamcreate' in d){ teamCreate(); return true; }
   if ('mhxyteamleave' in d){ teamLeave(); return true; }
   if ('mhxyteamdisband' in d){ teamDisband(); return true; }
