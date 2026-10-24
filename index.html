@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1076</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1077</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10941,6 +10941,7 @@ window.shenshiGo = function(){
 // v1072 点击地图玩家标记查看详细资料（Ye：看到5个人但看不到资料）
 window.showPlayersAt = function(x, y){
   try {
+    window._lastPlayerPos = { x: x, y: y };
     var ps = window._worldPlayers || [];
     var list = ps.filter(function(p){ return p && (p.x|0) === (x|0) && (p.y|0) === (y|0) && p.online; });
     if (!list.length) return;
@@ -10954,15 +10955,50 @@ window.showPlayersAt = function(x, y){
       var rl = (p.realm != null ? _realmName(p.realm) : '');
       var rc = _realmColor[p.realm|0] || '#999';
       var _initial = String(nm).slice(0, 1);
-      html += '<div class="row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #333">'
+      var _aid = String(p.accountId || '').replace(/'/g, '');
+      html += '<div class="row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #333;cursor:pointer" onclick="window.showPlayerDetail(\'' + _aid + '\')">'
         + '<span style="width:32px;height:32px;border-radius:50%;background:' + rc + '33;border:2px solid ' + rc + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:' + rc + '">' + _initial.replace(/</g, '&lt;') + '</span>'
         + '<span style="flex:1"><b style="color:#7ec8ff">' + String(nm).replace(/</g, '&lt;') + '</b>'
         + '<span style="color:#666">[' + no + ']</span>'
-        + '<span style="color:#999;font-size:12px"> ' + rl + ' Lv.' + lv + '</span></span></div>';
+        + '<span style="color:#999;font-size:12px"> ' + rl + ' Lv.' + lv + '</span></span>'
+        + '<span style="color:#7ec8ff;font-size:12px">›</span></div>';
     });
     html += '<div class="row"><button class="btn full" data-close>关闭</button></div>';
     if (typeof openSheet === 'function') openSheet(html);
     else alert(list.map(function(p){ return (p.username||'?') + '[' + (p.player_no||p.playerNo||'?') + '] Lv.' + (p.level||'?'); }).join('\n'));
+  } catch(e) {}
+};
+// v1076 玩家详情+组队邀请（Ye：点进去看简单信息可以组队）
+window.showPlayerDetail = function(accountId){
+  try {
+    var ps = window._worldPlayers || [];
+    var p = null;
+    for (var i = 0; i < ps.length; i++) { if (ps[i] && String(ps[i].accountId) === String(accountId)) { p = ps[i]; break; } }
+    if (!p) return;
+    var nm = p.username || p.rname || p.roleName || '道友';
+    var no = (p.player_no != null ? p.player_no : p.playerNo) || '?';
+    var lv = (p.level != null ? p.level : '?');
+    var _rn = ['凡人','练气','筑基','金丹','元婴','化神','大乘','渡劫','仙人','金仙','合体','尊者','主宰'];
+    var rl = (p.realm != null ? (_rn[p.realm|0] || ('境'+p.realm)) : '?');
+    var _tt = p.title ? ' 🏷️' + String(p.title).replace(/</g, '&lt;') : '';
+    var _aid = String(p.accountId || '').replace(/'/g, '');
+    var html = '<h2>🧑 ' + String(nm).replace(/</g, '&lt;') + '</h2>'
+      + '<div class="hint">编号 [' + no + ']' + _tt + '</div>'
+      + '<div class="row" style="display:flex;gap:12px;padding:8px 0">'
+      + '<span>境界 <b class="y">' + rl + '</b></span>'
+      + '<span>等级 <b class="y">Lv.' + lv + '</b></span></div>'
+      + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
+      + '<button class="btn gold" style="flex:1" onclick="window.teamInvitePlayer(\'' + _aid + '\')">👥 组队邀请</button>'
+      + '<button class="btn" style="flex:1" onclick="(function(){var _lp=window._lastPlayerPos||{x:0,y:0};window.showPlayersAt(_lp.x,_lp.y);})()">‹ 返回</button></div>'
+      + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
+    if (typeof openSheet === 'function') openSheet(html);
+  } catch(e) {}
+};
+// v1076 从玩家详情发起组队邀请
+window.teamInvitePlayer = function(accountId){
+  try {
+    if (typeof teamInvite === 'function') teamInvite(accountId);
+    else if (typeof log === 'function') log('bad', '组队模块未加载');
   } catch(e) {}
 };
 // v902 关键函数兜底（iOS Safari大文件偶发undefined）
