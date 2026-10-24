@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1085</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1086</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7257,42 +7257,43 @@ function auc3NpcBid(S) {
   if (changed) commit();
 }
 
-function sheetAuction3(msg) {
-  const A = auc3Init(S);
-  auc3NpcBid(S); // NPC随机出价
-  let html = `<h2>🔨 拍卖行</h2><div class="hint">三日循环：今日抢<b class="y">明日</b>拍卖位 → 明日上架 → 后日收钱<br>金元 <b class="y">${S.gold | 0}</b> · 位钱系统回收不退，成交不收手续费</div>` + (msg ? `<div class="warn">${msg}</div>` : '');
-
-  // 我抢到的位（待上架）
-  if (A.mySlots > 0) {
-    html += `<div class="row" style="background:#2a2a1a"><div class="lab">🎫 你有 <b class="y">${A.mySlots}</b> 个今日拍卖位待上架</div><button class="btn gold" data-auc3list>上架物品</button></div>`;
+async function sheetAuction3(msg) {
+  // v1086 线上拍卖行：NPC 拍品/出价下线，全走服务端三日循环
+  if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn()) {
+    openSheet(`<h2>🔨 拍卖行</h2><div class="hint">拍卖行已改真人竞价，需登录联机后查看。</div><div class="empty">请先在联机面板登录</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+    return;
   }
-
-  // 明日拍卖位竞拍
+  openSheet(`<h2>🔨 拍卖行</h2><div class="hint">正在拉取真人拍卖数据…</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  let r;
+  try { r = await MHXY.api('/api/auction/view'); } catch (e) { r = null; }
+  if (!r || !r.ok || !r.json || !r.json.ok) {
+    openSheet(`<h2>🔨 拍卖行</h2><div class="hint">拉取失败，请稍后再试。</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+    return;
+  }
+  const d = r.json;
+  window._aucMySlots = d.mySlots | 0;
+  let html = `<h2>🔨 拍卖行</h2><div class="hint">三日循环：今日抢<b class="y">明日</b>拍卖位 → 明日上架 → 后日收钱<br>金元 <b class="y">${S.gold | 0}</b> · 位钱系统回收不退，成交不收手续费 · 出价金托管，被超价立即退还</div>` + (msg ? `<div class="warn">${msg}</div>` : '');
+  if (d.mySlots > 0) {
+    html += `<div class="row" style="background:#2a2a1a"><div class="lab">🎫 你有 <b class="y">${d.mySlots}</b> 个今日拍卖位待上架</div><button class="btn gold" data-auc3list>上架物品</button></div>`;
+  }
   html += `<h3>🎫 明日拍卖位（3个）</h3><div class="hint">出价最高者获得明日上架权，出价不退（系统回收）</div>`;
-  A.slots.forEach((bids, i) => {
-    const top = auc3Top(bids);
-    const myBid = bids.filter(b => b.who === '你').reduce((m, b) => Math.max(m, b.amt), 0);
+  d.slots.forEach((sl) => {
+    const top = sl.top;
     const nextAmt = (top ? top.amt : 50) + 20;
-    html += `<div class="row"><div class="lab">拍卖位 ${i + 1}<small>当前 <b class="y">${top ? top.amt + '金（' + (top.who === '你' ? '你' : esc(top.who)) + '）' : '暂无出价'}</small></div>` +
-      `<button class="btn gold" data-auc3slot="${i}" ${S.gold >= nextAmt ? '' : 'disabled'}>出价 ${nextAmt}金</button></div>`;
+    html += `<div class="row"><div class="lab">拍卖位 ${sl.slot + 1}<small>当前 <b class="y">${top ? top.amt + '金（' + esc(top.bidder_name) + '）' : '暂无出价'}${sl.myBid ? ` · 你的出价 ${sl.myBid}金` : ''}</small></div>` +
+      `<button class="btn gold" data-auc3slot="${sl.slot}" ${S.gold >= nextAmt ? '' : 'disabled'}>出价 ${nextAmt}金</button></div>`;
   });
-
-  // 今日拍卖品
   html += `<h3>🔨 今日拍卖品</h3>`;
-  if (!A.listings.length) {
+  if (!d.listings.length) {
     html += `<div class="hint">今日暂无拍品（昨日无人抢到位）</div>`;
   }
-  (A.listings || []).forEach((L, i) => {
-    const top = auc3Top(L.bids);
-    const cur = top ? top.amt : L.start;
+  d.listings.forEach((L) => {
+    const cur = L.cur;
     const inc = Math.max(10, Math.floor(cur * 0.1));
     const nextAmt = cur + inc;
-    const sellerName = L.anon ? '匿名' : (L.seller === '你' ? '你' : esc(L.seller));
-    const isMine = top && top.who === '你';
-    html += `<div class="row"><div class="lab">${L.icon} ${L.itemName}×${L.qty}<small>卖家 ${sellerName} · 当前 <b class="y">${cur}金</b>${top ? `（${isMine ? '<b style="color:#7fd6ff">你的出价领先</b>' : esc(top.who) + '领先'}）` : '（起拍价）'}</small></div>` +
-      (L.seller === '你' ? `<span class="tag">你的拍品</span>` : `<button class="btn ${isMine ? '' : 'gold'}" data-auc3bid="${i}" ${S.gold >= nextAmt ? '' : 'disabled'}>出价 ${nextAmt}金</button>`) + `</div>`;
+    html += `<div class="row"><div class="lab">${L.icon} ${esc(L.name)}×${L.qty}<small>卖家 ${esc(L.seller)} · 当前 <b class="y">${cur}金</b>${L.topName ? `（${L.topIsMe ? '<b style="color:#7fd6ff">你的出价领先</b>' : esc(L.topName) + '领先'}）` : '（起拍价）'}</small></div>` +
+      (L.isMine ? `<span class="tag">你的拍品</span>` : `<button class="btn ${L.topIsMe ? '' : 'gold'}" data-auc3bid="${L.id}" ${S.gold >= nextAmt ? '' : 'disabled'}>出价 ${nextAmt}金</button>`) + `</div>`;
   });
-
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
   openSheet(html);
 }
@@ -7331,9 +7332,9 @@ function doAuc3Bid(i) {
 
 // 上架物品：选择背包物品
 function sheetAuc3List() {
-  const A = auc3Init(S);
-  if (A.mySlots <= 0) { sheetAuction3('没有待上架的拍卖位。'); return; }
-  let html = `<h2>🎫 上架拍卖品</h2><div class="hint">剩余拍卖位 <b class="y">${A.mySlots}</b> · 选择一件物品上架</div>`;
+  const mySlots = window._aucMySlots | 0;
+  if (mySlots <= 0) { sheetAuction3('没有待上架的拍卖位。'); return; }
+  let html = `<h2>🎫 上架拍卖品</h2><div class="hint">剩余拍卖位 <b class="y">${mySlots}</b> · 选择一件物品上架</div>`;
   // 可上架：矿石
   const ores = S.ores || {};
   const oreNames = { iron: ['铁矿', '⚫'], copper: ['铜矿', '🟤'], silver: ['银矿', '⚪'], gold: ['金矿', '🟡'], sp1: ['灵气石', '🪨'], sp2: ['下品灵石', '🌒'], sp3: ['中品灵石', '🌗'], sp4: ['上品灵石', '💎'], sp5: ['极品灵石', '💠'] };
@@ -7373,8 +7374,8 @@ function sheetAuc3ListConfirm(store, key) {
 }
 
 function doAuc3Confirm() {
-  const A = auc3Init(S);
-  if (!_auc3Pick || A.mySlots <= 0) { sheetAuction3('上架失败。'); return; }
+  // v1086 线上上架
+  if (!_auc3Pick || (window._aucMySlots | 0) <= 0) { sheetAuction3('上架失败。'); return; }
   const qtyEl = document.getElementById('auc3qty');
   const priceEl = document.getElementById('auc3price');
   const anonBtn = document.getElementById('auc3anon');
@@ -7382,21 +7383,19 @@ function doAuc3Confirm() {
   const price = Math.max(10, parseInt((priceEl || {}).value) || 100);
   const anon = !!(anonBtn && anonBtn.checked);
   const { store, key } = _auc3Pick;
-  // 扣除物品
-  const s = store === 'herbs' ? S.herbs : S.ores;
-  s[key] -= qty;
   const names = { iron: '铁矿', copper: '铜矿', silver: '银矿', gold: '金矿', sp1: '灵气石', sp2: '下品灵石', sp3: '中品灵石', sp4: '上品灵石', sp5: '极品灵石' };
   const icons = { iron: '⛏️', copper: '🟤', silver: '⚪', gold: '🟡', sp1: '💎', sp2: '💎', sp3: '💎', sp4: '💎', sp5: '💠' };
   const name = store === 'herbs' ? key : (names[key] || key);
   const icon = store === 'herbs' ? '🌿' : (icons[key] || '📦');
-  A.listings.push({
-    seller: '你', anon: anon, store: store, itemKey: key, itemName: name,
-    icon: icon, qty: qty, start: price, bids: []
-  });
-  A.mySlots--;
-  _auc3Pick = null;
-  try { log('good', `🎫 上架成功！${icon}${name}×${qty}，起拍 <b class="y">${price}金</b>${anon ? '（匿名）' : ''}。`); } catch (e) {}
-  commit(); sheetAuction3();
+  (async () => {
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/auction/list', { method: 'POST', body: { store, key, name, icon, qty, start: price, anon } });
+      if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); _auc3Pick = null; sheetAuction3(); }
+      else { const _e = (r.json || {}).error; sheetAuction3(_e === 'no_slot' ? '拍卖位已用完。' : _e === 'no_item' ? '物品不足。' : '上架失败。'); }
+    } catch(_) { sheetAuction3('网络不通，稍后再试。'); }
+  })();
 }
 
 
@@ -8202,7 +8201,7 @@ function doCheckin(force) {
       log('gold', '🎖️ <span class="y">X 认证</span>加成：签到体力翻倍！');
     }
   } catch(_) {}
-  try { auc3Daily(S); } catch(e) {} // 拍卖行三日循环结算
+  // v1086 拍卖行已改服务端结算，本地 auc3Daily 停用（避免重复结算）
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
   log('gold', `📅 ${force ? '<span class="pu">[测试]</span> ' : ''}签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
   try { if (typeof addMerit === 'function') addMerit(1, '每日签到'); } catch(_) {} // v893
@@ -10500,8 +10499,24 @@ document.addEventListener('click', e => {
   else if ('back-gender' in d) sheetGender();
   else if (d.avatarcat) sheetAvatar(S._pickGender || S.gender || 'm', d.avatarcat);
   else if ('auction' in d) sheetAuction3();
-  else if (d.auc3slot !== undefined) doAuc3Slot(d.auc3slot);
-  else if (d.auc3bid !== undefined) doAuc3Bid(d.auc3bid);
+  else if (d.auc3slot !== undefined) { (async () => { // v1086 线上抢位
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/auction/slot', { method: 'POST', body: { slot: +d.auc3slot } });
+      if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetAuction3(); }
+      else toastLog('sys', (r.json || {}).error === 'no_gold' ? '金元不足。' : '抢位失败。');
+    } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
+  })(); }
+  else if (d.auc3bid !== undefined) { (async () => { // v1086 线上竞价（id）
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/auction/bid', { method: 'POST', body: { id: d.auc3bid } });
+      if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetAuction3(); }
+      else { const _e = (r.json || {}).error; toastLog('sys', _e === 'no_gold' ? '金元不足。' : _e === 'own_item' ? '不能竞拍自己的拍品。' : _e === 'not_found' ? '该拍品已结束。' : '竞价失败。'); }
+    } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
+  })(); }
   else if ('auc3list' in d) sheetAuc3List();
   else if (d.auc3pick) { const _pk = String(d.auc3pick).split(':'); sheetAuc3ListConfirm(_pk[0], _pk[1]); }
   else if ('auc3confirm' in d) doAuc3Confirm();
