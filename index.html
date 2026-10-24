@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1090</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1091</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1509,6 +1509,7 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   }
   ATTRS.forEach(k => S.attrs[k] = 1);
   S.vitPeak = S.attrs.str + S.attrs.def + S.attrs.vit; S.manaMult = 1; // 轮回重置血量峰值与法力上限倍率
+  S.mana = Math.max(0, Math.min(manaCapEff(S), S.mana | 0)); // v1091 轮回法力钳制：高境轮回后法力不得超新上限（此前 500 法力对 30 上限挂着）
   if (S.status) { S.status.bleed = false; S.status.poison = false; S.status.bleedBase = 0; S.status.poisonBase = 0; S.status.bleedFrac = 0; S.status.poisonFrac = 0; S.status.curse = false; S.status.depress = false; } // 轮回清除所有负面状态：流血/中毒/诅咒/抑郁
   S.shenzangDan = new Array(13).fill(0); S.danDu = 0; szSyncMai(S); // v998 轮回丹毒全清；v1037 轮回只清丹开的穴，气旋进度保留不清；v1058 Ye 定：规则/显示/闭关统一跟虚实模型走，清丹后当场重算虚络/虚脉
   // v1037 轮回：气旋保留不清，只清丹开的穴；实络/实脉/开脉术保留
@@ -3760,6 +3761,8 @@ Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainI
   alcRate, potCountProbs, gradeProbs, brew, brewDetox, useMutPill, useDetoxPill, toxFactor, toxTier, MUT_PILLS, qiNow, qiFactor, qiTierName, qiAdd, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
   genMonster, genOpponent, adventure, advBattleSetup, advBattleSettle, advEnd, advMove, advRetreat, sneakP, guardedLoot, pkStart, pkSurrender, pkSettle, applyZhenxiu, applyBtSuccess, applyFailState }); // v688 导出突破函数
 G.Core = C;
+// v1091 跨块导出：块1裸调用的块0函数/表（全游审计 P0+P1：出关 afkExit/afkStart、寄售 consignName/consignStore、寄售列表 MEDS、灵宠突破 petEffLvMax/PET_BREAK_MAX；此前未导出致 ReferenceError）
+G.afkExit = afkExit; G.afkStart = afkStart; G.consignName = consignName; G.consignStore = consignStore; G.MEDS = MEDS; G.petEffLvMax = petEffLvMax; G.PET_BREAK_MAX = PET_BREAK_MAX;
 
 // ===== v1006 P1 三件套：定命星 / 本命飞剑 / 法宝规则词条 =====
 const DESTINY_STARS = [ {k:'ziwei',n:'紫微星',w:2,t:'命宫主星，气象自华'}, {k:'tanlang',n:'贪狼星',w:10,t:'桃花逢机，欲望生道'}, {k:'pojun',n:'破军星',w:10,t:'开疆破阵，先破后立'}, {k:'qisha',n:'七杀星',w:10,t:'杀伐果断，乱世称雄'}, {k:'tianji',n:'天机星',w:12,t:'机杼在胸，算无遗策'}, {k:'taiyang',n:'太阳星',w:12,t:'光华万丈，坦荡磊落'}, {k:'taiyin',n:'太阴星',w:12,t:'月华内敛，静水流深'}, {k:'jumen',n:'巨门星',w:10,t:'口纳乾坤，是非分明'}, {k:'fanxing',n:'凡星',w:22,t:'命星平平，大道靠走'} ];
@@ -9028,6 +9031,7 @@ function doPetBreak(id) {
   log('gold', `💥 ${petTag(p)} 突破成功！等级上限提升至 ${petEffLvMax(p)}（已突破${p.breakCount}次）`);
   commit(); sheetPetBreak();
 }
+window.sheetPetBreak = sheetPetBreak; window.doPetBreak = doPetBreak; // v1091 灵宠突破入口/动作挂全局（兽园按钮与面板按钮调 window.*；此前未导出致按钮全死）
 
 function doLu(k, n) {
   const r = C.useLu(S, k, n); if (!r) return;
