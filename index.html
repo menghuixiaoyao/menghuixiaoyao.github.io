@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1071</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1072</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10921,8 +10921,11 @@ window.teamPanel = async function(){
 window.shenshiGo = function(){
   try {
     var _realm = 0;
-    try { var _sk = (window.M && M.saveKey) || 'mhxy_save'; var _raw = localStorage.getItem(_sk); if (_raw) _realm = (JSON.parse(_raw).realm|0) || 0; } catch(_) {}
-    if (_realm < 1) { if (typeof log === 'function') log('bad', '需练气境界才能使用神识'); else alert('需练气境界才能使用神识'); return; }
+    try {
+      if (typeof S !== 'undefined' && S && typeof S.realm !== 'undefined') _realm = (S.realm|0) || 0;
+      else { var _sk = (window.M && M.saveKey) || 'mhxy_save'; var _raw = localStorage.getItem(_sk); if (_raw) _realm = (JSON.parse(_raw).realm|0) || 0; }
+    } catch(_) {}
+    if (_realm < 1) { var _m1 = '需练气境界才能使用神识（当前凡人）'; if (typeof toastLog === 'function') toastLog('bad', _m1); else if (typeof log === 'function') log('bad', _m1); else alert(_m1); return; }
     window._ssRevealUntil = Date.now() + 10000;
     var _msg = '🔍 神识探查中（10秒）：相邻格气息低于神识的玩家可见';
     if (typeof toastLog === 'function') toastLog('good', _msg);
