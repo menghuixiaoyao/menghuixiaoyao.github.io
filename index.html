@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1081</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1082</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -11247,7 +11247,10 @@ function panel(){
       + '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
       + '<input id="mhxyP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="row"><input id="mhxyX" maxlength="16" placeholder="X 用户名（注册必填，如 @feyelo）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
+      + '<div class="row"><input id="mhxySqQ" maxlength="60" placeholder="密保问题（注册可选，如：我第一只灵宠的名字？）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
+      + '<div class="row"><input id="mhxySqA" maxlength="100" placeholder="密保答案（忘记密码时用）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="grid2"><button class="btn full" data-mhxylogin>登录</button><button class="btn full" data-mhxyreg>注册</button></div>'
+      + '<div class="row"><button class="btn full" data-mhxyrecover>忘记密码？用密保找回</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
   } else {
     var nm = escH(myName()), pno = escH(myPno());
@@ -11267,7 +11270,7 @@ function panel(){
       + '<div class="row" id="mhxyXHideRow" style="display:flex;gap:6px;align-items:center">' + xHideRowHtml() + '</div>'
       + '<div class="row" id="mhxyXVerifyRow" style="display:none;flex-direction:column;gap:6px"><span class="hint" id="mhxyXCode"></span><div style="display:flex;gap:6px"><input id="mhxyTweetUrl" placeholder="推文链接（x.com/你的号/status/…）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-mhxyxverify>验证</button></div></div>'
       + (isGuest()
-        ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
+        ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row" style="display:flex;gap:6px"><input id="mhxySqQ" maxlength="60" placeholder="密保问题（可选）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxySqA" maxlength="100" placeholder="密保答案" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
         : '')
       + '<div class="row"><button class="btn red full" data-mhxylogout>登出（回单机）</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
@@ -11310,7 +11313,10 @@ async function doRegister(){
   var u = val('mhxyU'), p = val('mhxyP'), x = val('mhxyX');
   if (!u || !p){ glog('bad', '🌐 请填写用户名和密码'); return; }
   if (!x){ glog('bad', '🌐 注册必须填写 X 用户名'); return; }
-  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p, x_handle:x } });
+  var sqQ = val('mhxySqQ'), sqA = val('mhxySqA');
+  var body = { username:u, password:p, x_handle:x };
+  if (sqQ && sqA) { body.sq_q = sqQ; body.sq_a = sqA; }
+  var r = await api('/api/register', { method:'POST', noAuth:true, body:body });
   if ((r.status === 201 || r.ok) && r.json && r.json.ok){
     glog('good', '🌐 注册成功：<b class="y">' + escH(u) + '</b> #' + r.json.player_no + '，请登录');
   } else {
@@ -11318,10 +11324,41 @@ async function doRegister(){
     glog('bad', '🌐 注册失败' + (r.netErr ? '（网络不通）' : err === 'username_taken' ? '（用户名已被占用）' : err === 'bad_username' ? '（用户名3-16位，字母/数字/下划线/中文）' : err === 'bad_password' ? '（密码至少6位）' : err === 'x_handle_required' ? '（必须填写 X 用户名）' : '：' + escH(err)));
   }
 }
+// v1082 忘记密码：密保找回
+async function doRecover(){
+  var u = val('mhxyU');
+  if (!u){ glog('bad', '🌐 先在用户名框填要找回的账号'); return; }
+  var q = await api('/api/recover/question', { method:'POST', noAuth:true, body:{ username:u } });
+  if (!q.ok || !q.json || !q.json.ok){
+    var e = (q.json||{}).error || q.status;
+    glog('bad', '🌐 ' + (e === 'no_security' ? '该账号没设密保，无法找回' : e === 'no_account' ? '账号不存在' : '取密保问题失败：' + escH(e)));
+    return;
+  }
+  openSheet(`<h2>🔐 密保找回</h2><div class="hint">账号：<b class="y">${escH(u)}</b></div>`
+    + `<div class="row"><div class="lab">密保问题<small>${escH(q.json.question)}</small></div></div>`
+    + `<div class="row"><input id="mhxyRecA" maxlength="100" placeholder="密保答案" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`
+    + `<div class="row"><input id="mhxyRecP" type="password" maxlength="128" placeholder="新密码（≥6位）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`
+    + `<div class="row"><button class="btn gold full" id="mhxyRecGo">重置密码</button></div>`
+    + `<div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  var go = document.getElementById('mhxyRecGo');
+  if (go) go.onclick = async function(){
+    var a = val('mhxyRecA'), np = val('mhxyRecP');
+    if (!a || !np){ glog('bad', '🌐 请填答案和新密码'); return; }
+    var r = await api('/api/recover/reset', { method:'POST', noAuth:true, body:{ username:u, answer:a, new_password:np } });
+    if (r.ok && r.json && r.json.ok){ glog('good', '🌐 密码已重置，请用新密码登录'); panel(); }
+    else {
+      var er = (r.json||{}).error || r.status;
+      glog('bad', '🌐 ' + (er === 'wrong_answer' ? '答案不对（剩余' + ((r.json||{}).fails_left ?? '?') + '次）' : er === 'locked' ? '答错太多次，15分钟后再试' : er === 'bad_password' ? '新密码至少6位' : '重置失败：' + escH(er)));
+    }
+  };
+}
 async function doUpgrade(){
   var u = val('mhxyU'), p = val('mhxyP');
   if (!u || !p){ glog('bad', '🌐 请填写新用户名和密码'); return; }
-  var r = await api('/api/upgrade', { method:'POST', body:{ username:u, password:p } });
+  var sqQ = val('mhxySqQ'), sqA = val('mhxySqA');
+  var body = { username:u, password:p };
+  if (sqQ && sqA) { body.sq_q = sqQ; body.sq_a = sqA; }
+  var r = await api('/api/upgrade', { method:'POST', body:body });
   if (r.ok && r.json && r.json.ok){
     ls(LK.name, r.json.username); ls(LK.guest, '0');
     glog('good', '🌐 已转为正式账号：<b class="y">' + escH(r.json.username) + '</b>（编号不变）');
@@ -11888,6 +11925,7 @@ function onClick(d, t, e){
   if ('mhxyguest' in d){ doGuest(); return true; }
   if ('mhxylogin' in d){ doLogin(); return true; }
   if ('mhxyreg' in d){ doRegister(); return true; }
+  if ('mhxyrecover' in d){ doRecover(); return true; }
   if ('mhxyupgrade' in d){ doUpgrade(); return true; }
   if ('mhxylogout' in d){ doLogout(); return true; }
   if ('mhxysync' in d){ syncNow(true); return true; }
