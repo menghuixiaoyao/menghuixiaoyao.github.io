@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1072</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1073</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -4211,7 +4211,7 @@ function isSwordCell(x, y) {
 }
 function renderWorldMap() {
   try {
-    try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 1 ? '' : 'none'; } catch(_) {} // v1069 神识单按钮：练气显示（Ye 定整合）
+    try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 1 ? '' : 'none'; try { window._myRealm = (S.realm|0) || 0; } catch(_) {} } catch(_) {} // v1072 神识单按钮：练气显示；同步全局境界（Ye 定整合）
 // v536 保留地(4,3)资源点：草药+矿石定时刷新
 // v899 采集阵自动采集系统
 // S.arrays: [{id, map:'world', x, y, fuelUntil, storage:{h,o,v,m,e}, guarded, lastTick}]
@@ -10920,11 +10920,13 @@ window.teamPanel = async function(){
 // v1069 神识单按钮（Ye 定整合）：练气点=10秒探查，化神点=探查+开外放面板
 window.shenshiGo = function(){
   try {
-    var _realm = 0;
-    try {
-      if (typeof S !== 'undefined' && S && typeof S.realm !== 'undefined') _realm = (S.realm|0) || 0;
-      else { var _sk = (window.M && M.saveKey) || 'mhxy_save'; var _raw = localStorage.getItem(_sk); if (_raw) _realm = (JSON.parse(_raw).realm|0) || 0; }
-    } catch(_) {}
+    var _realm = (typeof window._myRealm !== 'undefined') ? (window._myRealm|0) : 0;
+    if (!_realm) {
+      try {
+        if (typeof S !== 'undefined' && S && typeof S.realm !== 'undefined') _realm = (S.realm|0) || 0;
+        else { var _sk = (window.M && M.saveKey) || 'mhxy_save'; var _raw = localStorage.getItem(_sk); if (_raw) _realm = (JSON.parse(_raw).realm|0) || 0; }
+      } catch(_) {}
+    }
     if (_realm < 1) { var _m1 = '需练气境界才能使用神识（当前凡人）'; if (typeof toastLog === 'function') toastLog('bad', _m1); else if (typeof log === 'function') log('bad', _m1); else alert(_m1); return; }
     window._ssRevealUntil = Date.now() + 10000;
     var _msg = '🔍 神识探查中（10秒）：相邻格气息低于神识的玩家可见';
