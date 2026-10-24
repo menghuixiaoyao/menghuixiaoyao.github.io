@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1084</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1085</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6007,35 +6007,39 @@ function stallGen(x, y) {
   S._stallCache = { key, items };
   return items;
 }
-function sheetStall(x, y) {
-  const items = stallGen(x, y);
-  const _sc = stallCur(x, y);
-  const _bal = stallBal(_sc.key);
-  const rent = STALL_RENT[x + ',' + y];
-  const rented = stallRented(x, y);
-  let html = `<h2>🎪 摆摊区</h2><div class="hint">路边摊主神神秘秘，眼力好的能捡漏，眼拙的可能入坑。本摊货币：${_sc.icon||''}${_sc.name} <b class="y">${_bal}</b></div>`;
-  // 租赁区
-  if (rent) {
-    if (rented) {
-      const _mins = Math.ceil((rented.until - Date.now()) / 60000);
-      html += `<div class="hint">✅ 已租下摊位，剩余 <b class="y">${_mins}</b> 分钟</div>`;
-      // 我的摊位物品
-      const _myItems = rented.items || [];
-      if (_myItems.length) {
-        const _cn = { sp4: '💎上品灵石', sp5: '💠极品灵石', xianyu: MAGATAMA + '仙玉' };
-        html += `<h3>我的摊位</h3>` + _myItems.map((mi, mi2) => `<div class="row"><div class="lab">${esc(mi.name)} ×${mi.qty} <span class="tag">${mi.price} ${_cn[mi.cur]||'金'}/个</span></div>
-          <button class="btn" data-stallunlist="${x},${y},${mi2}">下架</button></div>`).join('');
-      }
-      // 上架按钮
-      html += `<div class="row"><button class="btn gold full" data-stalllist="${x},${y}">上架物品</button></div>`;
-    } else {
-      const _rcost = rent.kind === 'xianyu' ? (S.xianyu||0) : (S.ores[rent.key]||0);
-      html += `<div class="row"><div class="lab">🏠 租下摊位 <span class="tag">${rent.price} ${rent.name}/小时</span></div>
-        <button class="btn gold" data-stallrent="${x},${y}" ${_rcost >= rent.price ? '' : 'disabled'}>租 1 小时</button></div>`;
-    }
+async function sheetStall(x, y) {
+  // v1085 线上摆摊：NPC 摊货下线，只显示真人摊主的摊位
+  if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn()) {
+    openSheet(`<h2>🎪 摆摊区</h2><div class="hint">摆摊区已改真人摊位，需登录联机后查看。</div><div class="empty">请先在联机面板登录</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+    return;
   }
-  html += items.map((it, i) => `<div class="row"><div class="lab">${esc(it.name)} ×${it.qty} <span class="tag">${it.price} ${_sc.icon||''}${_sc.name}/个</span>${it.tag}</div>
-    <button class="btn gold" data-stallbuy="${i}" data-sx="${x}" data-sy="${y}" ${_bal >= it.price * it.qty ? '' : 'disabled'}>买下 ${it.price * it.qty}${_sc.icon||''}${_sc.name}</button></div>`).join('');
+  const tile = x + ',' + y;
+  const _sc = stallCur(x, y);
+  openSheet(`<h2>🎪 摆摊区 (${x},${y})</h2><div class="hint">正在拉取摊位…</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  let r;
+  try { r = await MHXY.api('/api/stall/view?tile=' + encodeURIComponent(tile)); } catch (e) { r = null; }
+  if (!r || !r.ok || !r.json || !r.json.ok) {
+    openSheet(`<h2>🎪 摆摊区 (${x},${y})</h2><div class="hint">拉取失败，请稍后再试。</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+    return;
+  }
+  const d = r.json;
+  const _bal = stallBal(_sc.key);
+  let html = `<h2>🎪 摆摊区 (${x},${y})</h2><div class="hint">本摊货币：${_sc.icon||''}${_sc.name} <b class="y">${_bal}</b> · 真人摊位</div>`;
+  if (d.renter) {
+    const _mins = Math.ceil((d.renter.until - Date.now()) / 60000);
+    html += `<div class="hint">🏠 摊主：<b class="y">${esc(d.renter.username)}</b>${d.renter.isMine ? '（你的摊位）' : ''}，剩余 <b class="y">${_mins}</b> 分钟</div>`;
+    if (d.renter.isMine) {
+      html += `<div class="row"><button class="btn gold" data-stallrent="${x},${y}">续租 1 小时（1 ${_sc.name}）</button><button class="btn gold" data-stalllist="${x},${y}">上架物品</button></div>`;
+    }
+  } else {
+    html += `<div class="hint">空摊待租：<button class="btn gold" data-stallrent="${x},${y}">租 1 小时（1 ${_sc.name}）</button></div>`;
+  }
+  const items = d.items || [];
+  if (!items.length) html += `<div class="empty">${d.renter ? '摊主暂无上架物品' : '暂无摊主，快来租下这个摊位'}</div>`;
+  else html += items.map((it) => `<div class="row"><div class="lab">${esc(it.item_name)} ×${it.qty} <span class="tag">${it.price} ${_sc.icon||''}${_sc.name}/个</span><small> · ${esc(it.seller_name)}</small></div>`
+    + (it.seller_id && (function(){ try { return localStorage.getItem('mhxy_aid') === it.seller_id; } catch (_) { return false; } })()
+      ? `<button class="btn" data-stallunlist-id="${it.id}" data-sx="${x}" data-sy="${y}">下架</button>`
+      : `<button class="btn gold" data-stallbuy-id="${it.id}" data-sx="${x}" data-sy="${y}" ${_bal >= it.price * it.qty ? '' : 'disabled'}>买下 ${it.price * it.qty}${_sc.icon||''}${_sc.name}</button>`) + `</div>`).join('');
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
   openSheet(html);
 }
@@ -10518,11 +10522,39 @@ document.addEventListener('click', e => {
   else if ('mktrefresh' in d) sheetConsign('market', null, consignSec);
   else if (d.mktcat) { _mktCat = d.mktcat; sheetConsign('market', null, consignSec); }
   else if ('mktlogin' in d) { try { window.MHXY.panel(); } catch(e) {} }
-  else if (d.stallbuy !== undefined) { const _sx = +d.sx, _sy = +d.sy, _si = +d.stallbuy; const _items = stallGen(_sx, _sy); const _it = _items[_si]; if (_it) { const _scc = stallCur(_sx, _sy); const _cost = _it.price * _it.qty; const _sbal = stallBal(_scc.key); if (_sbal >= _cost) { if (_scc.key === 'xianyu') S.xianyu -= _cost; else if (_scc.key === 'gold') S.gold -= _cost; else S.ores[_scc.key] -= _cost; if (_it.kind === 'ore') { S.ores[_it.key] = (S.ores[_it.key]||0) + _it.qty; } else if (_it.kind === 'mat') { S.mats[_it.key] = (S.mats[_it.key]||0) + _it.qty; } _items.splice(_si, 1); commit(); sheetStall(_sx, _sy); } } }
-  else if (d.stallrent) { const _parts = String(d.stallrent).split(','); const _rx = +_parts[0], _ry = +_parts[1]; const _rent = STALL_RENT[_rx + ',' + _ry]; if (_rent && !stallRented(_rx, _ry)) { let _ok = false; if (_rent.kind === 'xianyu' && (S.xianyu||0) >= _rent.price) { S.xianyu -= _rent.price; _ok = true; } else if (_rent.kind === 'ore' && (S.ores[_rent.key]||0) >= _rent.price) { S.ores[_rent.key] -= _rent.price; _ok = true; } if (_ok) { if (!S.stalls) S.stalls = {}; S.stalls[_rx + ',' + _ry] = { until: Date.now() + 3600000, items: [] }; commit(); sheetStall(_rx, _ry); } } }
+  else if (d.stallbuy !== undefined) { /* v1085 NPC 摊货已下线，购买走 stallbuy-id */ }
+  else if (d.stallbuyId) { (async () => { // v1085 线上购买
+    const _sx = +d.sx, _sy = +d.sy;
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/stall/buy', { method: 'POST', body: { id: d.stallbuyId } });
+      if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetStall(_sx, _sy); }
+      else { const _e = (r.json || {}).error; toastLog('sys', _e === 'no_cur' ? '货币不足。' : _e === 'not_found' ? '该摊货已下架。' : _e === 'own_item' ? '不能买自己的摊货。' : '购买失败。'); }
+    } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
+  })(); }
+  else if (d.stallrent) { (async () => { // v1085 线上租摊
+    const _parts = String(d.stallrent).split(','); const _rx = +_parts[0], _ry = +_parts[1];
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/stall/rent', { method: 'POST', body: { tile: _rx + ',' + _ry } });
+      if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetStall(_rx, _ry); }
+      else { const _e = (r.json || {}).error; toastLog('sys', _e === 'rented' ? '该摊位已被别人租下。' : _e === 'no_cur' ? '租金货币不足。' : '租摊失败。'); }
+    } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
+  })(); }
   else if (d.stalllist) { const _p = String(d.stalllist).split(','); sheetStallList(+_p[0], +_p[1]); }
   else if (d.stallback) { const _p = String(d.stallback).split(','); sheetStall(+_p[0], +_p[1]); }
-  else if (d.stalldo) { const _p = String(d.stalldo).split(':'); const _kind = _p[0], _key = _p[1]; const _sx = +d.sx, _sy = +d.sy; const _q = $('sq_stall_' + _key); const _pr = $('sp_stall_' + _key); const _qty = _q ? Math.max(1, Math.floor(+_q.value)) : 1; const _price = _pr ? Math.max(1, Math.floor(+_pr.value)) : 1; const _cur = stallCur(_sx, _sy).key; const _have = _kind === 'ore' ? (S.ores[_key]||0) : (S.mats[_key]||0); if (_qty > 0 && _qty <= _have) { if (_kind === 'ore') S.ores[_key] -= _qty; else S.mats[_key] -= _qty; const _rk = _sx + ',' + _sy; if (!S.stalls) S.stalls = {}; if (!S.stalls[_rk]) S.stalls[_rk] = { until: Date.now() + 3600000, items: [] }; if (!S.stalls[_rk].items) S.stalls[_rk].items = []; const _nm = _kind === 'ore' ? ((ORES[_key]||{}).name || _key) : ((MATS[_key]||{}).name || _key); S.stalls[_rk].items.push({ kind: _kind, key: _key, name: _nm, qty: _qty, price: _price, cur: _cur }); commit(); sheetStall(_sx, _sy); } }
+  else if (d.stalldo) { (async () => { // v1085 线上上架
+    const _p = String(d.stalldo).split(':'); const _kind = _p[0], _key = _p[1]; const _sx = +d.sx, _sy = +d.sy; const _q = $('sq_stall_' + _key); const _pr = $('sp_stall_' + _key); const _qty = _q ? Math.max(1, Math.floor(+_q.value)) : 1; const _price = _pr ? Math.max(1, Math.floor(+_pr.value)) : 1; const _nm = _kind === 'ore' ? ((ORES[_key]||{}).name || _key) : ((MATS[_key]||{}).name || _key);
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/stall/list', { method: 'POST', body: { tile: _sx + ',' + _sy, kind: _kind, key: _key, name: _nm, qty: _qty, price: _price } });
+      if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetStall(_sx, _sy); }
+      else { const _e = (r.json || {}).error; toastLog('sys', _e === 'not_renter' ? '请先租下该摊位。' : _e === 'no_item' ? '物品不足。' : '上架失败。'); }
+    } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
+  })(); }
   else if (d.casino) { (async () => { const _choice = d.casino;
     let _sumGuess = 10; if (_choice==='sum') _sumGuess = Math.max(4, Math.min(17, Math.floor(+($('dice_sum')||{}).value||10)));
     const _sr = await casinoServerPlay('dice', { type:_choice, sum:_sumGuess });
@@ -10678,7 +10710,16 @@ document.addEventListener('click', e => {
   else if (d.stonePick !== undefined && typeof stoneGamblePick==='function') stoneGamblePick(+d.stonePick);
   else if (d.casinoBack !== undefined) { if (typeof sheetCasino==='function') sheetCasino(); }
   else if (d.casinoAgain) { const _ag = d.casinoAgain; if (_ag==='dice') casinoDice(); else if (_ag==='beast') casinoBeast(); else if (_ag==='slots') casinoSlots(); else if (_ag==='bowls') casinoBowls(); else if (_ag==='number') casinoNumber(); else if (_ag==='card') casinoCard(); }
-  else if (d.stallunlist) { const _p = String(d.stallunlist).split(','); const _ux = +_p[0], _uy = +_p[1], _ui = +_p[2]; const _rk = _ux + ',' + _uy; const _st = (S.stalls||{})[_rk]; if (_st && _st.items && _st.items[_ui]) { const _mi = _st.items.splice(_ui, 1)[0]; if (_mi.kind === 'ore') S.ores[_mi.key] = (S.ores[_mi.key]||0) + _mi.qty; else S.mats[_mi.key] = (S.mats[_mi.key]||0) + _mi.qty; commit(); sheetStall(_ux, _uy); } }
+  else if (d.stallunlistId) { (async () => { // v1085 线上下架
+    const _ux = +d.sx, _uy = +d.sy;
+    try {
+      await window.MHXY.syncNow();
+      const r = await window.MHXY.api('/api/stall/unlist', { method: 'POST', body: { id: d.stallunlistId } });
+      if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetStall(_ux, _uy); }
+      else toastLog('sys', '下架失败。');
+    } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
+  })(); }
   else if (d.mkdel) { (async () => { // v960 线上下架
     try {
       await window.MHXY.syncNow();
