@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1078</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1079</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10955,9 +10955,23 @@ window.showPlayersAt = function(x, y){
       var rl = (p.realm != null ? _realmName(p.realm) : '');
       var rc = _realmColor[p.realm|0] || '#999';
       var _initial = String(nm).slice(0, 1);
+      // v1079 优先显示玩家真实头像（图库ID对 window._avGallery）
+      var _avHtml = '';
+      try {
+        var _avId = String(p.avatar_set || '');
+        var _gal = window._avGallery || [];
+        var _found = null;
+        for (var _gi = 0; _gi < _gal.length; _gi++) { if (String(_gal[_gi].id) === _avId) { _found = _gal[_gi]; break; } }
+        if (_found && _found.data) {
+          _avHtml = '<img src="' + _found.data + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid ' + rc + '" onerror="this.style.display=\'none\'">';
+        }
+      } catch(_) {}
+      if (!_avHtml) {
+        _avHtml = '<span style="width:32px;height:32px;border-radius:50%;background:' + rc + '33;border:2px solid ' + rc + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:' + rc + '">' + _initial.replace(/</g, '&lt;') + '</span>';
+      }
       var _aid = String(p.accountId || '').replace(/'/g, '');
       html += '<div class="row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #333;cursor:pointer" onclick="window.showPlayerDetail(\'' + _aid + '\')">'
-        + '<span style="width:32px;height:32px;border-radius:50%;background:' + rc + '33;border:2px solid ' + rc + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:' + rc + '">' + _initial.replace(/</g, '&lt;') + '</span>'
+        + _avHtml
         + '<span style="flex:1"><b style="color:#7ec8ff">' + String(nm).replace(/</g, '&lt;') + '</b>'
         + '<span style="color:#666">[' + no + ']</span>'
         + '<span style="color:#999;font-size:12px"> ' + rl + ' Lv.' + lv + '</span></span>'
