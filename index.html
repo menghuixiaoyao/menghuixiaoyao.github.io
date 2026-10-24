@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1069</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1070</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10921,12 +10921,15 @@ window.shenshiGo = function(){
   try {
     var _realm = 0;
     try { var _sk = (window.M && M.saveKey) || 'mhxy_save'; var _raw = localStorage.getItem(_sk); if (_raw) _realm = (JSON.parse(_raw).realm|0) || 0; } catch(_) {}
-    if (_realm < 1) { if (typeof log === 'function') log('bad', '需练气境界才能使用神识'); return; }
+    if (_realm < 1) { if (typeof log === 'function') log('bad', '需练气境界才能使用神识'); else alert('需练气境界才能使用神识'); return; }
     window._ssRevealUntil = Date.now() + 10000;
-    if (typeof log === 'function') log('good', '🔍 神识探查中（10秒）：相邻格气息低于神识的玩家可见');
+    var _msg = '🔍 神识探查中（10秒）：相邻格气息低于神识的玩家可见';
+    if (typeof toastLog === 'function') toastLog('good', _msg);
+    else if (typeof log === 'function') log('good', _msg);
+    else alert(_msg);
     if (_realm >= 5 && typeof window.shenshiPanel === 'function') { window.shenshiPanel(); return; }
     if (typeof render === 'function') { try { render(); } catch(_) {} }
-  } catch(e) {}
+  } catch(e) { try { alert('神识探查出错：' + e.message); } catch(_) {} }
 };
 // v902 关键函数兜底（iOS Safari大文件偶发undefined）
 if (typeof window.doTogglePetLock !== 'function') {
