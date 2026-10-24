@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1079</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1080</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -10965,6 +10965,14 @@ window.showPlayersAt = function(x, y){
         if (_found && _found.data) {
           _avHtml = '<img src="' + _found.data + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid ' + rc + '" onerror="this.style.display=\'none\'">';
         }
+        // v1080 默认头像：用 AVATARS[gender][idx] 显示1800张里的
+        if (!_avHtml && p.avatar_idx != null && typeof AVATARS !== 'undefined') {
+          var _pg = (p.gender === 'f' ? 'f' : 'm');
+          var _avArr = AVATARS[_pg];
+          if (_avArr && _avArr[p.avatar_idx|0]) {
+            _avHtml = '<img src="' + _avArr[p.avatar_idx|0] + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid ' + rc + '" onerror="this.style.display=\'none\'">';
+          }
+        }
       } catch(_) {}
       if (!_avHtml) {
         _avHtml = '<span style="width:32px;height:32px;border-radius:50%;background:' + rc + '33;border:2px solid ' + rc + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:' + rc + '">' + _initial.replace(/</g, '&lt;') + '</span>';
@@ -11361,7 +11369,8 @@ async function ensurePresence(){
   if (!loggedIn()) return;
   var realm = curRealm();
   var _p0 = myPos();
-  await api('/api/world/register', { method:'POST', body:{ realm:realm, x:_p0.x, y:_p0.y } });
+  var _gdr = 'm'; try { _gdr = (typeof S !== 'undefined' && S && S.gender) ? S.gender : ((window.M && M.saveKey ? JSON.parse(localStorage.getItem(M.saveKey) || '{}').gender : '') || 'm'); } catch(_) {}
+  await api('/api/world/register', { method:'POST', body:{ realm:realm, x:_p0.x, y:_p0.y, gender:_gdr, avatar:(typeof S !== 'undefined' && S ? (S.avatar|0) : 0) } });
   if (M.hbTimer) clearInterval(M.hbTimer);
   M.hbTimer = setInterval(function(){
     if (!loggedIn()){ stopPresence(); return; }
