@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1082</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1083</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7948,8 +7948,38 @@ function sheetRankInfo(idx) {
 }
 function sheetRank(tab) {
   tab = tab || 'level';
-  // 线上榜单：不再使用离线NPC模拟
-  openSheet(`<h2>🏆 修仙榜单</h2><div class="hint">榜单已接入真人数据（开发中）。</div><div class="empty">真人榜单即将上线</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  // v1083 真人榜单：服务端现算排名
+  if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn()) {
+    openSheet(`<h2>🏆 修仙榜单</h2><div class="hint">真人榜单需登录联机后查看。</div><div class="empty">请先在联机面板登录</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+    return;
+  }
+  openSheet(`<h2>🏆 修仙榜单</h2><div class="hint">正在拉取真人数据…</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  MHXY.api('/api/rank/list?tab=' + encodeURIComponent(tab)).then(function(r){
+    if (!r.ok || !r.json || !r.json.ok) {
+      openSheet(`<h2>🏆 修仙榜单</h2><div class="hint">拉取失败，请稍后再试。</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+      return;
+    }
+    const list = r.json.list || [];
+    const myRank = r.json.myRank, myScore = r.json.myScore;
+    const valTxt = function(e){ return tab === 'level' ? (C.REALMS[e.realm] || '') + ' Lv.' + e.level : '<b class="y">' + e.score + '</b>'; };
+    let html = `<h2>🏆 修仙榜单</h2><div class="hint">共 ${r.json.total || 0} 位道友上榜${myRank ? ` · 你的排名：第 <b class="y">${myRank}</b> 名（${myScore}）` : ' · 你暂未上榜'}</div>`
+      + `<div class="grid2" style="margin-bottom:8px">` +
+      RANK_TABS.map(function(t){ return `<button class="btn${tab===t[0]?' gold':''}" data-ranktab="${t[0]}">${t[1]}</button>`; }).join('') +
+      `</div>`;
+    if (!list.length) html += `<div class="empty">暂无道友数据</div>`;
+    else html += list.map(function(e){
+      return `<div class="row"${e.isMe ? ' style="border:1px solid var(--gold);border-radius:8px"' : ''}>`
+        + `<div class="lab" style="display:flex;align-items:center;gap:6px"><b class="${e.rank <= 3 ? 'y' : ''}">${e.rank}</b>`
+        + `<span style="color:#7ec8ff">${String(e.username).replace(/</g, '&lt;')}</span><span style="color:#666">[${e.playerNo || '?'}]</span>`
+        + `${e.title ? `<span style="color:#999;font-size:12px">${String(e.title).replace(/</g, '&lt;')}</span>` : ''}`
+        + `<small>${C.REALMS[e.realm] || ''} Lv.${e.level}</small></div>`
+        + `<div>${valTxt(e)}</div></div>`;
+    }).join('');
+    html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
+    openSheet(html);
+  }).catch(function(){
+    openSheet(`<h2>🏆 修仙榜单</h2><div class="hint">拉取失败（网络），请稍后再试。</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+  });
   return;
   const list = C.getRankList(S, tab);
   _rankCache = list; _rankTab = tab;
