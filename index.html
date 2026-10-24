@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1086</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1087</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5567,7 +5567,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           // v973 真人世界聊天：显示服务端消息
           const _srv = (window._srvChat || []).slice(-20);
           const _dispName = m => { if (m.rname) return m.rname; if (m.roleName) return m.roleName; try { const ps = window._worldPlayers || []; for (const p of ps) { if (p && p.player_no != null && m.playerNo != null && String(p.player_no) === String(m.playerNo) && p.username) return p.username; } } catch(_) {} return m.n || m.username || '道友'; }; // v1010 道号优先
-          msgs = _srv.map(m => { var _xh = (m.xHandle && !m.xHidden && !m.x_hide) ? '<span style="color:#1d9bf0">@' + esc(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : (((m.xHidden || m.x_hide) && m.xVerified) ? '<span style="color:#1d9bf0">✓</span> ' : ''); return `<div class="chat-msg"><b style="color:#7ec8ff">${_xh}${esc(_dispName(m))}</b>：${esc(m.t || m.text)}</div>`; }).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
+          msgs = _srv.map(m => { var _xh = (m.xHandle && !m.xHidden && !m.x_hide) ? '<span style="color:#1d9bf0">@' + esc(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : (((m.xHidden || m.x_hide) && m.xVerified) ? '<span style="color:#1d9bf0">✓</span> ' : ''); var _tx = m.t || m.text || ''; var _ex = ''; var _mt = /【观礼#([0-9a-z]+)\|([^|]*)\|([^|]*)\|([^】]*)】/.exec(_tx); if (_mt) _ex += ' <button class="btn sm" data-spectate="' + _mt[1] + '" data-specmeta="' + esc(_mt[2]) + '|' + esc(_mt[3]) + '|' + esc(_mt[4]) + '">👀 观礼</button>'; var _rp = /【红包#([0-9a-z]+)/.exec(_tx); if (_rp) _ex += ' <button class="btn sm" data-redpacket="' + _rp[1] + '">🧧 抢红包</button>'; return `<div class="chat-msg"><b style="color:#7ec8ff">${_xh}${esc(_dispName(m))}</b>：${esc(_tx)}${_ex}</div>`; }).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
           // 确保连接 WS 并拉取历史
           try { if (typeof chatWsConnect === 'function') chatWsConnect(); } catch(_) {}
           try { if (typeof chatHistoryToCache === 'function') chatHistoryToCache(); } catch(_) {}
@@ -9207,18 +9207,24 @@ function doPoolDonateGo(k) {
   }).catch(() => toastLog('bad', '捐献失败（网络）'));
 }
 function doRedpacket(id) {
-  if ((S.redSeen || []).indexOf(id) >= 0) { toastLog('sys', '这个红包你已经抢过了'); return; }
+  // v1087：本地 redSeen 只作成功后的备忘，不再拦截重试（服务端是唯一真相；
+  // 旧版失败也进 redSeen，导致 v1082 之前 404 过的包永远点不开）
   if (!window.MHXY || !MHXY.api) { toastLog('bad', '红包通道尚未开放'); return; }
   MHXY.api('/api/redpacket/claim', { method: 'POST', body: { id } }).then(r => {
     const j = r && r.json;
     S.redSeen = S.redSeen || [];
     if (j && j.ok) {
-      S.redSeen.push(id);
+      if (S.redSeen.indexOf(id) < 0) S.redSeen.push(id);
       const kind = j.kind, amt = j.amount|0 || 1;
       if (kind === 'gold') S.gold = (S.gold|0) + amt; else if (kind === 'xy') S.xianyu = (S.xianyu|0) + amt; else if (kind && RP_KINDS[kind]) { S.ores = S.ores || {}; S.ores[kind] = (S.ores[kind]|0) + amt; }
       commit();
       toastLog('gold', `🧧 抢到了！${RP_KINDS[kind] ? RP_KINDS[kind].name : '红包'} +${amt}`);
-    } else { S.redSeen.push(id); commit(); toastLog('bad', (j && j.error) || '来晚了，红包已被抢走'); }
+    } else {
+      const _e = (j && j.error) || '';
+      if (_e === 'already_claimed' && S.redSeen.indexOf(id) < 0) { S.redSeen.push(id); commit(); }
+      const _msg = _e === 'already_claimed' ? '这个红包你已经抢过了' : _e === 'empty' ? '来晚了，红包已被抢完' : _e === 'expired' ? '红包已过期' : _e === 'sender_cannot_claim' ? '不能抢自己的红包' : _e === 'not_found' ? '红包不存在（可能已过期回收）' : _e === 'ambiguous_id' ? '红包识别异常，稍后再试' : '抢红包失败';
+      toastLog('bad', _msg);
+    }
   }).catch(() => toastLog('bad', '抢红包失败（网络）'));
 }
 function doSpectate(evt, meta) {
