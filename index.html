@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1087</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1088</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -661,11 +661,22 @@ function bagCap(S) { return Math.min(160, 5 * Math.pow(2, S.rings || 0)); } // �
 function itemCap(S) { return (100 + 100 * (S.pouch || 0)) * Math.pow(2, S.rings || 0) * Math.pow(3, S.spaceS || 0) * Math.pow(4, S.spaceL || 0); } // 物品上限：默认100，小型储物袋每只+100，储物戒指每枚×2，储物空间(小)×3，储物空间(大)×4
 function itemCount(S) { let n = 0; for (const k of ['mats','ores','prey','eggs','dishes','elixirs','meds','food']) { const o = S[k]; if (o) for (const k2 in o) n += Math.floor(o[k2] || 0); } for (const k of ['pages','expBooks','skillPages','skillBooks']) { const o = S[k]; if (o) for (const k2 in o) n += Math.floor(o[k2] || 0); } return n; }
 function gainItem(S, cat, key, n) { n = Math.floor(+n || 0); if (n <= 0) return 0; const cap = itemCap(S), cur = itemCount(S); if (cur >= cap) return 0; const canAdd = Math.min(n, cap - cur); if (canAdd > 0) { S[cat][key] = (S[cat][key] || 0) + canAdd; } return canAdd; } // 超出上限部分直接消失
+const RACES = { // v1088 九族 + 天赋（种族独立选择，不跟头像走；选定锁定，轮回可重选）
+  human: { name: '人族', icon: '🧑', talent: '悟道', desc: '突破成功率 +5%' },
+  yao: { name: '妖族', icon: '🦊', talent: '灵觉', desc: '灵宠孵化、抓宠成功率 +5%' },
+  mo: { name: '魔族', icon: '👹', talent: '煞体', desc: '攻击 +3%，杀孽扣的功德减半' },
+  shen: { name: '神族', icon: '✨', talent: '神血', desc: '突破压条结算 +100%' },
+  ling: { name: '灵族', icon: '🌿', talent: '草木亲和', desc: '炼丹、采集成功率 +5%' },
+  yi: { name: '异族', icon: '💪', talent: '强健', desc: '生命上限 +5%' },
+  ming: { name: '冥族', icon: '🌑', talent: '阴体', desc: '渡劫失败、劳作的折寿减半' },
+  mech: { name: '机械', icon: '⚙️', talent: '不知疲倦', desc: '体力恢复 +20%' },
+  traveler: { name: '穿越者', icon: '🌠', talent: '见多识广', desc: '奇遇概率 +5%，商会买东西 −5%' },
+};
 function newState() {
   const attrs = {}; ATTRS.forEach(k => attrs[k] = K.START_ATTR);
   const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
     stats: { adv: 0, advWin: 0, pk: 0, pkWin: 0, brew: 0, brewOk: 0, checkins: 0 }, log: [], hpCur: null, curseN: 0,
-    wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null }; // v131 性别/头像；v263 仙缘系统；v264 结婚
+    wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链
   S.mana = manaMax(S); grantStarter(S); return S;
 }
 function normalize(S) {
@@ -680,6 +691,11 @@ function normalize(S) {
   if (!(S.btTotal >= 0)) S.btTotal = 0; S.btTotal = Math.floor(S.btTotal); // v12 突破成功累计
   if (!(S.yinQi >= 0)) S.yinQi = 0; S.yinQi = Math.floor(S.yinQi); // v116 引气入体
   if (S.gender !== 'm' && S.gender !== 'f') S.gender = null; // v131 性别
+  if (S.race === undefined) S.race = null; // v1088 种族
+  if (S._avatarPicked === undefined) S._avatarPicked = true; // v1088 老号默认已选头像
+  if (S._onboarded === undefined) S._onboarded = !!((S.stats && S.stats.checkins) || (S.level|0) > 1 || (S.realm|0) > 0); // v1088 老号有进度即视为已完成建号
+  if (S._reincChain === undefined) S._reincChain = false; // v1088 轮回重选链
+  if (S._reincStep === undefined) S._reincStep = null;
   if (!(S.avatar >= 0) || S.avatar > 299) S.avatar = 0; S.avatar = Math.floor(S.avatar); // v131 头像；v625 上限299
   if (S.avatarSet !== 'r' && S.avatarSet !== 'g' && S.avatarSet !== 's') S.avatarSet = 'r'; // v1015 头像套
   if (!(S.merit >= 0)) S.merit = 0; S.merit = Math.floor(S.merit); // v893 功德
@@ -908,7 +924,7 @@ function doManualLevelUp(S) {
 }
 function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n; S.qixi = (S.qixi|0) + n * 2;  try { if (typeof claimFlowerSS === 'function') { const _g = claimFlowerSS(S); if (_g > 0) { try { log('good', `🌸 花开加神识+${_g}`); } catch(_){} } } } catch(_){} return n; } // v944 轮回清零，无永久累积 神识+1/级，气息+2/级 神识+2/级，轮回清零，与气息对称 // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v932 神识+5/级不清零（花可跨世累积）；v928 气息+2/级，轮回清零
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
-const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); r = Math.min(0.95, Math.max(0.01, r * (1 + fateMod(S, 'break')))); if (S.tabooAwake) r = Math.min(0.95, r + 0.05); return r; }; // v1013 禁忌苏醒 // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
+const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); r = Math.min(0.95, Math.max(0.01, r * (1 + fateMod(S, 'break')))); if (S.tabooAwake) r = Math.min(0.95, r + 0.05); if (S.race === 'human') r = Math.min(0.95, r + 0.05); return r; }; // v1013 禁忌苏醒；v1088 人族悟道 // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
 const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {q, opts, ans}
   { q: '新入仙途的道友，初始有几点体力？', opts: ['3 点', '5 点', '10 点', '20 点'], ans: 1 },
@@ -1205,7 +1221,7 @@ function finishThunderBattle() {
   if (!win) {
     S.thunderOk = false;
     const _ds = applyFailState(S, fromRealm);
-    const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10));
+    const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * (S.race === 'ming' ? 0.05 : 0.10))); // v1088 冥族阴体：渡劫失败折寿减半
     S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost);
     log('bad', `⚡ 倒在天雷之下，突破失败……道途已断，沦为【${_ds || S.degraded}】（卡9级后期），折寿 <span class="r">${lifeLost}</span> 年。`);
     afterAct(); commit(); render();
@@ -1250,7 +1266,7 @@ function finishDemonBattle(_S) { // v814 S跨script块取不到，改传参
     try {
       S.thunderOk = false;
       const _ds = applyFailState(S, fromRealm);
-      const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10));
+      const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * (S.race === 'ming' ? 0.05 : 0.10))); // v1088 冥族阴体：渡劫失败折寿减半
       S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost);
       log('bad', `👹 心魔难斩，突破失败……道途已断，沦为【${_ds || S.degraded}】（卡9级后期），折寿 <span class="r">${lifeLost}</span> 年。`);
     } catch(_) {}
@@ -1297,8 +1313,8 @@ function gradeFromFull(full) { // v176 按充满度定档（供 tribGrade / 天�
   for (let i = 0; i < K.TRIB_GRADE_FULL.length; i++) if (full >= K.TRIB_GRADE_FULL[i]) { gi = i; break; }
   return { gi, name: K.TRIB_GRADES[gi], mult: K.TRIB_GRADE_MULT[gi], full };
 }
-function tribGrade(S) { // v175 金丹/元婴品质：按突破前灵气条/仙力充满度定档（压条 900% 圆满）
-  return gradeFromFull(tribFull(S));
+function tribGrade(S) { // v175 金丹/元婴品质：按突破前灵气条/仙力充满度定档（压条 900% 圆满）；v1088 神族神血：压条结算 +100%（full 单位：1 = 100%，故 +1）
+  return gradeFromFull(tribFull(S) + (S.race === 'shen' ? 1 : 0));
 }
 /* ---------- v867 灵根/法则 ---------- */
 const LINGGEN_ELEMS = ['金','木','水','火','土'];
@@ -1418,7 +1434,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
 function finishTribQuiz(S, quiz, answers) { // v174 心魔问心结算：答对 TRIB_QUIZ_NEED 道即过；v739 答题后50%遇心魔战斗；v746 补thunder.koWin
   const qs = (quiz && quiz.qs) || []; let correct = 0; const detail = qs.map((qq, i) => { const hit = (answers[i] | 0) === (qq.ans | 0); if (hit) correct++; return hit; });
   const trib = { quizMet: true, quizCorrect: correct, quizDetail: detail, jackpot: (quiz && quiz.jackpot) || null, thunder: { koWin: !!(quiz && quiz.koWin) } };
-  if (correct < K.TRIB_QUIZ_NEED) { const _fr = (S.realm|0); const _ds = applyFailState(S, _fr); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * 0.10)); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'demon-quiz', trib, lifeLost, degraded: _ds }; } // v589 失败进降级状态
+  if (correct < K.TRIB_QUIZ_NEED) { const _fr = (S.realm|0); const _ds = applyFailState(S, _fr); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * (S.race === 'ming' ? 0.05 : 0.10))); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'demon-quiz', trib, lifeLost, degraded: _ds }; } // v589 失败进降级状态；v1088 冥族阴体：渡劫失败折寿减半
   const _demonP = quiz.koWin ? 0.7 : 0.5; // v739 答题后遇心魔战斗：击溃雷云70%，否则50%
   if (Math.random() < _demonP) { trib.demonAfterQuiz = true; return { ok: null, pending: 'demon', trib, fromRealm: quiz.fromRealm | 0 }; }
   return applyBtSuccess(S, quiz.fromRealm | 0, trib);
@@ -1436,7 +1452,7 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
     if ((fromRealm|0) >= 2) { // v172 筑基→金丹起：判定成功后先渡雷劫，雷劫后概率遇心魔劫
       trib = {};
       if ((fromRealm === 2 || fromRealm === 3) && tribFull(S) <= 2 && R() < K.TRIB_JACKPOT_P) { // v176 天劫异变：压条≤200% 时 1% 撞上高阶雷劫；v638 中品/上品基础最高到完美
-        const _baseGi = gradeFromFull(tribFull(S)).gi; // 0圆满1完美2上品3中品4下品
+        const _baseGi = tribGrade(S).gi; // 0圆满1完美2上品3中品4下品（v1088 神族神血走有效压条）
         const _pool = [3, 2, 1].filter(gi => gi < _baseGi); // 只取比基础高的中品/上品/完美，不含圆满
         if (_pool.length > 0) {
           const _gi = _pool[Math.floor(Math.random() * _pool.length)];
@@ -1580,7 +1596,7 @@ function useLu(S, k, n) { // 服用灵露：每点随机加到一项属性
 
 function canCheckin(S) { return S.lastCheckin !== todayStr(); }
 const vigorGain = S => K.VIGOR_BASE + Math.floor(S.level / 2), vigorCap = S => 10;
-function checkinAmount(S) { const totalLv = (S.realm|0) * 10 + (S.level|0); return K.CHECKIN_STAMINA + (totalLv - 1) * K.CHECKIN_PER_LV; } // 按累计总等级（突破不重置）
+function checkinAmount(S) { const totalLv = (S.realm|0) * 10 + (S.level|0); const base = K.CHECKIN_STAMINA + (totalLv - 1) * K.CHECKIN_PER_LV; return S.race === 'mech' ? Math.floor(base * 1.2) : base; } // 按累计总等级（突破不重置）；v1088 机械不知疲倦：签到体力 +20%
 function checkin(S, force) {
   if (!force && !canCheckin(S)) return { ok: false };
   if (S.afk) S.afk = null; // AFK由doCheckin处理结算，Core只清空标记
@@ -1716,7 +1732,7 @@ function die(S, cause) {
 function cureStatus(S, k) { if (k === 'bleed' || k === 'poison') { S.status[k] = false; S.status[k + 'Base'] = S.status[k + 'Frac'] = 0; } else S.status[k] = 0; }
 const activeStatus = S => Object.keys(STATUS).filter(k => hasSt(S, k));
 function luck(S) { return (S.hunger >= K.WELL_FED ? K.LUCK_FED : 1) * (hasSt(S, 'depress') ? K.DEPRESS_LUCK : 1) * (S.buff && S.buff.k === 'luck' ? S.buff.v : 1) * (1 + (activeSets(S).luck || 0)); }
-function hungerDown(S, n, ops) { ops = ops|0; const _realm = S.realm|0; if (_realm < 8 && ops > 0 && !S.dead) { if ((S.hunger|0) <= 0) { S._hungerOps = (S._hungerOps|0) + ops; const _th = [1, 2, 3, 4, 10, 20, 40, 80][_realm] || 1; const _yr = [1, 2, 4, 8, 20, 40, 80, 160][_realm] || 1; if (S._hungerOps >= _th) { const _c = Math.floor(S._hungerOps / _th); S._hungerOps -= _c * _th; const _lp = _c * _yr; S.lifespan = Math.max(0, (S.lifespan|0) - _lp); if (S.lifespan <= 0 && !S.dead) S.forceReinc = true; try{log('warn', `🍗 饱食为0！饥饿劳作扣 <span class="r">${_lp}年寿元</span>（剩余${S.lifespan|0}年）`);}catch(e){} } } else S._hungerOps = 0; } S.hunger = Math.max(0, S.hunger - n); }
+function hungerDown(S, n, ops) { ops = ops|0; const _realm = S.realm|0; if (_realm < 8 && ops > 0 && !S.dead) { if ((S.hunger|0) <= 0) { S._hungerOps = (S._hungerOps|0) + ops; const _th = (S.race === 'ming' ? 2 : 1) * ([1, 2, 3, 4, 10, 20, 40, 80][_realm] || 1); /* v1088 冥族阴体：饥饿劳作折寿减半（阈值翻倍） */ const _yr = [1, 2, 4, 8, 20, 40, 80, 160][_realm] || 1; if (S._hungerOps >= _th) { const _c = Math.floor(S._hungerOps / _th); S._hungerOps -= _c * _th; const _lp = _c * _yr; S.lifespan = Math.max(0, (S.lifespan|0) - _lp); if (S.lifespan <= 0 && !S.dead) S.forceReinc = true; try{log('warn', `🍗 饱食为0！饥饿劳作扣 <span class="r">${_lp}年寿元</span>（剩余${S.lifespan|0}年）`);}catch(e){} } } else S._hungerOps = 0; } S.hunger = Math.max(0, S.hunger - n); }
 function loyalUp(p, chance, lo, hi) { if (R() < chance) { const g = ri(lo, hi); p.loyal = Math.min(100, p.loyal + g); return g; } return 0; }
 const staGain = (S, n) => n;
 let poisonAcc = 0; // 中毒期间消耗体力损失的生命（UI 读取后清零）
@@ -1942,11 +1958,11 @@ function eatFood(S, kind, k, n, petId) { // 吃肉/蛋：恢复饱食度（肉�
   store[k] -= n; if (!store[k]) delete store[k];
   const res = { n, hunger: it.hunger * n, sta: 0, pet, loyal: 0, cured: false };
   if (pet) { pet.hunger = Math.min(100, pet.hunger + res.hunger); for (let i = 0; i < n; i++) res.loyal += loyalUp(pet, K.FEED_LOYAL_P, 2, 4); if (hasSt(S, 'depress') && R() < K.DEPRESS_PET_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
-  else { S.hunger = Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = staGain(S, n * it.sta); S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 进食出关（不足1分钟，无收益）。`); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
+  else { S.hunger = Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 进食出关（不足1分钟，无收益）。`); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
   return res;
 }
 function useMed(S, k) { const m = MEDS[k]; if (!m || !(S.meds[k] > 0)) return { ok: false, why: 'none' }; if (m.cure === 'curse') { if (!((S.curseN|0) > 0)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; S.curseN = (S.curseN|0) - 1; return { ok: true, cure: 'curse' }; } if (!hasSt(S, m.cure)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); return { ok: true, cure: m.cure }; }
-function fightAttrs(S, adv) { const a = adv ? battleAttrs(S) : Object.assign({}, S.attrs); gearAdd(S, a); if (S.buff && AN[S.buff.k]) a[S.buff.k] = Math.round(a[S.buff.k] * (1 + S.buff.v)); if (hasSt(S, 'depress')) ATTRS.forEach(k => a[k] = Math.max(1, Math.round(a[k] * K.DEPRESS_ATTR))); const _shaN = S.inv.sha|0; if (_shaN > 0) { if (S.shaMode === 'def') a.def = Math.max(1, Math.round(a.def * (1 + _shaN / 100))); else a.str = Math.max(1, Math.round(a.str * (1 + _shaN / 100))); } try { const _fzb = faZeBonus(S); for (const k in _fzb) a[k] = Math.max(1, Math.round(a[k] * (1 + _fzb[k]))); } catch(_) {} try { const _swb = swordBonus(S); for (const k in _swb) a[k] = Math.max(1, Math.round(a[k] * (1 + _swb[k]))); } catch(_) {} return a; } // v867 法则圆满加成
+function fightAttrs(S, adv) { const a = adv ? battleAttrs(S) : Object.assign({}, S.attrs); gearAdd(S, a); if (S.buff && AN[S.buff.k]) a[S.buff.k] = Math.round(a[S.buff.k] * (1 + S.buff.v)); if (hasSt(S, 'depress')) ATTRS.forEach(k => a[k] = Math.max(1, Math.round(a[k] * K.DEPRESS_ATTR))); const _shaN = S.inv.sha|0; if (_shaN > 0) { if (S.shaMode === 'def') a.def = Math.max(1, Math.round(a.def * (1 + _shaN / 100))); else a.str = Math.max(1, Math.round(a.str * (1 + _shaN / 100))); } try { const _fzb = faZeBonus(S); for (const k in _fzb) a[k] = Math.max(1, Math.round(a[k] * (1 + _fzb[k]))); } catch(_) {} try { const _swb = swordBonus(S); for (const k in _swb) a[k] = Math.max(1, Math.round(a[k] * (1 + _swb[k]))); } catch(_) {} if (S.race === 'mo') a.str = Math.max(1, Math.round(a.str * 1.03)); return a; } // v867 法则圆满加成；v1088 魔族煞体：攻击 +3%
 const AURA_SETS = ['def', 'heal']; // 防御套 / 治愈（生命）套：同时作用于队友（目前为出战灵宠，将来组队的队友也传入 allies）
 const setDefBoost = (def, v) => v ? Math.round(def * v) : 0; // 防御套：按各自的防御提升百分比
 function applySetDef(f) { if (!f || f.defBoost != null) return; const v = f.sets && f.sets.def; f.defBase = f.a.def; f.defBoost = setDefBoost(f.a.def, v); f.a.def += f.defBoost; } // 只加一次；f.a 是副本，不改存档
@@ -1956,7 +1972,7 @@ function shareAura(owner, allies) {
     if (a.isPet && a.psk) for (const sk of a.psk) if (sk !== 'luck' && !a.pset[sk] && owner.sets && owner.sets[sk]) a.sets[sk] = owner.sets[sk]; // 灵宠有自身套装用自己的，否则与主人同套装一致
     a.auraFrom = owner; applySetDef(a); });
 }
-function playerFighter(S, adv) { const f = fighter('你', fightAttrs(S, adv), true, S.skills, activePets(S)); const _peakHp = Math.max(1, Math.floor(C.bumpPeak(S) * 5)); if (f.maxHp < _peakHp) { f.maxHp = _peakHp; f.hp = Math.max(f.hp, Math.min(_peakHp, f.hp)); } if (C.useFali(S)) { f.maxMp = Math.max(1, Math.floor(C.manaMax(S))); f.mp = Math.max(0, Math.floor(S.mana)); } if (S.hpCur != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.floor(S.hpCur))); f.xbOn = (S.xianBurstOn|0); f.xbPts = (S.xianBurst|0); if (f.xbOn && f.xbPts > 0) { f._xb = 1 + f.xbPts * 0.2; f._xbDef = 1 + f.xbPts * 0.2; } if (adv && (S.advVit|0) > 0) { const _av = S.advVit|0, _avHp = _av * 5; f.a.vit += _av; f.maxHp += _avHp; f.hp = Math.min(f.maxHp, f.hp + _avHp); } f.burnBloodTier = Math.min(10, S.burnBloodTier|0) || (S.burnBlood ? 1 : 0); f.burnTier = Math.min(10, S.burnTier|0) || (S.burnSpirit ? 1 : 0); f.burnLife = 0; f.S = S; for (const _pp of (f.pets || [])) _pp.biteMult = tameBiteMult(S); f.sets = activeSets(S); f.elixirs = adv ? null : S.elixirs; f.wxPow = S.wxPow; f.wxRes = S.wxRes; applySetDef(f); shareAura(f, f.pets || []); if (S.buff && AN[S.buff.k] && --S.buff.left <= 0) S.buff = null; try { const _rl6 = equipRules(S); f.ruleBumie = _rl6.includes('bumie'); f.ruleShiling = _rl6.includes('shiling'); f.ruleLianzhu = _rl6.includes('lianzhu'); f.ruleBeishui = _rl6.includes('beishui'); } catch(_) {} // v1006 法宝规则
+function playerFighter(S, adv) { const f = fighter('你', fightAttrs(S, adv), true, S.skills, activePets(S)); const _peakHp = Math.max(1, Math.floor(C.bumpPeak(S) * 5)); if (f.maxHp < _peakHp) { f.maxHp = _peakHp; f.hp = Math.max(f.hp, Math.min(_peakHp, f.hp)); } if (S.race === 'yi') { const _om = f.maxHp; f.maxHp = Math.floor(_om * 1.05); if (f.hp >= _om) f.hp = f.maxHp; } /* v1088 异族强健：生命上限 +5% */ if (C.useFali(S)) { f.maxMp = Math.max(1, Math.floor(C.manaMax(S))); f.mp = Math.max(0, Math.floor(S.mana)); } if (S.hpCur != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.floor(S.hpCur))); f.xbOn = (S.xianBurstOn|0); f.xbPts = (S.xianBurst|0); if (f.xbOn && f.xbPts > 0) { f._xb = 1 + f.xbPts * 0.2; f._xbDef = 1 + f.xbPts * 0.2; } if (adv && (S.advVit|0) > 0) { const _av = S.advVit|0, _avHp = _av * 5; f.a.vit += _av; f.maxHp += _avHp; f.hp = Math.min(f.maxHp, f.hp + _avHp); } f.burnBloodTier = Math.min(10, S.burnBloodTier|0) || (S.burnBlood ? 1 : 0); f.burnTier = Math.min(10, S.burnTier|0) || (S.burnSpirit ? 1 : 0); f.burnLife = 0; f.S = S; for (const _pp of (f.pets || [])) _pp.biteMult = tameBiteMult(S); f.sets = activeSets(S); f.elixirs = adv ? null : S.elixirs; f.wxPow = S.wxPow; f.wxRes = S.wxRes; applySetDef(f); shareAura(f, f.pets || []); if (S.buff && AN[S.buff.k] && --S.buff.left <= 0) S.buff = null; try { const _rl6 = equipRules(S); f.ruleBumie = _rl6.includes('bumie'); f.ruleShiling = _rl6.includes('shiling'); f.ruleLianzhu = _rl6.includes('lianzhu'); f.ruleBeishui = _rl6.includes('beishui'); } catch(_) {} // v1006 法宝规则
   f.bleed = !!S.status.bleed; f.poison = hasSt(S, 'poison') ? 999 : 0; f.pre = { bleed: f.bleed, poison: f.poison > 0 }; return f; }
 function carryOut(S, f, res) { // 战斗中新得的流血/中毒：胜利不带，战败100%带出
   if (res.win) return;
@@ -1970,7 +1986,7 @@ function gatherProbs(S, kind) {
   ks.forEach((k, i) => out[k] = g.items[k].p + (g.even ? 0 : i === 0 ? -(ks.length - 2) * b : i >= 2 ? b : 0)); // 药草等概率，不受属性影响；第 3 档起每档 +b，从第 1 档扣除
   return out;
 }
-function gatherCrit(S, kind) { return Math.min(K.MINE_CRIT_MAX, S.attrs[GATHER[kind].attr] * K.MINE_CRIT_PER_STR) * luck(S); }
+function gatherCrit(S, kind) { return Math.min(K.MINE_CRIT_MAX, S.attrs[GATHER[kind].attr] * K.MINE_CRIT_PER_STR) * luck(S) + (S.race === 'ling' ? 0.05 : 0); } // v1088 灵族草木亲和：采集成功率 +5%
 function gatherCount(S, kind) { // 每次得 1 件；暴击时 2~5 件（看书每次固定 1 张）
   if (GATHER[kind].single || R() >= gatherCrit(S, kind)) return 1;
   const q = Math.min(K.MINE_MORE_MAX, K.MINE_MORE_BASE + S.attrs[GATHER[kind].attr] * K.MINE_MORE_PER_STR);
@@ -1993,7 +2009,7 @@ function gather(S, kind, n) { // 返回每次的物品列表，如 [['iron'], ['
       if (S.hpCur <= 0) { C.die(S, 'poison'); out.died = true; break; } } if (S.dead) { out.died = true; break; } S.attrs[g.attr] += 1; hungerDown(S, K.HUNGER_ACT, 1);
     if (kind === 'hunt' && R() < meatChance(S)) { const m = got[0]; if (m && gainItem(S, 'food', m, 1) > 0) { got.meat = m; (out.meat = out.meat || {})[m] = (out.meat[m] || 0) + 1; } }
     if (kind === 'farm' && R() < premiumChance(S)) { const m = rollTier(LU, S.attrs.def * luck(S)); if (gainItem(S, g.store, m, 1) > 0) { got.premium = m; (out.premium = out.premium || {})[m] = (out.premium[m] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } // v433 额外掉落同样受背包上限限制
-    if (kind === 'egg' && R() < K.PET_EGG_CHANCE * luck(S)) { S.petEggs++; got.petEgg = 1; out.petEgg = (out.petEgg || 0) + 1; }
+    if (kind === 'egg' && R() < K.PET_EGG_CHANCE * luck(S) + (S.race === 'yao' ? 0.05 : 0)) { S.petEggs++; got.petEgg = 1; out.petEgg = (out.petEgg || 0) + 1; } // v1088 妖族灵觉：掏到灵宠蛋概率 +5%
     if (kind === 'mine' && R() < spiritChance(S)) { const sp = rollTier(spTiers(), S.attrs.str * luck(S)); if (gainItem(S, g.store, sp, 1) > 0) { got.spirit = sp; (out.spirit = out.spirit || {})[sp] = (out.spirit[sp] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } // v433 额外掉落同样受背包上限限制
     if (kind === 'read' && R() < skillPageChance(S)) { const sk = pick(Object.keys(SKILLS)); if (gainItem(S, 'skillPages', sk, 1) > 0) { got.skillPage = sk; (out.skillPage = out.skillPage || {})[sk] = (out.skillPage[sk] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } // v433 额外掉落同样受背包上限限制
     out.push(got);
@@ -2097,7 +2113,7 @@ function lifeChoiceMax(S) { const r = S.realm | 0, lv = S.level | 0; if (r >= 12
 const lifeAttrRate = (S, k) => Math.min(K.LIFE_ATTR_RATE_MAX, S.attrs[LIFE_SKILLS[k].attr] * K.LIFE_ATTR_RATE);
 const lifeAttrQ = (S, k) => Math.min(K.LIFE_ATTR_Q_MAX, S.attrs[LIFE_SKILLS[k].attr] * K.LIFE_ATTR_Q);
 function gainLifeXp(S, k, xp) { const L = lifeOf(S, k); L.xp += xp; let up = 0; while (L.xp >= alcNeed(L.lv)) { L.xp -= alcNeed(L.lv); L.lv++; up++; } return up; }
-function lifeRate(S, k) { return k === 'alc' ? alcRate(S) : clamp(K.LIFE_BASE_RATE + (lifeOf(S, k).lv - 1) * K.LIFE_RATE_PER_LV + lifeAttrRate(S, k), 0, K.LIFE_RATE_MAX); }
+function lifeRate(S, k) { return k === 'alc' ? alcRate(S) : clamp(K.LIFE_BASE_RATE + (lifeOf(S, k).lv - 1) * K.LIFE_RATE_PER_LV + lifeAttrRate(S, k) + (k === 'tame' && S.race === 'yao' ? 0.05 : 0), 0, K.LIFE_RATE_MAX); } // v1088 妖族灵觉：驯兽成功率 +5%
 function lifeQProbs(S, k) { const q3 = Math.min(K.LIFE_Q3_MAX, K.LIFE_Q3_BASE + lifeOf(S, k).lv * K.LIFE_Q3_PER_LV + lifeAttrQ(S, k)) * luck(S), q2 = Math.min(K.LIFE_Q2, 1 - q3); return { q3, q2, q1: Math.max(0, 1 - q3 - q2) }; }
 function rollQ(S, k) { const p = lifeQProbs(S, k), x = R(); return x < p.q3 ? 3 : x < p.q3 + p.q2 ? 2 : 1; }
 const haveNeed = (S, need, times) => need.every(([st, k, n]) => (S[st][k] || 0) >= n * (times || 1));
@@ -2133,7 +2149,7 @@ function craft(S, skill, key, opt) { // 烹饪 / 锻造 / 炼金：1 活力；�
 function eatDish(S, key, n) { // 吃菜：饱食 + 体力（死亡中不回体力）；精良/极品附带增益（覆盖旧增益）
   const d = dishOf(key); if (!d) return null; n = Math.min(n || 1, S.dishes[key] || 0); if (n <= 0) return null;
   S.dishes[key] -= n; if (!S.dishes[key]) delete S.dishes[key];
-  S.hunger = Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : dishSta(d.d, d.q) * n; S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 进食出关（不足1分钟，无收益）。`); }
+  S.hunger = Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 进食出关（不足1分钟，无收益）。`); }
   let buff = null; if (d.q >= 2) { buff = d.buff === 'luck' ? { k: 'luck', v: K.BUFF_LUCK[d.q], left: K.BUFF_ACTS, src: d.name } : { k: d.buff, v: K.BUFF_ATTR[d.q], left: K.BUFF_FIGHTS, src: d.name }; S.buff = buff; }
   return { n, hunger: d.hunger * n, sta, buff, d };
 }
@@ -2208,7 +2224,7 @@ function feedBeastPill(S, q) { // 喂食灵兽丹：出战灵宠得经验（可�
 
 /* ---------- 炼药 ---------- */
 const boostOf = (lu, sp) => ((lu && LU[lu] && LU[lu].alc) || 0) + ((sp && ORES[sp] && ORES[sp].alc) || 0);
-function alcRate(S, lu, sp) { const base = clamp(clamp(K.ALC_BASE_RATE + (S.alc.lv - 1) * K.ALC_RATE_PER_LV + lifeAttrRate(S, 'alc'), 0, K.ALC_RATE_MAX) * (1 + fateMod(S, 'brew')) * (skyToday().key === 'tide' ? 1.05 : 1) /* v1015 潮汐 */, 0, K.ALC_RATE_MAX), b = boostOf(lu, sp); return b ? Math.min(K.ALC_BOOST_RATE_MAX, base + b) : base; }
+function alcRate(S, lu, sp) { let base = clamp(clamp(K.ALC_BASE_RATE + (S.alc.lv - 1) * K.ALC_RATE_PER_LV + lifeAttrRate(S, 'alc'), 0, K.ALC_RATE_MAX) * (1 + fateMod(S, 'brew')) * (skyToday().key === 'tide' ? 1.05 : 1) /* v1015 潮汐 */, 0, K.ALC_RATE_MAX), b = boostOf(lu, sp); if (S.race === 'ling') base = Math.min(K.ALC_RATE_MAX, base + 0.05); return b ? Math.min(K.ALC_BOOST_RATE_MAX, base + b) : base; } // v1088 灵族草木亲和：炼丹成功率 +5%
 function potCountProbs(S) { return null; } // 已改为1-10枚随机，不再用概率表
 function gradeProbs(S, lu, sp) { const q5 = Math.min(K.Q5_MAX, K.Q5_BASE + S.alc.lv * K.Q5_PER_LV); const q4 = Math.min(K.Q4_MAX, K.Q4_BASE + S.alc.lv * K.Q4_PER_LV); const q3 = Math.min(K.ALC_BOOST_Q3_MAX, Math.min(K.Q3_MAX, K.Q3_BASE + S.alc.lv * K.Q3_PER_LV + lifeAttrQ(S, 'alc')) + boostOf(lu, sp)); const q2 = Math.min(K.Q2, Math.max(0, 1 - q5 - q4 - q3)); return { q5, q4, q3, q2, q1: Math.max(0, 1 - q5 - q4 - q3 - q2) }; }
 /* ---------- v998 丹毒 / 变异丹 ---------- */
@@ -2327,21 +2343,22 @@ function useMat(S, k) { if ((S.mats[k] || 0) <= 0) return false; S.mats[k]--; if
 /* ---------- 商店 ---------- */
 function buy(S, kind, key, n) {
   n = Math.max(1, n || 1);
+  const _gp = p => S.race === 'traveler' ? Math.ceil(p * 0.95) : p; // v1088 穿越者见多识广：商会买东西 −5%
   if (kind === 'med') {
     const m = MEDS[key]; if (!m) return { ok: false };
-    n = Math.min(n, Math.floor(S.gold / m.price)); if (n <= 0) return { ok: false, why: 'gold' };
-    S.gold -= m.price * n; S.meds[key] = (S.meds[key] || 0) + n; return { ok: true, n, cost: m.price * n };
+    n = Math.min(n, Math.floor(S.gold / _gp(m.price))); if (n <= 0) return { ok: false, why: 'gold' };
+    S.gold -= _gp(m.price) * n; S.meds[key] = (S.meds[key] || 0) + n; return { ok: true, n, cost: _gp(m.price) * n };
   }
   if (kind === 'mat') {
     const m = MATS[key]; if (!m) return { ok: false };
-    n = Math.min(n, Math.floor(S.gold / m.price)); if (n <= 0) return { ok: false, why: 'gold' };
-    S.gold -= m.price * n; S.mats[key] = (S.mats[key] || 0) + n; return { ok: true, n, cost: m.price * n };
+    n = Math.min(n, Math.floor(S.gold / _gp(m.price))); if (n <= 0) return { ok: false, why: 'gold' };
+    S.gold -= _gp(m.price) * n; S.mats[key] = (S.mats[key] || 0) + n; return { ok: true, n, cost: _gp(m.price) * n };
   }
   if (kind === 'ring') {
     if ((S.pouch || 0) >= 10) return { ok: false, why: 'max' };
     if (S.ringBought) return { ok: false, why: 'once' }; // v881 一个号限购1只
-    if (S.gold < 1000) return { ok: false, why: 'gold' };
-    S.gold -= 1000; S.pouch = (S.pouch || 0) + 1; S.ringBought = 1; return { ok: true, n: 1, cost: 1000 }; // v882 商店卖小型储物袋1000金
+    if (S.gold < _gp(1000)) return { ok: false, why: 'gold' };
+    S.gold -= _gp(1000); S.pouch = (S.pouch || 0) + 1; S.ringBought = 1; return { ok: true, n: 1, cost: _gp(1000) }; // v882 商店卖小型储物袋1000金
   }
   if (kind === 'ring_stone') { // v883 灵石买储物戒指：下/中/上品各限1枚
     const flag = 'ringBought_' + k;
@@ -2360,15 +2377,15 @@ function buy(S, kind, key, n) {
     S.xianyu -= 1; S.spaceLBought = 1; S.spaceL = (S.spaceL || 0) + 1; return { ok: true, n: 1, cost: 0 };
   }
   if (kind === 'spirit') {
-    const price = 100; // v759 一品灵石售价100金
+    const price = _gp(100); // v759 一品灵石售价100金
     n = Math.min(n, Math.floor(S.gold / price)); if (n <= 0) return { ok: false, why: 'gold' };
     S.gold -= price * n; S.ores.sp1 = (S.ores.sp1 || 0) + n; return { ok: true, n, cost: price * n };
   }
 
   const sk = SKILLS[key]; if (!sk) return { ok: false };
   if (S.skills.includes(key)) return { ok: false, why: 'learned' };
-  if (S.gold < sk.price) return { ok: false, why: 'gold' };
-  S.gold -= sk.price; S.skills.push(key); return { ok: true, n: 1, cost: sk.price };
+  if (S.gold < _gp(sk.price)) return { ok: false, why: 'gold' };
+  S.gold -= _gp(sk.price); S.skills.push(key); return { ok: true, n: 1, cost: _gp(sk.price) };
 }
 function invList(S) {
   const out = [];
@@ -3228,6 +3245,7 @@ const EV_BY_TYPE = {}; for (const id in ADV_EVENTS) (EV_BY_TYPE[ADV_EVENTS[id].t
 const FIGHT_TEXT = ['前方传来低沉的吼声，', '草丛一阵晃动，', '一股腥风扑面而来，', '你刚转过山角，', '夜色中亮起一双幽绿的眼睛，', '地面微微震动，'];
 function advNewEvent(S, run, forceFight, bump, text) {
   const last = run.step >= run.steps; let type = forceFight || last ? 'fight' : wpick(Object.keys(EV_TYPES), k => EV_TYPES[k].w);
+  if (!forceFight && !last && S.race === 'traveler' && type !== 'fortune' && R() < 0.05) type = 'fortune'; // v1088 穿越者见多识广：奇遇概率 +5%
   if (type !== 'fight') { const t = tierIdx(run.dk), okT = id => !(ADV_EVENTS[id].min > t); let ids = EV_BY_TYPE[type].filter(id => okT(id) && !run.seen.includes(id)); const hand = ids.filter(id => HAND_EVENTS.includes(id)); if (hand.length && R() < 0.4) ids = hand; if (!ids.length) ids = Object.keys(ADV_EVENTS).filter(id => ADV_EVENTS[id].type !== 'trap' && okT(id) && !run.seen.includes(id)); const id = pick(ids.length ? ids : EV_BY_TYPE[type].filter(okT)); type = ADV_EVENTS[id].type; run.seen.push(id); run.ev = { type, id }; return; }
   const m = advMonster(S, run.dk, (bump || 0) + (last && !forceFight ? (run.dk === 'mijing' || run.dk.startsWith('wx_') ? 4 : 1) : 0)); run.ev = { type: 'fight', mon: m, text: text || null, boss: last && !forceFight };
 }
@@ -4145,8 +4163,8 @@ function load() {
 function save() { try { S.log = S.log.slice(-K.LOG_KEEP); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); try{window.MHXY&&MHXY.markDirty(SAVE_KEY)}catch(_){} } catch (e) {} }
 function welcome() {
   log('gold', `<b class="y">欢迎来到【梦回逍遥】</b><br>每日<b>签到</b>可得 ${C.checkinAmount(S)} 点体力（每升 1 级 +1）。体力可用于<b>修炼</b>属性、<b>炼药</b>、<b>冒险</b>斩妖、与他人<b>PK</b>夺取属性。冒险与 PK 获胜可得<b>金元</b>，在<b>商店</b>购买药草与技能书。<br>初入江湖，赠你 ${K.START_STAMINA} 点体力。`);
-  // v131 新号先选性别头像
-  if (!S.gender) setTimeout(() => sheetGender(), 300);
+  // v1088 新号强制建号链：性别→头像→名字→种族
+  if (!S._onboarded) setTimeout(() => chainNext(), 300);
 }
 
 /* ---------- 调试模式 ---------- */
@@ -5232,9 +5250,10 @@ window.swordIntro = function() { // v888 残陨之剑介绍；v895 改事件监�
   } catch(e) {}
 };
 
-window.addMerit = function(n, why) { // v893 功德增减（大乘起）
+window.addMerit = function(n, why) { // v893 功德增减（大乘起）；v1088 魔族煞体：杀孽扣的功德减半
   try {
     if ((S.realm|0) < 6) return; // 大乘以下不计功德
+    if (n < 0 && S.race === 'mo' && /杀孽/.test(why || '')) n = Math.trunc(n / 2);
     S.merit = Math.max(0, (S.merit|0) + n);
     if (why) log(n > 0 ? 'good' : 'bad', `🙏 功德 <span class="${n > 0 ? 'y' : 'r'}">${n > 0 ? '+' : ''}${n}</span>（${why}，当前 ${S.merit}）`);
     try { if (typeof commit === 'function') commit(); } catch(_) {}
@@ -6758,7 +6777,7 @@ function sheetShop(msg) {
   const g = S.gold, mRow = k => { const it = MATS[k]; return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc || '炼制' + AN[it.basic] + '丹必需'} · 拥有 ${S.mats[k] || 0}</small></div>
       <button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${g >= it.price ? '' : 'disabled'}>买 1</button>
       <button class="btn gold" data-buy="mat" data-k="${k}" data-n="5" ${g >= it.price * 5 ? '' : 'disabled'}>买 5</button></div>`; };
-  openSheet(`<h2>🏛️ 商会</h2><div class="hint">当前金元 <b class="y">${g}</b>。冒险与 PK 获胜、出售矿石、猎物与兽蛋可获得金元。</div>` + (msg ? `<div class="warn">${msg}</div>` : '') +
+  openSheet(`<h2>🏛️ 商会</h2><div class="hint">当前金元 <b class="y">${g}</b>。冒险与 PK 获胜、出售矿石、猎物与兽蛋可获得金元。${S.race === 'traveler' ? '🌠 穿越者天赋：商会购物 95 折（结算时抵扣）。' : ''}</div>` + (msg ? `<div class="warn">${msg}</div>` : '') +
     `<div class="grid2" style="grid-template-columns:1fr 1fr;gap:8px;margin:8px 0"><button class="btn gold" data-consign style="padding:10px">🏪 寄售行</button><button class="btn gold" data-auction style="padding:10px">🔨 拍卖行</button></div>` +
     `<h3>药草（炼药必需）</h3>` + Object.keys(MATS).filter(k => MATS[k].basic).map(mRow).join('') +
     `<h3>🌱灵植种子</h3>` + Object.keys(MATS).filter(k => MATS[k].seed).map(mRow).join('') +
@@ -6795,6 +6814,33 @@ function sheetGender() {
     <button class="act" data-gender="f" style="padding:20px"><span class="t" style="font-size:24px">👩‍🦰</span><span class="s">女修</span></button>
   </div>`;
   openSheet(html);
+}
+let _raceMode = null; // v1088 种族面板模式：onboard 建号 / old 老号补选 / reinc 轮回重选
+function sheetRace(mode) { // v1088 九族选择
+  _raceMode = mode || 'onboard';
+  const cur = S.race;
+  const rows = Object.keys(RACES).map(k => { const r = RACES[k]; return `<div class="row"><div class="lab">${r.icon} ${r.name} · <b>${r.talent}</b><small>${r.desc}</small></div><button class="btn ${cur === k ? 'gold' : ''}" data-race="${k}">${cur === k ? '已选' : '选择'}</button></div>`; }).join('');
+  const keepBtn = (mode === 'reinc' && cur) ? `<div class="row"><button class="btn full" data-racekeep>保持原种族（${RACES[cur].name}）</button></div>` : '';
+  openSheet(`<h2>🧬 选择种族</h2><div class="hint">种族天赋为被动加成，选定后锁定，轮回时可重选${mode === 'reinc' ? '；也可保持原种族' : ''}</div>${rows}${keepBtn}`);
+  if (mode !== 'reinc') $('mask').dataset.lock = '1';
+}
+function chainNext() { // v1088 建号/轮回链条：性别→头像→名字→种族→生活技能
+  if (!S._onboarded) { // 建号：四步强制，缺一步都进不去
+    if (!S.gender) { sheetGender(); $('mask').dataset.lock = '1'; return; }
+    if (!S._avatarPicked) { sheetAvatar(S.gender); $('mask').dataset.lock = '1'; return; }
+    if (!S.name) { sheetNameInput(); $('mask').dataset.lock = '1'; return; }
+    if (!S.race) { sheetRace('onboard'); return; }
+    S._onboarded = true; save(); delete $('mask').dataset.lock; sheetLifeChoice(true); return;
+  }
+  if (S._reincChain) { // 轮回：四步皆可重选（可关掉，不强制）
+    const step = S._reincStep || 'gender';
+    if (step === 'gender') { sheetGender(); return; }
+    if (step === 'avatar') { sheetAvatar(S.gender); return; }
+    if (step === 'name') { sheetNameInput(); return; }
+    if (step === 'race') { sheetRace('reinc'); return; }
+    S._reincChain = false; S._reincStep = null; save(); sheetLifeChoice(true); return;
+  }
+  sheetLifeChoice(true);
 }
 const AVATAR_CATS = {
   m: {'动漫': [4, 5, 10, 12, 14, 15, 16, 20, 21, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 304, 305, 310, 312, 314, 315, 316, 320, 321, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 399, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 525, 579, 580, 800, 801, 802, 803, 804, 805, 806, 807, 808, 809, 810, 811, 812, 813, 814, 815, 816, 817, 818, 819, 820, 821, 822, 823, 824, 825, 826, 827, 828, 829, 830, 831, 832, 833, 834, 835, 836, 837, 838, 839, 840, 841, 842, 843, 844, 845, 846, 847, 848, 849, 850, 851, 852, 853, 854, 855, 856, 857, 858, 859, 860, 861, 862, 863, 864, 865, 866, 867, 868, 869, 870, 871, 872, 873, 874, 875, 876, 877, 878, 879, 880, 881, 882, 883, 884, 885, 886, 887, 888, 889, 890, 891, 892, 893, 894, 895, 896, 897, 898, 899], '游戏': [11, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 219, 220, 221, 311, 423, 424, 425, 426, 427, 428, 429, 430, 431, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 447, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 475, 476, 477, 478, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 489, 490, 491, 492, 493, 494, 495, 496, 497, 498, 499, 500, 501, 502, 503, 504, 505, 506, 507, 508, 509, 510, 511, 512, 513, 514, 515, 516, 517, 518, 519, 520, 521, 581, 582, 583, 584, 585, 586, 587, 588, 700, 701, 702, 703, 704, 705, 706, 707, 708, 709, 710, 711, 712, 713, 714, 715, 716, 717, 718, 719, 720, 721, 722, 723, 724, 725, 726, 727, 728, 729, 730, 731, 732, 733, 734, 735, 736, 737, 738, 739, 740, 741, 742, 743, 744, 745, 746, 747, 748, 749, 750, 751, 752, 753, 754, 755, 756, 757, 758, 759, 760, 761, 762, 763, 764, 765, 766, 767, 768, 769, 770, 771, 772, 773, 774, 775, 776, 777, 778, 779, 780, 781, 782, 783, 784, 785, 786, 787, 788, 789, 790, 791, 792, 793, 794, 795, 796, 797, 798, 799], '修仙': [0, 1, 2, 3, 6, 7, 8, 9, 13, 17, 18, 19, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 218, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 306, 307, 308, 309, 313, 317, 318, 319, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 522, 523, 524, 526, 527, 528, 529, 530, 531, 532, 533, 534, 535, 536, 537, 538, 539, 540, 541, 542, 543, 544, 545, 546, 547, 548, 549, 550, 551, 552, 553, 554, 555, 556, 557, 558, 559, 560, 561, 562, 563, 564, 565, 566, 567, 568, 569, 570, 571, 572, 573, 574, 575, 576, 577, 578, 589, 590, 591, 592, 593, 594, 595, 596, 597, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 615, 616, 617, 618, 619, 620, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651, 652, 653, 654, 655, 656, 657, 658, 659, 660, 661, 662, 663, 664, 665, 666, 667, 668, 669, 670, 671, 672, 673, 674, 675, 676, 677, 678, 679, 680, 681, 682, 683, 684, 685, 686, 687, 688, 689, 690, 691, 692, 693, 694, 695, 696, 697, 698, 699]},
@@ -6846,7 +6892,7 @@ function sheetAvatar(gender, cat) {
   openSheet(html);
   S._pickGender = gender; save();
   bindAvatarFile();
-  function bindAvatarFile() { const fi = document.getElementById('avatarFile'); if (fi) fi.addEventListener('change', () => { const f = fi.files && fi.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { const img = new Image(); img.onload = () => { try { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; const cx = cv.getContext('2d'); const s0 = Math.min(img.width, img.height); cx.drawImage(img, (img.width - s0) / 2, (img.height - s0) / 2, s0, s0, 0, 0, 256, 256); const _d = cv.toDataURL('image/jpeg', 0.85); S.avatarCustom = _d; try { saveAvatarSeparate(_d, null); } catch(_) {} save(); toastLog('good', '🖼️ 头像已换上（自定义）'); sheetAvatar(gender, cat); } catch(_) {} }; img.src = rd.result; }; rd.readAsDataURL(f); }); }
+  function bindAvatarFile() { const fi = document.getElementById('avatarFile'); if (fi) fi.addEventListener('change', () => { const f = fi.files && fi.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { const img = new Image(); img.onload = () => { try { const cv = document.createElement('canvas'); cv.width = 256; cv.height = 256; const cx = cv.getContext('2d'); const s0 = Math.min(img.width, img.height); cx.drawImage(img, (img.width - s0) / 2, (img.height - s0) / 2, s0, s0, 0, 0, 256, 256); const _d = cv.toDataURL('image/jpeg', 0.85); S.avatarCustom = _d; try { saveAvatarSeparate(_d, null); } catch(_) {} save(); if (!S._onboarded) { S._avatarPicked = true; save(); toastLog('good', '🖼️ 头像已换上（自定义）'); chainNext(); } else { toastLog('good', '🖼️ 头像已换上（自定义）'); sheetAvatar(gender, cat); } /* v1088 建号上传头像即算选头像 */ } catch(_) {} }; img.src = rd.result; }; rd.readAsDataURL(f); }); }
 }
 function avatarUrl() {
   // v1052: 头像独立存储（localStorage mhxy_avatar_v1），不随存档 S 走，轮回/刷新不丢
@@ -7008,6 +7054,7 @@ function sheetChar() {
   Object.keys(_setNamesTop).forEach(k => { if ((_setsTop[k]|0) >= 2) _sbTop.push(`<span class="y">🎽${_setNamesTop[k]}${_setsTop[k]}件</span>`); });
   const setBonusHtml = _sbTop.length ? `<span style="font-weight:normal;font-size:12px">${_sbTop.join(' ')}</span>` : '';
   html += `<div style="font-size:13px;font-weight:bold;margin-bottom:6px;display:flex;gap:6px;align-items:center"><span style="width:44px;flex:none;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(S.name || '无名道友')}</span><div style="flex:1;min-width:0;display:flex;gap:6px;align-items:center"><button class="act primary" style="flex:none;padding:6px 8px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">${S.level === C.REALM_MAX_LV - 1 ? '⬆️突破圆满' : '⬆️升级'}</span></button><span style="flex:1;text-align:center">${C.realmTxt(S)}</span>${S.dead ? '' : '<button class="act" style="flex:none;padding:6px 6px;visibility:hidden;pointer-events:none"><span class="t" style="font-size:12px">🔄轮回</span></button>'}</div><span style="flex:none;font-size:11px;font-weight:normal">👁️<b>${C.fmtN(S.shenshi|0)}</b>${(typeof flowerIcons === 'function' ? flowerIcons(S) : '') ? ` <span class="y">${flowerIcons(S)} <span style="margin-left:4px">${(typeof qixiIcon === 'function' ? qixiIcon(S) : '👣')}<b>${C.fmtN(S.qixi|0)}</b></span></span>` : ''}</span>${setBonusHtml}</div>`; // v570 名字对齐头像正中；v571 阶段对齐经验条正中；v581 神识放阶段右边
+  if (S.race && RACES[S.race]) { const _rc = RACES[S.race]; html += `<div style="font-size:12px;margin-bottom:6px">🧬 ${_rc.icon} ${_rc.name} · 天赋【${_rc.talent}】<small style="color:var(--dim)"> ${_rc.desc}</small></div>`; } // v1088 种族显示
   try { const _ds = C.destinyStar(S); html += `<div class="row" style="padding:4px 0"><div class="lab">🌠 命星<small>${_ds.t}</small></div><div class="lab"><b class="pu">${_ds.n}</b></div></div>`; } catch(_) {}
   try { const _fs = C.fateSignOf(S); if (_fs) html += `<div class="row" style="padding:4px 0"><div class="lab">🎴 宿命签<small>${_fs.t}</small></div><div class="lab" style="text-align:right"><b class="y">${_fs.n}</b><br><small>${C.fateModText(_fs)}</small></div></div>`; } catch(_) {} // v1012
   try { const _tb = S.taboo | 0; if (_tb > 0) html += `<div class="row" style="padding:4px 0"><div class="lab">${S.tabooAwake ? '🌑 第十人' : '？？？'}<small>${S.tabooAwake ? '已苏醒，伴你而行' : (_tb < 40 ? '沉睡' : _tb < 70 ? '微动' : '低语')}</small></div><div class="lab" style="text-align:right"><b class="pu">苏醒 ${_tb}%</b>${S.tabooAwake ? '<br><small>突破成功率 +5% · 雷劫威力 -5%</small>' : ''}</div></div>`; } catch(_) {} // v1013 禁忌苏醒度
@@ -8522,8 +8569,8 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
   if (r.tabooAwoke) log('sys', '🌑 <b>禁忌苏醒</b>——轮回深处沉睡的存在睁开了眼睛，自此伴你而行。（突破成功率 +5% · 雷劫威力 -5%，永久）'); // v1013
   else if (r.taboo === 10) log('sys', '🌑 轮回深处，有什么东西动了一下。'); // v1013 禁忌初现
   afterAct(); commit(); render();
-  // v131 轮回后可重选性别头像
-  setTimeout(() => sheetGender(), 500);
+  // v1088 轮回后可重选性别头像种族
+  S._reincChain = true; S._reincStep = 'gender'; save(); setTimeout(() => chainNext(), 500);
 }
 async function doBrew(k, n) {
   if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择该生活技能'); return; } // v204
@@ -10091,7 +10138,7 @@ document.addEventListener('click', e => {
   if (d.avataredit) { S._avatarSettings = 1; S._pickSet = S.avatarSet || 'r'; S._pickGender = S.gender || 'm'; sheetAvatar(S._pickGender); return; }
   if (d.avatarset) { S._pickSet = d.avatarset; sheetAvatar(S._pickGender || S.gender || 'm'); return; }
   if (d.clearavatar) { S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} save(); sheetAvatar(S._pickGender || S.gender || 'm'); return; }
-  if (d.avgal) { const e2 = (window._avGallery || []).find(x => String(x.id) === String(d.avgal)); if (e2 && e2.data) { S.avatarCustom = e2.data; S.avatarGalleryId = e2.id; try { saveAvatarSeparate(e2.data, e2.id); } catch(_) {} S._avatarSettings = 0; save(); toastLog('good', '🖼️ 已换上玩家图库头像'); render(); sheetChar(); } return; }
+  if (d.avgal) { const e2 = (window._avGallery || []).find(x => String(x.id) === String(d.avgal)); if (e2 && e2.data) { S.avatarCustom = e2.data; S.avatarGalleryId = e2.id; try { saveAvatarSeparate(e2.data, e2.id); } catch(_) {} S._avatarSettings = 0; save(); if (!S._onboarded) { S._avatarPicked = true; save(); toastLog('good', '🖼️ 已换上玩家图库头像'); chainNext(); } else if (S._reincChain) { S._reincStep = 'name'; toastLog('good', '🖼️ 已换上玩家图库头像'); chainNext(); } else { toastLog('good', '🖼️ 已换上玩家图库头像'); render(); sheetChar(); } } return; } // v1088 建号/轮回图库头像进链
   if (d.avsubmit) { if (!S.avatarCustom) { toastLog('bad', '先上传一张自己的头像'); return; } if (!(window.MHXY && MHXY.loggedIn && MHXY.loggedIn())) { toastLog('bad', '先登录联机账号才能提交入库'); return; } const nmIn = prompt('给这张图取个名（入库后按此名展示，12 字内）', ''); if (nmIn === null) return; const avName = String(nmIn).trim().slice(0, 12); if (!avName) { toastLog('bad', '先取个名再入库'); return; } MHXY.api('POST', '/api/avatar/submit', { data: S.avatarCustom, name: avName }).then(j => { if (j && j.ok) toastLog('good', '📮 已提交入库，审核通过后全服可选'); else toastLog('bad', '📮 玩家图库尚未开放'); }).catch(() => toastLog('bad', '📮 玩家图库尚未开放')); return; }
   if (d.wearach !== undefined) { S.titleAch = d.wearach || ''; save(); try { if (window.MHXY && MHXY.loggedIn()) MHXY.api('/api/profile/title', { method: 'POST', body: { title: S.titleAch } }).catch(() => {}); } catch(_) {} sheetChar(); return; }
   if (d.stele !== undefined) { sheetStele(); return; }
@@ -10495,9 +10542,11 @@ document.addEventListener('click', e => {
   else if ('chat' in d) sheetChat();
   else if ('consign' in d) sheetConsign();
   else if ('char' in d) { window._charPage = 1; sheetChar(); }
-  else if (d.gender) { S.gender = d.gender; S.avatar = 0; save(); sheetAvatar(d.gender); }
-  else if (d.avatar !== undefined) { S.avatar = parseInt(d.avatar)|0; if (S._avatarSettings) { S.avatarSet = S._pickSet || S.avatarSet || 'r'; S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} S._avatarSettings = 0; save(); toastLog('good', '🖼️ 头像已换上'); sheetChar(); try { if (typeof renderActions === 'function') renderActions(); } catch(e) {} } else { save(); sheetNameInput(); } } // v1060 恢复 v1036：换头像强制刷新底部导航
-  else if ('savename' in d) { const inp = $('nameInput'); const nm = inp ? inp.value.trim().slice(0, 12) : ''; if (nm) { S.name = nm; } save(); sheetLifeChoice(true); } // v204 取名后选生活技能
+  else if (d.gender) { S.gender = d.gender; S.avatar = 0; save(); if (S._reincChain) S._reincStep = 'avatar'; chainNext(); } // v1088 建号/轮回链
+  else if (d.avatar !== undefined) { S.avatar = parseInt(d.avatar)|0; if (S._avatarSettings) { S.avatarSet = S._pickSet || S.avatarSet || 'r'; S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} S._avatarSettings = 0; save(); toastLog('good', '🖼️ 头像已换上'); sheetChar(); try { if (typeof renderActions === 'function') renderActions(); } catch(e) {} } else if (S._reincChain) { S._reincStep = 'name'; save(); chainNext(); } else if (!S._onboarded) { S._avatarPicked = true; save(); chainNext(); } else { save(); sheetNameInput(); } } // v1060 恢复 v1036：换头像强制刷新底部导航；v1088 建号头像强制
+  else if ('savename' in d) { const inp = $('nameInput'); const nm = inp ? inp.value.trim().slice(0, 12) : ''; if (nm) { S.name = nm; } if (S._reincChain) { S._reincStep = 'race'; save(); chainNext(); } else if (!S._onboarded) { if (!nm) { toastLog('bad', '请先取个名字'); sheetNameInput(); $('mask').dataset.lock = '1'; return; } save(); chainNext(); } else { save(); sheetLifeChoice(true); } } // v204 取名后选生活技能；v1088 建号名字强制
+  else if (d.race && RACES[d.race]) { S.race = d.race; save(); if (_raceMode === 'reinc') { if (S._reincChain) S._reincStep = 'done'; delete $('mask').dataset.lock; closeSheet(); chainNext(); } else if (_raceMode === 'old') { delete $('mask').dataset.lock; closeSheet(); toastLog('good', `🧬 已选择 ${RACES[S.race].name}，天赋【${RACES[S.race].talent}】已生效`); } else { chainNext(); } } // v1088 种族选择
+  else if ('racekeep' in d) { if (S._reincChain) S._reincStep = 'done'; closeSheet(); chainNext(); } // v1088 轮回保持原种族
   else if (d.lifechoice) { const k = d.lifechoice, cur = S.lifeChoices || []; const i = cur.indexOf(k); if (i >= 0) cur.splice(i, 1); else if (cur.length < C.lifeChoiceMax(S)) cur.push(k); else toastLog('bad', '已达可选上限，境界提升可解锁更多'); S.lifeChoices = cur; save(); sheetLifeChoice(_lcFromName); } // v204
   else if ('lcdone' in d) { if (!(S.lifeChoices || []).length) { try { alert('至少选择 1 个生活技能'); } catch(e) { toastLog('bad', '至少选择 1 个生活技能'); } return; } const _hadPet = Array.isArray(S.pet) ? S.pet.length > 0 : S.pet != null; if (!S.lifeChoices.includes('tame') && _hadPet) { S.pet = Array.isArray(S.pet) ? [] : null; log('bad', '🔒 未选择驯兽技能，已卸下所有出战灵宠'); } S.life = S.life || {}; (S.lifeChoices || []).forEach(_k => { if (!S.life[_k]) S.life[_k] = { lv: 0, xp: 0 }; }); // v912 新选技能初始化
   save(); const _fn = _lcFromName; _lcFromName = false; if (_fn) { closeSheet(); toastLog('good', '🎭 头像已选定，仙途开启！'); } else sheetLife(); render(); } // v204
@@ -10773,7 +10822,7 @@ document.addEventListener('click', e => {
   else if (t.id === 'debugBtn') sheetDebug();
 });
 
-load(); applyDebug(); renderLog(); afterAct();
+load(); applyDebug(); renderLog(); afterAct(); if (S._onboarded && !S.race && !S.forceReinc) setTimeout(() => sheetRace('old'), 600); // v1088 老号登录补选种族
 // v982 修 Bug#35：_pendingTrib 真恢复——读档时若问心未完成且境界未推进，重弹问心
 try {
   if (S && S._pendingTrib && S._pendingTrib.quiz && (S.realm|0) === (S._pendingFromRealm|0)) {
