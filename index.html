@@ -233,7 +233,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
     <span style="font-size:13px;color:var(--dim);flex:none"><u id="swordNameLink" style="cursor:pointer" onclick="var d=document.getElementById('swordIntroPop');if(d)d.style.display='block';">🗺️ 残陨之剑</u></span>
     <div id="swordIntroPop" style="display:none;position:fixed;top:20%;left:10%;right:10%;z-index:999;background:#1a1a2e;border:1px solid #444;border-radius:12px;padding:16px;box-shadow:0 4px 20px rgba(0,0,0,0.8)"><h2>🗡️ 残陨之剑</h2><div class="hint" style="line-height:1.8;margin:12px 0">在此地四周是时空乱流。一把残剑之上，不知多久孕育万物，但此地除了传送阵能用无法与外界取得联系。据推测应该是上古大能损毁的残剑，一直不停的穿梭在时空乱流之中！在这片时空错乱之中充满机遇和变数，无数的bug玩法等你开采发现利用。抓住自己的机缘冲破界混沌。</div><button class="btn full" onclick="document.getElementById('swordIntroPop').style.display='none'">关闭</button></div>
     <div id="cellInfo" style="flex:1;padding:4px 8px;background:#1a1a2e;border-radius:6px;font-size:12px;color:var(--dim);min-height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
-    <span style="flex:none"><button class="icon-btn" id="shenshiBtn" style="font-size:16px;display:none" title="神识外放（化神）" onclick="window.shenshiPanel()">👁️</button><button class="icon-btn" id="shenshiScanBtn" style="font-size:16px;display:none" title="神识探查（练气，10秒）" onclick="window.shenshiScan()">🔍</button><button class="icon-btn" id="chatToggleBtn" style="font-size:16px" title="悬浮聊天开/关">💬</button><button class="icon-btn" id="msgFilterBtn" style="font-size:16px" title="消息过滤设置">⚙️</button></span>
+    <span style="flex:none"><button class="icon-btn" id="shenshiBtn" style="font-size:16px;display:none" title="神识（练气探查/化神外放）" onclick="window.shenshiGo()">👁️</button><button class="icon-btn" id="chatToggleBtn" style="font-size:16px" title="悬浮聊天开/关">💬</button><button class="icon-btn" id="msgFilterBtn" style="font-size:16px" title="消息过滤设置">⚙️</button></span>
     <div id="msgFilterPop" style="display:none;position:absolute;right:8px;top:120px;z-index:60;background:#1a1a2e;border:1px solid #444;border-radius:8px;padding:8px;box-shadow:0 2px 12px rgba(0,0,0,0.5)"></div>
   </div>
   <div id="mapGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:1px;max-width:96px;margin:0"> <!-- v505 再缩小 --></div>
@@ -4211,7 +4211,7 @@ function isSwordCell(x, y) {
 }
 function renderWorldMap() {
   try {
-    try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 5 ? '' : 'none'; const _ssc = document.getElementById('shenshiScanBtn'); if (_ssc) _ssc.style.display = (S.realm|0) >= 1 ? '' : 'none'; } catch(_) {} // v1068 外放化神/探查练气（Ye 定拆开）
+    try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 1 ? '' : 'none'; } catch(_) {} // v1069 神识单按钮：练气显示（Ye 定整合）
 // v536 保留地(4,3)资源点：草药+矿石定时刷新
 // v899 采集阵自动采集系统
 // S.arrays: [{id, map:'world', x, y, fuelUntil, storage:{h,o,v,m,e}, guarded, lastTick}]
@@ -10916,14 +10916,15 @@ window.teamPanel = async function(){
   if (typeof teamRefresh === 'function') teamRefresh();
   else document.getElementById('mhxyTeamInfo').innerHTML = '<div class="hint">组队模块加载中，请稍后重试</div>';
 };
-// v1068 神识探查独立（Ye 定拆开）：不经过外放面板，直接激活10秒玩家探查
-window.shenshiScan = function(){
+// v1069 神识单按钮（Ye 定整合）：练气点=10秒探查，化神点=探查+开外放面板
+window.shenshiGo = function(){
   try {
     var _realm = 0;
     try { var _sk = (window.M && M.saveKey) || 'mhxy_save'; var _raw = localStorage.getItem(_sk); if (_raw) _realm = (JSON.parse(_raw).realm|0) || 0; } catch(_) {}
-    if (_realm < 1) { if (typeof log === 'function') log('bad', '需练气境界才能神识探查'); return; }
+    if (_realm < 1) { if (typeof log === 'function') log('bad', '需练气境界才能使用神识'); return; }
     window._ssRevealUntil = Date.now() + 10000;
     if (typeof log === 'function') log('good', '🔍 神识探查中（10秒）：相邻格气息低于神识的玩家可见');
+    if (_realm >= 5 && typeof window.shenshiPanel === 'function') { window.shenshiPanel(); return; }
     if (typeof render === 'function') { try { render(); } catch(_) {} }
   } catch(e) {}
 };
