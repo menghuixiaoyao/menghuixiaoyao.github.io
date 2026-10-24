@@ -197,7 +197,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1070</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1071</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5000,10 +5000,11 @@ function npcPos(S) {
       } catch(_) {}
       try {
         let _pl = _plAt[x + ',' + y];
-        // v1057 真人玩家可见规则（Ye 定）：神识外放10秒内，相邻格子、气息<神识才可见；同格始终可见
+        // v1057 真人玩家可见规则（Ye 定）：神识外放10秒内，相邻格子、气息<神识才可见；同格始终可见；v1070 主城区探查神识+100（Ye 定）
         if (_pl && _pl.length && !isP) {
           const _ssOn = Date.now() < (window._ssRevealUntil || 0);
-          const _mySS = (typeof effShenshi === 'function' && typeof S !== 'undefined' && S) ? effShenshi(S) : 0;
+          let _mySS = (typeof effShenshi === 'function' && typeof S !== 'undefined' && S) ? effShenshi(S) : 0;
+          _mySS += 100; // v1070 主城区神识探查+100
           const _wmp = (typeof S !== 'undefined' && S.worldMap) || { px: 2, py: 3 };
           if (!_ssOn) { _pl = null; }
           else {
