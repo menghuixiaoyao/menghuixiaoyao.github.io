@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1094</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1095</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6798,19 +6798,20 @@ window.doCraftTalisman = function(key) { // v790 制作符箓；v901 noskill提�
   } catch(e) { try { log('bad', '制作出错:' + e.message); } catch(_) {} }
 };
 function sheetShop(msg) {
+  const _dgp = p => S.race === 'traveler' ? Math.ceil(p * 0.95) : p; // v1095 穿越者商会折扣：按钮可用性按折后价算
   const g = S.gold, mRow = k => { const it = MATS[k]; return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc || '炼制' + AN[it.basic] + '丹必需'} · 拥有 ${S.mats[k] || 0}</small></div>
-      <button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${g >= it.price ? '' : 'disabled'}>买 1</button>
-      <button class="btn gold" data-buy="mat" data-k="${k}" data-n="5" ${g >= it.price * 5 ? '' : 'disabled'}>买 5</button></div>`; };
+      <button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${g >= _dgp(it.price) ? '' : 'disabled'}>买 1</button>
+      <button class="btn gold" data-buy="mat" data-k="${k}" data-n="5" ${g >= _dgp(it.price) * 5 ? '' : 'disabled'}>买 5</button></div>`; };
   openSheet(`<h2>🏛️ 商会</h2><div class="hint">当前金元 <b class="y">${g}</b>。冒险与 PK 获胜、出售矿石、猎物与兽蛋可获得金元。${S.race === 'traveler' ? '🌠 穿越者天赋：商会购物 95 折（结算时抵扣）。' : ''}</div>` + (msg ? `<div class="warn">${msg}</div>` : '') +
     `<div class="grid2" style="grid-template-columns:1fr 1fr;gap:8px;margin:8px 0"><button class="btn gold" data-consign style="padding:10px">🏪 寄售行</button><button class="btn gold" data-auction style="padding:10px">🔨 拍卖行</button></div>` +
     `<h3>药草（炼药必需）</h3>` + Object.keys(MATS).filter(k => MATS[k].basic).map(mRow).join('') +
     `<h3>🌱灵植种子</h3>` + Object.keys(MATS).filter(k => MATS[k].seed).map(mRow).join('') +
     `<h3>灵露（炼药增益，二品以上仅可种植获得）</h3>` + Object.keys(MATS).filter(k => !MATS[k].basic && !MATS[k].token && !MATS[k].seed && MATS[k].price).map(mRow).join('') +
     `<h3>🧧 红包（买了去真人世界频道发）</h3>` + rpShopHtml() +
-      `<h3>洞府令（开辟洞府）</h3>` + Object.keys(MATS).filter(k => MATS[k].token).map(k => { const it = MATS[k]; const _canB = g >= it.price && (S.realm|0) >= (it.needRealm|0); return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc} · 拥有 ${S.mats[k] || 0}</small></div><button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${_canB ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
+      `<h3>洞府令（开辟洞府）</h3>` + Object.keys(MATS).filter(k => MATS[k].token).map(k => { const it = MATS[k]; const _canB = g >= _dgp(it.price) && (S.realm|0) >= (it.needRealm|0); return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc} · 拥有 ${S.mats[k] || 0}</small></div><button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${_canB ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
     `<h3>灵石</h3><div class="row"><div class="lab">🪨 灵气石 <span class="tag">100 金</span><small>服用：经验 +20 · 炼药投入：成功率/上品 +5% · 拥有 ${S.ores.sp1 || 0}</small></div>
-      <button class="btn" data-buy="spirit" data-k="sp1" data-n="1" ${g >= 100 ? '' : 'disabled'}>买 1</button>
-      <button class="btn gold" data-buy="spirit" data-k="sp1" data-n="5" ${g >= 500 ? '' : 'disabled'}>买 5</button></div>
+      <button class="btn" data-buy="spirit" data-k="sp1" data-n="1" ${g >= _dgp(100) ? '' : 'disabled'}>买 1</button>
+      <button class="btn gold" data-buy="spirit" data-k="sp1" data-n="5" ${g >= _dgp(100) * 5 ? '' : 'disabled'}>买 5</button></div>
     <div class="row"><div class="lab">🪨 灵气石回收 <span class="tag">40 金/块</span><small>拥有 ${S.ores.sp1 || 0}</small></div>
       <button class="btn" data-sellspirit="1" ${(S.ores.sp1|0) > 0 ? '' : 'disabled'}>卖 1</button>
       <button class="btn gold" data-sellspirit="all" ${(S.ores.sp1|0) > 0 ? '' : 'disabled'}>全卖 +${(S.ores.sp1|0)*40}</button></div>` +
@@ -6819,9 +6820,9 @@ function sheetShop(msg) {
       <button class="btn" data-sell="${k}" data-kind="${kind}" data-n="1">卖 1</button>
       <button class="btn gold" data-sell="${k}" data-kind="${kind}" data-n="${st[k]}">全部 +${st[k] * g.items[k].price}</button></div>`).join('') : `<div class="empty">暂无${g.noun}，修炼中${g.name}可得</div>`); }).join('') +
     `<h3>疗伤药</h3>` + Object.keys(C.MEDS).map(k => { const m = C.MEDS[k]; return `<div class="row"><div class="lab">💊 ${m.name} <span class="tag">${m.price} 金</span><small>${m.desc} · 拥有 ${S.meds[k] || 0}${m.cure === 'curse' ? ((S.curseN|0) > 0 ? ` · <span class="r">诅咒×${S.curseN}</span>` : '') : (C.hasSt(S, m.cure) ? ' · <span class="r">你正' + C.STATUS[m.cure].name + '</span>' : '')}</small></div>
-      <button class="btn" data-buy="med" data-k="${k}" data-n="1" ${g >= m.price ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
+      <button class="btn" data-buy="med" data-k="${k}" data-n="1" ${g >= _dgp(m.price) ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
     `<h3>🎒小型储物袋</h3><div class="row"><div class="lab">🎒 小型储物袋 <span class="tag">1000 金</span><small>物品包+100格（当前 ${S.pouch || 0} 只，每号限购1只）</small></div>
-      ${(S.pouch || 0) >= 10 || S.ringBought ? '<button class="btn" disabled>已满</button>' : `<button class="btn gold" data-buy="ring" data-k="ring" ${g >= 1000 ? '' : 'disabled'}>购买</button>`}</div>` +
+      ${(S.pouch || 0) >= 10 || S.ringBought ? '<button class="btn" disabled>已满</button>' : `<button class="btn gold" data-buy="ring" data-k="ring" ${g >= _dgp(1000) ? '' : 'disabled'}>购买</button>`}</div>` +
     `<h3>💍储物戒指（×2）</h3>` + [['sp2','🌒下品灵石'],['sp3','🌗中品灵石'],['sp4','💎上品灵石']].map(([sk, sn]) => `<div class="row"><div class="lab">💍 储物戒指 <span class="tag">${sn}×1</span><small>物品包与装备包上限×2（已拥有 ${S.rings || 0} 枚，每种灵石每号限购1枚）</small></div>${S['ringBought_' + sk] ? '<button class="btn" disabled>已购</button>' : `<button class="btn gold" data-buy="ring_stone" data-k="${sk}" ${(S.ores[sk] || 0) >= 1 ? '' : 'disabled'}>购买</button>`}</div>`).join('') +
     `<h3>📦储物空间</h3><div class="row"><div class="lab">📦 储物空间（小） <span class="tag">💠极品灵石×1</span><small>物品包上限×3（每号限购1个）</small></div>${S.spaceSBought ? '<button class="btn" disabled>已购</button>' : `<button class="btn gold" data-buy="space_s" data-k="space_s" ${(S.ores.sp5 || 0) >= 1 ? '' : 'disabled'}>购买</button>`}</div>` +
     `<div class="row"><div class="lab">📦 储物空间（大） <span class="tag">${MAGATAMA}仙玉×1</span><small>物品包上限×4（每号限购1个）</small></div>${S.spaceLBought ? '<button class="btn" disabled>已购</button>' : `<button class="btn gold" data-buy="space_l" data-k="space_l" ${(S.xianyu || 0) >= 1 ? '' : 'disabled'}>购买</button>`}</div>` +
@@ -9639,6 +9640,7 @@ async function doSell(kind, k, n) {
         S.gold = (S.gold|0) + j.gold;
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
         log('gold', `💰 出售 ${GATHER[kind].items[k].name} ×${j.n}，金元 <span class="y">+${j.gold}</span>`);
+        try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v1095 卖出也触发雷云判定（与买入同口径）
         commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2;
         return;
       }
@@ -9647,6 +9649,7 @@ async function doSell(kind, k, n) {
   }
   const r = C.sellItem(S, kind, k, n); if (!r.ok) return;
   log('gold', `💰 出售 ${GATHER[kind].items[k].name} ×${r.n}，金元 <span class="y">+${r.gold}</span>`);
+  try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v1095 卖出也触发雷云判定（与买入同口径）
   commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2; // v200 出售后保持滚动位置
 }
 function doDrink(a, g, n) { const d = C.drink(S, a, g, n); if (d !== null && d !== undefined) { const fx = S._drinkFx; log('good', `💊 服下 ${potName(a, g)} ×${n}，${AN[a]} <span class="g">+${d}</span>${fx && fx.f < 1 ? `（丹毒未清，药效 ${Math.round(fx.f * 100)}%）` : ''}（丹毒 ${S.danDu|0}/100）`); commit(); sheetBag(); } }
@@ -10635,6 +10638,7 @@ document.addEventListener('click', e => {
       const _sellN = Math.min(_n, _has);
       S.ores.sp1 -= _sellN; S.gold = (S.gold|0) + _sellN * 40;
       try { if (typeof log === 'function') log('gold', `🛒 出售 🪨灵气石 ×${_sellN}（金元 +${_sellN*40}）`); } catch(_) {}
+      try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v1095 卖灵石也触发雷云判定
       try { commit(); } catch(_) {}
       try { const _sy = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy; } catch(_) {}
     } catch(_) {}
@@ -10916,7 +10920,7 @@ document.addEventListener('click', e => {
       await window.MHXY.syncNow();
       const r = await window.MHXY.api('/api/market/buy', { method: 'POST', body: { id: d.mktbuy, qty: _qty } });
       if (r.status === 401) { sheetConsign('market', '登录已过期，请重新登录联机账号。', consignSec); return; }
-      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetConsign('market', '购买成功！', consignSec); }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} await mktRefreshRev(); sheetConsign('market', '购买成功！', consignSec); }
       else { const _e = (r.json || {}).error; sheetConsign('market', _e === 'no_money' ? '货币不足。' : _e === 'not_found' ? '该寄售已下架。' : _e === 'own' ? '不能购买自己的寄售。' : '购买失败。', consignSec); }
     } catch(_) { sheetConsign('market', '网络不通，稍后再试。', consignSec); }
   })(); }
@@ -10930,7 +10934,7 @@ document.addEventListener('click', e => {
       await window.MHXY.syncNow();
       const r = await window.MHXY.api('/api/stall/buy', { method: 'POST', body: { id: d.stallbuyId } });
       if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
-      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetStall(_sx, _sy); }
+      if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} await mktRefreshRev(); sheetStall(_sx, _sy); }
       else { const _e = (r.json || {}).error; toastLog('sys', _e === 'no_cur' ? '货币不足。' : _e === 'not_found' ? '该摊货已下架。' : _e === 'own_item' ? '不能买自己的摊货。' : '购买失败。'); }
     } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
   })(); }
