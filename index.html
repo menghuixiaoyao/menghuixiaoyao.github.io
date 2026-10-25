@@ -193,11 +193,12 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <body>
 <div id="bcBanner"></div>
 <button id="encBanner" data-encopen="1" style="display:none;width:calc(100% - 20px);margin:6px 10px;padding:9px 12px;border:1px solid #b8860b;border-radius:8px;background:rgba(184,134,11,.15);color:#ffd75e;font-size:13px;text-align:center;cursor:pointer">🌀 奇遇降临 · 点我处理</button>
+  <button id="dreamBanner" data-dreamopen="1" style="display:none;width:calc(100% - 20px);margin:6px 10px;padding:9px 12px;border:1px solid #6a5acd;border-radius:8px;background:rgba(106,90,205,.15);color:#c9bfff;font-size:13px;text-align:center;cursor:pointer">🌙 昨夜有梦 · 点我入梦</button>
 <div id="skyLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(90,110,200,.12);color:#a9c3ff;font-size:12px;text-align:center"></div>
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1093</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1094</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1839,6 +1840,11 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     if (curR < hpMaxR) { const regen = Math.min(hpMaxR - curR, Math.floor(hpMaxR * 0.10 * afkSecs)); if (regen > 0) { S.hpCur = curR + regen; log('good', `🧘 闭关调息，生命 <span class="g">+${regen}</span>`); } }
   }
   if (logs.length) log('bad', '⛰️ 灵脉闭关期间遭遇挑战：<br>' + logs.join('<br>'));
+  try { // v1094 梦境回溯：灵脉闭关出关时必出一场（只设标记，横幅入梦；一天最多一场）
+    if (reason === 'manual' && type === 'vein' && afkSecs > 0 && !S.dreamPending && S.dreamDay !== todayStr()) {
+      S.dreamPending = { tier: afkSecs >= 43200 ? 2 : afkSecs >= 21600 ? 1 : 0, seed: (Date.now() % 1000000) * 1000 + Math.floor(Math.random() * 1000), createdAt: Date.now() };
+    }
+  } catch(_) {}
   return gain;
 }
 function afkChallenge(S) { // 灵脉挑战：系统匹配对手PK，战败按境界差掠夺
@@ -4009,7 +4015,8 @@ const ENCOUNTERS = [
   { t:'顺势深修', fx:[['lifespan',18]], msg:'出关时须发长了一截，寿元 +18 年。' },
   { t:'提前出关', fx:[['gold',30]], msg:'省下的时间拿去摆了半日摊，赚 30 金元。' } ]}
 ];
-function encById(id) { return ENCOUNTERS.find(e => e.id === id) || null; }
+const ENC_EXTRA = {}; // v1094 玩家奇遇：服务端已通过投稿（运行时注册，供 encById/chooseEncOpt 复用）
+function encById(id) { return ENCOUNTERS.find(e => e.id === id) || ENC_EXTRA[id] || null; }
 function encToday() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
 function rollEncounter(S) {
   if (!S || S.dead || S.encPending) return null;
@@ -4057,7 +4064,7 @@ function chooseEncOpt(S, i) {
   else { if (e.end && (S.encDepth | 0) >= 1) { S.encChain = (S.encChain | 0) + 1; try { if (typeof addFame === 'function') addFame(5, '走完奇遇链'); if (typeof addMerit === 'function') addMerit(3, '奇遇行善'); } catch(_){} } else { try { if (typeof addFame === 'function') addFame(1, '历奇遇'); } catch(_){} } S.encPending = null; S.encDepth = 0; }
   return { msg: o.msg || '', bad: !!o.bad, next };
 }
-Object.assign(C, { ENCOUNTERS, encById, rollEncounter, chooseEncOpt });
+Object.assign(C, { ENCOUNTERS, encById, rollEncounter, chooseEncOpt, encRegister: e => { if (e && e.id) ENC_EXTRA[e.id] = e; } });
 // ===== v1015 天象：按日期种子全服一致，只显现象、数值藏起 =====
 const SKY_KINDS = [
   { key: 'calm', w: 50, name: '天清地宁', desc: '寻常一日' },
@@ -5699,6 +5706,18 @@ const potName = (a, g) => `<span class="q${g}">${C.GRADES[g]}${AN[a]}丹</span>`
 function setBar(id, cur, max, txt) { $(id + 'Bar').style.width = (max > 0 ? Math.max(0, Math.min(100, cur / max * 100)) : 0) + '%'; $(id + 'Txt').textContent = txt; }
 function render() {
   try { const _eb = document.getElementById('encBanner'); if (_eb) _eb.style.display = (typeof S !== 'undefined' && S && S.encPending) ? 'block' : 'none'; } catch(_) {} // v1013 奇遇横幅
+  try { // v1094 梦境回溯：离线超 2 小时回来必出一场（一天最多一场）；24 小时不点自动散；横幅入梦不弹窗
+    if (typeof S !== 'undefined' && S) {
+      if (S.dreamPending && Date.now() - (S.dreamPending.createdAt || 0) > 86400000) S.dreamPending = null;
+      if (!S.dreamPending && S.dreamDay !== C.todayStr()) {
+        const _gap = Date.now() - (S.lastTick || Date.now());
+        if (_gap >= 7200000) S.dreamPending = { tier: _gap >= 43200000 ? 2 : _gap >= 21600000 ? 1 : 0, seed: (Date.now() % 1000000) * 1000 + Math.floor(Math.random() * 1000), createdAt: Date.now() };
+      }
+      const _db = document.getElementById('dreamBanner'); if (_db) _db.style.display = S.dreamPending ? 'block' : 'none';
+      if (S._pendingTrib && S.chenyuNext && !S._chenyuShown) { S._chenyuShown = 1; log('sys', '⚡ 雷云异象里，你想起梦里那句话：<span class="y">' + escDg(S.chenyuNext) + '</span>'); S.chenyuNext = null; }
+      if (!S._pendingTrib && S._chenyuShown) delete S._chenyuShown;
+    }
+  } catch(_) {}
   try { const _sl = document.getElementById('skyLine'); if (_sl && typeof S !== 'undefined' && S) { const _sk = C.skyToday(); if (_sk.key !== 'calm') { _sl.style.display = 'block'; _sl.textContent = '🌌 天象 · ' + _sk.name + '——' + _sk.desc; if (S._skySeen !== _sk.key + new Date().getDate()) { S._skySeen = _sk.key + new Date().getDate(); log('sys', '🌌 今日天象：<b class="y">' + _sk.name + '</b>——' + _sk.desc + '。'); } } else _sl.style.display = 'none'; } } catch(_) {} // v1015 天象
   try { const _ml = document.getElementById('meritLine'); if (_ml && typeof S !== 'undefined' && S && (S.realm|0) >= 6 && typeof meritDaysLeft === 'function') { const _dl = meritDaysLeft(); if (_dl <= 3) { _ml.style.display = 'block'; _ml.textContent = '🌩️ 大劫 ' + _dl + ' 天后降临 · 功德 ' + (S.merit|0) + '/100'; } else _ml.style.display = 'none'; } else if (_ml) _ml.style.display = 'none'; } catch(_) {} // v1015 大劫示警
   try { if (typeof window !== 'undefined' && !window.pk) { try { pk = null; } catch(_) {} } } catch(_) {} // v845 render开头同步：window.pk为空时本地pk也清，避免操作旧对象（v843条件太严，undefined没覆盖）
@@ -6624,8 +6643,8 @@ const rewTxt = rw => { const it = Object.keys(rw.items).map(key => { const [st, 
 function monCard(m, tail) { const r = C.RANKS[m.rank]; return `<span class="${r.cls}">【${r.name}】${m.name}</span>（Lv.${m.lv}）${tail || ''}${m.skills.length ? ' <span class="pu">' + m.skills.map(k => SKILLS[k].name).join('·') + '</span>' : ''}<br><small style="color:var(--dim)">${ATTRS.map(k => AN[k] + C.fmtN(m.attrs[k])).join(' ')} · 你：${ATTRS.map(k => AN[k] + C.fmtN(C.fightAttrs(S, true)[k])).join(' ')}</small>`; }
 function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 + 事件面板
   const run = S.run; if (!run || !run.grid) return;
-  const d = DIFFS[run.dk], g = run.grid, ev = run.ev, chs = ev ? C.advChoices(S) : [];
-  const TICON = { start: '🟫', empty: '⬜', fight: '⚔️', fortune: '✨', chest: '🎁', gchest: '🎁', gherb: '🌿', trap: '⚠️', rest: '⛺' };
+  const d = DIFFS[run.dk], g = run.grid, ev = run.ev, chs = ev ? (ev.type === 'dungeonText' ? [] : C.advChoices(S)) : [];
+  const TICON = { start: '🟫', empty: '⬜', fight: '⚔️', fortune: '✨', chest: '🎁', gchest: '🎁', gherb: '🌿', trap: '⚠️', rest: '⛺', event: '📜' };
   const shared = run.shared && run.shared.on ? run.shared : null;
   // v971 其他玩家位置索引
   const otherAt = {};
@@ -6665,15 +6684,15 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     cells += isP ? `<button class="acell${cls}" data-advself="1" style="position:relative">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`); // v768 点自己看状态
   }
   const scene = ev
-    ? (ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monCard(ev.mon, '挡住去路')}`
+    ? (ev.type === 'dungeonText' ? escDg(ev.text) : ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monCard(ev.mon, '挡住去路')}`
       : ev.type === 'guarded' ? `🛡️ ${ev.text}——${monCard(ev.mon, '正守着' + (ev.loot === 'herb' ? '🌿灵草' : '🎁宝箱'))}`
       : C.ADV_EVENTS[ev.id].t)
     : `<span style="color:var(--dim)">点格子移动，踩开 ❓ 格子触发事件；随时可撤退。</span>`; // v774 取消终点门
-  openSheet(`<h2>🗺️ ${d.name}冒险 <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
+  openSheet(`<h2>${run.dungeon ? '🏰 ' + escDg(run.dungeon.title) + ' <small style="font-size:12px;color:var(--dim)">作者：' + escDg(run.dungeon.by) + '</small>' : '🗺️ ' + d.name + '冒险'} <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
     (out && out.lines && out.lines.length ? `<div class="hint">${out.lines.join('；')}${out.battle ? `<details><summary>战斗记录（${out.battle.round} 回合）</summary>${out.battle.lines.join('')}</details>` : ''}</div>` : '') +
     `<div class="agrid">${cells}</div>${_coLine}` +
     `<div class="scene">${scene}</div>` +
-    (ev ? `<div class="grid2">${chs.map((c, i) => `<button class="btn ${c.retreat ? '' : i === 0 ? 'gold' : ''}" data-advc="${i}" ${c.dis ? 'disabled' : ''} style="line-height:1.3">${c.l}${c.hint ? `<br><small>${c.hint}</small>` : ''}</button>`).join('')}</div><div class="hint" style="text-align:center">也可直接走开，事件留在格子上，回来再处理</div>` : '') +
+    (ev && ev.type === 'dungeonText' ? `<div class="grid2"><button class="btn gold full" data-dungeontext>继续前行</button></div>` : ev ? `<div class="grid2">${chs.map((c, i) => `<button class="btn ${c.retreat ? '' : i === 0 ? 'gold' : ''}" data-advc="${i}" ${c.dis ? 'disabled' : ''} style="line-height:1.3">${c.l}${c.hint ? `<br><small>${c.hint}</small>` : ''}</button>`).join('')}</div><div class="hint" style="text-align:center">也可直接走开，事件留在格子上，回来再处理</div>` : '') +
     `<div class="row" style="display:flex;gap:8px"><button class="btn gold" data-dazuo style="flex:1">🧘 调息（1体力回10%生命）</button><button class="btn" data-tpscroll style="flex:1" ${(S.meds.tpscroll|0) > 0 ? '' : 'disabled'}>📜 传送卷×${S.meds.tpscroll|0}</button></div>` +
     `<div class="row" style="display:flex;gap:8px"><button class="btn" data-advretreat style="flex:1">🏳️ 撤退</button><button class="btn" data-close style="flex:1">稍后继续</button></div>` +
     `<div class="empty" style="text-align:left;padding:8px 2px">本轮收获：${rewTxt(run.rew)}</div>`);
@@ -9086,8 +9105,274 @@ function afterAct() { // 行动后：中毒掉生命、死亡结算、饥饿灵�
   if (S.dead) return;
   const e = C.afterAction(S);
   e.bites.forEach(b => log('bad', `🦷 ${petTag(b.pet)} 饿极了，<span class="r">狠狠咬了你一口</span>！生命 <span class="r">-${b.lost}</span>，灵宠饥饿 +${K.BITE_HUNGER}、忠诚 -${K.BITE_LOYAL}` + (b.st.length ? `，你陷入 ${stTxt(b.st)}` : '') + '。快喂它吃东西！'));
-  try { const _enc = C.rollEncounter(S); if (_enc) log('sys', '🌀 <b class="y">奇遇降临</b>——顶部横幅等你处理。'); } catch(_) {} // v1013 奇遇触发
+  let _encLocal = null; try { _encLocal = C.rollEncounter(S); if (_encLocal) log('sys', '🌀 <b class="y">奇遇降临</b>——顶部横幅等你处理。'); } catch(_) {} // v1013 奇遇触发
+  try { // v1094 玩家奇遇：本地没触发时，低概率从全服投稿池抽一条（署名，模板效果；每日仍限 3 次）
+    if (!_encLocal && !S.encPending && typeof MHXY !== 'undefined' && MHXY.loggedIn() && Math.random() < 0.03) {
+      const _today = C.todayStr(), _ed = S.encDay;
+      if (!_ed || _ed.d !== _today || (_ed.n | 0) < 3) {
+        MHXY.api('/api/creator/encounter/random').then(function(r) {
+          try {
+            if (r.ok && r.json && r.json.ok && r.json.id && !S.encPending) {
+              C.encRegister({ id: r.json.id, sc: 'any', text: r.json.text, opts: r.json.opts, by: r.json.by });
+              S.encPending = r.json.id;
+              if (!S.encDay || S.encDay.d !== _today) S.encDay = { d: _today, n: 0 };
+              S.encDay.n++;
+              log('sys', '🌀 <b class="y">奇遇降临</b>——顶部横幅等你处理。');
+              render();
+            }
+          } catch(_) {}
+        });
+      }
+    }
+  } catch(_) {}
 }
+
+/* ---------- v1094 玩家创作：秘境 + 奇遇投稿 + 梦境回溯 ---------- */
+function escDg(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+const DG_FEE_TIERS = [0, 10, 50, 100];
+const DG_GUARD_NAMES = { easy: '弱', mid: '中', hard: '强' };
+const ENC_FX_TEMPLATES = [
+  { k: 'gold30', n: '金元 +30' }, { k: 'gold_20', n: '金元 -20' },
+  { k: 'sta1', n: '体力 +1' }, { k: 'sta_1', n: '体力 -1' },
+  { k: 'life10', n: '寿元 +10' }, { k: 'life_5', n: '寿元 -5' },
+  { k: 'mana20', n: '法力 +20' }, { k: 'sp1', n: '下品灵石 +1' }, { k: 'none', n: '无事发生' },
+];
+/* --- 梦境回溯：三段拼模板（36 底景 × 12 梦中人 × 12 收尾）+ 16 组二选一 + 12 句谶语 --- */
+const DREAM_SCENES = ['云海翻涌，脚下无路','一座旧宅，门扉半掩','断桥横在雾里，桥那头没有人','无字碑立在荒原上，碑面光滑如镜','月下长河，河水倒着流','古松之下，落了一地松针','残碑半截埋在土里，字迹被风磨平','雾中山门大开，门内空无一人','空殿里摆着一桌冷酒','枯井深处传来水声','雪夜无月，脚印只有一串','竹林深处，有人在吹一支短笛','荒冢前放着一束未谢的花','丹炉冷了，炉灰里埋着半颗丹','石阶九百九十九级，尽头是云','莲池无波，莲叶上停着一只白鹤','风铃挂在枯枝上，无风自响','一卷旧书摊在案上，缺了最后一页','寒潭如镜，潭底沉着一柄剑','飞瀑倒悬，水声却听不见','青铜门半开，门后透出微光','纸船顺着暗河漂，不沉也不停','万家灯火在脚下，唯独一盏是冷的','孤舟横在雾江上，舟上没有桨','霜桥结满了冰，桥下是空的','枯藤缠着一座石塔，塔顶有光','云梯垂落，梯级上全是旧脚印','沙洲上立着一面旗，旗面没有字','梅林深处，一树梅花开在雪里','古道尽头，有一间不点灯的客栈','石镜立在路边，镜里没有人影','灵田荒着，田埂上坐着一只白狐','废庙的空龛里，多了一炷冷香','星河低垂，星子一颗颗熄灭','雾桥通向对岸，对岸也是雾','寒宫的门开着，门内结着霜花'];
+const DREAM_FIGURES = ['一位故人站在雾里，容颜如旧','灵宠蹲在路边，尾巴尖沾着露水','白衣人背对着你，望着远处','自己的声音从身后传来，叫你的名字','一名老道坐在石上，闭目不语','小童提着一盏灯，灯芯是冷的','影子先你一步，站在了前面','一只白鹤落在肩头，不肯飞走','陌生的女子立在桥头，手里捏着半片叶子','少年时的你坐在台阶上，低头数着石子','一位披蓑的老者，蓑衣上落满了雪','空无一人，只有一件旧衣挂在枝上'];
+const DREAM_ENDINGS = ['醒来时，窗外正下着雨','梦散了，枕边多了一片叶子','再回头时，身后的路已经不见了','天光微亮，梦里的声音还在耳边','睁开眼，手心里攥着一缕凉气','梦醒了，那盏灯却还亮着','一声钟响，整座梦都碎了','醒来后，忽然想不起梦里那人的脸','梦的尽头，有人轻轻合上了门','晨光漫进来，梦里的雪化在了眉间','梦散时，耳边留下一句没听清的话','醒来时，屋里静得像什么都没发生过'];
+const DREAM_CHOICES = [
+  { a: '推门进去', b: '转身离开', ra: '门后空无一人，只有一桌冷茶。', rb: '身后的脚步声停了。', ka: 'xp', kb: 'mana' },
+  { a: '接过那盏灯', b: '不接', ra: '灯芯一暖，照亮了来路。', rb: '灯灭了，路却还在。', ka: 'mana', kb: 'merit' },
+  { a: '开口问一句', b: '只看不言', ra: '那人笑了笑，没有回答。', rb: '沉默里，雾散了一点。', ka: 'merit', kb: 'xp' },
+  { a: '伸手去取', b: '收手后退', ra: '指尖触到一片凉意。', rb: '那东西自己落回了原处。', ka: 'luck', kb: 'mana' },
+  { a: '跟上去', b: '站在原地', ra: '跟了三步，雾里没了人影。', rb: '原地等了一夜，天亮了。', ka: 'xp', kb: 'luck' },
+  { a: '坐下来', b: '继续往前走', ra: '坐下后，心静了许多。', rb: '越往前走，风越轻。', ka: 'merit', kb: 'xp' },
+  { a: '喊一声', b: '捂住耳朵', ra: '喊声在雾里转了个圈。', rb: '安静下来，听见了水声。', ka: 'mana', kb: 'merit' },
+  { a: '把花留下', b: '把花带走', ra: '花留在冢前，开了一夜。', rb: '花带在怀里，香了一路。', ka: 'merit', kb: 'luck' },
+  { a: '吹熄那盏灯', b: '添一炷香', ra: '灯灭了，影子回来了。', rb: '香烟笔直，升进云里。', ka: 'luck', kb: 'merit' },
+  { a: '登上石阶', b: '绕开石阶', ra: '登到一半，云从脚下升起。', rb: '绕开后，路自己伸到了脚下。', ka: 'xp', kb: 'mana' },
+  { a: '饮一口冷酒', b: '不碰那桌酒', ra: '酒入喉，凉意直达心底。', rb: '酒还在桌上，香气散了。', ka: 'mana', kb: 'xp' },
+  { a: '推开青铜门', b: '敲三下门', ra: '门后是一间空屋。', rb: '门内传来一声叹息。', ka: 'luck', kb: 'merit' },
+  { a: '拾起那片叶子', b: '任它飘走', ra: '叶子在掌心化成了一滴水。', rb: '叶子飘进雾里，不见了。', ka: 'merit', kb: 'xp' },
+  { a: '向那人行礼', b: '转身就走', ra: '那人还了一礼，雾淡了。', rb: '走了几步，回头已无人。', ka: 'merit', kb: 'luck' },
+  { a: '把剑拔出来', b: '不碰那柄剑', ra: '剑出鞘三寸，又自己归鞘。', rb: '剑沉在潭底，光未灭。', ka: 'xp', kb: 'mana' },
+  { a: '睁开眼', b: '再睡一会儿', ra: '睁开眼，天已经亮了。', rb: '再睡一会儿，梦深了一层。', ka: 'luck', kb: 'xp' },
+];
+const DREAM_CHENYU = ['桥断处，路还在。','灯冷时，人未远。','镜中人，先你一步。','井水满时，月在井底。','雪落无声，门自开。','旧衣还在枝上。','云散后，山门自开。','那一页，始终是空的。','影子先回来了。','香冷了，龛还空着。','河倒流时，鱼往上游。','星熄处，路让出来了。'];
+function dreamRng(seed) { let s = (seed >>> 0) || 1; return function() { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+function dreamCompose(seed) {
+  let s = seed, out = null;
+  for (let t = 0; t < 20; t++) {
+    const r = dreamRng(s);
+    const sc = DREAM_SCENES[Math.floor(r() * DREAM_SCENES.length)];
+    const fg = DREAM_FIGURES[Math.floor(r() * DREAM_FIGURES.length)];
+    const en = DREAM_ENDINGS[Math.floor(r() * DREAM_ENDINGS.length)];
+    const ch = DREAM_CHOICES[Math.floor(r() * DREAM_CHOICES.length)];
+    out = { key: sc + '|' + fg + '|' + en, text: sc + '。' + fg + '。' + en, ch: ch };
+    if (out.key !== S.dreamLastKey) break;
+    s++;
+  }
+  return out;
+}
+function dreamOpen() {
+  const p = S.dreamPending; if (!p) { render(); return; }
+  if (Date.now() - (p.createdAt || 0) > 86400000) { S.dreamPending = null; render(); return; }
+  if (!p.parts) p.parts = dreamCompose(p.seed);
+  const tierName = ['短梦', '长梦', '大梦'][p.tier] || '短梦';
+  openSheet(`<h2>🌙 梦境回溯 · ${tierName}</h2><div class="scene">${escDg(p.parts.text)}</div><div class="hint">梦中抉择（没有对错，选完梦就醒）</div><div class="grid2"><button class="btn gold" data-dreamopt="0">${escDg(p.parts.ch.a)}</button><button class="btn gold" data-dreamopt="1">${escDg(p.parts.ch.b)}</button></div><div class="row"><button class="btn full" data-close>先不做这个梦（横幅留着）</button></div>`);
+}
+function doDreamOpt(i) {
+  const p = S.dreamPending; if (!p || !p.parts) return;
+  const ch = p.parts.ch, side = i === 0 ? 'a' : 'b', knob = side === 'a' ? ch.ka : ch.kb, res = side === 'a' ? ch.ra : ch.rb, tier = p.tier | 0;
+  const perSec = 1 + C.maiLuo(S) + (((S.realm | 0) >= 8) ? (S.xianfuEnergy | 0) : (S.dongfuEnergy | 0));
+  const secs = tier === 2 ? 900 : tier === 1 ? 480 : 180;
+  let eff = '';
+  try {
+    if (knob === 'xp') { const n = perSec * secs; C.gainXp(S, n); eff = '修为 +' + n; }
+    else if (knob === 'mana') { const n = perSec * secs; S.mana = Math.min(C.manaCapEff(S), S.mana + n); eff = '法力 +' + n; }
+    else if (knob === 'merit') { const n = tier + 1; S.merit = (S.merit | 0) + n; eff = '功德 +' + n; }
+    else { const v = [1.10, 1.15, 1.20][tier]; S.buff = { k: 'luck', v: v, left: K.BUFF_ACTS, src: '梦境' }; eff = '气运 ×' + v + '（' + K.BUFF_ACTS + ' 点体力）'; }
+  } catch(_) {}
+  log('good', '🌙 ' + res + (eff ? `<br><span class="g">${eff}</span>` : ''));
+  try { // v1094 谶语：一成概率留一句进见闻，下次突破前雷云异象里再见（无加成）
+    if (Math.random() < 0.10) {
+      const line = DREAM_CHENYU[Math.floor(Math.random() * DREAM_CHENYU.length)];
+      S.chenyuNext = line; S.chenyuLog = ((S.chenyuLog || []).concat([line])).slice(-20);
+      log('sys', '🔮 梦里还留了一句话，已记入见闻。');
+    }
+  } catch(_) {}
+  S.dreamDay = C.todayStr(); S.dreamLastKey = p.parts.key; S.dreamPending = null;
+  try { commit(); } catch(_) {}
+  closeSheet(); render();
+}
+/* --- 玩家秘境 --- */
+function sheetDungeonList() {
+  if (!MHXY.loggedIn()) { openSheet('<h2>🏰 玩家秘境</h2><div class="hint">先在联机面板登录，才能看别人的秘境、提交自己的。</div><div class="row"><button class="btn full" data-close>关闭</button></div>'); return; }
+  openSheet('<h2>🏰 玩家秘境</h2><div class="hint">加载中…</div>');
+  MHXY.api('/api/creator/dungeon/list').then(function(r) {
+    try {
+      if (!r.ok || !r.json || !r.json.ok) { openSheet('<h2>🏰 玩家秘境</h2><div class="hint">加载失败，稍后再试。</div><div class="row"><button class="btn full" data-close>关闭</button></div>'); return; }
+      const list = r.json.list || [];
+      let h = '<h2>🏰 玩家秘境</h2><div class="hint">别人做的 6×6 秘境：闯关费 70% 归作者。通关率与评分全服可见。</div>';
+      h += '<div class="grid2"><button class="btn gold full" data-dungeoneditor>✏️ 我要做秘境</button><button class="btn full" data-dungeonmine>📜 我的秘境</button></div>';
+      if (!list.length) h += '<div class="hint">还没有通过审核的秘境。你可以做第一个。</div>';
+      list.forEach(function(dg) {
+        const rate = dg.attempts ? Math.round(dg.clears / dg.attempts * 100) + '%' : '—';
+        const stars = dg.ratings ? (dg.avgStars || 0).toFixed(1) + '★（' + dg.ratings + '评）' : '暂无评分';
+        h += `<div class="row"><div class="lab">🏰 ${escDg(dg.title)}<small>作者 ${escDg(dg.author)} · 闯关费 ${dg.fee} 金元 · 通关率 ${rate} · ${stars}</small></div><button class="btn gold" data-dungeonenter="${dg.id}">进入</button></div>`;
+      });
+      h += '<div class="row"><button class="btn full" data-close>关闭</button></div>';
+      openSheet(h);
+    } catch(_) {}
+  });
+}
+function dgNewEdit() {
+  const tiles = [];
+  for (let y = 0; y < 6; y++) { const row = []; for (let x = 0; x < 6; x++) row.push({ t: 'empty' }); tiles.push(row); }
+  tiles[5][0] = { t: 'start' }; tiles[0][5] = { t: 'exit' };
+  return { title: '', fee: 0, paint: 'fight', sel: null, tiles: tiles };
+}
+function sheetDungeonEditor() {
+  if (!MHXY.loggedIn()) { openSheet('<h2>✏️ 做秘境</h2><div class="hint">先在联机面板登录。</div><div class="row"><button class="btn full" data-close>关闭</button></div>'); return; }
+  const ed = window._dgEdit || (window._dgEdit = dgNewEdit());
+  const DG_ICONS = { start: '🚶', exit: '🚪', empty: '⬜', fight: '⚔️', gchest: '🎁', gherb: '🌿', event: '📜', rest: '⛺' };
+  const DG_NAMES = { empty: '空', fight: '守怪', gchest: '宝箱', gherb: '灵草', event: '事件', rest: '休息' };
+  let cells = '';
+  for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) {
+    const c = ed.tiles[y][x], sel = ed.sel && ed.sel[0] === x && ed.sel[1] === y;
+    const fixed = c.t === 'start' || c.t === 'exit';
+    cells += fixed ? `<div class="acell" style="border:1px solid #b8860b">${DG_ICONS[c.t]}</div>`
+      : `<button class="acell${sel ? ' gold' : ''}" data-dgsel="${x},${y}" data-dgpaint="${x},${y}">${DG_ICONS[c.t]}</button>`;
+  }
+  let combat = 0, evs = 0;
+  ed.tiles.forEach(row => row.forEach(c => { if (c.t === 'fight' || c.t === 'gchest' || c.t === 'gherb') combat++; if (c.t === 'event') evs++; }));
+  let detail = '<div class="hint">点格子涂色（左下起点、右上终点固定）。</div>';
+  if (ed.sel) {
+    const c = ed.tiles[ed.sel[1]][ed.sel[0]];
+    if (c.t === 'fight' || c.t === 'gchest' || c.t === 'gherb') {
+      detail = `<div class="row"><div class="lab">守怪强度：${DG_GUARD_NAMES[c.guard] || '中'}</div><button class="btn" data-dgguard="easy">弱</button><button class="btn" data-dgguard="mid">中</button><button class="btn" data-dgguard="hard">强</button></div>`;
+      if (c.t === 'gchest') detail += `<div class="row"><div class="lab">宝箱档次：${c.chest === 'fine' ? '精致（+1 株灵草）' : '普通'}</div><button class="btn" data-dgchest="normal">普通</button><button class="btn" data-dgchest="fine">精致</button></div>`;
+    } else if (c.t === 'event') {
+      detail = `<div class="row" style="display:flex;gap:6px"><input id="dgEvTxt" maxlength="40" placeholder="事件格一句文本（≤40 字）" value="${escDg(c.text || '')}" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-dgeventsave>保存文本</button></div>`;
+    } else detail = `<div class="hint">当前格：${DG_NAMES[c.t] || ''}。</div>`;
+  }
+  openSheet(`<h2>✏️ 做秘境</h2><div class="hint">6×6 编辑器：摆图、选守怪档、宝箱档、事件格写一句文本。数值与概率永远由系统定，玩家只定名字、文本、组合。提交后等 GM 审核，通过全服可选。</div>`
+    + `<div class="row" style="display:flex;gap:6px"><input id="dgTitle" maxlength="20" placeholder="秘境名（≤20 字）" value="${escDg(ed.title)}" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`
+    + `<div class="row"><div class="lab">闯关费：${ed.fee} 金元（70% 归你）</div>${DG_FEE_TIERS.map(f => `<button class="btn${ed.fee === f ? ' gold' : ''}" data-dgfee="${f}">${f}</button>`).join('')}</div>`
+    + `<div class="row"><div class="lab">画笔：${DG_NAMES[ed.paint]}</div><button class="btn${ed.paint === 'fight' ? ' gold' : ''}" data-dgpainttype="fight">⚔️守怪</button><button class="btn${ed.paint === 'gchest' ? ' gold' : ''}" data-dgpainttype="gchest">🎁宝箱</button><button class="btn${ed.paint === 'gherb' ? ' gold' : ''}" data-dgpainttype="gherb">🌿灵草</button><button class="btn${ed.paint === 'event' ? ' gold' : ''}" data-dgpainttype="event">📜事件</button><button class="btn${ed.paint === 'rest' ? ' gold' : ''}" data-dgpainttype="rest">⛺休息</button><button class="btn${ed.paint === 'empty' ? ' gold' : ''}" data-dgpainttype="empty">⬜擦除</button></div>`
+    + `<div class="agrid">${cells}</div>`
+    + `<div class="hint">战斗格 ${combat}（至少 3）· 事件格 ${evs}（至多 8）</div>` + detail
+    + `<div class="grid2"><button class="btn gold" data-dgsubmit>提交审核</button><button class="btn" data-dgclear>清空重画</button></div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+}
+function dgPaintCell(x, y) {
+  const ed = window._dgEdit; if (!ed) return;
+  const c = ed.tiles[y][x]; if (c.t === 'start' || c.t === 'exit') return;
+  const p = ed.paint;
+  if (p === 'fight') ed.tiles[y][x] = { t: 'fight', guard: 'mid' };
+  else if (p === 'gchest') ed.tiles[y][x] = { t: 'gchest', guard: 'mid', chest: 'normal' };
+  else if (p === 'gherb') ed.tiles[y][x] = { t: 'gherb', guard: 'mid' };
+  else if (p === 'event') ed.tiles[y][x] = { t: 'event', text: '' };
+  else if (p === 'rest') ed.tiles[y][x] = { t: 'rest' };
+  else ed.tiles[y][x] = { t: 'empty' };
+  ed.sel = [x, y];
+}
+function doDungeonSubmit() {
+  const ed = window._dgEdit; if (!ed) return;
+  const titleEl = document.getElementById('dgTitle'); if (titleEl) ed.title = titleEl.value.trim();
+  if (!ed.title) { toastLog('sys', '先给秘境起个名字'); return; }
+  let combat = 0, evs = 0, badEv = false;
+  ed.tiles.forEach(row => row.forEach(c => { if (c.t === 'fight' || c.t === 'gchest' || c.t === 'gherb') combat++; if (c.t === 'event') { evs++; if (!c.text || !c.text.trim()) badEv = true; } }));
+  if (combat < 3) { toastLog('sys', '战斗格至少 3 格（守怪/宝箱/灵草都算）'); return; }
+  if (evs > 8) { toastLog('sys', '事件格至多 8 格'); return; }
+  if (badEv) { toastLog('sys', '每个事件格都要写一句文本'); return; }
+  MHXY.api('/api/creator/dungeon/submit', { method: 'POST', body: { title: ed.title, fee: ed.fee, grid: { tiles: ed.tiles } } }).then(function(r) {
+    if (r.ok && r.json && r.json.ok) { window._dgEdit = null; toastLog('sys', '秘境已提交，等 GM 审核'); sheetDungeonMine(); }
+    else toastLog('sys', '提交失败：' + ((r.json && r.json.error) || '网络不通'));
+  });
+}
+function sheetDungeonMine() {
+  if (!MHXY.loggedIn()) { openSheet('<h2>📜 我的秘境</h2><div class="hint">先在联机面板登录。</div><div class="row"><button class="btn full" data-close>关闭</button></div>'); return; }
+  openSheet('<h2>📜 我的秘境</h2><div class="hint">加载中…</div>');
+  MHXY.api('/api/creator/dungeon/mine').then(function(r) {
+    try {
+      const list = (r.ok && r.json && r.json.ok) ? (r.json.list || []) : [];
+      const stName = { pending: '待审核', approved: '已通过', rejected: '未通过' };
+      let h = '<h2>📜 我的秘境</h2><div class="hint">每人最多 3 个待审+已通过。</div>';
+      if (!list.length) h += '<div class="hint">你还没有提交过秘境。</div>';
+      list.forEach(function(dg) {
+        const rate = dg.attempts ? Math.round(dg.clears / dg.attempts * 100) + '%' : '—';
+        h += `<div class="row"><div class="lab">🏰 ${escDg(dg.title)}<small>${stName[dg.status] || dg.status} · 费 ${dg.fee} · 闯 ${dg.attempts} · 通关 ${dg.clears}（${rate}）</small></div></div>`;
+      });
+      h += '<div class="grid2"><button class="btn gold full" data-dungeoneditor>✏️ 再做一个</button><button class="btn full" data-close>关闭</button></div>';
+      openSheet(h);
+    } catch(_) {}
+  });
+}
+function doDungeonEnter(id) {
+  if (S.run) { toastLog('sys', '先结束当前冒险再进秘境'); return; }
+  if ((S.stamina | 0) < 1) { toastLog('sys', '体力不足（进秘境要 1 点体力）'); return; }
+  MHXY.api('/api/creator/dungeon/enter', { method: 'POST', body: { id: id } }).then(function(r) {
+    try {
+      if (!r.ok || !r.json || !r.json.ok) { toastLog('sys', '进入失败：' + ((r.json && r.json.error) || '网络不通')); return; }
+      const j = r.json;
+      const tiles = j.grid.tiles.map(function(row) { return row.map(function(c) { return { t: c.t, guard: c.guard, chest: c.chest, text: c.text, seen: 0 }; }); });
+      S.run = { dk: 'mid', step: 1, steps: 999, seen: [], rew: { pts: 0, gains: {}, gold: 0, xp: 0, items: {}, lvUp: 0, wins: 0 }, last: [], grid: { w: 6, h: 6, tiles: tiles, px: 0, py: 5, ex: 5, ey: 0, moves: 0 }, evCount: 0, ev: null, dungeon: { id: j.id, runId: j.runId, title: j.title, by: j.by, fee: j.fee } };
+      S.stamina = Math.max(0, (S.stamina | 0) - 1);
+      commit(); sheetRun();
+    } catch(_) {}
+  });
+}
+function doDungeonClear() {
+  const run = S.run; if (!run || !run.dungeon) return;
+  MHXY.api('/api/creator/dungeon/clear', { method: 'POST', body: { runId: run.dungeon.runId } }).then(function(r) {
+    try {
+      if (!r.ok || !r.json || !r.json.ok) { toastLog('sys', '通关未记上（网络不通），走出去再走回来可重试'); sheetRun(); return; }
+      S._lastDungeonId = run.dungeon.id;
+      const sum = C.advEnd(S, 'dungeon');
+      commit();
+      openSheet(`<h2>🏰 通关！</h2><div class="scene">${escDg(run.dungeon.title)}——你走到了终点。</div><div class="hint">走了 ${sum.steps} 格 · 触发 ${sum.total} 事件。给这个秘境打个分：</div><div class="grid2">${[1, 2, 3, 4, 5].map(n => `<button class="btn${n >= 4 ? ' gold' : ''}" data-dungeonrate="${n}">${n}★</button>`).join('')}</div><div class="row"><button class="btn full" data-close>关闭</button></div>`);
+    } catch(_) {}
+  });
+}
+/* --- 奇遇投稿 --- */
+function sheetEncSubmit() {
+  if (!MHXY.loggedIn()) { openSheet('<h2>🌀 奇遇投稿</h2><div class="hint">先在联机面板登录。</div><div class="row"><button class="btn full" data-close>关闭</button></div>'); return; }
+  openSheet('<h2>🌀 奇遇投稿</h2><div class="hint">加载中…</div>');
+  MHXY.api('/api/creator/encounter/mine').then(function(r) {
+    try {
+      const list = (r.ok && r.json && r.json.ok) ? (r.json.list || []) : [];
+      const stName = { pending: '待审核', approved: '已通过（全服奇遇池）', rejected: '未通过' };
+      const fxOpts = ENC_FX_TEMPLATES.map(f => `<option value="${f.k}">${f.n}</option>`).join('');
+      let h = '<h2>🌀 奇遇投稿</h2><div class="hint">一句话 + 两个选项，结果类型从模板里选（数值永远由系统定）。通过审核后进全服奇遇池，署名跟着走。每人一个待审，提交新的会覆盖旧的。</div>';
+      h += `<div class="row" style="display:flex;gap:6px"><input id="encTxt" maxlength="100" placeholder="奇遇正文（≤100 字）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`
+        + `<div class="row" style="display:flex;gap:6px"><input id="encA" maxlength="20" placeholder="选项一（≤20 字）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><select id="encAFx" style="padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">${fxOpts}</select></div>`
+        + `<div class="row" style="display:flex;gap:6px"><input id="encAMsg" maxlength="60" placeholder="选项一结果话（≤60 字）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`
+        + `<div class="row" style="display:flex;gap:6px"><input id="encB" maxlength="20" placeholder="选项二（≤20 字）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><select id="encBFx" style="padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">${fxOpts}</select></div>`
+        + `<div class="row" style="display:flex;gap:6px"><input id="encBMsg" maxlength="60" placeholder="选项二结果话（≤60 字）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`
+        + `<div class="grid2"><button class="btn gold" data-encsubmit>提交审核</button><button class="btn" data-close>关闭</button></div>`;
+      if (list.length) {
+        h += '<h3 style="margin:8px 0 2px">我的投稿</h3>';
+        list.forEach(function(e) { h += `<div class="row"><div class="lab">🌀 ${escDg(e.text)}<small>${stName[e.status] || e.status}</small></div></div>`; });
+      }
+      openSheet(h);
+    } catch(_) {}
+  });
+}
+function doEncSubmit() {
+  const gv = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const text = gv('encTxt'), a = gv('encA'), b = gv('encB'), aMsg = gv('encAMsg'), bMsg = gv('encBMsg');
+  const aFx = gv('encAFx'), bFx = gv('encBFx');
+  if (!text || !a || !b || !aMsg || !bMsg) { toastLog('sys', '正文、两个选项、两句结果话都要填'); return; }
+  MHXY.api('/api/creator/encounter/submit', { method: 'POST', body: { text: text, optA: { t: a, fx: aFx, msg: aMsg }, optB: { t: b, fx: bFx, msg: bMsg } } }).then(function(r) {
+    if (r.ok && r.json && r.json.ok) { toastLog('sys', '奇遇已提交，等 GM 审核'); sheetEncSubmit(); }
+    else toastLog('sys', '提交失败：' + ((r.json && r.json.error) || '网络不通'));
+  });
+}
+window.sheetDungeonList = sheetDungeonList;
+window.sheetDungeonEditor = sheetDungeonEditor;
+window.sheetDungeonMine = sheetDungeonMine;
+window.sheetEncSubmit = sheetEncSubmit;
 
 /* ---------- v1015 见闻录 ---------- */
 function encCodexHtml() {
@@ -9100,6 +9385,7 @@ function encCodexHtml() {
   h += list.map(e => seen[e.id]
     ? `<div class="row"><div class="lab">🌀 ${e.text}<small>${scName[e.sc] || ''} · 已历</small></div></div>`
     : `<div class="row"><div class="lab" style="opacity:.5">？？？<small>${scName[e.sc] || ''} · 未历</small></div></div>`).join('');
+  if (S.chenyuLog && S.chenyuLog.length) { h += '<h3 style="margin:8px 0 2px">🔮 梦中谶语</h3>' + S.chenyuLog.map(l => `<div class="row"><div class="lab">🔮 ${escDg(l)}<small>梦里留的话 · 只是眼熟</small></div></div>`).join(''); }
   return h;
 }
 /* ---------- v1015 成就称号 ---------- */
@@ -9329,7 +9615,7 @@ function doSteleLike(id) {
   try { MHXY.api('/api/stele/like', { method: 'POST', body: { id } }).then(r => { if (r && r.json && r.json.ok) sheetStele(); else toastLog('bad', '点赞失败' + ((r && r.json && r.json.error) ? '：' + r.json.error : '')); }).catch(() => toastLog('bad', '点赞失败（网络）')); } catch(_) {}
 }
 
-function openEncSheet() { const e = C.encById(S.encPending); if (!e) { S.encPending = null; render(); return; } openSheet(`<h2>🌀 奇遇</h2><div style="font-size:14px;line-height:1.7;margin:8px 0">${e.text}</div>` + e.opts.map((o, i) => `<button class="btn full" style="margin-top:6px" data-encopt="${i}">${o.t}</button>`).join('')); petSay('enc', 0.25); } // v1013 奇遇
+function openEncSheet() { const e = C.encById(S.encPending); if (!e) { S.encPending = null; render(); return; } openSheet(`<h2>🌀 奇遇</h2>${e.by ? `<div class="hint">✍️ 作者：${escDg(e.by)}</div>` : ''}<div style="font-size:14px;line-height:1.7;margin:8px 0">${e.by ? escDg(e.text) : e.text}</div>` + e.opts.map((o, i) => `<button class="btn full" style="margin-top:6px" data-encopt="${i}">${e.by ? escDg(o.t) : o.t}</button>`).join('')); petSay('enc', 0.25); } // v1013 奇遇；v1094 玩家投稿署名+转义
 function doEncOpt(i) { const r = C.chooseEncOpt(S, i | 0); if (!r) { closeSheet(); return; } log(r.bad ? 'bad' : 'good', `🌀 ${r.msg}`); if (r.next) { commit(); openEncSheet(); } else { commit(); closeSheet(); try { checkAchievements(); } catch(_) {} } } // v1013 奇遇
 function doRefineGear(spec) { const _p = String(spec).split(':'); const r = C.refineGear(S, _p[0], _p[0] === 'bag' ? +_p[1] : _p[1]); if (!r.ok) { toastLog('bad', '🔥 炼灵失败：' + r.err); return; } log('good', `🔥 炼灵成功：炼灵 ${r.rl}${r.tier ? '·' + r.tier : ''}（耗寿元 ${r.cost} 年，该装备属性 +${r.rl * 5}%）`); commit(); sheetLife('forge'); } // v1013 炼灵
 function doFood(kind, k, n) {
@@ -10172,6 +10458,22 @@ document.addEventListener('click', e => {
   if (d.steleclaim !== undefined) { doSteleClaim(); return; }
   if (d.spectate) { doSpectate(d.spectate, t.getAttribute('data-specmeta') || ''); return; }
   if (d.encopen) { openEncSheet(); return; }
+  if (d.dreamopen !== undefined) { dreamOpen(); return; }
+  if (d.dreamopt !== undefined) { doDreamOpt(+d.dreamopt); return; }
+  if (d.dungeontext !== undefined) { if (S.run) S.run.ev = null; sheetRun(); return; }
+  if (d.dungeoneditor !== undefined) { sheetDungeonEditor(); return; }
+  if (d.dungeonmine !== undefined) { sheetDungeonMine(); return; }
+  if (d.dungeonenter !== undefined) { doDungeonEnter(d.dungeonenter); return; }
+  if (d.dungeonrate !== undefined) { MHXY.api('/api/creator/dungeon/rate', { method: 'POST', body: { id: S._lastDungeonId, stars: +d.dungeonrate } }).then(function() { toastLog('sys', '评分已记下，多谢道友'); closeSheet(); }); return; }
+  if (d.dgpainttype !== undefined) { if (window._dgEdit) window._dgEdit.paint = d.dgpainttype; sheetDungeonEditor(); return; }
+  if (d.dgsel !== undefined) { const _p = d.dgsel.split(',').map(Number); dgPaintCell(_p[0], _p[1]); sheetDungeonEditor(); return; }
+  if (d.dgguard !== undefined) { const _ed = window._dgEdit; if (_ed && _ed.sel) _ed.tiles[_ed.sel[1]][_ed.sel[0]].guard = d.dgguard; sheetDungeonEditor(); return; }
+  if (d.dgchest !== undefined) { const _ed = window._dgEdit; if (_ed && _ed.sel) _ed.tiles[_ed.sel[1]][_ed.sel[0]].chest = d.dgchest; sheetDungeonEditor(); return; }
+  if (d.dgeventsave !== undefined) { const _ed = window._dgEdit, _el = document.getElementById('dgEvTxt'); if (_ed && _ed.sel && _el) _ed.tiles[_ed.sel[1]][_ed.sel[0]].text = _el.value.trim().slice(0, 40); sheetDungeonEditor(); return; }
+  if (d.dgfee !== undefined) { if (window._dgEdit) window._dgEdit.fee = +d.dgfee; sheetDungeonEditor(); return; }
+  if (d.dgsubmit !== undefined) { doDungeonSubmit(); return; }
+  if (d.dgclear !== undefined) { window._dgEdit = dgNewEdit(); sheetDungeonEditor(); return; }
+  if (d.encsubmit !== undefined) { doEncSubmit(); return; }
   if (d.encopt !== undefined && d.encopt !== null && d.encopt !== '') { doEncOpt(parseInt(d.encopt, 10)); return; }
   if (d.charpage) { window._charPage = parseInt(d.charpage); sheetChar(); return; }
   if (d.starview) { window._starView = d.starview; sheetChar(); return; }
@@ -10209,6 +10511,10 @@ document.addEventListener('click', e => {
           const _t = _gr.tiles[_gy][_gx];
           _run.ev = null;
           let _r = { moved: true };
+          if (_run.dungeon && _t.t === 'exit') { // v1094 秘境通关：到达终点格即通关（无守关 BOSS）
+            try { commit(); } catch(_) {}
+            doDungeonClear(); return;
+          }
           if (_t.t === 'exit' && !_t.done) {
             if (!_t.ev) { const _m = C.advMonster(S, _run.dk, (_run.dk === 'mijing' || _run.dk.startsWith('wx_')) ? 4 : 1); _t.ev = { type: 'fight', mon: _m, boss: true, exitBoss: true, text: '终点守关' }; _run.evCount = (_run.evCount|0) + 1; }
             _run.ev = _t.ev; _r.ev = _run.ev;
@@ -10216,8 +10522,17 @@ document.addEventListener('click', e => {
             _run.ev = _t.ev; _r.ev = _run.ev;
           } else if (!_t.seen && _t.t !== 'empty' && _t.t !== 'start') {
             _t.seen = 1; _run.evCount = (_run.evCount|0) + 1;
-            try { (typeof advTileEvent === 'function' ? advTileEvent : window.advTileEvent)(S, _run, _t.t); } catch(_) {}
-            _t.ev = _run.ev; _r.ev = _run.ev;
+            if (_run.dungeon && _t.t === 'event') { // v1094 秘境事件格：只显示作者写的一句文本，不进系统事件库
+              _run.ev = { type: 'dungeonText', text: _t.text || '这里留着前人的一句话。' };
+              _t.ev = _run.ev; _r.ev = _run.ev;
+            } else {
+              const _savedDk = _run.dk;
+              if (_run.dungeon && _t.guard) _run.dk = _t.guard;
+              if (_run.dungeon && _t.t === 'gchest' && _t.chest === 'fine') { const _hks = ['h_str', 'h_agi', 'h_def', 'h_vit', 'h_int']; const _hk = _hks[Math.floor(Math.random() * _hks.length)]; S.mats = S.mats || {}; S.mats[_hk] = (S.mats[_hk] | 0) + 1; try { log('good', '📜 精致宝箱边还生着一株灵草，顺手采了。'); } catch(_) {} }
+              try { (typeof advTileEvent === 'function' ? advTileEvent : window.advTileEvent)(S, _run, _t.t); } catch(_) {}
+              _run.dk = _savedDk;
+              _t.ev = _run.ev; _r.ev = _run.ev;
+            }
           } else {
             _t.seen = 1;
           }
@@ -11424,6 +11739,10 @@ function panel(){
       + '<button class="btn full" data-mhxyteam>👥 组队</button>'
       + '</div>'
       + '<div class="grid2">'
+      + '<button class="btn full" data-mhxydungeon>🏰 玩家秘境</button>'
+      + '<button class="btn full" data-mhxyencsub>🌀 奇遇投稿</button>'
+      + '</div>'
+      + '<div class="grid2">'
       + '<button class="btn full" data-mhxysync>☁️ 同步存档</button>'
       + '<button class="btn full" data-mhxydown>⬇️ 下载云档</button>'
       + '</div>'
@@ -11709,8 +12028,34 @@ function gmPanel(){
     + '<div class="row" style="display:flex;gap:6px">'
     + '<input id="gmXUser" placeholder="游戏用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
     + '<button class="btn gold" data-mhxygmxverify>通过验证</button></div>'
+    + '<div class="hint" style="margin-top:8px">玩家创作审核：</div>'
+    + '<div class="row"><button class="btn gold full" data-mhxygmcrev>🏰🌀 待审秘境与奇遇</button></div>'
     + '<div id="gmMsg" class="hint" style="margin-top:8px"></div>'
     + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
+}
+function gmCreatorPanel() {
+  openSheet('<h2>🛠️ 创作审核</h2><div class="hint">加载中…</div>');
+  Promise.all([MHXY.api('/api/creator/dungeon/pending'), MHXY.api('/api/creator/encounter/pending')]).then(function(rs) {
+    try {
+      const dgs = (rs[0].ok && rs[0].json && rs[0].json.ok) ? (rs[0].json.list || []) : [];
+      const encs = (rs[1].ok && rs[1].json && rs[1].json.ok) ? (rs[1].json.list || []) : [];
+      let h = '<h2>🛠️ 创作审核</h2>';
+      h += '<h3 style="margin:6px 0 2px">🏰 待审秘境（' + dgs.length + '）</h3>';
+      if (!dgs.length) h += '<div class="hint">没有待审秘境。</div>';
+      dgs.forEach(function(dg) {
+        let tiles = ''; try { const t = JSON.parse(dg.grid).tiles; tiles = t.map(row => row.map(c => ({ start: '🚶', exit: '🚪', empty: '⬜', fight: '⚔️', gchest: '🎁', gherb: '🌿', event: '📜', rest: '⛺' })[c.t] || '⬜').join('')).join('<br>'); } catch(_) {}
+        h += `<div class="row"><div class="lab">🏰 ${escH(dg.title)}<small>作者 ${escH(dg.author_name)} · 费 ${dg.fee}<br><span style="font-size:14px;line-height:1.2">${tiles}</span></small></div><button class="btn gold" data-mhxygmrev="dungeon:${dg.id}:1">通过</button><button class="btn" data-mhxygmrev="dungeon:${dg.id}:0">驳回</button></div>`;
+      });
+      h += '<h3 style="margin:8px 0 2px">🌀 待审奇遇（' + encs.length + '）</h3>';
+      if (!encs.length) h += '<div class="hint">没有待审奇遇。</div>';
+      encs.forEach(function(e) {
+        let a = {}, b = {}; try { a = JSON.parse(e.opt_a); b = JSON.parse(e.opt_b); } catch(_) {}
+        h += `<div class="row"><div class="lab">🌀 ${escH(e.text)}<small>作者 ${escH(e.author_name)}<br>① ${escH(a.t || '')}（${escH(a.fx || '')}）② ${escH(b.t || '')}（${escH(b.fx || '')}）</small></div><button class="btn gold" data-mhxygmrev="encounter:${e.id}:1">通过</button><button class="btn" data-mhxygmrev="encounter:${e.id}:0">驳回</button></div>`;
+      });
+      h += '<div class="row"><button class="btn full" data-close>关闭</button></div>';
+      openSheet(h);
+    } catch(_) {}
+  });
 }
 async function gmDoSet(){
   var f = val('gmField'), v = val('gmValue');
@@ -12093,6 +12438,16 @@ function onClick(d, t, e){
   if ('mhxysync' in d){ syncNow(true); return true; }
   if ('mhxydown' in d){ downloadSave(false).then(function(){ panel(); }); return true; }
   if ('mhxygm' in d){ gmPanel(); return true; }
+  if ('mhxydungeon' in d){ window.sheetDungeonList(); return true; }
+  if ('mhxyencsub' in d){ window.sheetEncSubmit(); return true; }
+  if ('mhxygmcrev' in d){ gmCreatorPanel(); return true; }
+  if ('mhxygmrev' in d){
+    const _p = String(d.mhxygmrev).split(':'); const _kind = _p[0], _id = _p[1], _ok = _p[2] === '1';
+    MHXY.api('/api/creator/' + (_kind === 'dungeon' ? 'dungeon' : 'encounter') + '/review', { method: 'POST', body: { id: _id, approve: _ok } }).then(function(r) {
+      toastLog('sys', r.ok && r.json && r.json.ok ? '已处理' : '处理失败：' + ((r.json && r.json.error) || '网络不通')); gmCreatorPanel();
+    });
+    return true;
+  }
   if ('mhxygmset' in d){ gmDoSet(); return true; }
   if ('mhxygmgive' in d){ gmDoGive(); return true; }
   if ('mhxygmxverify' in d){
