@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1096</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1097</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8157,7 +8157,7 @@ function sheetChat() {
     try { if (typeof chatWsConnect === 'function') chatWsConnect(); } catch(_) {}
     try { if (typeof chatHistoryToCache === 'function') chatHistoryToCache(); } catch(_) {}
     const srv = (window._srvChat || []);
-    log = srv.map(m => { const xh = m.xHandle ? `<span style="color:#1d9bf0">@${esc(m.xHandle)}</span>${m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : ''} ` : ''; return `<div class="chat-msg" style="margin-bottom:3px"><b style="color:#7ec8ff">${xh}${esc(m.username || m.n || '道友')}<span style="color:#666">[${m.playerNo != null ? m.playerNo : ''}]</span></b>：${esc(m.text || m.t || '')}</div>`; }).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>';
+    log = srv.map(m => { const xh = m.xHandle ? `<span style="color:#1d9bf0">@${esc(m.xHandle)}</span>${m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : ''} ` : ''; const _tx = m.text || m.t || ''; let _ex = ''; const _mt = /【观礼#([0-9a-z]+)\|([^|]*)\|([^|]*)\|([^】]*)】/.exec(_tx); if (_mt) _ex += ' <button class="btn sm" data-spectate="' + _mt[1] + '" data-specmeta="' + esc(_mt[2]) + '|' + esc(_mt[3]) + '|' + esc(_mt[4]) + '">👀 观礼</button>'; const _rp = /【红包#([0-9a-z]+)/.exec(_tx); if (_rp) _ex += ' <button class="btn sm" data-redpacket="' + _rp[1] + '">🧧 抢红包</button>'; return `<div class="chat-msg" style="margin-bottom:3px"><b style="color:#7ec8ff">${xh}${esc(m.username || m.n || '道友')}<span style="color:#666">[${m.playerNo != null ? m.playerNo : ''}]</span></b>：${esc(_tx)}${_ex}</div>`; }).join('') || '<div class="hint">暂无消息，道友先开个头吧</div>'; // v1097 世界聊天面板补抢红包/观礼按钮（与悬浮窗同款；此前该面板只拼文字无按钮，点公告无反应）
     const _n0 = srv.length;
     setTimeout(() => { const b = $('chatBox'); const i2 = $('chatInput'); if (b && document.body.contains(b) && ((window._srvChat || []).length !== _n0) && !(i2 && document.activeElement === i2 && i2.value)) sheetChat(); }, 1500);
   } else {
