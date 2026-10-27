@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1114</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1115</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6032,6 +6032,7 @@ const GK = { str: 'mine', agi: 'hunt', def: 'farm', vit: 'egg', int: 'read' }, G
 // v400 摆摊区：奇遇捡漏或入坑；v405 可租赁
 const STALL_RENT = { '1,1': { kind: 'xianyu', key: 'xianyu', name: '仙玉', price: 1 }, '1,2': { kind: 'ore', key: 'sp5', name: '极品灵石', price: 1 }, '1,3': { kind: 'ore', key: 'sp4', name: '上品灵石', price: 1 } };
 const STALL_CUR = { '1,1': { key: 'xianyu', name: '仙玉', icon: MAGATAMA }, '1,2': { key: 'sp5', name: '极品灵石', icon: '💠' }, '1,3': { key: 'sp4', name: '上品灵石', icon: '💎' } };
+const STALL_CURS = { gold: { key: 'gold', name: '金元', icon: '🪙' }, xianyu: { key: 'xianyu', name: '仙玉', icon: MAGATAMA }, sp2: { key: 'sp2', name: '下品灵石', icon: '🌒' }, sp3: { key: 'sp3', name: '中品灵石', icon: '🌗' }, sp4: { key: 'sp4', name: '上品灵石', icon: '💎' }, sp5: { key: 'sp5', name: '极品灵石', icon: '💠' } };
 function stallCur(x, y) { return STALL_CUR[x + ',' + y] || { key: 'gold', name: '金元' }; }
 function stallBal(curKey) { return curKey === 'xianyu' ? (S.xianyu||0) : curKey === 'gold' ? (S.gold||0) : (S.ores[curKey]||0); }
 function stallRented(x, y) {
@@ -6083,7 +6084,7 @@ async function sheetStall(x, y) {
   }
   const d = r.json;
   const _bal = stallBal(_sc.key);
-  let html = `<h2>🎪 摆摊区 (${x},${y})</h2><div class="hint">本摊货币：${_sc.icon||''}${_sc.name} <b class="y">${_bal}</b> · 真人摊位</div>`;
+  let html = `<h2>🎪 摆摊区 (${x},${y})</h2><div class="hint">租金货币：${_sc.icon||''}${_sc.name} <b class="y">${_bal}</b> · 真人摊位 · 售价货币每件自选</div>`;
   if (d.renter) {
     const _mins = Math.ceil((d.renter.until - Date.now()) / 60000);
     html += `<div class="hint">🏠 摊主：<b class="y">${esc(d.renter.username)}</b>${d.renter.isMine ? '（你的摊位）' : ''}，剩余 <b class="y">${_mins}</b> 分钟</div>`;
@@ -6095,10 +6096,10 @@ async function sheetStall(x, y) {
   }
   const items = d.items || [];
   if (!items.length) html += `<div class="empty">${d.renter ? '摊主暂无上架物品' : '暂无摊主，快来租下这个摊位'}</div>`;
-  else html += items.map((it) => `<div class="row"><div class="lab">${esc(it.item_name)} ×${it.qty} <span class="tag">${it.price} ${_sc.icon||''}${_sc.name}/个</span><small> · ${esc(it.seller_name)}</small></div>`
+  else html += items.map((it) => { const _ic = STALL_CURS[it.cur] || _sc; const _ibal = stallBal(it.cur || _sc.key); return `<div class="row"><div class="lab">${esc(it.item_name)} ×${it.qty} <span class="tag">${it.price} ${_ic.icon||''}${_ic.name}/个</span><small> · ${esc(it.seller_name)}</small></div>`
     + (it.seller_id && (function(){ try { return localStorage.getItem('mhxy_aid') === it.seller_id; } catch (_) { return false; } })()
       ? `<button class="btn" data-stallunlist-id="${it.id}" data-sx="${x}" data-sy="${y}">下架</button>`
-      : `<button class="btn gold" data-stallbuy-id="${it.id}" data-sx="${x}" data-sy="${y}" ${_bal >= it.price * it.qty ? '' : 'disabled'}>买下 ${it.price * it.qty}${_sc.icon||''}${_sc.name}</button>`) + `</div>`).join('');
+      : `<button class="btn gold" data-stallbuy-id="${it.id}" data-sx="${x}" data-sy="${y}" ${_ibal >= it.price * it.qty ? '' : 'disabled'}>买下 ${it.price * it.qty}${_ic.icon||''}${_ic.name}</button>`) + `</div>`; }).join('');
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
   openSheet(html);
 }
@@ -6108,12 +6109,13 @@ function sheetStallList(x, y) {
   const _matKeys = Object.keys(S.mats || {}).filter(k => (S.mats[k]||0) > 0);
   let html = `<h2>📦 上架到摊位</h2><div class="hint">选择物品上架到 (${x},${y}) 摊位</div>`;
   const _scc2 = stallCur(x, y);
-  html += `<div class="hint">售价货币：${_scc2.icon||''}${_scc2.name}（本摊固定）</div>`;
+  html += `<div class="hint">售价货币：每件自选（默认${_scc2.name}）</div>`;
   for (const k of _oreKeys) {
     const o = ORES[k]; const nm = o ? o.name : k; const have = S.ores[k]||0;
     html += `<div class="row"><div class="lab">${nm} ×${have}</div>
       <input id="sq_stall_${k}" type="number" min="1" max="${have}" value="1" style="width:45px;padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px">
       <input id="sp_stall_${k}" type="number" min="1" value="10" style="width:55px;padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px" placeholder="单价">
+<select id="sc_stall_${k}" style="padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px"><option value="gold" ${_scc2.key==='gold'?'selected':''}>🪙金元</option><option value="xianyu" ${_scc2.key==='xianyu'?'selected':''}>${MAGATAMA}仙玉</option><option value="sp2" ${_scc2.key==='sp2'?'selected':''}>🌒下品灵石</option><option value="sp3" ${_scc2.key==='sp3'?'selected':''}>🌗中品灵石</option><option value="sp4" ${_scc2.key==='sp4'?'selected':''}>💎上品灵石</option><option value="sp5" ${_scc2.key==='sp5'?'selected':''}>💠极品灵石</option></select>
       <button class="btn gold" data-stalldo="ore:${k}" data-sx="${x}" data-sy="${y}">上架</button></div>`;
   }
   for (const k of _matKeys) {
@@ -6121,6 +6123,7 @@ function sheetStallList(x, y) {
     html += `<div class="row"><div class="lab">${nm} ×${have}</div>
       <input id="sq_stall_${k}" type="number" min="1" max="${have}" value="1" style="width:45px;padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px">
       <input id="sp_stall_${k}" type="number" min="1" value="10" style="width:55px;padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px" placeholder="单价">
+<select id="sc_stall_${k}" style="padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px"><option value="gold" ${_scc2.key==='gold'?'selected':''}>🪙金元</option><option value="xianyu" ${_scc2.key==='xianyu'?'selected':''}>${MAGATAMA}仙玉</option><option value="sp2" ${_scc2.key==='sp2'?'selected':''}>🌒下品灵石</option><option value="sp3" ${_scc2.key==='sp3'?'selected':''}>🌗中品灵石</option><option value="sp4" ${_scc2.key==='sp4'?'selected':''}>💎上品灵石</option><option value="sp5" ${_scc2.key==='sp5'?'selected':''}>💠极品灵石</option></select>
       <button class="btn gold" data-stalldo="mat:${k}" data-sx="${x}" data-sy="${y}">上架</button></div>`;
   }
   html += `<div class="row"><button class="btn full" data-stallback="${x},${y}">返回摊位</button></div>`;
@@ -11085,13 +11088,13 @@ document.addEventListener('click', e => {
   else if (d.stalllist) { const _p = String(d.stalllist).split(','); sheetStallList(+_p[0], +_p[1]); }
   else if (d.stallback) { const _p = String(d.stallback).split(','); sheetStall(+_p[0], +_p[1]); }
   else if (d.stalldo) { (async () => { // v1085 线上上架
-    const _p = String(d.stalldo).split(':'); const _kind = _p[0], _key = _p[1]; const _sx = +d.sx, _sy = +d.sy; const _q = $('sq_stall_' + _key); const _pr = $('sp_stall_' + _key); const _qty = _q ? Math.max(1, Math.floor(+_q.value)) : 1; const _price = _pr ? Math.max(1, Math.floor(+_pr.value)) : 1; const _nm = _kind === 'ore' ? ((ORES[_key]||{}).name || _key) : ((MATS[_key]||{}).name || _key);
+    const _p = String(d.stalldo).split(':'); const _kind = _p[0], _key = _p[1]; const _sx = +d.sx, _sy = +d.sy; const _q = $('sq_stall_' + _key); const _pr = $('sp_stall_' + _key); const _qty = _q ? Math.max(1, Math.floor(+_q.value)) : 1; const _price = _pr ? Math.max(1, Math.floor(+_pr.value)) : 1; const _nm = _kind === 'ore' ? ((ORES[_key]||{}).name || _key) : ((MATS[_key]||{}).name || _key); const _scEl = $('sc_stall_' + _key); const _cur = _scEl ? _scEl.value : undefined;
     try {
       await window.MHXY.syncNow();
-      const r = await window.MHXY.api('/api/stall/list', { method: 'POST', body: { tile: _sx + ',' + _sy, kind: _kind, key: _key, name: _nm, qty: _qty, price: _price } });
+      const r = await window.MHXY.api('/api/stall/list', { method: 'POST', body: { tile: _sx + ',' + _sy, kind: _kind, key: _key, name: _nm, qty: _qty, price: _price, cur: _cur } });
       if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录'); return; }
       if (r.ok && r.json && r.json.ok) { mktApplySave(r.json.save); await mktRefreshRev(); sheetStall(_sx, _sy); }
-      else { const _e = (r.json || {}).error; toastLog('sys', _e === 'not_renter' ? '请先租下该摊位。' : _e === 'no_item' ? '物品不足。' : '上架失败。'); }
+      else { const _e = (r.json || {}).error; toastLog('sys', _e === 'not_renter' ? '请先租下该摊位。' : _e === 'no_item' ? '物品不足。' : _e === 'bad_cur' ? '售价货币不对。' : '上架失败。'); }
     } catch(_) { toastLog('sys', '网络不通，稍后再试。'); }
   })(); }
   else if (d.casino) { (async () => { const _choice = d.casino;
