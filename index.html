@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1103</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1104</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -8133,6 +8133,7 @@ function sheetMenu(tab) {
     <div class="row"><button class="btn full" data-chat>💬 世界聊天</button></div>
     <div class="row"><button class="btn full" data-stele>🪦 主城碑林</button></div>
     <div class="row"><button class="btn full" data-mhxy>🌐 真人联机</button></div>
+    <div class="row"><div class="lab">🏦 天道池<small id="poolMenuTxt">读取中…</small></div><button class="btn sm" data-poolview>看池子</button></div>
     <div class="row"><div class="lab">⚔️ 本世冒险<small>${s.advWin || 0} 胜 / ${s.adv || 0} 战</small></div></div>
     <div class="row"><div class="lab">⚔️ 历世冒险<small>${s.advWinTotal || 0} 胜 / ${s.advTotal || 0} 战（不清零）</small></div></div>
     <div class="row"><div class="lab">🥊 本世 PK<small>${s.pkWin || 0} 胜 / ${s.pk || 0} 战</small></div></div>
@@ -8149,6 +8150,7 @@ function sheetMenu(tab) {
     <div class="row"><button class="btn full" data-close>关闭</button></div>`;
   }
   openSheet(html + `</div>`);
+  poolMenuTxt();
 }
 const esc = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function sheetChat() {
@@ -9573,6 +9575,11 @@ function poolChatTxt(){
   if (!window.MHXY || !MHXY.api) { el.textContent = '未连接真人联机'; return; }
   MHXY.api('/api/pool').then(r => { const j = r && r.json; const e2 = document.getElementById('poolChatTxt'); if (!e2) return; if (j && j.ok && j.pool) { e2.textContent = Object.keys(RP_KINDS).map(k => RP_KINDS[k].name.replace('红包', '') + ' ' + Math.floor(Number(j.pool[k]) || 0)).join(' · ') + (j.stable === false ? ' ⚠️灵气不稳' : ''); } });
 }
+function poolMenuTxt(){
+  const el = document.getElementById('poolMenuTxt'); if (!el) return;
+  if (!window.MHXY || !MHXY.api) { el.textContent = '未连接真人联机'; return; }
+  MHXY.api('/api/pool').then(r => { const j = r && r.json; const e2 = document.getElementById('poolMenuTxt'); if (!e2) return; if (j && j.ok && j.pool) { e2.textContent = Object.keys(RP_KINDS).map(k => RP_KINDS[k].name.replace('红包', '') + ' ' + Math.floor(Number(j.pool[k]) || 0)).join(' · ') + (j.stable === false ? ' ⚠️灵气不稳' : ''); } });
+}
 function sheetPool(){
   openSheet('<h2>🏦 天道池</h2><div class="hint">全服共有的灵气池：红包过期余量、玩家捐献都会进池；池子亏空过深时灵气不稳。</div><div id="poolViewBody"><div class="hint">读取中…</div></div><div class="row"><button class="btn sm" data-poolview>刷新</button><button class="btn full" data-close>关闭</button></div>');
   if (!window.MHXY || !MHXY.api) { const b = document.getElementById('poolViewBody'); if (b) b.innerHTML = '<div class="hint">未连接真人联机</div>'; return; }
@@ -10096,14 +10103,59 @@ window.xyUnbind = function(targetId){
     }
   } catch(e) {}
 };
+async function mailPull(){
+  if (window._mailPulling) return;
+  if (!window.MHXY || !MHXY.api) return;
+  window._mailPulling = true;
+  try {
+    const r = await MHXY.api('/api/mail/pending');
+    const j = r && r.json;
+    if (!(j && j.ok && Array.isArray(j.mails))) return;
+    S.mail = S.mail || [];
+    const have = new Set(S.mail.map(m => m.sid).filter(Boolean));
+    const fresh = j.mails.filter(m => !have.has(m.id));
+    if (!fresh.length) return;
+    fresh.forEach(m => {
+      const p = (m.payload && typeof m.payload === 'object') ? m.payload : {};
+      S.mail.push({ from: m.from, title: m.title, text: m.text, stamina: Math.floor(Number(p.stamina) || 0), items: (p.items && typeof p.items === 'object') ? p.items : null, claimed: false, sid: m.id, kind: m.kind });
+    });
+    commit();
+    MHXY.api('/api/mail/ack', { method: 'POST', body: { ids: fresh.map(m => m.id) } }).catch(() => {});
+    doMail();
+  } catch (_) {}
+  finally { window._mailPulling = false; }
+}
+async function doMailClaimServer(sid){
+  if (!window.MHXY || !MHXY.api) { toastLog('bad', '未连接真人联机'); return; }
+  const r = await MHXY.api('/api/mail/claim', { method: 'POST', body: { id: sid } });
+  if (r.ok && r.json && r.json.ok) {
+    const g = r.json.granted || {};
+    if (g.stamina) S.stamina = (S.stamina | 0) + g.stamina;
+    if (g.items) { S.inv = S.inv || {}; Object.keys(g.items).forEach(k => { S.inv[k] = (S.inv[k] | 0) + g.items[k]; }); }
+    const m = (S.mail || []).find(x => x.sid === sid);
+    if (m) m.claimed = true;
+    const parts = [];
+    if (g.stamina) parts.push(g.stamina + '体力');
+    if (g.items) Object.keys(g.items).forEach(k => parts.push(k + '×' + g.items[k]));
+    toastLog('good', '📬 奖励已领取' + (parts.length ? '：' + parts.join('、') : ''));
+    try { if (typeof M !== 'undefined' && M && r.json.rev) { M.baseRev = r.json.rev; try { localStorage.setItem('mhxy_rev', String(r.json.rev)); } catch (_) {} } } catch (_) {}
+    commit();
+    doMail();
+  } else {
+    const e = (r.json || {}).error || r.status;
+    if (e === 'already_claimed') { const m = (S.mail || []).find(x => x.sid === sid); if (m) m.claimed = true; commit(); doMail(); }
+    else toastLog('bad', '领取失败：' + e);
+  }
+}
 function doMail() {
   xyInit();
+  mailPull();
   const unclaimed = S.mail.filter(m => !m.claimed);
   let html = `<h2>📬 邮箱</h2>`;
   if (!S.mail.length) html += `<div class="empty">空空如也</div>`;
   else html += S.mail.slice().reverse().map((m, ri) => {
     const i = S.mail.length - 1 - ri;
-    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.text}</small></div>${m.claimed ? '<small>已领取</small>' : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`}</div>`;
+    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${m.claimed ? '<small>已领取</small>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
   }).join('');
   html += `<div class="row"><button class="btn full" data-a="xianyuan">← 返回仙缘</button></div>`;
   openSheet(html);
@@ -10513,6 +10565,7 @@ document.addEventListener('click', e => {
   if (d.xyunbind !== undefined) { xyUnbind(+d.xyunbind); doXianyuan(); return; }
   if (d.xymarry !== undefined) { const b = S.binders[+d.xymarry]; if (b && (b.intimacy|0) >= 50 && !S.spouse) { S.spouse = { name: b.name, gender: b.gender, since: Date.now() }; log('good', `💕 与 <b class="y">${b.name}</b> 结为道侣！`); } commit(); doXianyuan(); return; }
   if (d.mailclaim !== undefined) { const m = S.mail[+d.mailclaim]; if (m && !m.claimed) { m.claimed = true; S.stamina = (S.stamina|0) + (m.stamina|0); log('good', `📬 领取邮件体力 <span class="g">+${m.stamina}</span>`); } commit(); doMail(); return; }
+  if (d.mailclaimsv !== undefined) { doMailClaimServer(d.mailclaimsv); return; }
   if (d.xysect) { const nm = prompt('输入宗门名称：', ''); if (nm && nm.trim()) { S.sect = { name: nm.trim().slice(0, 12), created: Date.now() }; log('good', `🏯 宗门 <b class="y">${S.sect.name}</b> 开设成功！`); } commit(); doXianyuan(); return; }
   if ('netpk' in d) { Net.queue(); return; }
   if (d.netact) { Net.act(d.netact); return; }
