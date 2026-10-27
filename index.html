@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1102</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1103</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -12109,6 +12109,10 @@ function gmPanel(){
     + '<input id="gmKey" placeholder="物品key" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
     + '<input id="gmN" type="number" value="99" style="width:70px;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
     + '<button class="btn gold" data-mhxygmgive>发放</button></div>'
+    + '<div class="hint" style="margin-top:8px">按名发物（只输物品名，默认 1 个）：</div>'
+    + '<div class="row" style="display:flex;gap:6px">'
+    + '<input id="gmName" placeholder="物品名，如 开脉丹" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
+    + '<button class="btn gold" data-mhxygmgivebyname>发放</button></div>'
     + '<div class="hint" style="margin-top:8px">X 验证（人工）：</div>'
     + '<div class="row" style="display:flex;gap:6px">'
     + '<input id="gmXUser" placeholder="游戏用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
@@ -12161,6 +12165,41 @@ async function gmDoGive(){
   if (msg) {
     if (r.ok && r.json && r.json.ok) msg.textContent = '✅ 已发放 ' + k + ' ×' + r.json.n + '（现有 ' + r.json.total + '）';
     else msg.textContent = '❌ 失败：' + ((r.json||{}).error || r.status);
+  }
+}
+function gmNameMatches(name){
+  const q = String(name || '').trim();
+  const CC = (typeof window !== 'undefined' && window.Core) ? window.Core : (typeof C !== 'undefined' ? C : null);
+  if (!q || !CC) return [];
+  const out = [];
+  const push = (store, key, disp) => out.push({ store, key, disp });
+  [['ores', CC.ORES], ['mats', CC.MATS], ['meds', CC.MEDS], ['eggs', CC.EGGS]].forEach(([store, tab]) => {
+    if (!tab) return;
+    Object.keys(tab).forEach(k => { const n = tab[k] && tab[k].name; if (n) push(store, k, n); });
+  });
+  ['hp', 'mp'].forEach(t => { [1, 2, 3].forEach(qq => { const P = CC.potOf ? CC.potOf(t + qq) : null; if (P) push('elixirs', t + qq, (CC.QNAME ? CC.QNAME[qq] : '') + P.name); }); });
+  push('inv', 'mai', '开脉丹');
+  push('inv', 'detox', '化无丹');
+  push('inv', 'sha', '煞气');
+  if (CC.MUT_PILLS) Object.keys(CC.MUT_PILLS).forEach(id => { if (CC.MUT_PILLS[id].name) push('inv', 'mut_' + id, CC.MUT_PILLS[id].name); });
+  ['str', 'agi', 'def', 'vit', 'int'].forEach(a => { [1, 2, 3, 4, 5].forEach(g => { if (CC.GRADES && CC.AN) push('inv', a + '_' + g, CC.GRADES[g] + CC.AN[a] + '丹'); }); });
+  push('maiPages', '*', '脉络残页');
+  const strip = s => String(s).replace(/^[^\u4e00-\u9fa5a-zA-Z0-9]+/, '');
+  const exact = out.filter(o => strip(o.disp) === q || o.disp === q);
+  if (exact.length) return exact;
+  return out.filter(o => strip(o.disp).indexOf(q) >= 0);
+}
+async function gmDoGiveByName(){
+  var name = val('gmName'), msg = document.getElementById('gmMsg');
+  if (!name) { if (msg) msg.textContent = '请输入物品名'; return; }
+  const list = gmNameMatches(name);
+  if (!list.length) { if (msg) msg.textContent = '❌ 没找到叫“' + name + '”的物品'; return; }
+  if (list.length > 1) { if (msg) msg.textContent = '有多个匹配，请写全名：' + list.map(o => o.disp).join('、'); return; }
+  const o = list[0];
+  var r = await api('/api/gm/give', { method: 'POST', body: { store: o.store, key: o.key, n: 1 } });
+  if (msg) {
+    if (r.ok && r.json && r.json.ok) msg.textContent = '✅ 已发放 ' + o.disp + ' ×1（现有 ' + r.json.total + '）';
+    else msg.textContent = '❌ 失败：' + ((r.json || {}).error || r.status);
   }
 }
 function chatPanel(){
@@ -12537,6 +12576,7 @@ function onClick(d, t, e){
   }
   if ('mhxygmset' in d){ gmDoSet(); return true; }
   if ('mhxygmgive' in d){ gmDoGive(); return true; }
+  if ('mhxygmgivebyname' in d){ gmDoGiveByName(); return true; }
   if ('mhxygmxverify' in d){
     var _u = val('gmXUser');
     var _msg = document.getElementById('gmMsg');
