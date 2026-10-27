@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1097</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1098</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7128,7 +7128,7 @@ function sheetChar() {
   try { const _fs = C.fateSignOf(S); if (_fs) html += `<div class="row" style="padding:4px 0"><div class="lab">🎴 宿命签<small>${_fs.t}</small></div><div class="lab" style="text-align:right"><b class="y">${_fs.n}</b><br><small>${C.fateModText(_fs)}</small></div></div>`; } catch(_) {} // v1012
   try { const _tb = S.taboo | 0; if (_tb > 0) html += `<div class="row" style="padding:4px 0"><div class="lab">${S.tabooAwake ? '🌑 第十人' : '？？？'}<small>${S.tabooAwake ? '已苏醒，伴你而行' : (_tb < 40 ? '沉睡' : _tb < 70 ? '微动' : '低语')}</small></div><div class="lab" style="text-align:right"><b class="pu">苏醒 ${_tb}%</b>${S.tabooAwake ? '<br><small>突破成功率 +5% · 雷劫威力 -5%</small>' : ''}</div></div>`; } catch(_) {} // v1013 禁忌苏醒度
   { xyInit(); const _xyt = xyTotal(); html += `<div class="row" style="padding:4px 0"><div class="lab">💞 仙缘<small>♂ ${S.xianyuan.m|0} · ♀ ${S.xianyuan.f|0} · 共 ${_xyt}</small></div><div class="lab">🔗 编号<small>${S.bindNum}</small></div><button class="btn sm" data-a="xianyuan">仙缘</button></div>`; }
-  html += `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:3.5px;margin-bottom:4px;margin-left:0;margin-right:0;font-size:12px"><span style="white-space:nowrap">⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : 'g'}">${S.lifespan|0}</b>年</span><span style="white-space:nowrap;text-align:center">🧪丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b><small> ${C.toxTier(S.danDu|0)}</small></span><span class="stam" style="text-align:center">体力 <b style="font-size:12px">${S.stamina|0}</b></span><span style="white-space:nowrap;text-align:center">🌫️灵气 <b>${C.qiNow()}</b><small> ${C.qiTierName(C.qiNow())}</small></span><span style="text-align:center;position:relative;left:-15px">🍗饱食 <b class="${S.hunger >= 60 ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b></span></div>`;
+  html += `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:3.5px;margin-bottom:4px;margin-left:0;margin-right:0;font-size:12px"><span style="white-space:nowrap">⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : 'g'}">${S.lifespan|0}</b>年</span><span style="white-space:nowrap;text-align:center">🧪丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b><small> ${C.toxTier(S.danDu|0)}</small></span><span class="stam" style="text-align:center">体力 <b style="font-size:12px">${S.stamina|0}</b></span><span style="white-space:nowrap;text-align:center">🌫️灵气 <b>${Math.round(C.qiNow())}</b><small> ${C.qiTierName(C.qiNow())}</small></span><span style="text-align:center;position:relative;left:-15px">🍗饱食 <b class="${S.hunger >= 60 ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b></span></div>`;
   if ((S.realm|0) >= 1 && window.LG) html += `<div class="row" style="padding:4px 0"><div class="lab">🌟 灵根<small>${window.LG.name(S)}</small></div>${S.faZeDone5 ? '<div class="lab">🌈 <b class="y">混元道体</b></div>' : ''}${(S.realm|0) >= 6 ? `<div class="lab">🙏 功德金身<small>功德 <b class="y">${S.merit|0}</b> · 减伤 ${Math.min(30, Math.floor((S.merit|0)/10))}%${(S.merit|0) >= 100 ? ' · 突破+5%' : ''} · 大劫 ${meritDaysLeft()} 天后</small></div>` : ''}</div>`; // v867 灵根显示；v906 功德金身放灵根一排
 
   // 五维：一行五列
@@ -9626,9 +9626,11 @@ function doRedpacket(id) {
       if (kind === 'gold') S.gold = (S.gold|0) + amt; else if (kind === 'xy') S.xianyu = (S.xianyu|0) + amt; else if (kind && RP_KINDS[kind]) { S.ores = S.ores || {}; S.ores[kind] = (S.ores[kind]|0) + amt; }
       commit();
       toastLog('gold', `🧧 抢到了！${RP_KINDS[kind] ? RP_KINDS[kind].name : '红包'} +${amt}`);
+      try { document.querySelectorAll('button[data-redpacket="' + id + '"]').forEach(function(b){ var s = document.createElement('span'); s.textContent = '🧧 已抢 +' + amt; b.replaceWith(s); }); } catch(_){} // v1098：点完按钮就地变已抢（提示只写主界面日志，聊天面板盖住时看不到，观礼因直接开面板才显得正常）
     } else {
       const _e = (j && j.error) || '';
       if (_e === 'already_claimed' && S.redSeen.indexOf(id) < 0) { S.redSeen.push(id); commit(); }
+      if (_e === 'already_claimed') { try { document.querySelectorAll('button[data-redpacket="' + id + '"]').forEach(function(b){ var s = document.createElement('span'); s.textContent = '🧧 已抢过'; b.replaceWith(s); }); } catch(_){} } // v1098：同上，抢过再点也有可见反馈
       const _msg = _e === 'already_claimed' ? '这个红包你已经抢过了' : _e === 'empty' ? '来晚了，红包已被抢完' : _e === 'expired' ? '红包已过期' : _e === 'sender_cannot_claim' ? '不能抢自己的红包' : _e === 'not_found' ? '红包不存在（可能已过期回收）' : _e === 'ambiguous_id' ? '红包识别异常，稍后再试' : '抢红包失败';
       toastLog('bad', _msg);
     }
