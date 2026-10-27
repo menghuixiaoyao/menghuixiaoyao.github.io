@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1112</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1113</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7060,7 +7060,7 @@ function starChartHtml() {
   const pages = S.maiPages | 0, pills = S.inv['mai'] | 0;
   const card = p >= 10
     ? `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin-top:5px">气旋已开满 · 丹穴 ${C.szDan(S, sel)} / ${C.szDanCap(sel)}。</div>${C.szDan(S, sel) < C.szDanCap(sel) ? `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 ? '' : 'disabled'}>数量</button></div>` : ''}`
-    : `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">气旋已开 ${p} / 10 · 再吃 ${10 - p} 张残页开满；开脉丹每颗开一穴（本座已亮 ${C.szLitCnt(S, sel)} / ${C.szDanCap(sel)} 穴）</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃残页开气旋</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>数量</button></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>数量</button></div>`;
+    : `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">气旋已开 ${p} / 10 · 再吃 ${10 - p} 张残页开满；开脉丹每颗开一穴（本座已亮 ${C.szLitCnt(S, sel)} / ${C.szDanCap(sel)} 穴）</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃1张残页</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>数量</button></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>数量</button></div>`;
   return `<style>@keyframes starPulse{0%{transform:scale(.55);opacity:1}70%{transform:scale(1.3);opacity:.2}100%{transform:scale(1.3);opacity:0}}</style>`
     + (grand ? `<div style="border:1px solid rgba(255,205,92,.75);border-radius:12px;box-shadow:0 0 22px rgba(255,190,70,.35),inset 0 0 34px rgba(255,190,70,.10);padding:8px 6px">` : `<div>`)
     + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-right:10px"><span style="font-size:14px">✦ <b class="y">神藏星图</b></span><span style="font-size:12px">已开 ${lit} / 670</span></div>`
@@ -7070,7 +7070,8 @@ function starChartHtml() {
     + `<div style="display:flex;align-items:center;gap:14px;background:#1e1b2c;border-radius:8px;padding:6px 12px;margin-top:8px;font-size:12px"><span style="display:flex;align-items:center;gap:4px">${szSpiralSvg(1, false, 18)} 小气旋 ×${C.szSmallCount(S)}</span><span style="display:flex;align-items:center;gap:4px">${szSpiralSvg(1, true, 22)} 大气旋 ×${C.szBigCount(S)}</span><span>残页 ×${pages}</span><span>丹 ×${pills}</span></div>`
     + `<div style="background:#201c30;border:1px solid #46406a;border-radius:10px;padding:12px;margin-top:8px">${card}</div></div>`;
 }
-function doFeedSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const need = 10 - C.szProg(S, i); const r = C.useMaiPages(S, Math.min(need, S.maiPages | 0), i); if (r.n > 0) { log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[i].name}</b> 气旋 ${C.szProg(S, i)}/10${C.szProg(S, i) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); } commit(); sheetChar(); }
+// v1113 点一下只吃1张，批量走数量
+function doFeedSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const r = C.useMaiPages(S, 1, i); if (r.n > 0) { log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[i].name}</b> 气旋 ${C.szProg(S, i)}/10${C.szProg(S, i) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); } commit(); sheetChar(); }
 function doPillSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; if (C.szDan(S, i) >= C.szDanCap(i)) return; const got = C.drinkMai(S, 1, i); if (got > 0) { log('good', `🌀 服用开脉丹，<b class="y">${C.SZ_SEATS[i].name}</b> 开一穴（本座已亮 ${C.szLitCnt(S, i)}/${C.SZ_SEATS[i].cnt} 穴）`); } commit(); sheetChar(); }
 window.szQtyBack = function(bag) { if (bag) { try { sheetBag(); } catch(_) {} } else { try { sheetChar(); } catch(_) {} } };
 window.szQty = function(kind, seat, bag) { // v1054 Ye 定：残页/开脉丹可选数量（游戏内选量表，不用系统 prompt）
@@ -7897,9 +7898,8 @@ function bookSection() { // 看书所得：观相残页 / 经验书 / 技能残�
       <button class="btn" data-ebook="${k}" data-n="1">使用</button>${S.expBooks[k] > 1 ? `<button class="btn gold" onclick="qtyPrompt('ebook','${k}',${S.expBooks[k]})">数量</button>` : ''}</div>`).join('') : '') +
     (sp.length ? `<h3>📕 技能残页</h3>` + sp.map(k => `<div class="row"><div class="lab"><b class="q2">📕${SKILLS[k].name}</b>技能残页 ${S.skillPages[k]}/${NS}<small>集齐 ${NS} 张合成「${SKILLS[k].name}」技能书${S.skills.includes(k) ? '（已习得，合成后可出售）' : ''}</small></div>
       <button class="btn gold" data-cskill="${k}" ${S.skillPages[k] >= NS ? '' : 'disabled'}>合成</button></div>`).join('') : '') +
-    ((S.maiPages | 0) > 0 ? `<h3>🌀 脉络残页</h3><div class="row"><div class="lab">🌀脉络残页 ×${S.maiPages}<small>秘境专属掉落 · 使用：喂神藏气旋推进，实络 +1<span class="g">（永久，轮回保留）</span>，开脉术经验 +1（当前 ${S.maiShuXp}，Lv.${C.maiShuLv(S)}，每10点升1级，每级实脉+1）</small></div>
-      <button class="btn gold" data-usemai="1">使用</button>
-      ${(S.maiPages|0) > 1 ? `<button class="btn gold" onclick="qtyPrompt('mai','',${S.maiPages|0})">数量</button>` : ''}</div>` : '') +
+    ((S.maiPages | 0) > 0 ? `<h3>🌀 脉络残页</h3><div class="row"><div class="lab">🌀脉络残页 ×${S.maiPages}<small>秘境专属掉落 · 星藏使用：喂神藏气旋推进，实络 +1<span class="g">（永久，轮回保留）</span>，开脉术经验 +1（当前 ${S.maiShuXp}，Lv.${C.maiShuLv(S)}，每10点升1级，每级实脉+1）</small></div>
+      <button class="btn" data-charpage="4">去星藏</button></div>` : '') +
     (sb.length ? `<h3>📗 技能书</h3>` + sb.map(k => `<div class="row"><div class="lab"><b class="pu">📗${SKILLS[k].name}</b>技能书 ×${S.skillBooks[k]}<small>${SKILLS[k].desc}${S.skills.includes(k) ? ` · 已习得，可出售 ${C.skillBookPrice(k)} 金` : ''}</small></div>
       ${S.skills.includes(k) ? `<button class="btn" data-sskill="${k}">出售</button>` : `<button class="btn gold" data-uskill="${k}">学习</button>`}</div>`).join('') : '');
 }
@@ -7949,9 +7949,8 @@ function sheetBag() {
       <button class="btn" data-drink="${p.attr}" data-g="${p.grade}" data-n="1">服用</button>
       ${p.count > 1 ? `<button class="btn gold" onclick="qtyPrompt('drink','${p.attr}_${p.grade}',${p.count})">数量</button>` : ''}</div>`).join('')
       : '') +
-    ((S.inv['mai']|0) > 0 ? `<div class="row"><div class="lab">🌀 <b class="y">开脉丹</b> ×${S.inv['mai']}<small>服用：每颗开一穴（按座序点亮未亮的穴）、虚络 +1（不加气旋），当前虚络 ${S.maiVLuo|0} 条 · 虚脉 ${S.maiVMai|0} 条</small></div>
-      <button class="btn gold" data-drinkmai="1">服用</button>
-      ${(S.inv['mai']|0) > 1 ? `<button class="btn gold" onclick="szQty('pill',-1,true)">数量</button>` : ''}</div>` : '') +
+    ((S.inv['mai']|0) > 0 ? `<div class="row"><div class="lab">🌀 <b class="y">开脉丹</b> ×${S.inv['mai']}<small>星藏服用：每颗开一穴、虚络 +1（不加气旋），当前虚络 ${S.maiVLuo|0} 条 · 虚脉 ${S.maiVMai|0} 条</small></div>
+      <button class="btn" data-charpage="4">去星藏</button></div>` : '') +
     ((S.inv['butian']|0) > 0 ? `<div class="row"><div class="lab">🌟 <b class="y">补天丹</b> ×${S.inv['butian']}<small>服用：随机+1条灵根（上限5条），每境界限服1颗，当前${window.LG ? window.LG.name(S) : ''}</small></div>
       <button class="btn gold" data-drinkbutian="1">服用</button></div>` : '') +
     (Object.keys(C.MUT_PILLS).filter(id => (S.inv['mut_' + id]|0) > 0).map(id => `<div class="row"><div class="lab">🌀 <b class="y">${C.MUT_PILLS[id].name}</b> ×${S.inv['mut_' + id]}<small>${C.MUT_PILLS[id].desc}（变异丹 · 丹毒 +${C.MUT_PILLS[id].tox}）</small></div><button class="btn gold" data-mut="${id}">服用</button></div>`).join('')) +
