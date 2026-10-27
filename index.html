@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1101</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1102</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -9568,9 +9568,26 @@ function poolRefreshTxt() {
   if (!window.MHXY || !MHXY.api) { el.textContent = '未连接真人联机'; return; }
   MHXY.api('/api/pool').then(r => { const j = r && r.json; const e2 = document.getElementById('poolTxt'); if (!e2) return; if (j && j.ok && j.pool) { e2.textContent = Object.keys(RP_KINDS).map(k => RP_KINDS[k].name.replace('红包', '') + ' ' + (j.pool[k]|0)).join(' · ') + (j.stable === false ? ' · ⚠️ 灵气不稳' : ''); } else e2.textContent = '天道池尚未开设（等后端）'; }).catch(() => { const e2 = document.getElementById('poolTxt'); if (e2) e2.textContent = '读取失败'; });
 }
+function poolChatTxt(){
+  const el = document.getElementById('poolChatTxt'); if (!el) return;
+  if (!window.MHXY || !MHXY.api) { el.textContent = '未连接真人联机'; return; }
+  MHXY.api('/api/pool').then(r => { const j = r && r.json; const e2 = document.getElementById('poolChatTxt'); if (!e2) return; if (j && j.ok && j.pool) { e2.textContent = Object.keys(RP_KINDS).map(k => RP_KINDS[k].name.replace('红包', '') + ' ' + Math.floor(Number(j.pool[k]) || 0)).join(' · ') + (j.stable === false ? ' ⚠️灵气不稳' : ''); } });
+}
+function sheetPool(){
+  openSheet('<h2>🏦 天道池</h2><div class="hint">全服共有的灵气池：红包过期余量、玩家捐献都会进池；池子亏空过深时灵气不稳。</div><div id="poolViewBody"><div class="hint">读取中…</div></div><div class="row"><button class="btn sm" data-poolview>刷新</button><button class="btn full" data-close>关闭</button></div>');
+  if (!window.MHXY || !MHXY.api) { const b = document.getElementById('poolViewBody'); if (b) b.innerHTML = '<div class="hint">未连接真人联机</div>'; return; }
+  MHXY.api('/api/pool').then(r => {
+    const b = document.getElementById('poolViewBody'); if (!b) return;
+    const j = r && r.json;
+    if (!(j && j.ok && j.pool)) { b.innerHTML = '<div class="hint">读取失败，点刷新重试</div>'; return; }
+    let h = Object.keys(RP_KINDS).map(k => { const it = RP_KINDS[k]; const amt = Math.floor(Number(j.pool[k]) || 0); return `<div class="row"><div class="lab">${it.cur} ${it.name.replace('红包', '')}</div><div>${amt}</div></div>`; }).join('');
+    if (j.stable === false) h += '<div class="hint">⚠️ 天道池亏空过深，灵气不稳！大劫将至……</div>';
+    b.innerHTML = h;
+  });
+}
 function sheetRedpacket() {
   let h = `<h2>🧧 红包 · 天道池</h2><div class="hint">商会买红包皮，发放时放入对应货币：最少 100 个、最少 10 人抢 · 每人随机（至少 1、单人最多整包一半）· 24 小时没抢完的回收进天道池 · 发一个 +1 声望</div>`;
-  h += `<div class="row"><div class="lab">🏦 天道池<small id="poolTxt">读取中…</small></div><button class="btn sm" data-poolrefresh>刷新</button></div>`;
+  h += `<div class="row"><div class="lab">🏦 天道池<small id="poolTxt">读取中…</small></div><button class="btn sm" data-poolrefresh>刷新</button><button class="btn sm" data-poolview>看池子</button></div>`;
   h += `<div class="row" style="flex-wrap:wrap;gap:4px"><small style="width:100%;color:var(--dim)">捐献补池（补灵气）：</small>${Object.keys(RP_KINDS).map(k => `<button class="btn sm" data-pooldonate="${k}">捐${RP_KINDS[k].name.replace('红包', '')}</button>`).join('')}</div>`;
   h += `<h3>我的红包皮</h3>`;
   h += Object.keys(RP_KINDS).map(k => { const it = RP_KINDS[k]; const n = rpCount(k); return `<div class="row"><div class="lab">${it.icon} ${it.name}<small>皮 ${n} 个 · 我有 ${rpBalance(k)} ${it.name.replace('红包', '')}</small></div><button class="btn gold" data-redsend="${k}" ${n > 0 ? '' : 'disabled'}>发红包</button></div>`; }).join('');
@@ -10519,6 +10536,7 @@ document.addEventListener('click', e => {
   if (d.pooldonate) { doPoolDonate(d.pooldonate); return; }
   if (d.pooldonatego) { doPoolDonateGo(d.pooldonatego); return; }
   if (d.poolrefresh !== undefined) { poolRefreshTxt(); return; }
+  if (d.poolview !== undefined) { sheetPool(); return; }
   if (d.steleclaim !== undefined) { doSteleClaim(); return; }
   if (d.spectate) { doSpectate(d.spectate, t.getAttribute('data-specmeta') || ''); return; }
   if (d.encopen) { openEncSheet(); return; }
@@ -12148,10 +12166,12 @@ async function gmDoGive(){
 function chatPanel(){
   M.chatOpen = true;
   openSheet('<h2>💬 真人世界</h2><div class="hint">与真人道友聊天（3秒1条，500条历史）。关闭面板后不再接收实时消息。</div>'
+    + '<div class="row"><div class="lab">🏦 天道池<small id="poolChatTxt">读取中…</small></div><button class="btn sm" data-poolview>看池子</button></div>'
     + '<div id="mhxyChatBox" style="max-height:300px;overflow-y:auto;border:1px solid #444;border-radius:8px;padding:8px;margin-bottom:8px;background:#111"><div class="hint">连接中…</div></div>'
     + '<div class="row" style="display:flex;gap:6px"><input id="mhxyChatInp" maxlength="200" placeholder="说点什么…" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-mhxychatsend>发送</button></div>'
     + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
   chatHistory();
+  poolChatTxt();
   chatWsConnect();
   var inp = document.getElementById('mhxyChatInp');
   if (inp) inp.onkeydown = function(e){ if (e.key === 'Enter') chatSend(); };
