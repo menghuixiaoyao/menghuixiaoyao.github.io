@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1109</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1110</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -5748,7 +5748,7 @@ function render() {
       if (!S._pendingTrib && S._chenyuShown) delete S._chenyuShown;
     }
   } catch(_) {}
-  try { const _sl = document.getElementById('skyLine'); if (_sl && typeof S !== 'undefined' && S) { const _sk = C.skyToday(); if (_sk.key !== 'calm') { _sl.style.display = 'block'; _sl.textContent = '🌌 天象 · ' + _sk.name + '——' + _sk.desc; if (S._skySeen !== _sk.key + new Date().getDate()) { S._skySeen = _sk.key + new Date().getDate(); log('sys', '🌌 今日天象：<b class="y">' + _sk.name + '</b>——' + _sk.desc + '。'); } } else _sl.style.display = 'none'; } } catch(_) {} // v1015 天象
+  try { const _st = document.getElementById('skyTitle'); const _sl = document.getElementById('skyLine'); if (_sl) _sl.style.display = 'none'; if (_st && typeof S !== 'undefined' && S) { const _sk = C.skyToday(); if (_sk.key !== 'calm') { _st.style.display = 'inline'; _st.textContent = '🌌 ' + _sk.name; _st.title = '天象 · ' + _sk.name + '——' + _sk.desc; if (S._skySeen !== _sk.key + new Date().getDate()) { S._skySeen = _sk.key + new Date().getDate(); log('sys', '🌌 今日天象：<b class="y">' + _sk.name + '</b>——' + _sk.desc + '。'); } } else _st.style.display = 'none'; } } catch(_) {} // v1110 天象缩进标题栏
   try { const _ml = document.getElementById('meritLine'); if (_ml && typeof S !== 'undefined' && S && (S.realm|0) >= 6 && typeof meritDaysLeft === 'function') { const _dl = meritDaysLeft(); if (_dl <= 3) { _ml.style.display = 'block'; _ml.textContent = '🌩️ 大劫 ' + _dl + ' 天后降临 · 功德 ' + (S.merit|0) + '/100'; } else _ml.style.display = 'none'; } else if (_ml) _ml.style.display = 'none'; } catch(_) {} // v1015 大劫示警
   try { if (typeof window !== 'undefined' && !window.pk) { try { pk = null; } catch(_) {} } } catch(_) {} // v845 render开头同步：window.pk为空时本地pk也清，避免操作旧对象（v843条件太严，undefined没覆盖）
   try { // v802 全局兜底：心魔已死强制结算；v805 加调试日志
@@ -5882,21 +5882,21 @@ function render() {
 }
 function medIcon() { return (typeof S !== 'undefined' && S && S.gender === 'f') ? '🧘‍♀️' : '🧘'; } // v198 打坐图标：男🧘/女🧘‍♀️（闭关打坐中时功能栏显示）
 function doDazuo() { // v199 打坐调息：1体力恢复10%生命上限；v277 1分钟冷却
-  if (S.dead || S.afk) return;
+  if (S.dead || S.afk) { toastLog('sys', S.dead ? '已死亡，无法调息' : '闭关中，无法调息'); return; }
   const now = Date.now(), cd = 60000;
   if (S.dazuoCd && now - S.dazuoCd < cd) { const s = Math.ceil((cd - (now - S.dazuoCd)) / 1000); toastLog('sys', `调息冷却中，还需${s}秒`); return; }
   const hpMax = C.bumpPeak(S) * 5, cur = S.hpCur != null ? Math.floor(S.hpCur) : hpMax;
-  if (cur >= hpMax) { toastLog('sys', '生命已满，无需调息'); return; }
+  const _mNeed = (S.realm|0) >= 1 && (S.mana|0) < C.manaCapEff(S); if (cur >= hpMax && !_mNeed) { toastLog('sys', '生命已满，无需调息'); return; }
   if (!(S.stamina >= 1)) { toastLog('bad', '体力不足，无法调息'); return; }
   S.stamina -= 1; S.dazuoCd = now;
   try { if (typeof thunderCheck==='function') thunderCheck(1); } catch(_){} // v642 打坐也触发雷云判定
-  const add = Math.min(hpMax - cur, Math.max(1, Math.floor(hpMax * 0.10)));
-  S.hpCur = cur + add;
+  const add = cur < hpMax ? Math.min(hpMax - cur, Math.max(1, Math.floor(hpMax * 0.10))) : 0;
+  if (add > 0) S.hpCur = cur + add;
   let manaTxt = '';
   const isXian = (S.realm|0) >= 8;
   if (isXian) { S.mana = Math.min(C.manaCapEff(S), (S.mana|0) + 1); manaTxt = `，仙力 <span class="g">+1</span>`; } // v280 仙人运转仙力回1点仙力
   else if ((S.realm|0) >= 1 && C.useFali(S)) { const mMax = C.manaMax(S), mAdd = Math.max(1, Math.floor(mMax * 0.05)); S.mana = Math.min(C.manaCapEff(S), (S.mana|0) + mAdd); manaTxt = `，法力 <span class="g">+${mAdd}</span>`; } // v279 调息回5%法力，凡人没有
-  log('good', `${medIcon()} ${isXian ? '运转仙力' : '调息'}，生命 <span class="g">+${add}</span>（${Math.floor(S.hpCur)}/${hpMax}）${manaTxt}`);
+  log('good', `${medIcon()} ${isXian ? '运转仙力' : '调息'}${add > 0 ? `，生命 <span class="g">+${add}</span>（${Math.floor(S.hpCur)}/${hpMax}）` : '，生命已满'}${manaTxt}`);
   save(); render();
 }
 function renderActions() {
@@ -5909,7 +5909,7 @@ function renderActions() {
   const _isMortal = (S.realm|0) === 0;
   const _afkCaveT = _isMortal ? 'wushu' : 'cave', _afkVeinT = _isMortal ? 'ningqi' : 'vein';
   const _afkCaveT2 = _isMortal ? '🥋 习武' : '🏔️ 洞府', _afkVeinT2 = _isMortal ? '🌀 凝气' : ((S.realm|0) >= 8 ? '⚖️ 参悟法则' : '⛰️ 灵脉'); // v306 仙人显示参悟法则
-  const _dzMax = C.bumpPeak(S) * 5, _dzCur = S.hpCur != null ? Math.floor(S.hpCur) : _dzMax, _dzCdOk = !(S.dazuoCd && Date.now() - S.dazuoCd < 60000), _canDz = !S.dead && !S.afk && st >= 1 && _dzCur < _dzMax && _dzCdOk; // v199 打坐按钮可用条件；v277 冷却
+  const _dzMax = C.bumpPeak(S) * 5, _dzCur = S.hpCur != null ? Math.floor(S.hpCur) : _dzMax, _dzCdOk = !(S.dazuoCd && Date.now() - S.dazuoCd < 60000), _dzManaNeed = (S.realm|0) >= 1 && (S.mana|0) < C.manaCapEff(S), _canDz = !S.dead && !S.afk && st >= 1 && (_dzCur < _dzMax || _dzManaNeed) && _dzCdOk; // v1110 生命满但法力未满也可调息
   nav.innerHTML = `
     <div style="display:flex;align-items:center"><button class="act" data-char style="padding:0;overflow:hidden;border-radius:50%;aspect-ratio:1/1;width:30px"><img src="${avatarUrl()}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%"></button></div> <!-- v488 再缩小 -->
     <div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act ${ci ? 'primary' : ''}" data-a="checkin" ${ci ? '' : 'disabled'} style="flex:1;padding:1px;min-height:0"><span class="t" style="font-size:9px">签到</span><span class="s" style="font-size:7px">${ci ? '+' + C.checkinAmount(S) + '体力' : '明日再来'}</span></button></div> <!-- v451 移除PK/擂台；v475 缩小；v488 再压 -->
@@ -10164,11 +10164,11 @@ function doMail() {
   xyInit();
   mailPull();
   const unclaimed = S.mail.filter(m => !m.claimed);
-  let html = `<h2>📬 邮箱</h2>`;
+  let html = `<h2>📬 邮箱</h2>`; if (S.mail.some(m => m.claimed)) html += `<div class="row"><button class="btn sm" data-maildelall>🗑️ 删除全部已读</button></div>`;
   if (!S.mail.length) html += `<div class="empty">空空如也</div>`;
   else html += S.mail.slice().reverse().map((m, ri) => {
     const i = S.mail.length - 1 - ri;
-    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${m.claimed ? '<small>已领取</small>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
+    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${m.claimed ? '<small>已领取</small><button class="btn sm" data-maildel="' + i + '">删除</button>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
   }).join('');
   html += `<div class="row"><button class="btn full" data-a="xianyuan">← 返回仙缘</button></div>`;
   openSheet(html);
@@ -10579,6 +10579,8 @@ document.addEventListener('click', e => {
   if (d.xymarry !== undefined) { const b = S.binders[+d.xymarry]; if (b && (b.intimacy|0) >= 50 && !S.spouse) { S.spouse = { name: b.name, gender: b.gender, since: Date.now() }; log('good', `💕 与 <b class="y">${b.name}</b> 结为道侣！`); } commit(); doXianyuan(); return; }
   if (d.mailclaim !== undefined) { const m = S.mail[+d.mailclaim]; if (m && !m.claimed) { m.claimed = true; S.stamina = (S.stamina|0) + (m.stamina|0); log('good', `📬 领取邮件体力 <span class="g">+${m.stamina}</span>`); } commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.mailclaimsv !== undefined) { doMailClaimServer(d.mailclaimsv); return; }
+  if (d.maildel !== undefined) { S.mail.splice(+d.maildel, 1); commit(); refreshMainMailBtn(); doMail(); return; }
+  if (d.maildelall !== undefined) { if (!confirm('确定删除全部已读邮件？')) return; S.mail = S.mail.filter(m => !m.claimed); commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.xysect) { const nm = prompt('输入宗门名称：', ''); if (nm && nm.trim()) { S.sect = { name: nm.trim().slice(0, 12), created: Date.now() }; log('good', `🏯 宗门 <b class="y">${S.sect.name}</b> 开设成功！`); } commit(); doXianyuan(); return; }
   if ('netpk' in d) { Net.queue(); return; }
   if (d.netact) { Net.act(d.netact); return; }
