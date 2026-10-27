@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1106</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1107</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -237,6 +237,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
     <span style="flex:none"><button class="icon-btn" id="shenshiBtn" style="font-size:16px;display:none" title="神识（练气探查/化神外放）" onclick="window.shenshiGo()">👁️</button><button class="icon-btn" id="chatToggleBtn" style="font-size:16px" title="悬浮聊天开/关">💬</button><button class="icon-btn" id="msgFilterBtn" style="font-size:16px" title="消息过滤设置">⚙️</button></span>
     <div id="msgFilterPop" style="display:none;position:absolute;right:8px;top:120px;z-index:60;background:#1a1a2e;border:1px solid #444;border-radius:8px;padding:8px;box-shadow:0 2px 12px rgba(0,0,0,0.5)"></div>
   </div>
+  <div style="display:flex;gap:6px;margin-bottom:6px"><button class="btn full" data-a="mail" style="flex:1">📬 邮箱<span id="mailMainCount"></span></button></div>
   <div id="mapGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:1px;max-width:96px;margin:0"> <!-- v505 再缩小 --></div>
 </div>
 <main id="log" style="display:none"></main> <!-- v313 隐藏小日志条，只留地图+📜 -->
@@ -4269,6 +4270,7 @@ function isSwordCell(x, y) {
 function renderWorldMap() {
   try {
     try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 1 ? '' : 'none'; try { window._myRealm = (S.realm|0) || 0; } catch(_) {} } catch(_) {} // v1072 神识单按钮：练气显示；同步全局境界（Ye 定整合）
+    try { refreshMainMailBtn(); } catch(_) {}
 // v536 保留地(4,3)资源点：草药+矿石定时刷新
 // v899 采集阵自动采集系统
 // S.arrays: [{id, map:'world', x, y, fuelUntil, storage:{h,o,v,m,e}, guarded, lastTick}]
@@ -10103,6 +10105,14 @@ window.xyUnbind = function(targetId){
     }
   } catch(e) {}
 };
+function refreshMainMailBtn(){
+  try {
+    const el = document.getElementById('mailMainCount');
+    if (!el) return;
+    const n = (typeof S !== 'undefined' && S && S.mail) ? S.mail.filter(m => !m.claimed).length : 0;
+    el.textContent = n ? '（' + n + '未读）' : '';
+  } catch (_) {}
+}
 async function mailPull(){
   if (window._mailPulling) return;
   if (!window.MHXY || !MHXY.api) return;
@@ -10121,6 +10131,7 @@ async function mailPull(){
     });
     commit();
     MHXY.api('/api/mail/ack', { method: 'POST', body: { ids: fresh.map(m => m.id) } }).catch(() => {});
+    refreshMainMailBtn();
     doMail();
   } catch (_) {}
   finally { window._mailPulling = false; }
@@ -10140,10 +10151,11 @@ async function doMailClaimServer(sid){
     toastLog('good', '📬 奖励已领取' + (parts.length ? '：' + parts.join('、') : ''));
     try { if (typeof M !== 'undefined' && M && r.json.rev) { M.baseRev = r.json.rev; try { localStorage.setItem('mhxy_rev', String(r.json.rev)); } catch (_) {} } } catch (_) {}
     commit();
+    refreshMainMailBtn();
     doMail();
   } else {
     const e = (r.json || {}).error || r.status;
-    if (e === 'already_claimed') { const m = (S.mail || []).find(x => x.sid === sid); if (m) m.claimed = true; commit(); doMail(); }
+    if (e === 'already_claimed') { const m = (S.mail || []).find(x => x.sid === sid); if (m) m.claimed = true; commit(); refreshMainMailBtn(); doMail(); }
     else toastLog('bad', '领取失败：' + e);
   }
 }
@@ -10564,7 +10576,7 @@ document.addEventListener('click', e => {
   if (d.arenaRank) { doArenaRank(d.arenaRank); return; }
   if (d.xyunbind !== undefined) { xyUnbind(+d.xyunbind); doXianyuan(); return; }
   if (d.xymarry !== undefined) { const b = S.binders[+d.xymarry]; if (b && (b.intimacy|0) >= 50 && !S.spouse) { S.spouse = { name: b.name, gender: b.gender, since: Date.now() }; log('good', `💕 与 <b class="y">${b.name}</b> 结为道侣！`); } commit(); doXianyuan(); return; }
-  if (d.mailclaim !== undefined) { const m = S.mail[+d.mailclaim]; if (m && !m.claimed) { m.claimed = true; S.stamina = (S.stamina|0) + (m.stamina|0); log('good', `📬 领取邮件体力 <span class="g">+${m.stamina}</span>`); } commit(); doMail(); return; }
+  if (d.mailclaim !== undefined) { const m = S.mail[+d.mailclaim]; if (m && !m.claimed) { m.claimed = true; S.stamina = (S.stamina|0) + (m.stamina|0); log('good', `📬 领取邮件体力 <span class="g">+${m.stamina}</span>`); } commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.mailclaimsv !== undefined) { doMailClaimServer(d.mailclaimsv); return; }
   if (d.xysect) { const nm = prompt('输入宗门名称：', ''); if (nm && nm.trim()) { S.sect = { name: nm.trim().slice(0, 12), created: Date.now() }; log('good', `🏯 宗门 <b class="y">${S.sect.name}</b> 开设成功！`); } commit(); doXianyuan(); return; }
   if ('netpk' in d) { Net.queue(); return; }
@@ -11887,7 +11899,6 @@ function panel(){
       + '<div class="row" id="mhxyGmRow" style="display:none"><button class="btn gold full" data-mhxygm>🛠️ GM 管理</button></div>'
       + '<div class="row" id="mhxyXRow" style="display:flex;gap:6px;align-items:center">' + xRowHtml() + '</div>'
       + '<div class="row" id="mhxyXHideRow" style="display:flex;gap:6px;align-items:center">' + xHideRowHtml() + '</div>'
-      + '<div class="row"><button class="btn full" data-a="mail">📬 邮箱' + ((typeof S !== 'undefined' && S && S.mail) ? (S.mail.filter(m => !m.claimed).length ? '（' + S.mail.filter(m => !m.claimed).length + '未读）' : '') : '') + '</button></div>'
       + '<div class="row" id="mhxyXVerifyRow" style="display:none;flex-direction:column;gap:6px"><span class="hint" id="mhxyXCode"></span><div style="display:flex;gap:6px"><input id="mhxyTweetUrl" placeholder="推文链接（x.com/你的号/status/…）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><button class="btn gold" data-mhxyxverify>验证</button></div></div>'
       + (isGuest()
         ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row" style="display:flex;gap:6px"><input id="mhxySqQ" maxlength="60" placeholder="密保问题（可选）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxySqA" maxlength="100" placeholder="密保答案" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
