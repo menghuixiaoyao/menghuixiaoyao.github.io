@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1110</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1111</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1153,7 +1153,6 @@ function startDemonBattle(S, trib, fromRealm) {
 }
 window.startDemonBattle = startDemonBattle; // v754 暴露给doTribQuizAnswer跨块调用
 window.startSanShiBattle = function(idx) { // v812 斩三尸战斗；v862 分段调试
-  try { if (typeof log === 'function') log('sys', '[调试]三尸fn进来了 idx=' + idx); } catch(_) {}
   try {
     try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} // v821 开战前清旧pk
     try { const _G0 = (typeof G !== 'undefined' ? G : window); _G0.pk = null; } catch(_) {}
@@ -1161,12 +1160,9 @@ window.startSanShiBattle = function(idx) { // v812 斩三尸战斗；v862 分段
     try { window._demonDeadT = 0; } catch(_) {}
     const _names = ['上尸·彭倨', '中尸·彭质', '下尸·彭矫'];
     const _name = _names[idx] || '三尸';
-    try { if (typeof log === 'function') log('sys', '[调试]三尸组属性'); } catch(_) {}
     const fa = fightAttrs(S, false);
     const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * 1.5))); // 三尸1.5倍属性
-    try { if (typeof log === 'function') log('sys', '[调试]三尸建敌'); } catch(_) {}
     const foe = fighter('💀' + _name, dattrs, false, []);
-    try { if (typeof log === 'function') log('sys', '[调试]三尸建Battle'); } catch(_) {}
     const b = new Battle(playerFighter(S, false), foe);
     const _G = (typeof G !== 'undefined' ? G : window);
     try { window._pkSeq = Date.now(); } catch(_) {}
@@ -1257,7 +1253,6 @@ function finishDemonBattle(_S) { // v814 S跨script块取不到，改传参
   const b = _pk.battle;
   const _td = _pk.tribData || {}, trib = _td.trib || {}, fromRealm = _td.fromRealm;
   const win = (b.winner === b.A) || (b.B && b.B.hp < 1); // v848 看门狗调pkHandleOver时winner可能没设置，B.hp<1也算赢
-  try { if (typeof log === 'function') log('sys', `[调试]心魔胜负: win=${win}, winner是A=${b.winner===b.A}, B.hp=${b.B?b.B.hp:'无'}`); } catch(_) {}
   const _dr = b.round | 0;
   const _cu = (S.curseN|0) > 0 ? `（👻诅咒×${S.curseN}，心魔增强）` : '';
   try { log(win ? 'good' : 'bad', `👹 心魔来袭${_cu}，激战 ${_dr} 回合，${win ? '<b>斩灭心魔，道心稳固！</b>' : '<b class="r">不敌心魔，道心受损……</b>'}`); } catch(_) {}
@@ -1279,7 +1274,6 @@ function finishDemonBattle(_S) { // v814 S跨script块取不到，改传参
   try {
     S.thunderOk = false;
     const r = applyBtSuccess(S, fromRealm, trib);
-    try { if (typeof log === 'function') log('sys', `[调试]突破结算: ok=${r.ok}, grade=${r.grade||'无'}, mult=${r.mult}, fromRealm=${fromRealm}`); } catch(_) {}
     tribBattleSuccessLog(S, r);
   } catch(_e) { try { log('sys', '心魔胜利结算异常:' + (_e.message || _e)); } catch(_) {} }
   try { afterAct(); } catch(_) {} try { commit(); } catch(_) {} try { render(); } catch(_) {} // v792 确保界面一定关闭
@@ -3638,7 +3632,6 @@ function pkTakeByRealm(wR, lR) { // v88：按境界算夺取点数：基数=对�
 }
 function pkSettle(S, pk, chosen) {
   if (pk.trib === 'thunder') { // v684 雷劫结算
-  try{log('sys','[调试]雷劫结算开始 trib='+pk.trib);}catch(_){}
     try {
       const b = pk.battle;
       const _td = pk.tribData || {};
@@ -5757,18 +5750,12 @@ function render() {
     if (_pk && _pk.battle && _pk.battle.B) {
       const _bhp = _pk.battle.B.hp, _trib = _pk.trib, _bname = _pk.battle.B.name || '';
       const _isDemon = _trib === 'demon' || _bname.indexOf('心魔') >= 0;
-      if (_isDemon && typeof log === 'function' && !_pk._demonDbgLogged) {
-        _pk._demonDbgLogged = true;
-        log('sys', `[调试]心魔战检测: trib=${_trib}, B.hp=${_bhp}, B.name=${_bname}, pkHandleOver=${typeof pkHandleOver}`);
-      }
       if (_isDemon && _bhp < 1) {
-        if (typeof log === 'function') log('sys', `[调试]心魔血量<1，调用pkHandleOver`);
         if (typeof pkHandleOver === 'function') { pkHandleOver(); return; }
-        else if (typeof log === 'function') log('sys', `[调试]pkHandleOver不是函数!`);
       }
     }
-  } catch(_e) { try { if (typeof log === 'function') log('sys', '[调试]render心魔检查报错:' + (_e.message||_e)); } catch(_) {} }
-  try { var _pk = (typeof pk !== 'undefined' && pk && pk.trib === 'thunder') ? pk : ((typeof S !== 'undefined' && S && S.pk && S.pk.trib === 'thunder') ? S.pk : ((typeof _G !== 'undefined' && _G && _G.pk && _G.pk.trib === 'thunder') ? _G.pk : null)); if (_pk && _pk.battle && typeof log === 'function' && !_pk._dbgLogged) { log('sys', '雷劫调试:round=' + _pk.battle.round + ',B.hp=' + (_pk.battle.B?_pk.battle.B.hp:'?') + ',A.hp=' + (_pk.battle.A?_pk.battle.A.hp:'?')); _pk._dbgLogged = true; } } catch(_) {} // v713 render只调试不结算(结算在doFinish,同script作用域) try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
+  } catch(_e) {}
+try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) return;
   try { renderWorldMap(); } catch (_) {}
@@ -10300,7 +10287,7 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
     try { render(); } catch(_) {}
     return;
   }
-  if (_pk.trib === 'demon') { try { const _Gs = (typeof G !== 'undefined' ? G : window); const _Ss = _Gs.S || window.S || (typeof S !== 'undefined' ? S : null); (window.finishDemonBattle || finishDemonBattle)(_Ss); } catch(_e) { try { if (typeof log === 'function') log('sys', '[调试]finishDemonBattle异常:' + (_e.message||_e)); } catch(_) {} } finally { try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} try { const _G5 = (typeof G !== 'undefined' ? G : window); if (_G5) _G5.pk = null; } catch(_) {} try { window.pk = null; } catch(_) {} try { if (typeof render === 'function') render(); } catch(_) {} } return; } // v654；v808 用window版跨script块；v814 传S；v847 finally确保清pk，finishDemonBattle先调（需tribData）
+  if (_pk.trib === 'demon') { try { const _Gs = (typeof G !== 'undefined' ? G : window); const _Ss = _Gs.S || window.S || (typeof S !== 'undefined' ? S : null); (window.finishDemonBattle || finishDemonBattle)(_Ss); } catch(_e) {} finally { try { if (typeof pk !== 'undefined') pk = null; } catch(_) {} try { const _G5 = (typeof G !== 'undefined' ? G : window); if (_G5) _G5.pk = null; } catch(_) {} try { window.pk = null; } catch(_) {} try { if (typeof render === 'function') render(); } catch(_) {} } return; } // v654；v808 用window版跨script块；v814 传S；v847 finally确保清pk，finishDemonBattle先调（需tribData）
   if (pk.escape) {
     log('good', '💨 你成功逃离了战斗。');
     pk = null; afterAct(); commit();
