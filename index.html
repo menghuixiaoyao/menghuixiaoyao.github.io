@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1100</small></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1101</small></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -7017,21 +7017,21 @@ function starChartHtml() {
   const view = window._starView === 'back' ? 1 : 0;
   const DOTS = g === 'f' ? STAR_DOTS_F : STAR_DOTS_M;
   const sidesOf = nm => { const cs = DOTS.filter(d => d[0] === nm && d[1] === view); if (!cs.length) return null; if (cs.length === 1) return [cs[0]]; const a = cs.reduce((p2, c) => (c[2] < p2[2] ? c : p2)); const b = cs.reduce((p2, c) => (c[2] > p2[2] ? c : p2)); return [a, b]; };
-  // v1100 双侧亮点：单侧经先左后右，任督先任后督；亮点以 dot 对象计
+  // v1101 成对亮点：单侧经每穴左右成对亮（男先左、女先右），任督先任后督；亮点以 dot 对象计
   const litDots = new Set();
-  C.SZ_SEATS.forEach((st, i) => { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const d = C.szDan(S, i); if (st.mer.length > 1) { for (let j = 0; j < Math.min(24, d); j++) { const s = sidesOf(names[j]); if (s) s.forEach(dd => litDots.add(dd)); } for (let j = 24; j < 24 + Math.min(28, Math.max(0, d - 24)); j++) { const s = sidesOf(names[j]); if (s) s.forEach(dd => litDots.add(dd)); } } else { for (let j = 0; j < Math.min(st.cnt, d); j++) { const s = sidesOf(names[j]); if (s && s[0]) litDots.add(s[0]); } for (let j = 0; j < Math.min(st.cnt, Math.max(0, d - st.cnt)); j++) { const s = sidesOf(names[j]); if (s) litDots.add(s[1] || s[0]); } } });
+  C.SZ_SEATS.forEach((st, i) => { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const d = C.szDan(S, i); if (st.mer.length > 1) { for (let j = 0; j < Math.min(24, d); j++) { const s = sidesOf(names[j]); if (s) s.forEach(dd => litDots.add(dd)); } for (let j = 24; j < 24 + Math.min(28, Math.max(0, d - 24)); j++) { const s = sidesOf(names[j]); if (s) s.forEach(dd => litDots.add(dd)); } } else { const first = (g === 'f') ? 1 : 0; for (let k = 0; k < Math.min(st.cnt * 2, d); k++) { const s = sidesOf(names[Math.floor(k / 2)]); if (s) litDots.add(s[(k % 2 === 0) ? first : 1 - first] || s[0]); } } });
   const lit = S.maiVLuo | 0;
   const MCOL = [{ c: '#ffe08a', g: 'rgba(255,224,138,' }, { c: '#ffb03a', g: 'rgba(255,176,58,' }, { c: '#e8ecf4', g: 'rgba(232,236,244,' }, { c: '#b9c4d6', g: 'rgba(185,196,214,' }, { c: '#d9b45b', g: 'rgba(217,180,91,' }, { c: '#f2a541', g: 'rgba(242,165,65,' }, { c: '#ff5a5a', g: 'rgba(255,90,90,' }, { c: '#ff8a5c', g: 'rgba(255,138,92,' }, { c: '#4dc9ff', g: 'rgba(77,201,255,' }, { c: '#5a7bff', g: 'rgba(90,123,255,' }, { c: '#ff6fa5', g: 'rgba(255,111,165,' }, { c: '#c95eff', g: 'rgba(201,94,255,' }, { c: '#2fd4c4', g: 'rgba(47,212,196,' }, { c: '#8be04e', g: 'rgba(139,224,78,' }]; // v1051 每经一色（五行配色）：任 督 肺 大肠 胃 脾 心 小肠 膀胱 肾 心包 三焦 胆 肝
   const goldAll = (S.maiVLuo | 0) >= 670; // v1100：整图 670 穴全亮→全变金色（只认丹穴；气旋不点亮穴位）
   const GOLD = { c: '#ffd76a', g: 'rgba(255,205,92,' };
   let linesSvg = ''; // v1051 Ye 定：丹点满一条经络→黄线相连，没满不连（双侧经一侧一条；任督各一条）
   { const chains = [];
-    C.SZ_SEATS.forEach((st, i) => { // v1100：连线认丹穴（单侧经一侧满连一侧，任督各满各连）
+    C.SZ_SEATS.forEach((st, i) => { // v1101：连线认丹穴（单侧经满座两侧线同出，任督各满各连）
       const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y);
       const chainOf = (list, sIdx) => list.map(nm => { const s = sidesOf(nm); return s ? (s[sIdx] || s[0]) : null; }).filter(Boolean);
       const d = C.szDan(S, i);
       if (st.mer.length > 1) { if (d >= 24) chains.push({ mer: 0, pts: chainOf(names.slice(0, 24), 0) }); if (d >= 52) chains.push({ mer: 1, pts: chainOf(names.slice(24), 0) }); }
-      else { if (d >= st.cnt) chains.push({ mer: st.mer[0], pts: chainOf(names, 0) }); if (d >= st.cnt * 2) chains.push({ mer: st.mer[0], pts: chainOf(names, 1) }); }
+      else { if (d >= st.cnt * 2) { chains.push({ mer: st.mer[0], pts: chainOf(names, 0) }); chains.push({ mer: st.mer[0], pts: chainOf(names, 1) }); } }
     });
     const good = chains.filter(ch => ch.pts.length >= 2);
     if (good.length) linesSvg = `<svg style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" viewBox="0 0 100 100" preserveAspectRatio="none">${good.map(ch => `<polyline points="${ch.pts.map(d => d[2] + ',' + d[3]).join(' ')}" fill="none" stroke="${goldAll ? GOLD.c : MCOL[ch.mer].c}" stroke-opacity=".95" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>`).join('')}</svg>`;
@@ -7041,7 +7041,7 @@ function starChartHtml() {
   const cur = C.SZ_SEATS.findIndex((_, i) => C.szProg(S, i) < 10);
   let sel = (window._starSeat === undefined) ? (cur < 0 ? 12 : cur) : window._starSeat;
   let inner = linesSvg, frontier = null;
-  for (let i = 0; i < 13 && !frontier; i++) { if (C.szProg(S, i) >= 10) continue; const names = []; STAR_NMER.forEach((m, ni) => { if (C.SZ_SEATS[i].mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); for (const ni of names) { const s = sidesOf(ni); if (!s) continue; for (const dd of s) { if (!litDots.has(dd)) { frontier = dd; break; } } if (frontier) break; } }
+  for (let i = 0; i < 13 && !frontier; i++) { if (C.szProg(S, i) >= 10) continue; const st = C.SZ_SEATS[i]; const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const d = C.szDan(S, i); const cap = st.mer.length > 1 ? 52 : st.cnt * 2; if (d >= cap) continue; let nm, side; if (st.mer.length > 1) { nm = names[d]; side = 0; } else { nm = names[Math.floor(d / 2)]; const first = (g === 'f') ? 1 : 0; side = (d % 2 === 0) ? first : 1 - first; } const s = sidesOf(nm); if (s) frontier = s[side] || s[0]; }
   DOTS.forEach((d, di) => {
     if (d[1] !== view || !litDots.has(d)) return;
     const seatIdx = C.SZ_SEATS.findIndex(st => st.mer.includes(STAR_NMER[d[0]]));
@@ -7055,7 +7055,7 @@ function starChartHtml() {
   });
   { // v1054 Ye 定：开脉丹线也给一个「下一个穴」标记，用蓝色（落在当前选中座，丹未满时）
     const st = C.SZ_SEATS[sel]; const dn = C.szDan(S, sel); const cap = st.mer.length > 1 ? 52 : st.cnt * 2;
-    if (dn > 0 && dn < cap) { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); let dd = null; if (st.mer.length > 1) { if (dn < names.length) { const s = sidesOf(names[dn]); dd = s ? s[0] : null; } } else { const nm = names[dn % st.cnt]; const s = sidesOf(nm); dd = s ? (s[dn >= st.cnt ? 1 : 0] || s[0]) : null; } if (dd) inner += `<span style="position:absolute;left:${dd[2]}%;top:${dd[3]}%;width:15px;height:15px;margin:-7.5px 0 0 -7.5px;border:2px solid rgba(94,168,255,.95);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${dd[2]}%;top:${dd[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#5ea8ff"></span>`; }
+    if (dn > 0 && dn < cap) { const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); let dd = null; if (st.mer.length > 1) { if (dn < names.length) { const s = sidesOf(names[dn]); dd = s ? s[0] : null; } } else { const nm = names[Math.floor(dn / 2)]; const s = sidesOf(nm); const first = (g === 'f') ? 1 : 0; const side = (dn % 2 === 0) ? first : 1 - first; dd = s ? (s[side] || s[0]) : null; } if (dd) inner += `<span style="position:absolute;left:${dd[2]}%;top:${dd[3]}%;width:15px;height:15px;margin:-7.5px 0 0 -7.5px;border:2px solid rgba(94,168,255,.95);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${dd[2]}%;top:${dd[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:#5ea8ff"></span>`; }
   }
   if (frontier) inner += `<span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border:2px solid ${MCOL[STAR_NMER[frontier[0]]].g}.9);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:${MCOL[STAR_NMER[frontier[0]]].c}"></span>`;
   const tg = (v, lab) => `<button class="btn sm" data-starview="${v}" style="flex:1;padding:5px 0;${(view === (v === 'back' ? 1 : 0)) ? 'border-color:var(--gold);color:var(--gold)' : 'opacity:.65'}">${lab}</button>`;
