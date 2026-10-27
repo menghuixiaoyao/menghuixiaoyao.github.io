@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1115</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1116</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -6097,7 +6097,7 @@ async function sheetStall(x, y) {
   const items = d.items || [];
   if (!items.length) html += `<div class="empty">${d.renter ? '摊主暂无上架物品' : '暂无摊主，快来租下这个摊位'}</div>`;
   else html += items.map((it) => { const _ic = STALL_CURS[it.cur] || _sc; const _ibal = stallBal(it.cur || _sc.key); return `<div class="row"><div class="lab">${esc(it.item_name)} ×${it.qty} <span class="tag">${it.price} ${_ic.icon||''}${_ic.name}/个</span><small> · ${esc(it.seller_name)}</small></div>`
-    + (it.seller_id && (function(){ try { return localStorage.getItem('mhxy_aid') === it.seller_id; } catch (_) { return false; } })()
+    + (it.isMine || (it.seller_id && (function(){ try { return localStorage.getItem('mhxy_aid') === it.seller_id; } catch (_) { return false; } })())
       ? `<button class="btn" data-stallunlist-id="${it.id}" data-sx="${x}" data-sy="${y}">下架</button>`
       : `<button class="btn gold" data-stallbuy-id="${it.id}" data-sx="${x}" data-sy="${y}" ${_ibal >= it.price * it.qty ? '' : 'disabled'}>买下 ${it.price * it.qty}${_ic.icon||''}${_ic.name}</button>`) + `</div>`; }).join('');
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
@@ -7062,7 +7062,7 @@ function starChartHtml() {
   const st = C.SZ_SEATS[sel], p = C.szProg(S, sel);
   const pages = S.maiPages | 0, pills = S.inv['mai'] | 0;
   const card = p >= 10
-    ? `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin-top:5px">气旋已开满 · 丹穴 ${C.szDan(S, sel)} / ${C.szDanCap(sel)}。</div>${C.szDan(S, sel) < C.szDanCap(sel) ? `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 ? '' : 'disabled'}>数量</button></div>` : ''}`
+    ? `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin-top:5px">气旋已开满 · 丹穴 ${C.szDan(S, sel)} / ${C.szDanCap(sel)}。</div>${C.szDan(S, sel) < C.szDanCap(sel) ? `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 ? '' : 'disabled'}>数量</button></div>` : ''}<div style="display:flex;gap:8px;margin-top:10px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃1张残页</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>数量</button></div>`
     : `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">气旋已开 ${p} / 10 · 再吃 ${10 - p} 张残页开满；开脉丹每颗开一穴（本座已亮 ${C.szLitCnt(S, sel)} / ${C.szDanCap(sel)} 穴）</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃1张残页</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>数量</button></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>数量</button></div>`;
   return `<style>@keyframes starPulse{0%{transform:scale(.55);opacity:1}70%{transform:scale(1.3);opacity:.2}100%{transform:scale(1.3);opacity:0}}</style>`
     + (grand ? `<div style="border:1px solid rgba(255,205,92,.75);border-radius:12px;box-shadow:0 0 22px rgba(255,190,70,.35),inset 0 0 34px rgba(255,190,70,.10);padding:8px 6px">` : `<div>`)
@@ -7074,7 +7074,7 @@ function starChartHtml() {
     + `<div style="background:#201c30;border:1px solid #46406a;border-radius:10px;padding:12px;margin-top:8px">${card}</div></div>`;
 }
 // v1113 点一下只吃1张，批量走数量
-function doFeedSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const r = C.useMaiPages(S, 1, i); if (r.n > 0) { log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[i].name}</b> 气旋 ${C.szProg(S, i)}/10${C.szProg(S, i) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); } commit(); sheetChar(); }
+function doFeedSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const r = C.useMaiPages(S, 1, i); if (r.n <= 0) return; if (r.n > 0) { log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[i].name}</b> 气旋 ${C.szProg(S, i)}/10${C.szProg(S, i) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); } commit(); sheetChar(); }
 function doPillSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; if (C.szDan(S, i) >= C.szDanCap(i)) return; const got = C.drinkMai(S, 1, i); if (got > 0) { log('good', `🌀 服用开脉丹，<b class="y">${C.SZ_SEATS[i].name}</b> 开一穴（本座已亮 ${C.szLitCnt(S, i)}/${C.SZ_SEATS[i].cnt} 穴）`); } commit(); sheetChar(); }
 window.szQtyBack = function(bag) { if (bag) { try { sheetBag(); } catch(_) {} } else { try { sheetChar(); } catch(_) {} } };
 window.szQty = function(kind, seat, bag) { // v1054 Ye 定：残页/开脉丹可选数量（游戏内选量表，不用系统 prompt）
