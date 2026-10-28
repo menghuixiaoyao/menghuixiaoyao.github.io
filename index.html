@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1121</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1122</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -905,7 +905,8 @@ const MANA_COST_HT = [0, 11816000, 13000000, 14300000, 15730000, 17300000, 19030
 const MANA_COST_ZZ = [0, 32930000, 36220000, 39840000, 43830000, 48210000, 53030000, 58330000, 64170000, 70580000]; // 尊者
 const MANA_COST_ZZ2 = [0, 91750000, 100930000, 111020000, 122120000, 134330000, 147770000, 162540000, 178800000, 196680000]; // 主宰
 const MANA_COST_TABLES = { 1: MANA_COST_LQ, 2: MANA_COST_ZJ, 3: MANA_COST_JD, 4: MANA_COST_YY, 5: MANA_COST_HS, 6: MANA_COST_DC, 7: MANA_COST_DJ, 8: MANA_COST_XR, 9: MANA_COST_JX, 10: MANA_COST_HT, 11: MANA_COST_ZZ, 12: MANA_COST_ZZ2 };
-const manaNeed = (S, lv) => { const t = MANA_COST_TABLES[S.realm|0]; const v = t ? (t[lv] || 0) : xpNeed(lv); return (S.realm|0) >= 8 ? Math.max(1, Math.ceil(v / 1000000)) : v; }; // 练气以上用法力表，凡人用经验表；仙人以上100万:1转为仙力
+const XIAN_NEED = { 8: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18], 9: [0, 36, 44, 52, 63, 75, 90, 108, 129, 155], 10: [0, 171, 180, 189, 198, 208, 219, 230, 241, 253], 11: [0, 279, 285, 291, 297, 302, 309, 315, 321, 327], 12: [0, 360, 368, 375, 383, 390, 398, 406, 414, 422] }; // v1122 Ye 定仙力升级表：仙人 2 起 +2/级；金仙 36 起 ×1.2；合体 171 起 ×1.05；尊者 279 起 ×1.02；主宰 360 起 ×1.02；衔接：合体 155×1.1、尊者 253×1.1、主宰 327×1.1，取整进位
+const manaNeed = (S, lv) => { if ((S.realm|0) >= 8) { const t = XIAN_NEED[S.realm|0]; return Math.max(1, t ? (t[lv] || 0) : 0); } const t = MANA_COST_TABLES[S.realm|0]; const v = t ? (t[lv] || 0) : xpNeed(lv); return v; }; // 练气以上用法力表，凡人用经验表；仙人以上用 Ye 定仙力表（旧 100 万:1 已废）
 function canLevelUp(S) { if (S.dead || S.level >= REALM_MAX_LV) return false; if (C.isPermanentlyDegraded(S) && S.level >= 9) return false; return C.useFali(S) ? S.mana >= manaNeed(S, S.level) : S.xp >= xpNeed(S.level); } // v590 第二次失败才卡9级
 function doManualLevelUp(S) {
   if (S.dead) return { err: 'dead' };
