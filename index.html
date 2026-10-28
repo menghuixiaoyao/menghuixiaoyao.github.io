@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1117</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1118</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -829,6 +829,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
     S.shenzang = _sz;
   }
   S.shenzang = S.shenzang.map(x => Math.max(0, Math.min(10, Math.floor(+x || 0))));
+  if (typeof szQiMig === 'function') szQiMig(S); // v1118 气旋全局计数迁移
   if (typeof szSyncMai === 'function') szSyncMai(S);
   S.maiShu = S.maiShu ? 1 : 0; S.maiShuXp = Math.max(0, Math.floor(+S.maiShuXp || 0));
   if (!Array.isArray(S.battlePlan) || S.battlePlan.length !== 5) S.battlePlan = ['attack','attack','attack','attack','attack'];
@@ -2454,6 +2455,7 @@ const SZ_SEATS = [ // v993 神藏：座序=境界名序；mer=STAR_NMER 经序�
   { name: '尊者神藏', short: '尊者', mer: [8], merName: '膀胱经', cnt: 67 },
   { name: '主宰大圆满神藏', short: '主宰', mer: [0, 1], merName: '任督二脉', cnt: 52 },
 ];
+const SZ_MER_ORDER = [12, 2, 5, 10, 6, 0, 4, 11, 8, 1, 7, 9, 3]; // v1118 经络顺序：任督 肺 大肠 胃 脾 心 小肠 膀胱 肾 心包 三焦 胆 肝（座索引映射，数据不动）
 const szProg = (S, i) => { const a = Array.isArray(S.shenzang) ? S.shenzang : []; return Math.max(0, Math.min(10, Math.floor(+a[i] || 0))); };
 const szSetProg = (S, i, v) => { if (!Array.isArray(S.shenzang) || S.shenzang.length !== 13) S.shenzang = new Array(13).fill(0); S.shenzang[i] = Math.max(0, Math.min(10, Math.floor(v))); };
 const szDanArr = S => { if (!Array.isArray(S.shenzangDan) || S.shenzangDan.length !== 13) S.shenzangDan = new Array(13).fill(0); return S.shenzangDan; };
@@ -2462,10 +2464,12 @@ const szLitCnt = (S, i) => Math.min(szDanCap(i), szDan(S, i)); // v1100 亮穴�
 const szDanCap = i => SZ_SEATS[i].mer.length > 1 ? SZ_SEATS[i].cnt : SZ_SEATS[i].cnt * 2; // v1050 丹线容量：双侧经左右各点一遍=2×穴数；任督座任24+督28共52不翻倍
 const szVMaiCount = S => SZ_SEATS.reduce((n, st, i) => { const d = szDan(S, i); if (st.mer.length > 1) return n + (d >= 24 ? 1 : 0) + (d >= st.cnt ? 1 : 0); return n + (d >= st.cnt * 2 ? 2 : 0); }, 0); // v1100 Ye 定：双侧经两条线同时开（满 2×cnt 才 +2，半满 0 条）；任督各一条（24/52）
 const szVMaiPress = S => SZ_SEATS.reduce((n, st, i) => { const d = szDan(S, i); if (st.mer.length > 1) return n + (d >= 24 ? 1 : 0) + (d >= st.cnt ? 1 : 0); return n + (d >= st.cnt * 2 ? 1 : 0); }, 0); // v1050 Ye 定：虚脉压条——左右成对+1、任督各+1，上限14
-const szBigCount = S => SZ_SEATS.reduce((n, _, i) => n + (szProg(S, i) >= 10 ? 1 : 0), 0); // 大气旋数＝气旋吃满的座
+const szQiMig = S => { if (!Number.isFinite(S.szBig) || !Number.isFinite(S.szSmall)) { const full = SZ_SEATS.reduce((n, _, i) => n + (szProg(S, i) >= 10 ? 1 : 0), 0); const part = SZ_SEATS.reduce((n, _, i) => { const pr = szProg(S, i); return n + (pr > 0 && pr < 10 ? pr : 0); }, 0); S.szBig = full + Math.floor(part / 10); S.szSmall = part % 10; } S.szBig = Math.max(0, Math.floor(S.szBig)); S.szSmall = Math.max(0, Math.min(9, Math.floor(S.szSmall))); }; // v1118 气旋全局计数迁移：旧按座进度折算，10 小合 1 大
+const szBigCount = S => { szQiMig(S); return S.szBig; }; // v1118 大气旋数＝全局计数（不再按座）
+const szFirstDanOpen = S => { for (const i of SZ_MER_ORDER) if (szDan(S, i) < szDanCap(i)) return i; return -1; }; // v1118 按经络顺序首个丹未满经
 const maiRMaiEff = S => Math.min(13, (S.maiRMai|0) + szBigCount(S)); // v1050 Ye 定：一个大气旋算作一个实脉（多压一条、轮回不重置）；实脉封顶13
 const szOpenCount = S => SZ_SEATS.reduce((n, _, i) => n + ((szProg(S, i) >= 10 || szDan(S, i) >= szDanCap(i)) ? 1 : 0), 0); // v1100 全开座：气旋满或丹穴满座（双侧满）即算
-const szSmallCount = S => SZ_SEATS.reduce((n, _, i) => { const p = szProg(S, i); return n + (p > 0 && p < 10 ? p : 0); }, 0);
+const szSmallCount = S => { szQiMig(S); return S.szSmall; }; // v1118 小气旋数＝全局计数
 function szSyncMai(S) { // v1050 Ye 定：虚实分开——虚络只算开脉丹开穴数（气旋是实、归实络/大气旋，不混进虚络）；虚脉=丹点满座数
   let tot = 0; for (let i = 0; i < 13; i++) tot += szDan(S, i);
   S.maiVLuo = tot; S.maiVMai = szVMaiCount(S); // v1050：虚脉条数由丹线按经络派生（szVMaiCount，上限26）
@@ -2479,28 +2483,26 @@ function useSha(S) { // 吞噬煞气：需吞魔技能；每次+1个法力上限
   if (C.useFali(S)) { const add = manaMax(S); S.mana = Math.floor(S.mana + add); manaGained = add; const nc = C.manaCap(S); S.shaExcess = Math.max(0, S.mana - nc); }
   return { ok: true, manaGained };
 }
-function drinkMai(S, n, seatIdx) { // v1033：服用开脉丹：每颗开一穴（点亮一个未亮穴位，不加气旋；优先指定座，其次座序）
+function drinkMai(S, n, seatIdx) { // v1033：服用开脉丹：每颗开一穴（点亮一个未亮穴位，不加气旋；v1118 优先指定经，其次经络顺序）
   const have = S.inv['mai'] || 0; n = Math.min(n || 1, have);
   if (n <= 0) return 0;
   const dan = szDanArr(S);
   let used = 0; const order = [];
   if (seatIdx !== undefined && seatIdx !== null) order.push(seatIdx);
-  for (let i = 0; i < 13; i++) if (!order.includes(i)) order.push(i);
+  for (const i of SZ_MER_ORDER) if (!order.includes(i)) order.push(i);
   for (const i of order) { while (used < n && szDan(S, i) < szDanCap(i)) { dan[i]++; used++; } if (used >= n) break; }
   if (used > 0) { S.inv['mai'] = have - used; if (!S.inv['mai']) delete S.inv['mai']; szSyncMai(S); }
   return used;
 }
-function useMaiPages(S, n, seatIdx) { // v993：残页喂神藏气旋（每张+1/10座进度）+旧效（实络+1、开脉术经验+1）
+function useMaiPages(S, n, seatIdx) { // v1118：残页改攒全局小气旋，10 小合 1 大，不卡境界（seatIdx 忽略，兼容旧调用）+旧效（实络+1、开脉术经验+1）
+  szQiMig(S);
   const have = S.maiPages | 0; n = Math.min(n || 1, have);
-  if (n <= 0) return { n: 0, lvUp: 0, filled: [] };
-  let left = n; const filled = [];
-  const order = (seatIdx !== undefined && seatIdx !== null) ? [seatIdx] : SZ_SEATS.map((_, i) => i);
-  for (const i of order) {
-    while (left > 0 && szProg(S, i) < 10) { szSetProg(S, i, szProg(S, i) + 1); left--; if (szProg(S, i) >= 10) filled.push(SZ_SEATS[i].name); }
-    if (left <= 0) break;
-  }
-  const used = n - left;
-  if (used <= 0) return { n: 0, lvUp: 0, filled: [] };
+  if (n <= 0) return { n: 0, lvUp: 0, filled: [], big: 0 };
+  const used = n;
+  S.szSmall = (S.szSmall | 0) + used;
+  const big = Math.floor(S.szSmall / 10);
+  S.szSmall = S.szSmall % 10;
+  S.szBig = (S.szBig | 0) + big;
   S.maiPages = have - used;
   S.maiRLuo = (S.maiRLuo | 0) + used;
   const oldLv = Math.floor((S.maiShuXp | 0) / 10);
@@ -2508,7 +2510,7 @@ function useMaiPages(S, n, seatIdx) { // v993：残页喂神藏气旋（每张+1
   const lvUp = Math.floor((S.maiShuXp | 0) / 10) - oldLv;
   if (lvUp > 0) S.maiRMai = (S.maiRMai | 0) + lvUp;
   szSyncMai(S);
-  return { n: used, lvUp, filled };
+  return { n: used, lvUp, filled: [], big };
 }
 function synthVMai(S) { szSyncMai(S); return 0; } // v993：虚脉由神藏全开座数派生，不再手动合成
 function synthXPS(S) { // v95：10灵气石合成1下品灵石
@@ -3784,7 +3786,7 @@ function pkSettle(S, pk, chosen) {
 try { (typeof window !== 'undefined' ? window : globalThis).pkSettle = pkSettle; } catch(_) {} // v727 顶层导出pkSettle给script#2用
 
 // v960：本地寄售函数（consignList/consignCancel/consignBuy/consignTick/genMarket）已删除，转线上
-Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, SZ_SEATS, szProg, szSetProg, szVMaiCount, szVMaiPress, szDanCap, szBigCount, maiRMaiEff, szOpenCount, szSmallCount, szSyncMai, szSeatLitNames, szDan, szLitCnt, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advNewEvent, lootTable, lootRoll, lootLabel, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, premiumChance, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
+Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, SZ_SEATS, SZ_MER_ORDER, szProg, szSetProg, szVMaiCount, szVMaiPress, szDanCap, szBigCount, maiRMaiEff, szOpenCount, szSmallCount, szQiMig, szFirstDanOpen, szSyncMai, szSeatLitNames, szDan, szLitCnt, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advNewEvent, lootTable, lootRoll, lootLabel, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, premiumChance, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
   alcRate, potCountProbs, gradeProbs, brew, brewDetox, DANWAN, brewDan, useDanwan, useMutPill, useDetoxPill, toxFactor, toxTier, MUT_PILLS, qiNow, qiFactor, qiTierName, qiAdd, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
   genMonster, genOpponent, adventure, advBattleSetup, advBattleSettle, advEnd, advMove, advRetreat, sneakP, guardedLoot, pkStart, pkSurrender, pkSettle, applyZhenxiu, applyBtSuccess, applyFailState }); // v688 导出突破函数
 G.Core = C;
@@ -7031,7 +7033,7 @@ function starChartHtml() {
   const fullSeats = C.szOpenCount(S);
   const grand = fullSeats >= 13;
   const cur = C.SZ_SEATS.findIndex((_, i) => C.szProg(S, i) < 10);
-  let sel = (window._starSeat === undefined) ? (cur < 0 ? 12 : cur) : window._starSeat;
+  let sel = (window._starSeat === undefined) ? C.szFirstDanOpen(S) : window._starSeat; if (sel < 0) sel = 12;
   let inner = linesSvg, frontier = null;
   for (let i = 0; i < 13 && !frontier; i++) { if (C.szProg(S, i) >= 10) continue; const st = C.SZ_SEATS[i]; const names = []; STAR_NMER.forEach((m, ni) => { if (st.mer.includes(m)) names.push(ni); }); names.sort((x, y) => x - y); const d = C.szDan(S, i); const cap = st.mer.length > 1 ? 52 : st.cnt * 2; if (d >= cap) continue; let nm, side; if (st.mer.length > 1) { nm = names[d]; side = 0; } else { nm = names[Math.floor(d / 2)]; const first = (g === 'f') ? 1 : 0; side = (d % 2 === 0) ? first : 1 - first; } const s = sidesOf(nm); if (s) frontier = s[side] || s[0]; }
   DOTS.forEach((d, di) => {
@@ -7051,45 +7053,44 @@ function starChartHtml() {
   }
   if (frontier) inner += `<span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border:2px solid ${MCOL[STAR_NMER[frontier[0]]].g}.9);border-radius:50%;animation:starPulse 2.2s ease-out infinite"></span><span style="position:absolute;left:${frontier[2]}%;top:${frontier[3]}%;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:${MCOL[STAR_NMER[frontier[0]]].c}"></span>`;
   const tg = (v, lab) => `<button class="btn sm" data-starview="${v}" style="flex:1;padding:5px 0;${(view === (v === 'back' ? 1 : 0)) ? 'border-color:var(--gold);color:var(--gold)' : 'opacity:.65'}">${lab}</button>`;
-  const swirl = i => { const p = C.szProg(S, i), st = C.SZ_SEATS[i]; return `<button data-seat="${i}" style="background:${i === sel ? 'rgba(255,205,92,.08)' : 'none'};border:none;padding:2px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;border-radius:8px">${szSpiralSvg(p / 10, p >= 10, 34)}<span style="font-size:11px;line-height:1.15;color:${p > 0 ? 'var(--gold)' : '#8a86a0'}">${st.short}</span><span style="font-size:9px;color:#6d6a84">${p}/10</span></button>`; };
-  const colL = [0, 1, 2, 3, 4, 5, 6].map(swirl).join('');
-  const colR = [7, 8, 9, 10, 11, 12].map(swirl).join('') + `<div style="padding:2px 0;display:flex;flex-direction:column;align-items:center"><span style="position:relative;display:inline-block;opacity:.55">${szSpiralSvg(0, false, 34)}<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-12deg);font-size:11px;line-height:1.2;color:#e8b4b8;border:1px solid rgba(232,180,184,.75);border-radius:3px;padding:0 2px;background:rgba(20,16,28,.6)">封</span></span><span style="font-size:11px;line-height:1.15;color:#6d6a84">封印</span><span style="font-size:9px;color:#55536b">未启</span></div>`; // v1046 主宰下封印气旋：只显示、无功能
+  const swirl = i => { const dn = C.szDan(S, i), cap = C.szDanCap(i), st = C.SZ_SEATS[i]; return `<button data-seat="${i}" style="background:${i === sel ? 'rgba(255,205,92,.08)' : 'none'};border:none;padding:2px 0;cursor:pointer;display:flex;flex-direction:column;align-items:center;border-radius:8px">${szSpiralSvg(cap > 0 ? dn / cap : 0, dn >= cap, 34)}<span style="font-size:11px;line-height:1.15;color:${dn > 0 ? 'var(--gold)' : '#8a86a0'}">${st.merName}</span><span style="font-size:9px;color:#6d6a84">${dn}/${cap}</span></button>`; };
+  const colL = C.SZ_MER_ORDER.slice(0, 7).map(swirl).join('');
+  const colR = C.SZ_MER_ORDER.slice(7).map(swirl).join('') + `<div style="padding:2px 0;display:flex;flex-direction:column;align-items:center"><span style="position:relative;display:inline-block;opacity:.55">${szSpiralSvg(0, false, 34)}<span style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-12deg);font-size:11px;line-height:1.2;color:#e8b4b8;border:1px solid rgba(232,180,184,.75);border-radius:3px;padding:0 2px;background:rgba(20,16,28,.6)">封</span></span><span style="font-size:11px;line-height:1.15;color:#6d6a84">封印</span><span style="font-size:9px;color:#55536b">未启</span></div>`; // v1046 主宰下封印气旋：只显示、无功能
   const sq = false; // v1032 男背已换长图，不再方形显示
   const fx = !grand ? '' : `<div style="position:absolute;inset:0;border-radius:8px;background:radial-gradient(ellipse 62% 46% at 50% 42%,rgba(255,196,74,.30),rgba(255,196,74,.10) 55%,transparent 75%);pointer-events:none"></div><div style="position:absolute;left:50%;top:${sq ? '1%' : '0.5%'};width:${sq ? '26%' : '52%'};aspect-ratio:1/1;transform:translateX(-50%);border:2px solid rgba(255,214,110,.85);border-radius:50%;box-shadow:0 0 18px rgba(255,205,92,.55),inset 0 0 14px rgba(255,205,92,.35);pointer-events:none"></div>`;
   const body = sq
     ? `<div style="position:relative;width:100%"><img src="star/${g}_back.jpg" style="width:100%;display:block;border-radius:8px">${fx}${inner}</div>`
     : `<div style="position:relative;display:inline-block;height:64vh"><img src="star/${g}${view ? '_back' : '_front'}.jpg" style="height:100%;display:block;border-radius:8px">${fx}${inner}</div>`;
-  const st = C.SZ_SEATS[sel], p = C.szProg(S, sel);
+  const st = C.SZ_SEATS[sel];
   const pages = S.maiPages | 0, pills = S.inv['mai'] | 0;
-  const card = p >= 10
-    ? `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin-top:5px">气旋已开满 · 丹穴 ${C.szDan(S, sel)} / ${C.szDanCap(sel)}。</div>${C.szDan(S, sel) < C.szDanCap(sel) ? `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 ? '' : 'disabled'}>数量</button></div>` : ''}<div style="display:flex;gap:8px;margin-top:10px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃1张残页</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>数量</button></div>`
-    : `<div style="font-size:15px"><b class="y">${st.name} · ${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">气旋已开 ${p} / 10 · 再吃 ${10 - p} 张残页开满；开脉丹每颗开一穴（本座已亮 ${C.szLitCnt(S, sel)} / ${C.szDanCap(sel)} 穴）</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃1张残页</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>数量</button></div><div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 && C.szDan(S, sel) < C.szDanCap(sel) ? '' : 'disabled'}>数量</button></div>`;
+  const dn = C.szDan(S, sel), cap = C.szDanCap(sel);
+  const card = `<div style="font-size:15px"><b class="y">${st.merName}</b></div><div style="font-size:12px;color:#aaa6bd;margin:5px 0 10px">丹穴 ${dn} / ${cap}。</div><div style="display:flex;gap:8px"><button class="btn gold" data-feedseat="1" style="flex:1;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>吃1张残页</button><button class="btn" data-qtyseat="page" style="width:64px;padding:9px 0" ${pages > 0 ? '' : 'disabled'}>数量</button></div>${dn < cap ? `<div style="display:flex;gap:8px;margin-top:8px"><button class="btn" data-pillseat="1" style="flex:1;padding:9px 0;border-color:var(--gold);color:var(--gold)" ${pills > 0 ? '' : 'disabled'}>开脉丹开一穴</button><button class="btn" data-qtyseat="pill" style="width:64px;padding:9px 0" ${pills > 0 ? '' : 'disabled'}>数量</button></div>` : ''}`;
   return `<style>@keyframes starPulse{0%{transform:scale(.55);opacity:1}70%{transform:scale(1.3);opacity:.2}100%{transform:scale(1.3);opacity:0}}</style>`
     + (grand ? `<div style="border:1px solid rgba(255,205,92,.75);border-radius:12px;box-shadow:0 0 22px rgba(255,190,70,.35),inset 0 0 34px rgba(255,190,70,.10);padding:8px 6px">` : `<div>`)
     + `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-right:10px"><span style="font-size:14px">✦ <b class="y">神藏星图</b></span><span style="font-size:12px">已开 ${lit} / 670</span></div>`
-    + `<div style="font-size:12px;color:#aaa6bd;margin-bottom:6px">神藏 ${fullSeats} 全开${cur < 0 ? ' · 十三座全开 · 大圆满' : ` · 第 ${cur + 1} 座开启中`}</div>`
+    + `<div style="font-size:12px;color:#aaa6bd;margin-bottom:6px">神藏 ${fullSeats} 全开${cur < 0 ? ' · 十三经全开 · 大圆满' : ` · 第 ${C.SZ_MER_ORDER.indexOf(cur) + 1} 经开启中`}</div>`
     + `<div style="display:flex;gap:8px;margin-bottom:8px">${tg('front', '正面')}${tg('back', '背面')}</div>`
     + `<div style="display:flex;gap:2px;align-items:flex-start"><div style="display:flex;flex-direction:column;gap:2px;width:52px;flex:none">${colL}</div><div style="flex:1;text-align:center;min-width:0">${body}</div><div style="display:flex;flex-direction:column;gap:2px;width:52px;flex:none">${colR}</div></div>`
     + `<div style="display:flex;align-items:center;gap:14px;background:#1e1b2c;border-radius:8px;padding:6px 12px;margin-top:8px;font-size:12px"><span style="display:flex;align-items:center;gap:4px">${szSpiralSvg(1, false, 18)} 小气旋 ×${C.szSmallCount(S)}</span><span style="display:flex;align-items:center;gap:4px">${szSpiralSvg(1, true, 22)} 大气旋 ×${C.szBigCount(S)}</span><span>残页 ×${pages}</span><span>丹 ×${pills}</span></div>`
     + `<div style="background:#201c30;border:1px solid #46406a;border-radius:10px;padding:12px;margin-top:8px">${card}</div></div>`;
 }
 // v1113 点一下只吃1张，批量走数量
-function doFeedSeat() { const i = (window._starSeat === undefined) ? C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10) : window._starSeat; if (i < 0) return; const r = C.useMaiPages(S, 1, i); if (r.n <= 0) return; if (r.n > 0) { log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[i].name}</b> 气旋 ${C.szProg(S, i)}/10${C.szProg(S, i) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); } commit(); sheetChar(); }
-function doPillSeat() { const _cur = C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10); const i = (window._starSeat === undefined) ? (_cur < 0 ? 12 : _cur) : window._starSeat; if (i < 0) return; if (C.szDan(S, i) >= C.szDanCap(i)) return; const got = C.drinkMai(S, 1, i); if (got > 0) { log('good', `🌀 服用开脉丹，<b class="y">${C.SZ_SEATS[i].name}</b> 开一穴（本座已亮 ${C.szLitCnt(S, i)}/${C.SZ_SEATS[i].cnt} 穴）`); } commit(); sheetChar(); }
+function doFeedSeat() { const r = C.useMaiPages(S, 1); if (r.n <= 0) return; log('good', `🌀 吃脉络残页 ×${r.n}，小气旋 ×${C.szSmallCount(S)}（大气旋 ×${C.szBigCount(S)}）${r.big > 0 ? `，<b class="y">合成大气旋 ×${r.big}！</b>` : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); commit(); sheetChar(); }
+function doPillSeat() { const i = (window._starSeat === undefined) ? C.szFirstDanOpen(S) : window._starSeat; if (i < 0) return; if (C.szDan(S, i) >= C.szDanCap(i)) return; const got = C.drinkMai(S, 1, i); if (got > 0) { log('good', `🌀 服用开脉丹，<b class="y">${C.SZ_SEATS[i].merName}</b> 开一穴（已亮 ${C.szLitCnt(S, i)}/${C.szDanCap(i)} 穴）`); } commit(); sheetChar(); }
 window.szQtyBack = function(bag) { if (bag) { try { sheetBag(); } catch(_) {} } else { try { sheetChar(); } catch(_) {} } };
 window.szQty = function(kind, seat, bag) { // v1054 Ye 定：残页/开脉丹可选数量（游戏内选量表，不用系统 prompt）
   let max, title;
-  if (kind === 'page') { if (seat < 0) seat = C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10); if (seat < 0) return; max = Math.min(10 - C.szProg(S, seat), S.maiPages | 0); title = `🌀 脉络残页 · ${C.SZ_SEATS[seat].name}（还差 ${10 - C.szProg(S, seat)} 张开满 · 库存 ${S.maiPages | 0}）`; }
-  else if (seat >= 0) { max = Math.min(C.szDanCap(seat) - C.szDan(S, seat), S.inv['mai'] | 0); title = `🌀 开脉丹 · ${C.SZ_SEATS[seat].name}（还差 ${C.szDanCap(seat) - C.szDan(S, seat)} 颗 · 库存 ${S.inv['mai'] | 0}）`; }
-  else { max = S.inv['mai'] | 0; title = `🌀 开脉丹（按座序服用 · 库存 ${max}）`; }
+  if (kind === 'page') { max = S.maiPages | 0; title = `🌀 脉络残页 · 10 张合 1 个大气旋（库存 ${S.maiPages | 0}）`; }
+  else if (seat >= 0) { max = Math.min(C.szDanCap(seat) - C.szDan(S, seat), S.inv['mai'] | 0); title = `🌀 开脉丹 · ${C.SZ_SEATS[seat].merName}（还差 ${C.szDanCap(seat) - C.szDan(S, seat)} 颗 · 库存 ${S.inv['mai'] | 0}）`; }
+  else { max = S.inv['mai'] | 0; title = `🌀 开脉丹（按经络顺序服用 · 库存 ${max}）`; }
   if (max <= 0) return;
   const opts = [...new Set([1, 3, 5, 10, max].filter(n2 => n2 >= 1 && n2 <= max))].sort((a, b) => a - b);
   openSheet(`<h3 style="margin:2px 0 10px">${title}</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(64px,1fr));gap:8px">${opts.map(n2 => `<button class="btn ${n2 === max ? 'gold' : ''}" style="padding:10px 0" onclick="szUse('${kind}',${seat},${n2},${bag ? 1 : 0})">用 ${n2}${n2 === max ? '（全部）' : ''}</button>`).join('')}</div><button class="btn" style="width:100%;margin-top:10px;padding:9px 0" onclick="szQtyBack(${bag ? 1 : 0})">取消</button>`);
 };
 window.szUse = function(kind, seat, n, bag) { // v1054：按选定数量使用残页/开脉丹
-  if (kind === 'page') { const r = C.useMaiPages(S, n, seat); if (r.n > 0) log('good', `🌀 吃脉络残页 ×${r.n}，<b class="y">${C.SZ_SEATS[seat].name}</b> 气旋 ${C.szProg(S, seat)}/10${C.szProg(S, seat) >= 10 ? '，<b class="y">神藏已开！</b>' : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); }
-  else if (seat >= 0) { const got = C.drinkMai(S, n, seat); if (got > 0) log('good', `🌀 服用开脉丹 ×${got}，<b class="y">${C.SZ_SEATS[seat].name}</b> 已亮 ${C.szLitCnt(S, seat)}/${C.SZ_SEATS[seat].cnt} 穴`); }
-  else { const got = C.drinkMai(S, n); if (got > 0) log('good', `🌀 服用开脉丹 ×${got}（已亮 ${C.SZ_SEATS.reduce((t, _, i) => t + C.szSeatLitNames(S, i), 0)}/361 穴）`); }
+  if (kind === 'page') { const r = C.useMaiPages(S, n); if (r.n > 0) log('good', `🌀 吃脉络残页 ×${r.n}，小气旋 ×${C.szSmallCount(S)}（大气旋 ×${C.szBigCount(S)}）${r.big > 0 ? `，<b class="y">合成大气旋 ×${r.big}！</b>` : ''}（实络 +${r.n}${r.lvUp > 0 ? `，开脉术升级，实脉 +${r.lvUp}` : ''}）`); }
+  else if (seat >= 0) { const got = C.drinkMai(S, n, seat); if (got > 0) log('good', `🌀 服用开脉丹 ×${got}，<b class="y">${C.SZ_SEATS[seat].merName}</b> 已亮 ${C.szLitCnt(S, seat)}/${C.szDanCap(seat)} 穴`); }
+  else { const got = C.drinkMai(S, n); if (got > 0) log('good', `🌀 服用开脉丹 ×${got}（已亮 ${C.SZ_SEATS.reduce((t, _, i) => t + C.szSeatLitNames(S, i), 0)}/670 穴）`); }
   commit();
   if (bag) { try { sheetBag(); } catch(_) {} } else { try { sheetChar(); } catch(_) {} }
 };
@@ -7910,7 +7911,7 @@ async function doBook(kind, k, n) {
   if (kind === 'cpage') { const r = C.combinePages(S, k, n); if (r.ok) log('good', `📜 将 ${r.n * K.PAGES_PER_BOOK} 张${C.PAGES[k].name}装订成 <b>📘${C.EXP_BOOKS[r.book].name} ×${r.n}</b>`); }
   else if (kind === 'ebook') { const r = C.useExpBook(S, k, n, arguments[3] || 'alc'); if (r.ok) log('alc', `📘 研读${C.EXP_BOOKS[k].name} ×${r.n}，${C.LIFE_SKILLS[r.target].name}经验 <span class="g">+${r.xp}</span>` + (r.lvUp ? `，<span class="y">${C.LIFE_SKILLS[r.target].name}等级提升至 Lv.${C.lifeOf(S, r.target).lv}！</span>` : `（${C.lifeOf(S, r.target).xp}/${C.alcNeed(C.lifeOf(S, r.target).lv)}）`)); }
   else if (kind === 'cskill') { if (C.combineSkillPages(S, k).ok) log('good', `📕 集齐 ${K.SKILL_PAGES_PER_BOOK} 张残页，合成了 <b class="pu">📗${SKILLS[k].name}</b>技能书！`); }
-  else if (kind === 'usemai') { const r = C.useMaiPages(S, parseInt(k) || 1); const n = r.n; if (n > 0) log('good', `🌀 使用脉络残页 ×${n}，实络 <span class="y">+${n}</span><span class="g">（永久）</span>，开脉术经验 +${n}（当前 ${(S.maiShuXp|0)}，Lv.${C.maiShuLv(S)}）${r.lvUp > 0 ? `，<b class="y">📖开脉术升级！实脉 +${r.lvUp}</b><span class="g">（永久）</span>` : ''}（当前实络 ${S.maiRLuo} 条，实脉 ${S.maiRMai} 条）`); }
+  else if (kind === 'usemai') { const r = C.useMaiPages(S, parseInt(k) || 1); const n = r.n; if (n > 0) log('good', `🌀 使用脉络残页 ×${n}，小气旋 ×${C.szSmallCount(S)}（大气旋 ×${C.szBigCount(S)}）${r.big > 0 ? `，<b class="y">合成大气旋 ×${r.big}！</b>` : ''}，实络 <span class="y">+${n}</span><span class="g">（永久）</span>，开脉术经验 +${n}（当前 ${(S.maiShuXp|0)}，Lv.${C.maiShuLv(S)}）${r.lvUp > 0 ? `，<b class="y">📖开脉术升级！实脉 +${r.lvUp}</b><span class="g">（永久）</span>` : ''}（当前实络 ${S.maiRLuo} 条，实脉 ${S.maiRMai} 条）`); }
   else if (kind === 'uskill') { if (C.useSkillBook(S, k).ok) log('good', `📗 研读技能书，习得技能 <b class="pu">${SKILLS[k].name}</b>！`); }
   else if (kind === 'sskill') { const sr = await sellServer('skillbook', k); if (sr && sr.ok) log('gold', `📗 出售${SKILLS[k].name}技能书，金元 <span class="y">+${sr.gold}</span>`); else if (!sr) { const r = C.sellSkillBook(S, k); if (r.ok) log('gold', `📗 出售${SKILLS[k].name}技能书，金元 <span class="y">+${r.gold}</span>`); } }
   commit(); if (kind === 'ebook' && arguments[3]) sheetLife(arguments[3] === 'alc' ? lifeTab : arguments[3]); else sheetBag();
@@ -8765,7 +8766,7 @@ function doJuling(spec) { // v999 聚灵：投灵石涨世界灵气
 function doDrinkMai(n) {
   const got = C.drinkMai(S, n);
   if (!got) { toastLog('sys', (S.inv['mai'] | 0) > 0 ? '⚠️ 穴位已全部点亮' : '⚠️ 没有开脉丹'); return; }
-  log('good', `🌀 服用开脉丹 ×${got}，新开 <b class="y">${got}</b> 穴（已亮 ${C.SZ_SEATS.reduce((t, _, i) => t + C.szSeatLitNames(S, i), 0)}/361）`);
+  log('good', `🌀 服用开脉丹 ×${got}，新开 <b class="y">${got}</b> 穴（已亮 ${C.SZ_SEATS.reduce((t, _, i) => t + C.szSeatLitNames(S, i), 0)}/670）`);
   afterAct(); commit(); sheetBag();
 }
 function doDrinkButian() { // v867 补天丹：+1随机灵根，上限5条，每境界限1颗
@@ -10618,7 +10619,7 @@ document.addEventListener('click', e => {
   if (d.seat !== undefined) { window._starSeat = +d.seat; sheetChar(); return; }
   if (d.feedseat) { doFeedSeat(); return; }
   if (d.pillseat) { doPillSeat(); return; }
-  if (d.qtyseat) { const _cur = C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10); const i = (window._starSeat === undefined) ? (d.qtyseat === 'pill' ? (_cur < 0 ? 12 : _cur) : _cur) : window._starSeat; if (i >= 0) window.szQty(d.qtyseat, i, false); return; }
+  if (d.qtyseat) { if (d.qtyseat === 'page') { window.szQty('page', -1, false); } else { const i = (window._starSeat === undefined) ? C.szFirstDanOpen(S) : window._starSeat; if (i >= 0) window.szQty('pill', i, false); } return; }
   if (d.a) { const fn = ({ close: () => closeSheet(), checkin: () => doCheckin(false), train: sheetTrain, alchemy: () => sheetAlchemy(), life: () => sheetLife(lifeTab), adventure: sheetAdventure, wxsynth: sheetWxSynth, pk: doPkChooseRealm, arena: doArena, xianyuan: doXianyuan, mail: doMail, sect: doSect, shop: () => sheetShop(), bag: sheetBag, cave: () => { const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0; if (_dg > 0 || _xg > 0) { if (typeof goBackCaveChoice === 'function') goBackCaveChoice(); } else { toastLog('sys', '🏔️ 洞府功能开发中，敬请期待'); } }, debug: () => doDebug(d.dbg), lvup: () => doLvUp(), reinc: () => doReincarnate(), breakthrough: () => doBreakthrough(), dazuo: () => doDazuo(), afkCave: () => doAfkChoose('cave'), afkVein: () => doAfkChoose('vein') })[d.a]; if (fn) fn(); }
   else if (d.advpage) sheetAdventure(+d.advpage);
   else if (d.adv) { petSay('battle', 0.3); doAdventure(d.adv); }
