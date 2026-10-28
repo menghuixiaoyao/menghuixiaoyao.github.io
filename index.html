@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1119</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1120</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2454,7 +2454,7 @@ const SZ_SEATS = [ // v993 神藏：座序=境界名序；mer=STAR_NMER 经序�
   { name: '尊者神藏', short: '尊者', mer: [8], merName: '膀胱经', cnt: 67 },
   { name: '主宰大圆满神藏', short: '主宰', mer: [0, 1], merName: '任督二脉', cnt: 52 },
 ];
-const SZ_MER_ORDER = [12, 2, 5, 10, 6, 0, 4, 11, 8, 1, 7, 9, 3]; // v1118 经络顺序：任督 肺 大肠 胃 脾 心 小肠 膀胱 肾 心包 三焦 胆 肝（座索引映射，数据不动）
+const SZ_MER_ORDER = (() => { const s1 = SZ_SEATS.map((st, i) => i).filter(i => SZ_SEATS[i].mer.length === 1).sort((a, b) => SZ_SEATS[a].cnt - SZ_SEATS[b].cnt || a - b); const s2 = SZ_SEATS.map((st, i) => i).filter(i => SZ_SEATS[i].mer.length > 1); return s1.concat(s2); })(); // v1120 Ye 定：经络顺序按穴位数从少到多，任督二脉最后（不是座序；现数据下为心 心包 肺 肝 小肠 大肠 脾 三焦 肾 胆 胃 膀胱 任督）
 const szProg = (S, i) => { const a = Array.isArray(S.shenzang) ? S.shenzang : []; return Math.max(0, Math.min(10, Math.floor(+a[i] || 0))); };
 const szSetProg = (S, i, v) => { if (!Array.isArray(S.shenzang) || S.shenzang.length !== 13) S.shenzang = new Array(13).fill(0); S.shenzang[i] = Math.max(0, Math.min(10, Math.floor(v))); };
 const szDanArr = S => { if (!Array.isArray(S.shenzangDan) || S.shenzangDan.length !== 13) S.shenzangDan = new Array(13).fill(0); return S.shenzangDan; };
