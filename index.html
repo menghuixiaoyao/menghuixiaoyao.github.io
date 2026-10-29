@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1123</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1124</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -9516,11 +9516,25 @@ function meritSettleCheck() {
   if ((S.meritCycle|0) < 0) { S.meritCycle = ci; return; }
   if (S.meritCycle < ci) {
     const m = S.merit|0;
-    if (m >= 100) { S.stamina = (S.stamina|0) + 50; S.xianyu = (S.xianyu|0) + 2; log('gold', `🌈 <b>大劫已过！</b>功德 ${m} 护身，天道赐福：体力 +50、仙玉 +2。功德耗去一半（余 ${Math.floor(m / 2)}）。`); try { worldAnnounce('merit'); } catch(_){} }
+    if (m >= 100) { S.stamina = (S.stamina|0) + 50; S.xianyu = (S.xianyu|0) + 2; log('gold', `🌈 <b>大劫已过！</b>功德 ${m} 护身，天道赐福：体力 +50、仙玉 +2。功德耗去一半（余 ${Math.floor(m / 2)}）。`); try { worldAnnounce('merit'); } catch(_){} try { meritBlessClaim(S.xianyu|0); } catch(_){} }
     else { const loss = Math.max(1, Math.floor((S.lifespan || 0) * 0.05)); S.lifespan = Math.max(0, (S.lifespan || 0) - loss); log('bad', `🌩️ <b>大劫降临！</b>功德不足（${m}/100），劫火焚身：寿元 -${loss} 年。功德耗去一半（余 ${Math.floor(m / 2)}）。`); }
     S.merit = Math.floor(m / 2); S.meritCycle = ci;
   }
   if (meritDaysLeft() <= 3 && S.meritWarn !== ci) { S.meritWarn = ci; log('bad', `🌩️ 天象示警：<b>大劫 ${meritDaysLeft()} 天后降临</b>，功德 ≥100 方可安然渡过（当前 ${S.merit|0}）。`); }
+}
+// v1124 大劫赐福的仙玉 +2 走服务端发放：本地先加（离线照常显示），登录时向服务端报到，
+// 服务端把 +2 直接写进云存档（只靠本地上传会被只减不增守卫砍掉），再按回执对齐同步基线与余额。
+function meritBlessClaim(settledXianyu) {
+  try {
+    if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn() || !MHXY.api) return;
+    MHXY.api('/api/merit/bless', { method: 'POST', body: {} }).then(function(r) {
+      try {
+        if (!r || !r.ok || !r.json || !r.json.ok) return;
+        if (r.json.rev) { try { if (typeof MHXY.setBaseRev === 'function') MHXY.setBaseRev(r.json.rev); } catch(_) {} }
+        if (typeof r.json.xianyu === 'number' && (S.xianyu|0) === settledXianyu && r.json.xianyu !== settledXianyu) { S.xianyu = r.json.xianyu; try { save(); } catch(_) {} }
+      } catch(_) {}
+    }).catch(function() {});
+  } catch(_) {}
 }
 const PET_TALK = {
   fox: { greet: ['这把稳了，我鼻子灵。', '别怕，我跑得比他们都快。', '有好吃的记得分我。'], battle: ['咬他！……我先上！', '看我身法，嘿！', '别小看狐狸。'], feed: ['唔……这个香！', '就一口？再来一口嘛。', '你最好了。'], lvup: ['尾巴都更有光泽了！', '感觉能多咬两口了。', '哼哼，变强了。'], enc: ['等等，我闻到点什么……', '那边好像有动静。', '直觉告诉我，选稳妥的。'] },
