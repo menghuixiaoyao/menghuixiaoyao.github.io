@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1129</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1130</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -677,7 +677,7 @@ function newState() {
   const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
     stats: { adv: 0, advWin: 0, pk: 0, pkWin: 0, brew: 0, brewOk: 0, checkins: 0 }, log: [], hpCur: null, curseN: 0,
     wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null,
-    tools: { pick: null, hoe: null }, lingwu: [], lwseeds: {}, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋
+    tools: { pick: null, hoe: null }, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋
   S.mana = manaMax(S); grantStarter(S); return S;
 }
 function normalize(S) {
@@ -736,13 +736,9 @@ function normalize(S) {
   if (!Array.isArray(S.lingwu)) S.lingwu = [];
   S.lingwu = S.lingwu.filter(_w => _w && _w.g >= 1 && _w.g <= 3 && _w.y >= 1).map(_w => ({ g: Math.floor(_w.g), y: Math.floor(_w.y), e: _w.e && (LW_ELES.indexOf(_w.e) >= 0 || ROOT_BASE[_w.e]) ? _w.e : rollLwEleL() })); // v1129 存量灵物随机补五行
   if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = {};
-  { // v1129 种子旧形状（按品级计数、无五行）→ '<品级>_<五行>' 键：逐颗随机定行（含变异），新键含下划线故迁移自终止
-    const _flat = {};
-    for (const _k in S.lwseeds) {
-      const _n = Math.max(0, Math.floor(+S.lwseeds[_k] || 0)); if (!_n) continue;
-      if (/^\d+$/.test(_k)) { for (let _i = 0; _i < _n; _i++) { const _nk = _k + '_' + rollLwEleL(); _flat[_nk] = (_flat[_nk] | 0) + 1; } }
-      else if (/^\d_.+$/.test(_k)) _flat[_k] = (_flat[_k] | 0) + _n;
-    }
+  { // v1130 种子不带五行：v1129 的 '<品级>_<五行>' 键合并回品级计数（总数不变）
+    const _flat = { 1: 0, 2: 0, 3: 0 };
+    for (const _k in S.lwseeds) { const _n = Math.max(0, Math.floor(+S.lwseeds[_k] || 0)); if (!_n) continue; const _m = /^([123])(_|$)/.exec(_k); if (_m) _flat[_m[1]] += _n; }
     S.lwseeds = _flat;
   }
   if (!Array.isArray(S.syd)) S.syd = []; // v1129 寿元丹 [{e, val}]
@@ -1368,17 +1364,20 @@ function tribGrade(S) { // v175 金丹/元婴品质：按突破前灵气条/仙�
 /* ---------- v867 灵根/法则 ---------- */
 const LINGGEN_ELEMS = ['金','木','水','火','土'];
 const LINGGEN_ATTR = {金:'str', 木:'vit', 水:'agi', 火:'int', 土:'def'};
-const LINGGEN_ELE_ICON = {金:'⚙️', 木:'🌿', 水:'💧', 火:'🔥', 土:'🪨', 雷:'⚡', 冰:'❄️', 风:'🌪️'}; // v1129 变异灵根图标
-const ROOT_MUT = { '金': '雷', '水': '冰', '木': '风' }; // v1129 变异方向（灵根与灵物共用）
-const ROOT_BASE = { '雷': '金', '冰': '水', '风': '木' }; // 变异根的来源行
+const LINGGEN_ELE_ICON = {金:'⚙️', 木:'🌿', 水:'💧', 火:'🔥', 土:'🪨', 雷:'⚡', 冰:'❄️', 风:'🌪️', 光:'☀️', 暗:'🌑'}; // v1130 变异出满 5 种（火→光/土→暗）
+const ROOT_MUT = { '金': '雷', '水': '冰', '木': '风', '火': '光', '土': '暗' }; // v1130 变异出满 5 种（Ye 定光/暗补火/土）
+const ROOT_BASE = { '雷': '金', '冰': '水', '风': '木', '光': '火', '暗': '土' }; // 变异根的来源行
 function rootBaseL(e) { return ROOT_BASE[e] || e; }
 function mutRootL(e) { const m = ROOT_MUT[e]; return (m && Math.random() < 0.05) ? m : e; } // 5% 变异掷（抽根/灵物定行共用）
 function hasRootEleL(S, baseEle) { return (S.lingGen || []).some(r => rootBaseL(r) === baseEle); } // 是否拥有某行（变异根算来源行）
-function eleMatchL(S, e) { // v1129 吃丹对应：变异丹须有对应变异根；本行丹有本行根或其变异根即可
-  const g = S.lingGen || [];
-  if (ROOT_BASE[e]) return g.indexOf(e) >= 0;
-  return g.some(r => r === e || ROOT_BASE[r] === e);
+function eleFactorL(S, e) { // v1130 吃丹倍率（Ye 定）：同种 100%；同系 80%（异灵根吃来源行丹 / 来源根吃变异丹）；变异根+来源根俱全吃变异丹 130%（双根共鸣）；完全不对行 50%
+  const g = S.lingGen || [], has = x => g.indexOf(x) >= 0;
+  if (has(e)) return (ROOT_BASE[e] && has(ROOT_BASE[e])) ? 1.3 : 1;
+  if (ROOT_BASE[e]) return has(ROOT_BASE[e]) ? 0.8 : 0.5;
+  for (const r of g) if (ROOT_BASE[r] === e) return 0.8;
+  return 0.5;
 }
+function eleNoteL(f) { return f >= 1.3 ? '双根共鸣+30%' : f >= 1 ? '' : f >= 0.8 ? '同系80%' : '不对行50%'; }
 function assignLingGen(S) { // 练气突破随机灵根：1-5条加权
   if (S.lingGen && S.lingGen.length) return S.lingGen;
   const r = Math.random();
@@ -1439,7 +1438,7 @@ function faZeBenMingTxt(S) { // v873 本命圆满加成显示
   const n = (S.lingGen||[]).length;
   return `对应灵根属性各+5%，突破主宰成功率+${5 * n}%`;
 }
-try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus, faZeBtBonus: faZeBtBonus, benMingTxt: faZeBenMingTxt, base: rootBaseL, hasEle: hasRootEleL, match: eleMatchL, mut: mutRootL, MUT: ROOT_MUT }; } catch(_) {} // v1129 变异助手 // v867 跨script块用window.LG
+try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus, faZeBtBonus: faZeBtBonus, benMingTxt: faZeBenMingTxt, base: rootBaseL, hasEle: hasRootEleL, factor: eleFactorL, mut: mutRootL, MUT: ROOT_MUT }; } catch(_) {} // v1129 变异助手 // v867 跨script块用window.LG
 function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 breakthrough / finishTribQuiz 共用）
   S.thunderOk = false; S._trigFail = 0; S._succFail = 0; // v659 突破后重置雷云判定
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
@@ -2387,11 +2386,11 @@ function eatSyd(S, idx) { // v1129 服寿元丹：灵根对应全效，否则减
   if (!Array.isArray(S.syd)) return null;
   const p = S.syd[idx | 0]; if (!p) return null;
   S.syd.splice(idx | 0, 1);
-  const match = eleMatchL(S, p.e);
-  const gain = match ? p.val : Math.floor(p.val / 2);
+  const f = eleFactorL(S, p.e);
+  const gain = Math.floor(p.val * f);
   S.lifespan = (S.lifespan || 100) + gain;
   S.danDu = Math.min(100, (S.danDu | 0) + 1);
-  return { gain, match, e: p.e, val: p.val };
+  return { gain, f, e: p.e, val: p.val };
 }
 Object.assign(C, { lwCritP, brewSyd, brewKm, eatSyd });
 function useDanwan(S, key, n) { // v1096 服丸
@@ -3433,7 +3432,7 @@ const TOOL_TIER_COLORS = ['#f2f2f2', '#ff9f43', '#ff5f57']; // 器具名按档�
 const TOOL_LVL_COLORS = ['#f2f2f2', '#4ade80', '#6db3ff', '#22d3ee', '#c084fc', '#ff7eb6', '#ff9f43', '#ffd94d', '#e8f6ff', '#ff3b30']; // 等级数字按百级分段 0/100/.../900；1000 级七彩单独处理
 const LW_GRADE_NAMES = ['地品灵物', '天品灵物', '仙品灵物'];
 const LW_ELES = ['金', '木', '水', '火', '土']; // v1129 灵物五行（变异：金→雷/水→冰/木→风，与灵根共用 mutRootL）
-const LW_ELE_COLORS = { '金': '#ffd94d', '木': '#6bcb77', '水': '#4d96ff', '火': '#ff5f57', '土': '#d29a5b', '雷': '#b77cff', '冰': '#7fe7f2', '风': '#8ef0c8' };
+const LW_ELE_COLORS = { '金': '#ffd94d', '木': '#6bcb77', '水': '#4d96ff', '火': '#ff5f57', '土': '#d29a5b', '雷': '#b77cff', '冰': '#7fe7f2', '风': '#8ef0c8', '光': '#ffe97a', '暗': '#7c6fd0' };
 function rollLwEleL() { return mutRootL(LW_ELES[(Math.random() * LW_ELES.length) | 0]); } // 定行：五选一 + 5% 变异
 const LW_SEED_NAMES = ['地品灵物种子', '天品灵物种子', '仙品灵物种子'];
 const GRADE_COLORS = ['#6db3ff', '#ff7eb6', '#ff9f43']; // 资源等级色（地图显示）：一级蓝/二级粉红/三级橙
@@ -3443,7 +3442,7 @@ function toolUseL(tool) { tool.dur = (tool.dur | 0) - 1; tool.uses = (tool.uses 
 const LW_EPOCH_L = Date.UTC(2026, 9, 30, 0, 0, 0); // 灵物年份阶梯起点（与服务端一致）
 function lwYearCapL(now) { const n = Math.floor(((now || Date.now()) - LW_EPOCH_L) / (182.5 * 24 * 3600 * 1000)); if (n <= 0) return 10000; if (n === 1) return 100000; return Math.min(10000000, 1000000 * (n - 1)); }
 function rollLwYearsL() { return 1 + Math.floor(Math.random() * lwYearCapL()); }
-function herbBonusL(grade) { const out = { lw: [], seeds: {}, dew: { 1: 0, 2: 0, 3: 0 } }; for (let g = 1; g <= grade; g++) { const st = grade - g; if (Math.random() < 0.05 + 0.05 * st) out.lw.push({ g, y: rollLwYearsL(), e: rollLwEleL() }); if (Math.random() < 0.005 + 0.005 * st) { const k = g + '_' + rollLwEleL(); out.seeds[k] = (out.seeds[k] | 0) + 1; } if (Math.random() < 0.05 + 0.05 * st) out.dew[g] += 1; } return out; } // v1129 灵物/种子带五行
+function herbBonusL(grade) { const out = { lw: [], seeds: { 1: 0, 2: 0, 3: 0 }, dew: { 1: 0, 2: 0, 3: 0 } }; for (let g = 1; g <= grade; g++) { const st = grade - g; if (Math.random() < 0.05 + 0.05 * st) out.lw.push({ g, y: rollLwYearsL(), e: rollLwEleL() }); if (Math.random() < 0.005 + 0.005 * st) out.seeds[g] += 1; if (Math.random() < 0.05 + 0.05 * st) out.dew[g] += 1; } return out; } // v1130 种子不带行（收割才定行），灵物带行
 function veinStoneL(grade) { if (grade >= 3) { const x = Math.random(); return x < 0.45 ? 'sp4' : x < 0.8 ? 'sp5' : 'xy'; } const pool = grade === 2 ? ['sp3', 'sp4', 'sp5'] : ['sp1', 'sp2', 'sp3']; return pool[Math.floor(Math.random() * 3)]; }
 function rollResGradeL() { const r = Math.random(); return r < 0.7 ? 1 : r < 0.9 ? 2 : 3; }
 function toolGateL(S, kind, grade) { // 采集门槛：草药用药锄、矿石/灵脉用矿镐；矿石任意档，草药/灵脉需器具档 ≥ 资源等级
@@ -3468,7 +3467,7 @@ function advResGrant(S, run, kind, grade) {
     for (const k in cnt) parts.push(X.item('mats', k, cnt[k]));
     const b = herbBonusL(grade);
     for (const it of b.lw) { if (!Array.isArray(S.lingwu)) S.lingwu = []; S.lingwu.push(it); parts.push(`获得 <span class="y">${LW_GRADE_NAMES[it.g - 1]}·${it.e}（${it.y} 年）</span>`); }
-    for (const sk in b.seeds) { if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = {}; S.lwseeds[sk] = (S.lwseeds[sk] | 0) + b.seeds[sk]; const _sp = sk.split('_'); parts.push(`获得 <span class="y">${LW_SEED_NAMES[(+_sp[0] || 1) - 1]}·${_sp[1]}×${b.seeds[sk]}</span>`); }
+    for (let g = 1; g <= 3; g++) { if (b.seeds[g] > 0) { if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = { 1: 0, 2: 0, 3: 0 }; S.lwseeds[g] = (S.lwseeds[g] | 0) + b.seeds[g]; parts.push(`获得 <span class="y">${LW_SEED_NAMES[g - 1]}×${b.seeds[g]}</span>`); } }
     for (let g = 1; g <= 3; g++) { if (b.dew[g] > 0) parts.push(X.item('mats', 'dw' + g, b.dew[g])); }
   } else if (kind === 'ore') {
     const cnt = {};
@@ -3482,7 +3481,7 @@ function advResGrant(S, run, kind, grade) {
   if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleMatchL, mutRootL }); // v1129 五行导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL }); // v1129 五行导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
@@ -3591,7 +3590,7 @@ function advApplyGains(j) { // 把服务端 gains 同步进本地存档（与 co
   const got = [];
   for (const gg of (j.gains || [])) {
     if (gg.st === 'lw') { if (!Array.isArray(S.lingwu)) S.lingwu = []; S.lingwu.push({ g: gg.g | 0, y: gg.y | 0, e: gg.e || C.rollLwEleL() }); got.push(`${C.LW_GRADE_NAMES[(gg.g | 0) - 1] || '灵物'}·${gg.e || ''}（${gg.y}年）`); continue; } // v1129 灵物带五行
-    if (gg.st === 'lwseeds') { if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = {}; S.lwseeds[gg.k] = (S.lwseeds[gg.k] | 0) + (gg.n | 0); const _sp = String(gg.k).split('_'); got.push(`${C.LW_SEED_NAMES[(+_sp[0] || 1) - 1]}·${_sp[1] || ''}×${gg.n}`); continue; } // v1129 种子 '<品级>_<五行>'
+    if (gg.st === 'lwseeds') { if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = { 1: 0, 2: 0, 3: 0 }; const _gk = String(gg.k).split('_')[0]; S.lwseeds[_gk] = (S.lwseeds[_gk] | 0) + (gg.n | 0); got.push(`${C.LW_SEED_NAMES[(+_gk || 1) - 1]}×${gg.n}`); continue; } // v1130 种子品级键
     if (gg.st === 'xianyu') { S.xianyu = (S.xianyu | 0) + (gg.n | 0); got.push(`仙玉×${gg.n}`); continue; }
     if (!S[gg.st] || (gg.st === 'veins' && !Array.isArray(S[gg.st]))) S[gg.st] = gg.st === 'veins' ? [0, 0, 0] : {};
     S[gg.st][gg.k] = (S[gg.st][gg.k] | 0) + (gg.n | 0);
@@ -5508,12 +5507,12 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
             _c.g = (_c.g || 0) + _dt;
             if (_c.g >= 14400000) { // 4小时成熟，元婴自动收获
               _c.done = 1;
-              if (_c.lw) { // v1129 灵物种子：收获灵物，年份此时掷（1~当前上限）
-                const _y = C.rollLwYearsL();
+              if (_c.lw) { // v1130 灵物种子：收获灵物，年份与五行都在收割时掷（1~当前上限）
+                const _y = C.rollLwYearsL(), _e = C.rollLwEleL();
                 if (!Array.isArray(S.lingwu)) S.lingwu = [];
-                S.lingwu.push({ g: _c.lw.g, e: _c.lw.e, y: _y });
+                S.lingwu.push({ g: _c.lw.g, e: _e, y: _y });
                 delete S.caveCrops[_k];
-                try { log('good', `🌿 元神照料：灵物成熟，自动收获 <b>${C.LW_GRADE_NAMES[_c.lw.g - 1]}·${_c.lw.e}（${_y} 年）</b>！`); } catch(_) {}
+                try { log('good', `🌿 元神照料：灵物成熟，自动收获 <b>${C.LW_GRADE_NAMES[_c.lw.g - 1]}·${_e}（${_y} 年）</b>！`); } catch(_) {}
                 continue;
               }
               const _herbs = ['h_str','h_agi','h_def','h_vit','h_int'];
@@ -5557,7 +5556,7 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
           if (_crop && !_crop.done) {
             const _pct = Math.min(100, Math.floor(((_crop.g||0) / 14400000) * 100));
             const _yy = (S.realm|0) >= 4 ? '<span style="font-size:10px">👶</span>' : ''; // v891 元婴照料中
-            _content = _crop.lw ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:22px">🌿</span><span style="font-size:8px;color:${C.GRADE_COLORS[_crop.lw.g - 1]}">${C.LW_GRADE_NAMES[_crop.lw.g - 1].slice(0, 2)}·${_crop.lw.e} ${_pct}%${(S.realm|0) >= 4 ? '' : '·需元神'}</span></div>` : `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:22px">${_pct >= 100 ? '🌾' : '🌱'}${_yy}</span><span style="font-size:8px;color:#8f8">${_pct}%${(S.realm|0) >= 4 ? '' : '·需元神'}</span></div>`; // v1129 灵物作物显示品级与五行
+            _content = _crop.lw ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:22px">🌿</span><span style="font-size:8px;color:${C.GRADE_COLORS[_crop.lw.g - 1]}">${C.LW_GRADE_NAMES[_crop.lw.g - 1].slice(0, 2)} ${_pct}%${(S.realm|0) >= 4 ? '' : '·需元神'}</span></div>` : `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:22px">${_pct >= 100 ? '🌾' : '🌱'}${_yy}</span><span style="font-size:8px;color:#8f8">${_pct}%${(S.realm|0) >= 4 ? '' : '·需元神'}</span></div>`; // v1129 灵物作物显示品级与五行
             _click = '';
           } else if (!_crop && ((S.mats['lz_seed']|0) > 0 || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0))) {
             _content = `<span style="font-size:16px;opacity:0.5">➕</span>`;
@@ -5649,11 +5648,11 @@ window.shenshiPanel = function() { // v887 化神神识；v1057 外放激活10�
 };
 window.cavePlant = function(idx) { // v887 洞府灵田种植；v1129 有灵物种子时先选种
   try {
-    const _lwKeys = Object.keys(S.lwseeds || {}).filter(k => (S.lwseeds[k] | 0) > 0);
-    if (_lwKeys.length) {
-      openSheet(`<h2>🌱 选种</h2><div class="hint">这块灵田种什么？灵物种子约 4 小时成熟（元婴以上元神照料才生长），收获时掷年份。</div>` +
+    const _lwGrades = [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0);
+    if (_lwGrades.length) {
+      openSheet(`<h2>🌱 选种</h2><div class="hint">这块灵田种什么？灵物种子约 4 小时成熟（元婴以上元神照料才生长），年份与五行都在收割时才定。</div>` +
         ((S.mats['lz_seed'] | 0) > 0 ? `<div class="row"><div class="lab">🌱 灵植种子 ×${S.mats['lz_seed']}<small>成熟收获 3 株随机属性草</small></div><button class="btn" onclick="window.cavePlantPick(${idx},'lz')">种下</button></div>` : '') +
-        _lwKeys.sort().map(k => { const _sp = k.split('_'), _g = +_sp[0] || 1, _e = _sp[1] || ''; return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[_g - 1]}">${C.LW_SEED_NAMES[_g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[_e]}">${_e}</b> ×${S.lwseeds[k]}<small>成熟收获${C.LW_GRADE_NAMES[_g - 1]}·${_e}</small></div><button class="btn gold" onclick="window.cavePlantPick(${idx},'${k}')">种下</button></div>`; }).join('') +
+        _lwGrades.map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>成熟收获${C.LW_GRADE_NAMES[g - 1]}（收割时定五行）</small></div><button class="btn gold" onclick="window.cavePlantPick(${idx},'${g}')">种下</button></div>`).join('') +
         `<button class="btn full" data-close>取消</button>`);
       return;
     }
@@ -5677,11 +5676,11 @@ window.cavePlantPick = function(idx, kind) { // v1129 灵田选种落种
       S.caveCrops[idx] = { g: 0 };
       log('good', `🌱 灵植种下！${(S.realm|0) >= 4 ? '元神会自动照料，约4小时成熟' : '<b class="r">需元婴以上元神照料才生长</b>'}`);
     } else {
-      if (!S.lwseeds || (S.lwseeds[kind] | 0) <= 0) { log('bad', '没有这种灵物种子'); return; }
-      const _sp = kind.split('_'), _g = +_sp[0] || 1, _e = _sp[1] || '土';
-      S.lwseeds[kind]--; if (S.lwseeds[kind] <= 0) delete S.lwseeds[kind];
-      S.caveCrops[idx] = { g: 0, lw: { g: _g, e: _e } };
-      log('good', `🌿 ${C.LW_SEED_NAMES[_g - 1]}·${_e} 种下！${(S.realm|0) >= 4 ? '元神会自动照料，约4小时成熟' : '<b class="r">需元婴以上元神照料才生长</b>'}`);
+      const _g = +kind || 1;
+      if (!S.lwseeds || (S.lwseeds[_g] | 0) <= 0) { log('bad', '没有这种灵物种子'); return; }
+      S.lwseeds[_g]--; if (S.lwseeds[_g] <= 0) delete S.lwseeds[_g];
+      S.caveCrops[idx] = { g: 0, lw: { g: _g } }; // v1130 作物不记五行，收割才定
+      log('good', `🌿 ${C.LW_SEED_NAMES[_g - 1]} 种下！${(S.realm|0) >= 4 ? '元神会自动照料，约4小时成熟' : '<b class="r">需元婴以上元神照料才生长</b>'}`);
     }
     try { if (typeof commit === 'function') commit(); } catch(_) {}
     closeSheet(); renderCaveMap();
@@ -6927,7 +6926,7 @@ function sheetAlchemy(warn) {
     `<div class="row"><div class="lab">💪 气力丸<small>${MATS['h_str'].name} ×<b class="${(m['h_str']||0) ? 'g' : 'r'}">${m['h_str']||0}</b> + 兽蛋 ×<b class="${eggTotal(S) ? 'g' : 'r'}">${eggTotal(S)}</b> · 体力 +3 · 丸非丹，不积丹毒（持有 <b class="y">${(S.dan && S.dan.qili)|0}</b>）</small></div>
       <button class="btn" data-brewdan="qili" data-n="1" ${(C.lifeCost(S) || !(m['h_str'] > 0) || eggTotal(S) < 1 || (S.alc.lv|0) < 5) ? 'disabled' : ''}>${(S.alc.lv|0) < 5 ? '炼药 Lv.5' : '炼 1 次'}</button>
       <button class="btn gold" data-brewdan="qili" data-n="5" ${(C.lifeCost(S) || !(m['h_str'] > 0) || eggTotal(S) < 1 || (S.alc.lv|0) < 5) ? 'disabled' : ''}>${(S.alc.lv|0) < 5 ? '炼药 Lv.5' : '炼 5 次'}</button></div>` +
-    `<h3>🌿 灵物丹</h3>` + ((S.lingwu || []).length ? S.lingwu.map((w2, i2) => { const needLv = [6, 8, 10][w2.g - 1], can = (S.alc.lv | 0) >= needLv && (m['h_vit'] | 0) >= 3 && eggTotal(S) >= 1 && !C.lifeCost(S); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w2.g - 1]}">${C.LW_GRADE_NAMES[w2.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w2.e]}">${w2.e}</b>（${w2.y} 年）<small>炼寿元丹：生命草×3（有 ${m['h_vit'] | 0}）+ 兽蛋×1（有 ${eggTotal(S)}）· 成丹寿元 +${Math.floor(w2.y * 0.5)} · 年份暴击 ${Math.min(40, String(w2.y).length * 5)}% 出 2~10 颗 · 服丹须灵根对行，否则减半</small></div><button class="btn gold" onclick="window.brewSyd(${i2})" ${can ? '' : 'disabled'}>${(S.alc.lv | 0) < needLv ? '炼药 Lv.' + needLv : '炼寿元丹'}</button></div>`; }).join('') : '<div class="empty">暂无灵物（冒险采草药有概率出）</div>') +
+    `<h3>🌿 灵物丹</h3>` + ((S.lingwu || []).length ? S.lingwu.map((w2, i2) => { const needLv = [6, 8, 10][w2.g - 1], can = (S.alc.lv | 0) >= needLv && (m['h_vit'] | 0) >= 3 && eggTotal(S) >= 1 && !C.lifeCost(S); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w2.g - 1]}">${C.LW_GRADE_NAMES[w2.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w2.e]}">${w2.e}</b>（${w2.y} 年）<small>炼寿元丹：生命草×3（有 ${m['h_vit'] | 0}）+ 兽蛋×1（有 ${eggTotal(S)}）· 成丹寿元 +${Math.floor(w2.y * 0.5)} · 年份暴击 ${Math.min(40, String(w2.y).length * 5)}% 出 2~10 颗 · 服丹倍率：对行100%·同系80%·双根共鸣130%·不对行50%</small></div><button class="btn gold" onclick="window.brewSyd(${i2})" ${can ? '' : 'disabled'}>${(S.alc.lv | 0) < needLv ? '炼药 Lv.' + needLv : '炼寿元丹'}</button></div>`; }).join('') : '<div class="empty">暂无灵物（冒险采草药有概率出）</div>') +
     (() => { const cnt = [1, 2, 3].map(g => (S.lingwu || []).filter(w => w.g === g).length); const can = cnt.every(c => c > 0) && eggTotal(S) >= 1 && (S.alc.lv | 0) >= 10 && !C.lifeCost(S); return `<div class="row"><div class="lab">🌀 开脉丹<small>地品×${cnt[0]} 天品×${cnt[1]} 仙品×${cnt[2]}（各需 1 株，自动用年份最低的）+ 兽蛋×1（有 ${eggTotal(S)}）· 不分五行 · 每颗开一穴（持有 <b class="y">${S.inv['mai'] | 0}</b>）</small></div><button class="btn gold" onclick="window.brewKm()" ${can ? '' : 'disabled'}>${(S.alc.lv | 0) < 10 ? '炼药 Lv.10' : '炼开脉丹'}</button></div>`; })() +
     `<div class="grid2"><button class="btn full" data-life="cook">← 生活技能</button><button class="btn full" data-close>关闭</button></div>`);
 }
@@ -8170,10 +8169,10 @@ window.lwEat = function (idx) {
   try {
     const arr = S.lingwu || [];
     const it = arr[idx | 0]; if (!it) return;
-    const base = Math.floor(it.y * 0.1), match = C.eleMatchL(S, it.e), gain = match ? base : Math.floor(base / 2); // v1129 不对行减半
+    const base = Math.floor(it.y * 0.1), f = C.eleFactorL(S, it.e), gain = Math.floor(base * f), note = C.eleNoteL(f); // v1130 倍率矩阵
     arr.splice(idx | 0, 1);
     S.lifespan = (S.lifespan || 100) + gain;
-    log('good', `🌿 生吃<b style="color:${C.GRADE_COLORS[it.g - 1]}">${C.LW_GRADE_NAMES[it.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[it.e]}">${it.e}</b>（${it.y} 年），寿元 <span class="g">+${gain}</span>${match ? '' : '（灵根不对行，减半）'}`);
+    log('good', `🌿 生吃<b style="color:${C.GRADE_COLORS[it.g - 1]}">${C.LW_GRADE_NAMES[it.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[it.e]}">${it.e}</b>（${it.y} 年），寿元 <span class="g">+${gain}</span>${note ? `（${note}）` : ''}`);
     commit(); sheetBag();
   } catch (_) {}
 };
@@ -8385,8 +8384,8 @@ function sheetBag() {
   const _seals = (S.sealed || []).filter(x => x && !x.done);
   openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 🌒下品 <b class="y">${S.ores.sp2|0}</b> · 🌗中品 <b class="y">${S.ores.sp3|0}</b> · 💎上品 <b class="y">${S.ores.sp4|0}</b> · 💠极品 <b class="y">${S.ores.sp5|0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（小型储物袋可扩充）。服用丹药可永久提升属性。</div>` +
     `<h3>⛏️ 器具</h3>` + toolCardHtml('pick', 'bag') + toolCardHtml('hoe', 'bag') +
-    (((S.lingwu || []).length || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => { const _base = Math.floor(w.y * 0.1), _match = C.eleMatchL(S, w.e), _gain = _match ? _base : Math.floor(_base / 2); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w.e]}">${w.e}</b> · ${w.y} 年<small>炼寿元丹的材料（炼药面板）；生吃：寿元 +${_gain}${_match ? '' : '（灵根不对行，减半）'}</small></div><button class="btn" onclick="window.lwEat(${i})">生吃</button></div>`; }).join('') + Object.keys(S.lwseeds || {}).filter(k => (S.lwseeds[k] | 0) > 0).sort().map(k => { const _sp = k.split('_'), _g = +_sp[0] || 1, _e = _sp[1] || ''; return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[_g - 1]}">${C.LW_SEED_NAMES[_g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[_e]}">${_e}</b> ×${S.lwseeds[k]}<small>种到洞府灵田，可长${C.LW_GRADE_NAMES[_g - 1]}·${_e}</small></div></div>`; }).join('') : '') +
-    (((S.syd || []).length) ? `<h3>💊 寿元丹</h3>` + S.syd.map((p, i) => { const _match = C.eleMatchL(S, p.e); return `<div class="row"><div class="lab"><b style="color:${C.LW_ELE_COLORS[p.e]}">${p.e}行寿元丹</b><small>寿元 +${_match ? p.val : Math.floor(p.val / 2)}${_match ? '' : '（灵根不对行，减半）'} · 积丹毒</small></div><button class="btn gold" onclick="window.eatSyd(${i})">服用</button></div>`; }).join('') : '') +
+    (((S.lingwu || []).length || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => { const _base = Math.floor(w.y * 0.1), _f = C.eleFactorL(S, w.e), _gain = Math.floor(_base * _f), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w.e]}">${w.e}</b> · ${w.y} 年<small>炼寿元丹的材料（炼药面板）；生吃：寿元 +${_gain}${_note ? `（${_note}）` : ''}</small></div><button class="btn" onclick="window.lwEat(${i})">生吃</button></div>`; }).join('') + [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0).map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>种到洞府灵田，收割时才定五行，可长${C.LW_GRADE_NAMES[g - 1]}</small></div></div>`).join('') : '') +
+    (((S.syd || []).length) ? `<h3>💊 寿元丹</h3>` + S.syd.map((p, i) => { const _f = C.eleFactorL(S, p.e), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.LW_ELE_COLORS[p.e]}">${p.e}行寿元丹</b><small>寿元 +${Math.floor(p.val * _f)}${_note ? `（${_note}）` : ''} · 积丹毒</small></div><button class="btn gold" onclick="window.eatSyd(${i})">服用</button></div>`; }).join('') : '') +
     `<h3>丹药</h3>` +
     (list.length ? list.map(p => `<div class="row"><div class="lab">${potName(p.attr, p.grade)} ×${p.count}<small>${AN[p.attr]} +${p.grade}</small></div>
       <button class="btn" data-drink="${p.attr}" data-g="${p.grade}" data-n="1">服用</button>
@@ -9218,7 +9217,7 @@ window.brewKm = function () { // v1129 炼开脉丹
 window.eatSyd = function (idx) { // v1129 服寿元丹
   try {
     const r = C.eatSyd(S, idx); if (!r) return;
-    log('good', `💊 服下<b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b>，寿元 <span class="g">+${r.gain}</span>${r.match ? '' : '（灵根不对行，药效减半）'}`);
+    log('good', `💊 服下<b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b>，寿元 <span class="g">+${r.gain}</span>${C.eleNoteL(r.f) ? `（${C.eleNoteL(r.f)}）` : ''}`);
     commit(); sheetBag();
   } catch (_) {}
 };
