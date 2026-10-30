@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1139</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1140</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -801,7 +801,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   S.vigor = Math.max(0, Math.floor(S.vigor === undefined ? K.VIGOR_BASE : +S.vigor || 0));
   if (!(S.consecDays >= 0)) S.consecDays = 0; // 连续签到天数 /* 生活技能：活力 / 等级 / 菜肴 / 装备 / 增益 */
   if (!(S.lifespan > 0)) S.lifespan = REALM_LIFESPAN[Math.min(12, Math.max(0, S.realm|0))] || 100;
-  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(5000, S.danDu | 0); // v998 danDu
+  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(danDuCap(S), S.danDu | 0); // v998 danDu；v1140 上限随百毒不侵佩戴
   if (!S.life || typeof S.life !== 'object') S.life = {}; for (const k of ['cook', 'forge', 'refine', 'tame']) { const L = S.life[k] || {}; S.life[k] = { lv: Math.max(1, Math.floor(+L.lv || 1)), xp: Math.max(0, Math.floor(+L.xp || 0)) }; }
   if (!S.dishes || typeof S.dishes !== 'object') S.dishes = {}; for (const k in S.dishes) if (!dishOf(k) || !(S.dishes[k] > 0)) delete S.dishes[k]; else S.dishes[k] = Math.floor(S.dishes[k]);
   if (!S.zx || typeof S.zx !== 'object' || Array.isArray(S.zx)) S.zx = {}; for (const k in S.zx) if (!(DISHES[k] && DISHES[k].zx) || !(S.zx[k] > 0)) delete S.zx[k]; else S.zx[k] = Math.floor(S.zx[k]); /* v9 珍馐 */
@@ -1403,17 +1403,17 @@ function eatHerb(S, key) { // v1136 Ye 定：属性草每天可吃 5 棵——�
   const attr = LINGGEN_ATTR[e];
   if (!S.attrs) S.attrs = {};
   S.attrs[attr] = (S.attrs[attr] | 0) + 1;
-  S.danDu = Math.min(5000, (S.danDu | 0) + 20);
+  S.danDu = Math.min(danDuCap(S), (S.danDu | 0) + 20); // v1140
   const awakened = tryAwakenRoot(S, e);
   const comprehended = awakened ? null : tryComprehendRoot(S, e);
-  const toxRoot = checkToxRoot(S); // v1139
-  return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended, toxRoot };
+  return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended };
 }
-function checkToxRoot(S) { // v1139 Ye 定：丹毒达到 5000 时觉醒异灵根【毒】（额外灵根，不占五行；须已有灵根承载）
-  if ((S.danDu | 0) < 5000) return null;
+function tryToxRootOnBt(S) { // v1140 Ye 定：丹毒达到 10000 后，突破时 5% 概率觉醒异灵根【毒】（额外灵根，不占五行；须已有灵根承载）
+  if ((S.danDu | 0) < 10000) return null;
   const g = S.lingGen || [];
   if (g.indexOf('毒') >= 0) return null;
   if (!g.some(e => e !== '毒')) return null;
+  if (Math.random() >= 0.05) return null;
   g.push('毒');
   S.faZeDone = 0; // 灵根变化，本命圆满需重判
   return '毒';
@@ -1541,6 +1541,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   if (fromRealm === 0 && S.xp > 0) S.savedXp = (S.savedXp || 0) + S.xp; S.realm++; S.lifespan = Math.max((S.lifespan|0) * 2, REALM_LIFESPAN[Math.min(12, S.realm|0)] || 100); S.level = 1; S.xp = 0; S.btTotal = (S.btTotal || 0) + 1;
   if (fromRealm === 0) { assignLingGen(S); try { log('good', `🌟 踏入练气，灵根觉醒：<b>${lingGenName(S)}</b>！`); } catch(_) {} } // v867 练气突破随机灵根
   else { const _aw = awakenRollAll(S); if (_aw.length) try { log('good', `🌟 <b>突破之机，灵根觉醒！</b>${_aw.join('、')}`); } catch(_) {} } // v1134 突破觉醒：须现有基础灵根，每条 5%
+  const _toxR = tryToxRootOnBt(S); if (_toxR) try { log('gold', `☣️ <b>丹毒淬体，突破之机觉醒异灵根【毒】！</b>`); } catch(_) {} // v1140 丹毒 10000 后突破 5% 概率觉醒毒灵根
   if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v857 修v856：realm++后存到新境界索引 chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true); if (/散仙|游仙|虚气|伪气|虚基|残基|虚丹|假丹|虚婴|假婴|虚神|散神|伪乘|残乘|怯劫|避劫|劫余|残仙|虚合|假合|伪尊|空尊|凡胎|燃尽/.test(REALMS[S.realm]||'')) _btm = 1.2; // v811 降级状态突破倍率1.2
   ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 8) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } tribBtFlavor(S, fromRealm); return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
 } // 突破全属性×倍率表；渡劫→仙人时100万法力=1仙力转换，上限=转换后值
@@ -1624,6 +1625,7 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   S.mana = Math.max(0, Math.min(manaCapEff(S), S.mana | 0)); // v1091 轮回法力钳制：高境轮回后法力不得超新上限（此前 500 法力对 30 上限挂着）
   if (S.status) { S.status.bleed = false; S.status.poison = false; S.status.bleedBase = 0; S.status.poisonBase = 0; S.status.bleedFrac = 0; S.status.poisonFrac = 0; S.status.curse = false; S.status.depress = false; } // 轮回清除所有负面状态：流血/中毒/诅咒/抑郁
   S.shenzangDan = new Array(13).fill(0); S.danDu = 0; szSyncMai(S); // v998 轮回丹毒全清；v1037 轮回只清丹开的穴，气旋进度保留不清；v1058 Ye 定：规则/显示/闭关统一跟虚实模型走，清丹后当场重算虚络/虚脉
+  if (S.achv) delete S.achv['baidu']; if (S.titleAch === 'baidu') S.titleAch = ''; // v1140 百毒不侵称号轮回消失
   // v1037 轮回：气旋保留不清，只清丹开的穴；实络/实脉/开脉术保留
   S.degraded = null; if (S.failNum) S.failNum = {}; // v613 轮回清零降级状态
   S.butianTaken = {}; // v867 轮回：补天丹每境界计数清零（新一世重算），灵根/法则进度保留
@@ -1737,11 +1739,10 @@ function checkin(S, force) {
     S.hpCur = (S.realm|0) === 0 ? C.bumpPeak(S) * 5 : null; // 凡人签到回满血到上限，其他境界回满当前
   }
   if (!(S.lifespan > 0)) S.lifespan = REALM_LIFESPAN[Math.min(12, Math.max(0, S.realm|0))] || 100;
-  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(5000, S.danDu | 0); // v998 danDu
+  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(danDuCap(S), S.danDu | 0); // v998 danDu；v1140 上限随百毒不侵佩戴
   S.lifespan = Math.max(0, S.lifespan - 1);
   const toxLoss = (!S.dead && (S.danDu | 0) > 1000) ? Math.floor((S.danDu | 0) / 1000) : 0; // v1138 Ye 定：丹毒超过 1000 自动掉寿元（签到日结，每满千点扣 1 年）
   if (toxLoss > 0) S.lifespan = Math.max(0, S.lifespan - toxLoss);
-  const toxRoot = checkToxRoot(S); // v1139 丹毒达到 5000 觉醒毒灵根
   let bled = 0, died = null, forceReinc = false;
   if (S.lifespan <= 0 && !S.dead) { forceReinc = true; S.forceReinc = true; } // 寿元耗尽：强制轮回，不再坐化
   const vigor = Math.max(0, Math.min(vigorGain(S), vigorCap(S) - S.vigor)); S.vigor += vigor; /* 活力可结转，最多 3 天量；死亡不清空活力 */
@@ -1750,7 +1751,7 @@ function checkin(S, force) {
     bled = Math.max(1, Math.ceil(S.attrs.vit * K.BLEED_CHECKIN)); S.attrs.vit = Math.max(0, S.attrs.vit - bled);
     if (S.attrs.vit <= 0) died = die(S, 'bleed');
   }
-  return { ok: true, gain, vigor, mana, bled, died, revived, forceReinc, ringReward, consecDays: S.consecDays || 0, toxLoss, toxRoot };
+  return { ok: true, gain, vigor, mana, bled, died, revived, forceReinc, ringReward, consecDays: S.consecDays || 0, toxLoss };
 }
 function train(S, attr, n) {
   if (S.dead) return 0;
@@ -1765,7 +1766,7 @@ function train(S, attr, n) {
   if (!S.dead) { let _lgb = 0; const _lgp = lingGenTrainBonus(S); for (let _i = 0; _i < ok - fail; _i++) if (Math.random() < _lgp) _lgb++; S.attrs[attr] += ok - fail + _lgb; if (S.realm === 0) S.xp += (ok - fail) * 10; train._lgb = _lgb; } train.fail = fail; train.gain = S.dead ? 0 : ok - fail + (train._lgb||0); return done; // 凡人每次成功锻炼+10经验（抑郁失手不算），练气以上不加；v867 灵根修炼加成
 }
 // —— 饥饿 / 气运 / 状态 / 灵宠忠诚 ——
-const hasSt = (S, k) => !!S.status && (k === 'bleed' || k === 'poison' ? !!S.status[k] : S.status[k] > C.now());
+const hasSt = (S, k) => !!S.status && (k === 'poison' && toxImmune(S) ? false : (k === 'bleed' || k === 'poison' ? !!S.status[k] : S.status[k] > C.now())); // v1140 百毒不侵：中毒视为未中
 function bumpPeak(S) { const t = S.attrs.str + S.attrs.def + S.attrs.vit; S.vitPeak = Math.max(Math.floor(+S.vitPeak || 0), t); return S.vitPeak; }
 const resLbl = S => (S.realm|0) >= 8 ? '仙力' : (C.useFali(S) ? '法力' : '经验');
 const fmtN = n => { n = Math.floor(+n || 0); return n >= 100000000 ? (n / 100000000).toFixed(2).replace(/\.00$/, '') + 'b' : n >= 1000000 ? (n / 1000000).toFixed(2).replace(/\.00$/, '') + 'm' : n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n); }; // v794 上亿b/百万m/上万k缩写，防战斗条数字溢出
@@ -1807,7 +1808,7 @@ const bestPot = (el, t) => [3, 2, 1].map(q => t + q).find(k => el && el[k] > 0) 
 function addStatus(S, k) { // 流血/中毒记录染上时的生命上限（作为扣减基数）
   bumpPeak(S);
   if (k === 'bleed') { if (!S.status.bleed) { S.status.bleedBase = S.attrs.vit; S.status.bleedFrac = 0; } S.status.bleed = true; }
-  else if (k === 'poison') { if (!S.status.poison) { S.status.poisonBase = S.attrs.vit; S.status.poisonFrac = 0; } S.status.poison = true; }
+  else if (k === 'poison') { if (toxImmune(S)) { S.status.poison = false; } else { if (!S.status.poison) { S.status.poisonBase = S.attrs.vit; S.status.poisonFrac = 0; } S.status.poison = true; } } // v1140 百毒不侵不中毒
   else S.status[k] = C.now() + K.DEPRESS_HOURS * 3600000;
   return k;
 }
@@ -2352,6 +2353,8 @@ function gradeProbs(S, lu, sp) { const q5 = Math.min(K.Q5_MAX, K.Q5_BASE + S.alc
 /* ---------- v998 丹毒 / 变异丹 ---------- */
 const TOX_BY_GRADE = { 1: 10, 2: 8, 3: 5, 4: 3, 5: 1 };
 function toxFactor(S) { const t = S.danDu | 0; if (t <= 20) return 1; return Math.max(0.2, 1 - Math.ceil((t - 20) / 10) * 0.1); }
+function danDuCap(S) { return (S && S.titleAch === 'baidu' && S.achv && S.achv['baidu']) ? 10000 : 5000; } // v1140 佩戴成就称号【百毒不侵】时丹毒上限 10000
+function toxImmune(S) { return !!(S && S.titleAch === 'baidu' && S.achv && S.achv['baidu']); } // v1140 佩戴【百毒不侵】时不中【中毒】
 function toxTier(t) { t = t | 0; return t <= 0 ? '清' : t <= 20 ? '微毒' : t <= 60 ? '积毒' : '毒深'; }
 const MUT_PILLS = {
   kuang: { name: '狂暴丹', desc: '丹纹如血丝，药力躁动难驯。', tox: 25 },
@@ -2447,11 +2450,10 @@ function eatSyd(S, idx) { // v1129 服寿元丹：灵根对应全效，否则减
   const f = eleFactorL(S, p.e);
   const gain = Math.floor(p.val * f);
   S.lifespan = (S.lifespan || 100) + gain;
-  S.danDu = Math.min(5000, (S.danDu | 0) + 1);
+  S.danDu = Math.min(danDuCap(S), (S.danDu | 0) + 1); // v1140
   const awakened = tryAwakenRoot(S, rootBaseL(p.e)); // v1134 吃对应行丹觉醒：须有该基础灵根
   const comprehended = awakened ? null : tryComprehendRoot(S, p.e); // v1135 吃不相对应丹：极稀有领悟新灵根
-  const toxRoot = checkToxRoot(S); // v1139
-  return { gain, f, e: p.e, val: p.val, awakened, comprehended, toxRoot };
+  return { gain, f, e: p.e, val: p.val, awakened, comprehended };
 }
 Object.assign(C, { lwCritP, brewSyd, brewKm, eatSyd });
 function useDanwan(S, key, n) { // v1096 服丸
@@ -2478,8 +2480,8 @@ function useMutPill(S, id) {
   else if (id === 'changsheng') { const ly = Math.round(200 * f); S.lifespan = (S.lifespan || 100) + ly; txt = '寿元 +' + ly + ' 年'; }
   else if (id === 'xisui') { ATTRS.forEach(a => add(a, 5)); S.danDu = 0; txt = '丹毒尽去'; }
   else if (id === 'pojing') { if ((S.realm | 0) <= 0) { const x = Math.round(400 * f); S.xp = (S.xp || 0) + x; txt = '经验 +' + x; } else { S.mana = manaMax(S); txt = '法力回满'; } }
-  if (id !== 'xisui' && def.tox) S.danDu = Math.min(5000, (S.danDu || 0) + def.tox);
-  return { gains, txt, f, toxRoot: checkToxRoot(S) };
+  if (id !== 'xisui' && def.tox) S.danDu = Math.min(danDuCap(S), (S.danDu || 0) + def.tox); // v1140
+  return { gains, txt, f };
 }
 function useDetoxPill(S, n) {
   const have = S.inv['detox'] || 0; n = Math.min(n || 1, have); if (n <= 0) return 0;
@@ -2596,8 +2598,8 @@ function drink(S, attr, grade, n) {
   S.inv[key] = have - n; if (!S.inv[key]) delete S.inv[key];
   const _f998 = toxFactor(S); const _gain998 = Math.round(grade * n * _f998);
   S.attrs[attr] += _gain998;
-  const _tox998 = (TOX_BY_GRADE[grade] || 5) * n; S.danDu = Math.min(5000, (S.danDu || 0) + _tox998);
-  S._drinkFx = { f: _f998, tox: _tox998, toxRoot: checkToxRoot(S) }; // v1139
+  const _tox998 = (TOX_BY_GRADE[grade] || 5) * n; S.danDu = Math.min(danDuCap(S), (S.danDu || 0) + _tox998); // v1140
+  S._drinkFx = { f: _f998, tox: _tox998 };
   return _gain998; // v998 丹毒打折+积毒
 }
 /* ---------- 脉络系统 v89：虚络/实络/虚脉/实脉 ---------- */
@@ -3542,7 +3544,7 @@ function advResGrant(S, run, kind, grade) {
   if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, checkToxRoot }); // v1129 五行导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRootOnBt }); // v1129 五行导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
@@ -3839,7 +3841,7 @@ function advCtx(S, run, lines) { // 事件结果工具
           else { const n = e.n > 1 ? ri(1, e.n) : 1; X.put(e.st, e.k, n); got.push(`${lootLabel(e.st, e.k)}×${n}`); } }
         return `获得 <span class="y">${got.join(' ')}</span>`; },
     take: (st, k, n) => { if ((S[st][k] -= n) <= 0) delete S[st][k]; },
-    hurt: k => { if (hasSt(S, k)) return `（已${STATUS[k].name}）`; addStatus(S, k); run.newSt = (run.newSt || []).concat(k); return `<span class="r">${STATUS[k].icon}${STATUS[k].name}</span>`; },
+    hurt: k => { if (k === 'poison' && C.toxImmune(S)) return '（百毒不侵，毒奈何不了你）'; if (hasSt(S, k)) return `（已${STATUS[k].name}）`; addStatus(S, k); run.newSt = (run.newSt || []).concat(k); return `<span class="r">${STATUS[k].icon}${STATUS[k].name}</span>`; }, // v1140 百毒不侵：冒险中毒被挡
     cure: k => { if (!hasSt(S, k)) return false; cureStatus(S, k); return true; },
     heal: p => { const cap = Math.floor(+S.vitPeak || (S.attrs.str + S.attrs.def + S.attrs.vit)), g = Math.ceil(cap * p); let msg = ''; if (g > 0) { const hpMax = Math.floor(C.bumpPeak(S) * 5); const hpCur = S.hpCur != null ? Math.floor(S.hpCur) : (S.attrs.str + S.attrs.def + S.attrs.vit) * 5; const healHp = g * 5; const need = Math.max(0, hpMax - hpCur); const toHp = Math.min(healHp, need); const toVit = Math.ceil(Math.max(0, healHp - toHp) / 5); if (toHp > 0) { S.hpCur = Math.min(hpMax, hpCur + toHp); msg += `生命 <span class="y">+${fmtN(toHp)}</span>`; } if (toVit > 0) { S.advVit = Math.floor(S.advVit || 0) + toVit; msg += `${msg ? '，' : ''}<span class="y">+${fmtN(toVit * 5)}</span> 溢出进黄条`; } } try { save(); } catch(e) {} return msg || '生命已满'; },
     loseAttr: n => { n = Math.max(1, Math.ceil(diff.lose / 3)) * n; const lost = {}; for (let i = 0; i < n; i++) { const c = ATTRS.filter(k => S.attrs[k] > K.ATTR_MIN); if (!c.length) break; const a = pick(c); S.attrs[a]--; if (a === 'vit' && S.vitPeak) S.vitPeak--; lost[a] = (lost[a] || 0) + 1; } return `<span class="r">${Object.keys(lost).map(a => AN[a] + '-' + lost[a]).join(' ') || '无损'}</span>`; },
@@ -6920,6 +6922,7 @@ const ACHIEVEMENTS = [
   { id: 'encbad5', name: '命途多舛', desc: '遭遇5次坏奇遇', check: () => (S.encBad|0) >= 5, reward: { gold: 200 } },
   { id: 'encchain', name: '环环相扣', desc: '走完一条奇遇链', check: () => (S.encChain|0) >= 1, reward: { gold: 300 } },
   { id: 'enckinds', name: '见闻广博', desc: '见识20种不同奇遇', check: () => !!(S.encSeen && Object.keys(S.encSeen).length >= 20), reward: { xianyu: 2 } },
+  { id: 'baidu', name: '百毒不侵', desc: '凡人时丹毒达到5000（佩戴时丹毒上限10000、不中毒；轮回后消失）', check: () => (S.realm|0) === 0 && (S.danDu|0) >= 5000, reward: {} }, // v1140
 ];
 function checkAchievements() {
   if (!S.achv) S.achv = {};
@@ -6974,7 +6977,7 @@ function sheetAlchemy(warn) {
     `<div class="hint">每次消耗 ${C.useFali(S) ? C.lifeManaCost(S) + ' 法力' : K.COST_LIFE + ' 活力'} + 1 株对应药草 + 1 枚兽蛋（药引，优先低级，当前 <b style="color:#7fd6ff">${eggTotal(S)}</b> 枚）（当前${C.useFali(S) ? `法力 <b style="color:#5fd8e0">${S.mana}/${C.manaMax(S)}</b>` : `活力 <b style="color:#7fd6ff">${S.vigor}</b>`}，药草可种植或在商店购买）。成功率 <b class="y">${C.pct(C.alcRate(S, useOpt.lu, useOpt.spirit))}</b>；成丹 <b class="y">1-10 枚随机</b>；品质 <span class="q3">完美+5</span> ${C.pct(gp.q5)} · <span class="q2">丹纹+4</span> ${C.pct(gp.q4)} · <span class="q3">上品+3</span> ${C.pct(gp.q3)} · <span class="q2">中品+2</span> ${C.pct(gp.q2)} · <span class="q1">下品+1</span> ${C.pct(gp.q1)}</div>` +
     tRow('💧 凝露', 'lu', LUK, m, LU) + tRow('💠 灵石', 'spirit', SPK, S.ores, ORES) +
     `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">🧪 加料<small>自选 0-3 味投进炉里（点按增减）。搭配对了有惊喜，不对会炸炉——基础料损 1 份、加料全损，结果自负</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${[['h_str', MATS['h_str'].name], ['h_agi', MATS['h_agi'].name], ['h_def', MATS['h_def'].name], ['h_vit', MATS['h_vit'].name], ['h_int', MATS['h_int'].name], ['dw1', '下品凝露'], ['dw2', '中品凝露'], ['dw3', '上品凝露']].map(([ek, nm]) => { const have = m[ek] || 0, sel = alcExtraSel[ek] || 0; return `<button class="btn ${sel ? 'on' : ''}" data-extra="${ek}" ${have > 0 ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${nm} ×${have}<br><small>${sel ? '已投 ' + sel : '未投'}</small></button>`; }).join('')}</div>` +
-    `<div class="hint">🧪 丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b>/5000（${C.toxTier(S.danDu|0)}）· 当前丹药药效 <b class="y">${Math.round(C.toxFactor(S) * 100)}%</b> · 化无丹可清毒（见下方丹方）</div>` +
+    `<div class="hint">🧪 丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b>/${C.danDuCap(S)}（${C.toxTier(S.danDu|0)}）· 当前丹药药效 <b class="y">${Math.round(C.toxFactor(S) * 100)}%</b> · 化无丹可清毒（见下方丹方）</div>` +
     ATTRS.map(k => { const h = m['h_' + k] || 0, noEgg = eggTotal(S) < 1; return `<div class="row"><div class="lab">${AN[k]}丹<small>${MATS['h_' + k].name} ×<b class="${h ? 'g' : 'r'}">${h}</b> + 兽蛋 ×<b class="${noEgg ? 'r' : 'g'}">${eggTotal(S)}</b></small></div>
       <button class="btn" data-brew="${k}" data-n="1" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 1 次</button>
       <button class="btn gold" data-brew="${k}" data-n="5" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 5 次</button></div>`; }).join('') +
@@ -8250,7 +8253,6 @@ window.eatHerb = function (key) { // v1136 吃属性草
     log('good', `🌿 吃下${MATS[key].name}：饱食 <span class="g">+20</span> · ${_an} <span class="g">+1</span> · 丹毒 <span class="r">+20</span>（今日 ${r.n}/5）`);
     if (r.awakened) log('good', `🌟 <b>灵根觉醒！</b>${r.e}灵根食草而醒，化作<b>${r.awakened}</b>灵根！`);
     if (r.comprehended) log('good', `🌟 <b>顿悟新灵根！</b>竟领悟了从未有过的<b>${r.comprehended}</b>灵根！`);
-    if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`);
     commit(); sheetBag();
   } catch (_) {}
 };
@@ -8474,7 +8476,7 @@ function sheetBag() {
     ((S.inv['butian']|0) > 0 ? `<div class="row"><div class="lab">🌟 <b class="y">补天丹</b> ×${S.inv['butian']}<small>服用：随机+1条灵根（上限5条），每境界限服1颗，当前${window.LG ? window.LG.name(S) : ''}</small></div>
       <button class="btn gold" data-drinkbutian="1">服用</button></div>` : '') +
     (Object.keys(C.MUT_PILLS).filter(id => (S.inv['mut_' + id]|0) > 0).map(id => `<div class="row"><div class="lab">🌀 <b class="y">${C.MUT_PILLS[id].name}</b> ×${S.inv['mut_' + id]}<small>${C.MUT_PILLS[id].desc}（变异丹 · 丹毒 +${C.MUT_PILLS[id].tox}）</small></div><button class="btn gold" data-mut="${id}">服用</button></div>`).join('')) +
-    ((S.inv['detox']|0) > 0 ? `<div class="row"><div class="lab">🍃 <b class="y">化无丹</b> ×${S.inv['detox']}<small>服用：丹毒 -20（当前丹毒 ${S.danDu|0}/5000）</small></div><button class="btn gold" data-detoxuse="1">服用</button></div>` : '') +
+    ((S.inv['detox']|0) > 0 ? `<div class="row"><div class="lab">🍃 <b class="y">化无丹</b> ×${S.inv['detox']}<small>服用：丹毒 -20（当前丹毒 ${S.danDu|0}/${C.danDuCap(S)}）</small></div><button class="btn gold" data-detoxuse="1">服用</button></div>` : '') +
     (((S.dan && S.dan.bigu)|0) > 0 ? `<div class="row"><div class="lab">🍘 <b class="y">辟谷丸</b> ×${S.dan.bigu}<small>服用：饱食 +20（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="bigu">服用</button></div>` : '') +
     (((S.dan && S.dan.qili)|0) > 0 ? `<div class="row"><div class="lab">💪 <b class="y">气力丸</b> ×${S.dan.qili}<small>服用：体力 +3（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="qili">服用</button></div>` : '') +
     `<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神乘劫余散合尊'[i]}×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
@@ -8833,7 +8835,6 @@ function doCheckin(force) {
     }
   } catch(_) {}
   if (r.toxLoss) log('bad', `🧪 <b>丹毒攻心</b>（丹毒 ${S.danDu|0}），寿元 <span class="r">-${r.toxLoss} 年</span>`); // v1138
-  if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); // v1139
   // v1086 拍卖行已改服务端结算，本地 auc3Daily 停用（避免重复结算）
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
   log('gold', `📅 ${force ? '<span class="pu">[测试]</span> ' : ''}签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
@@ -9144,6 +9145,7 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
     S.run = null; S.advVit = 0;
   }
   const r = C.reincarnate(S, keepAttr, sealGen); // v216 印记信息存遗物（求道：主题；求名：名字模板）
+  try { if (window.MHXY && MHXY.loggedIn()) MHXY.api('/api/profile/title', { method: 'POST', body: { title: S.titleAch || '' } }).catch(() => {}); } catch(_) {} // v1140 轮回后同步称号（百毒不侵已随轮回消失）
   if (r.err) return;
   S.forceReinc = false;
   closeSheet();
@@ -9244,13 +9246,12 @@ function doUseMut(id) { // v998 服变异丹
   const r = C.useMutPill(S, id); if (!r) return;
   const def = C.MUT_PILLS[id];
   const gtxt = Object.keys(r.gains).map(a => AN[a] + ' <span class="g">+' + r.gains[a] + '</span>').join('、');
-  log('good', '🌀 服下变异丹【<b class="y">' + def.name + '</b>】：' + [gtxt, r.txt].filter(Boolean).join('，') + (r.f < 1 ? '（丹毒未清，药效仅 ' + Math.round(r.f * 100) + '%）' : '') + '（丹毒 ' + (S.danDu|0) + '/5000）');
-  if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); // v1139
+  log('good', '🌀 服下变异丹【<b class="y">' + def.name + '</b>】：' + [gtxt, r.txt].filter(Boolean).join('，') + (r.f < 1 ? '（丹毒未清，药效仅 ' + Math.round(r.f * 100) + '%）' : '') + '（丹毒 ' + (S.danDu|0) + '/' + C.danDuCap(S) + '）');
   commit(); sheetBag();
 }
 function doUseDetox() { // v998 服化无丹
   const d = C.useDetoxPill(S, 1); if (d <= 0) return;
-  log('good', '🍃 服下化无丹，丹毒 <span class="g">-' + d + '</span>（当前 ' + (S.danDu|0) + '/5000 · ' + C.toxTier(S.danDu|0) + '）');
+  log('good', '🍃 服下化无丹，丹毒 <span class="g">-' + d + '</span>（当前 ' + (S.danDu|0) + '/' + C.danDuCap(S) + ' · ' + C.toxTier(S.danDu|0) + '）');
   commit(); sheetBag();
 }
 function doBrewDan(key, n) { // v1096 炼丸（本地判定，照抄化无丹）
@@ -9302,7 +9303,6 @@ window.eatSyd = function (idx) { // v1129 服寿元丹
     log('good', `💊 服下<b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b>，寿元 <span class="g">+${r.gain}</span>${C.eleNoteL(r.f) ? `（${C.eleNoteL(r.f)}）` : ''}`);
     if (r.awakened) log('good', `🌟 <b>灵根觉醒！</b>${C.rootBaseL(r.e)}灵根应丹气而醒，化作<b>${r.awakened}</b>灵根！`); // v1134
     if (r.comprehended) log('good', `🌟 <b>顿悟新灵根！</b>此丹与自身灵根不合，却意外领悟了从未有过的<b>${r.comprehended}</b>灵根！`); // v1135
-    if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); // v1139
     commit(); sheetBag();
   } catch (_) {}
 };
@@ -10329,7 +10329,7 @@ async function doSell(kind, k, n) {
   try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v1095 卖出也触发雷云判定（与买入同口径）
   commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2; // v200 出售后保持滚动位置
 }
-function doDrink(a, g, n) { const d = C.drink(S, a, g, n); if (d !== null && d !== undefined) { const fx = S._drinkFx; log('good', `💊 服下 ${potName(a, g)} ×${n}，${AN[a]} <span class="g">+${d}</span>${fx && fx.f < 1 ? `（丹毒未清，药效 ${Math.round(fx.f * 100)}%）` : ''}（丹毒 ${S.danDu|0}/5000）`); if (fx && fx.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); commit(); sheetBag(); } }
+function doDrink(a, g, n) { const d = C.drink(S, a, g, n); if (d !== null && d !== undefined) { const fx = S._drinkFx; log('good', `💊 服下 ${potName(a, g)} ×${n}，${AN[a]} <span class="g">+${d}</span>${fx && fx.f < 1 ? `（丹毒未清，药效 ${Math.round(fx.f * 100)}%）` : ''}（丹毒 ${S.danDu|0}/${C.danDuCap(S)}）`); commit(); sheetBag(); } }
 function lvUpTxt(n) { const _per = (S.realm|0) + 1; return n ? `<br><span class="y">🎉 ${n > 1 ? '连升 ' + n + ' 级，' : ''}等级提升至 Lv.${S.level}！全属性 +${n * _per}</span>` : ''; }
 function arenaData() { // v246 每个境界独立的擂台数据；v247 加擂主守擂时间
   const cr = S.realm | 0;
