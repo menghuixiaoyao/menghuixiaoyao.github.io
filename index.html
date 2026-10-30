@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1142</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1143</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2096,7 +2096,7 @@ function shareAura(owner, allies) {
     if (a.isPet && a.psk) for (const sk of a.psk) if (sk !== 'luck' && !a.pset[sk] && owner.sets && owner.sets[sk]) a.sets[sk] = owner.sets[sk]; // 灵宠有自身套装用自己的，否则与主人同套装一致
     a.auraFrom = owner; applySetDef(a); });
 }
-function playerFighter(S, adv) { const f = fighter('你', fightAttrs(S, adv), true, S.skills, activePets(S)); const _peakHp = Math.max(1, Math.floor(C.bumpPeak(S) * 5)); if (f.maxHp < _peakHp) { f.maxHp = _peakHp; f.hp = Math.max(f.hp, Math.min(_peakHp, f.hp)); } if (S.race === 'yi') { const _om = f.maxHp; f.maxHp = Math.floor(_om * 1.05); if (f.hp >= _om) f.hp = f.maxHp; } /* v1088 异族强健：生命上限 +5% */ if (C.useFali(S)) { f.maxMp = Math.max(1, Math.floor(C.manaMax(S))); f.mp = Math.max(0, Math.floor(S.mana)); } if (S.hpCur != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.floor(S.hpCur))); f.xbOn = (S.xianBurstOn|0); f.xbPts = (S.xianBurst|0); if (f.xbOn && f.xbPts > 0) { f._xb = 1 + f.xbPts * 0.2; f._xbDef = 1 + f.xbPts * 0.2; } if (adv && (S.advVit|0) > 0) { const _av = S.advVit|0, _avHp = _av * 5; f.a.vit += _av; f.maxHp += _avHp; f.hp = Math.min(f.maxHp, f.hp + _avHp); } f.burnBloodTier = Math.min(10, S.burnBloodTier|0) || (S.burnBlood ? 1 : 0); f.burnTier = Math.min(10, S.burnTier|0) || (S.burnSpirit ? 1 : 0); f.burnLife = 0; f.S = S; f.toxAtk = toxImmune(S) ? 1 : 0; for (const _pp of (f.pets || [])) _pp.biteMult = tameBiteMult(S); f.sets = activeSets(S); f.elixirs = adv ? null : S.elixirs; f.wxPow = S.wxPow; f.wxRes = S.wxRes; applySetDef(f); shareAura(f, f.pets || []); if (S.buff && AN[S.buff.k] && --S.buff.left <= 0) S.buff = null; try { const _rl6 = equipRules(S); f.ruleBumie = _rl6.includes('bumie'); f.ruleShiling = _rl6.includes('shiling'); f.ruleLianzhu = _rl6.includes('lianzhu'); f.ruleBeishui = _rl6.includes('beishui'); } catch(_) {} // v1006 法宝规则
+function playerFighter(S, adv) { const f = fighter('你', fightAttrs(S, adv), true, S.skills, activePets(S)); const _peakHp = Math.max(1, Math.floor(C.bumpPeak(S) * 5)); if (f.maxHp < _peakHp) { f.maxHp = _peakHp; f.hp = Math.max(f.hp, Math.min(_peakHp, f.hp)); } if (S.race === 'yi') { const _om = f.maxHp; f.maxHp = Math.floor(_om * 1.05); if (f.hp >= _om) f.hp = f.maxHp; } /* v1088 异族强健：生命上限 +5% */ if (C.useFali(S)) { f.maxMp = Math.max(1, Math.floor(C.manaMax(S))); f.mp = Math.max(0, Math.floor(S.mana)); } if (S.hpCur != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.floor(S.hpCur))); f.xbOn = (S.xianBurstOn|0); f.xbPts = (S.xianBurst|0); if (f.xbOn && f.xbPts > 0) { f._xb = 1 + f.xbPts * 0.2; f._xbDef = 1 + f.xbPts * 0.2; } if (adv && (S.advVit|0) > 0) { const _av = S.advVit|0, _avHp = _av * 5; f.a.vit += _av; f.maxHp += _avHp; f.hp = Math.min(f.maxHp, f.hp + _avHp); } f.burnBloodTier = Math.min(10, S.burnBloodTier|0) || (S.burnBlood ? 1 : 0); f.burnTier = Math.min(10, S.burnTier|0) || (S.burnSpirit ? 1 : 0); f.burnLife = 0; f.S = S; f.toxAtk = toxImmune(S) ? 1 : 0; for (const _pp of (f.pets || [])) { _pp.biteMult = tameBiteMult(S); _pp.toxAtk = f.toxAtk; } f.sets = activeSets(S); f.elixirs = adv ? null : S.elixirs; f.wxPow = S.wxPow; f.wxRes = S.wxRes; applySetDef(f); shareAura(f, f.pets || []); if (S.buff && AN[S.buff.k] && --S.buff.left <= 0) S.buff = null; try { const _rl6 = equipRules(S); f.ruleBumie = _rl6.includes('bumie'); f.ruleShiling = _rl6.includes('shiling'); f.ruleLianzhu = _rl6.includes('lianzhu'); f.ruleBeishui = _rl6.includes('beishui'); } catch(_) {} // v1006 法宝规则
   f.bleed = !!S.status.bleed; f.poison = hasSt(S, 'poison') ? 999 : 0; f.pre = { bleed: f.bleed, poison: f.poison > 0 }; return f; }
 function carryOut(S, f, res) { // 战斗中新得的流血/中毒：胜利不带，战败100%带出
   if (res.win) return;
@@ -2727,6 +2727,7 @@ function petMagic(pet, tgt, strong, verb, L) { // 与玩家法术同公式
   d = Math.max(1, Math.round(hurtMods(tgt, d)));
   const r = applyDamage(tgt, d);
   L.push(`${nm(pet)}${verb}，${nm(tgt)}受到 <span class="r">${r.dealt}</span> 点伤害${absTxt(r)}${modTxt(tgt)}`);
+  toxOnHit(pet, tgt, L); // v1143 灵宠带毒（法术）
   return r.dealt + r.abs;
 }
 function petAct(pet, owner, foe, L) {
@@ -2760,11 +2761,12 @@ function critChance(att) { return clamp(K.CRIT_BASE + att.a.agi * K.CRIT_PER_AGI
 function reflects(att, tgt) { const eff = att.a.str * (att._xb || 1) * (att._bb || 1); return tgt.a.def * (tgt._xbDef || 1) >= eff * K.REFLECT_RATIO; }
 function inflict(f, k, L) {
   if (k === 'bleed') { if (f.bleed) return; f.bleed = true; L.push(`${nm(f)}<span class="r">🩸 开始流血</span>`); }
-  else if (k === 'poison') { if (f.poison >= K.POISON_ROUNDS) return; f.poison = K.POISON_ROUNDS; L.push(`${nm(f)}<span class="r">☠️ 中毒了</span>`); }
+  else if (k === 'poison') { if (f.S && toxImmune(f.S)) return; if (f.poison >= K.POISON_ROUNDS) return; f.poison = K.POISON_ROUNDS; L.push(`${nm(f)}<span class="r">☠️ 中毒了</span>`); } // v1143 百毒不侵：战中亦不中毒
 }
-function addPoisonStack(f, L) { // v1142 百毒不侵叠毒：给目标 +1 层毒（上限 10 层），持续刷新 3 回合；毒发伤害 = 层数 × 每层 4% 最大生命
+function addPoisonStack(f, L) { // v1143 百毒不侵叠毒：给目标 +1 层毒（上限 10 层）；每层每回合毒发 1% 最大生命，每 3 回合消退 1 层、最后一层不消退（须解毒药清）
+  if (f.S && toxImmune(f.S)) return;
   f.pStacks = Math.min(10, (f.pStacks | 0) + 1);
-  f.poison = K.POISON_ROUNDS;
+  f.poison = 1;
   L.push(`${nm(f)}<span class="r">☠️ 毒层叠加（${f.pStacks}层）</span>`);
 }
 function toxOnHit(att, tgt, L) { // v1142 百毒不侵双向带毒：佩戴者打中目标→目标叠毒；佩戴者被打中→攻击者叠毒
@@ -2810,6 +2812,7 @@ function physical(att, tgt, mult, verb, L) {
   if (reflects(att, tgt)) {
     const rf = Math.max(1, Math.round(atk * K.REFLECT_PCT)); const r = applyDamage(att, rf);
     tgt._float = {t:'block', txt:'🛡️反震！'}; L.push(`${nm(att)}${verb}，但${nm(tgt)}防御坚不可摧，<span class="y">伤害为 0</span>！反震 <span class="r">${r.dealt}</span> 点伤害${absTxt(r)}`);
+    toxOnHit(att, tgt, L); // v1143 Ye 定：被反震也叠毒，只有闪避不叠
     return 0;
   }
   let d = Math.max(atk * K.MIN_DMG_PCT, atk - tgt.a.def * (tgt._xbDef || 1) * (tgt._bbDef || 1) * K.DEF_MULT);
@@ -2867,7 +2870,7 @@ function execAction(me, foe, act, L) {
   }
   if (act.startsWith('pot:')) { const t = act.slice(4), k = bestPot(me.elixirs, t), P = potOf(k); if (P && t === 'mp') { if (me.mp >= me.maxMp) { L.push(`${nm(me)}法力已满，收起了药水`); return; } if (!--me.elixirs[k]) delete me.elixirs[k]; const g = Math.min(me.maxMp - me.mp, Math.max(1, Math.round(me.maxMp * P.pct))); me.mp += g; L.push(`${nm(me)}饮下<span class="${['', '', 'q2', 'q3'][P.q]}">${QNAME[P.q]}法力药水</span>💧，回复 <span class="pu">${g}</span> 点法力`); return; } if (P && me.hp >= me.maxHp) { L.push(`${nm(me)}生命已满，收起了药水`); return; } if (P) { if (!--me.elixirs[k]) delete me.elixirs[k];
       const g = Math.min(me.maxHp - me.hp, Math.max(1, Math.round(me.maxHp * P.pct))); me.hp += g; L.push(`${nm(me)}饮下<span class="${['', '', 'q2', 'q3'][P.q]}">${QNAME[P.q]}生命药水</span>❤️，回复 <span class="g">${g}</span> 点生命`); } return; }
-  if (act.startsWith('med:')) { const k = act.slice(4), m = MEDS[k]; if (m && me.isPlayer && (S.meds[k] > 0)) { S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); if (m.cure === 'bleed') me.bleed = false; if (m.cure === 'poison') { me.poison = 0; me.pStacks = 0; } L.push(`${nm(me)}使用💊<b>${m.name}</b>，${STATUS[m.cure].icon}${STATUS[m.cure].name}<span class="g">已解除</span>`); } else { L.push(`${nm(me)}想使用疗伤药，但没有可用的`); } return; }
+  if (act.startsWith('med:')) { const k = act.slice(4), m = MEDS[k]; if (m && me.isPlayer && (S.meds[k] > 0)) { S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); if (m.cure === 'bleed') me.bleed = false; if (m.cure === 'poison') { me.poison = 0; me.pStacks = 0; me.pDecay = 0; } L.push(`${nm(me)}使用💊<b>${m.name}</b>，${STATUS[m.cure].icon}${STATUS[m.cure].name}<span class="g">已解除</span>`); } else { L.push(`${nm(me)}想使用疗伤药，但没有可用的`); } return; }
   switch (act) {
     case 'defend': { L.push(`${nm(me)}摆出防御姿态🛡，本回合减伤`); break; }
     case 'smash': physical(me, foe, 1.6, '施展<span class="pu">【重击】</span>', L); break;
@@ -2980,7 +2983,17 @@ Battle.prototype.finishRound = function () {
   for (const f of [A, A.pet, B, B.pet]) {
     if (!f || f.hp <= 0 || A.hp <= 0 || B.hp <= 0) continue;
     if (f.bleed) { f.hp = Math.max(0, f.hp - Math.max(1, Math.round(f.maxHp * K.BLEED_RND))); out.push(`${nm(f)}🩸 流血不止，生命 <span class="r">-${Math.max(1, Math.round(f.maxHp * K.BLEED_RND))}</span>`); }
-    if (f.poison > 0 && f.hp > 0) { const _stk = Math.max(1, f.pStacks | 0); const d = Math.max(1, Math.round(f.maxHp * K.POISON_RND * _stk)); f.hp = Math.max(0, f.hp - d); f.poison--; if (f.poison <= 0) f.pStacks = 0; out.push(`${nm(f)}☠️ 毒发${_stk > 1 ? `（${_stk}层）` : ''}，生命 <span class="r">-${d}</span>`); } // v1142 毒层叠加伤害，毒尽层清
+    if (f.poison > 0 && f.hp > 0) {
+      if ((f.pStacks | 0) > 0) { // v1143 层毒：每层 1% 最大生命/回合；每 3 回合消退 1 层，最后一层不消退
+        const _stk = f.pStacks | 0;
+        const d = Math.max(1, Math.round(f.maxHp * 0.01 * _stk));
+        f.hp = Math.max(0, f.hp - d);
+        f.pDecay = (f.pDecay | 0) + 1;
+        let _drop = '';
+        if (f.pDecay >= 3) { f.pDecay = 0; if (_stk > 1) { f.pStacks = _stk - 1; _drop = `，毒层消退（剩 ${f.pStacks} 层）`; } }
+        out.push(`${nm(f)}☠️ 毒发（${_stk}层），生命 <span class="r">-${d}</span>${_drop}`);
+      } else { const d = Math.max(1, Math.round(f.maxHp * K.POISON_RND)); f.hp = Math.max(0, f.hp - d); f.poison--; out.push(`${nm(f)}☠️ 毒发，生命 <span class="r">-${d}</span>`); }
+    }
   }
   for (const f of [A, ...(A.allies || []), B, ...(B.allies || [])]) if (f.sets && f.sets.heal && f.hp > 0 && f.hp < f.maxHp && A.hp > 0 && B.hp > 0) { const h = Math.min(f.maxHp - f.hp, Math.max(1, Math.round(f.maxHp * f.sets.heal))); f.hp += h; out.push(`${nm(f)}【治愈套${f.auraFrom ? '·共享' : ''}】回复 <span class="g">${h}</span> 点生命`); }
   for (const f of [A, A.pet, B, B.pet]) {
