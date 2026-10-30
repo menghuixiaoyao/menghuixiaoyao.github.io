@@ -85,7 +85,7 @@ header{padding:calc(8px + var(--safe-t)) 12px 8px;background:linear-gradient(180
 .bl{padding:1px 0}
 .bl.rd{color:#7d7592;font-size:11px;margin-top:3px}
 b.p{color:var(--blue)} b.x{color:var(--red)} .g{color:var(--green)} .r{color:var(--red)} .y{color:var(--gold)} .pu{color:var(--purple)}
-.q3{color:#f0a35a;font-weight:700}.q2{color:#6aa8e8}.q1{color:#a39cb3}.gq1{color:#e6e3ea}.gq2{color:#4fd06a}.gq3{color:#4f9dff;font-weight:600}.gq4{color:#b77cff;font-weight:700}.gq5{color:#ff9a2e;font-weight:700}
+.q3{color:#f0a35a;font-weight:700}.q2{color:#6aa8e8}.q1{color:#a39cb3}.gq1{color:#e6e3ea}.gq2{color:#4fd06a}.gq3{color:#4f9dff;font-weight:600}.gq4{color:#b77cff;font-weight:700}.gq5{color:#ff9a2e;font-weight:700}.toolRainbow{background:linear-gradient(90deg,#ff5f57,#ff9f43,#ffd93d,#6bcb77,#4d96ff,#9b5de5);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700}
 #bcBanner{display:none;position:fixed;top:0;left:0;right:0;z-index:99;background:linear-gradient(90deg,#3a2410,#6b4210,#3a2410);border-bottom:2px solid #ff9a2e;color:#ffe9c4;text-align:center;font-size:13px;font-weight:700;padding:8px 10px;animation:bcIn .3s ease-out}
 @keyframes bcIn{from{transform:translateY(-100%)}to{transform:translateY(0)}}
 #combat{flex:none;background:var(--panel);border-top:1px solid var(--line);padding:8px 12px;display:none}
@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1127</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1128</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -323,12 +323,12 @@ const K = {
   MINE_CRIT_PER_STR: 0.001, MINE_CRIT_MAX: 0.5, // 挖矿/打猎暴击率 = 对应属性×0.1%（上限 50%）// v658
   MINE_MORE_BASE: 0.15, MINE_MORE_PER_STR: 0.003, MINE_MORE_MAX: 0.45, // 暴击后每多 1 块的概率 = 15% + 力量×0.3%（上限 45%），最多 5 块
   MEAT_BASE: 0.02, MEAT_PER_AGI: 0.0001, MEAT_MAX: 0.04, // 打猎每次 2% + 敏捷×0.01%（上限 4%）额外带回 1 块肉（不受暴击影响），品种与本次（首只）猎物相同
-  TIER_SHIFT_PER: 0.0005, TIER_SHIFT_MAX: 0.05, // 灵石（力量）/灵露（防御）品阶：一品概率 -属性×0.05%（上限 -5%），按 40/30/20/10% 分给二~五品
-  PREMIUM_BASE: 0.02, PREMIUM_PER_DEF: 0.0001, PREMIUM_MAX: 0.04, // 种植每次 2% + 防御×0.01%（上限 4%）额外收获 1 瓶灵露（品阶另掷）
+  TIER_SHIFT_PER: 0.0005, TIER_SHIFT_MAX: 0.05, // 灵石（力量）/凝露（防御）品阶：一品概率 -属性×0.05%（上限 -5%），按 40/30/20/10% 分给二~五品
+  PREMIUM_BASE: 0.02, PREMIUM_PER_DEF: 0.0001, PREMIUM_MAX: 0.04, // 种植每次 2% + 防御×0.01%（上限 4%）额外收获 1 瓶凝露（品阶另掷）
   PET_EGG_CHANCE: 0.01, // 掏兽蛋每次固定 1% 额外掏到灵宠蛋
   // —— 饥饿 / 气运 ——
   HUNGER_ACT: 2, HUNGER_FIGHT: 5,   // 玩家饱食度：修炼/炼药每点体力 -2，冒险/PK 每次 -5
-  WELL_FED: 70, LUCK_FED: 1.2,      // 饱食度 ≥70：气运，掉落/暴击/灵石/灵露/肉/灵宠蛋概率 ×1.2
+  WELL_FED: 70, LUCK_FED: 1.2,      // 饱食度 ≥70：气运，掉落/暴击/灵石/凝露/肉/灵宠蛋概率 ×1.2
   // —— 灵宠饥饿 / 忠诚 ——
   PET_HUNGER_FIGHT: 5, PET_HUNGER_DAY: 10, PET_HUNGRY: 30, PET_LOYAL_START: 60,
   PET_LIFE_MAX: 100, PET_DEATH_LIFE: 20, PET_DEATH_LOYAL: 10, // 灵宠阵亡：寿命 -20、忠诚 -10；寿命 0 永久死亡
@@ -375,7 +375,7 @@ const K = {
   SPIRIT_BASE: 0.02, SPIRIT_PER_STR: 0.0001, SPIRIT_MAX: 0.04, // 挖矿每次额外 2% + 力量×0.01%（上限 4%）挖到灵石
   ORE_STR_BONUS: 0.0005, ORE_BONUS_MAX: 0.05, // 每点对应属性使第 3、4 档稀有物品概率各 +0.05%（各自上限 +5%），从第 1 档中扣除
   // —— 炼药材料 ——
-  ALC_BOOST_RATE_MAX: 0.98, ALC_BOOST_Q3_MAX: 0.70, // 投入灵石/灵露后的总上限：成功率 98%，上品 70%
+  ALC_BOOST_RATE_MAX: 0.98, ALC_BOOST_Q3_MAX: 0.70, // 投入灵石/凝露后的总上限：成功率 98%，上品 70%
   VAMP_PCT: 0.5,          // 吸血斩：回复造成伤害的 50%
   // —— PK ——
   PK_RANGE_LO: 0.85, PK_RANGE_HI: 1.15, // 对手总属性 = 玩家 × 0.85~1.15
@@ -473,18 +473,16 @@ const petQ = p => PQLT[(p && p.q) | 0] || PQLT[0]; // 品质兜底（老存档�
 const PET_SET = { fox: 'crit', baihu: 'fatal', turtle: 'def', qinglong: 'heal', zhuque: 'luck' };
 const petMatchTxt = k => { const st = GEAR_SETS[PET_SET[k]], at = Object.keys(PETS[k].bonus)[0]; return `${AN[at]}·${st.name}套`; };
 const petSkillTxt = (S, pet, sk) => { const v = sk === 'luck' ? K.PET_LUCK_DODGE : ((pet && petActiveSets(pet)[sk]) || (S && activeSets(S)[sk]) || GEAR_SETS[sk].v[0]); return GEAR_SETS[sk].name + '+' + Math.round(v * 100) + '%'; }; // 灵宠技能当前效果：自身套装 > 主人套装 > 2 件基础
-// 种植：收获炼药用药草（五种等概率随机），存入材料；灵露为稀有额外收获（extra，不参与掷骰）
+// 种植：收获炼药用药草（五种等概率随机），存入材料；凝露为稀有额外收获（extra，不参与掷骰）
 const FARM = {
   h_agi: { name: '敏捷草', p: 0.2 }, h_str: { name: '力量草', p: 0.2 }, h_def: { name: '防御草', p: 0.2 },
   h_vit: { name: '生命草', p: 0.2 }, h_int: { name: '智力草', p: 0.2 }
 };
-// 灵露五品（dw1~dw5）：种植偶得（一品也可在商店购买）；服用得随机属性点 pts；炼药可投入 1 瓶，成功率与上品各 +alc
+// 凝露三品（dw1~dw3，v1128 由凝露五品改制：下品/中品/上品）：种植偶得（下品也可在商店购买）；服用得随机属性点 pts；炼药可投入 1 瓶，成功率与上品各 +alc
 const LU = {
-  dw1: { name: '一品灵露', p: 0.50, pts: 1, alc: 0.05, extra: true, price: 15, desc: '炼药投入：成功率/上品 +5%；服用：随机属性 +1' },
-  dw2: { name: '二品灵露', p: 0.25, pts: 2, alc: 0.10, extra: true },
-  dw3: { name: '三品灵露', p: 0.15, pts: 3, alc: 0.15, extra: true },
-  dw4: { name: '四品灵露', p: 0.08, pts: 5, alc: 0.25, extra: true },
-  dw5: { name: '五品灵露', p: 0.02, pts: 8, alc: 0.40, extra: true }
+  dw1: { name: '下品凝露', p: 0.50, pts: 1, alc: 0.05, extra: true, price: 15, desc: '炼药投入：成功率/上品 +5%；服用：随机属性 +1' },
+  dw2: { name: '中品凝露', p: 0.15, pts: 3, alc: 0.15, extra: true },
+  dw3: { name: '上品凝露', p: 0.02, pts: 8, alc: 0.40, extra: true }
 };
 Object.assign(FARM, LU);
 // 采集：挖矿（力量）/ 打猎（敏捷）/ 种植（防御）结构相同——1 体力 = 对应属性 +1 + 1 件物品（暴击/丰收 2~5 件）
@@ -549,9 +547,8 @@ const REFINES = { // 炼金配方：主料 + 1 张普通残页（配方/丹方�
   r_sp2: { name: '下品灵石', lv: 1, need: [['ores', 'sp1', 3], ['pages', 'pg1', 1]], out: ['ores', 'sp2'] },
   r_sp3: { name: '中品灵石', lv: 2, need: [['ores', 'sp2', 3], ['pages', 'pg1', 1]], out: ['ores', 'sp3'] },
   r_sp4: { name: '上品灵石', lv: 4, need: [['ores', 'sp3', 3], ['pages', 'pg1', 1]], out: ['ores', 'sp4'] },
-  r_dw2: { name: '二品灵露', lv: 1, need: [['mats', 'dw1', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw2'] },
-  r_dw3: { name: '三品灵露', lv: 2, need: [['mats', 'dw2', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw3'] },
-  r_dw4: { name: '四品灵露', lv: 4, need: [['mats', 'dw3', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw4'] },
+  r_dw2: { name: '中品凝露', lv: 1, need: [['mats', 'dw1', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw2'] },
+  r_dw3: { name: '上品凝露', lv: 2, need: [['mats', 'dw2', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw3'] },
   r_gold1: { name: '点铁成金', lv: 1, need: [['ores', 'iron', 5], ['pages', 'pg1', 1]], out: ['ores', 'gold'] },
   r_gold2: { name: '铜化金',   lv: 2, need: [['ores', 'copper', 3], ['pages', 'pg1', 1]], out: ['ores', 'gold'] },
   p_hp: { name: '生命药水', lv: 1, need: [['mats', 'h_vit', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'hp' }, // 品质决定回复量
@@ -562,7 +559,7 @@ const POT_PCT = [0, 0.30, 0.40, 0.50]; // 普通 / 精良 / 极品：回复 30% 
 const potKey = (t, q) => t + q, potOf = k => { const m = /^(hp|mp)([1-3])$/.exec(k || ''); return m ? { t: m[1], q: +m[2], pct: POT_PCT[+m[2]], name: POTIONS[m[1]].name } : null; };
 // 阵法配方 v788：阵法台制作，布阵后获得限时增益
 const FORMATIONS = {
-  f_gather: { name: '采集阵', lv: 0, need: [['prey', 'wolf', 2], ['ores', 'sp1', 5], ['ores', 'iron', 3]], desc: '可布于冒险图空格、田药园、养殖园，上品灵石驱动自动采集（1颗=1小时）', buff: 'gather', mult: 1.25, duration: 7200 }, // v908 配方：狼皮+灵气石+铁矿；v913 lv0可做；v1125 冒险图也可布阵
+  f_gather: { name: '采集阵', lv: 0, need: [['prey', 'wolf', 2], ['ores', 'sp1', 5], ['ores', 'iron', 3]], desc: '小型采集阵（v1128 起改由阵棋合成，此旧配方已停用）。可布于冒险图空格、田药园、养殖园，上品灵石驱动自动采集（1颗=1小时）', buff: 'gather', mult: 1.25, duration: 7200 }, // v908 配方：狼皮+灵气石+铁矿；v913 lv0可做；v1125 冒险图也可布阵
   f_spirit: { name: '聚灵阵', lv: 2, need: [['ores', 'sp1', 10]], desc: '闭关法力+25%，持续2小时', buff: 'spirit', mult: 1.25, duration: 7200 },
 };
 // 符箓配方 v788：画符台制作，战斗中使用的消耗品
@@ -574,7 +571,7 @@ const MEATS = { // 肉：品种与猎物对应，食用恢复体力
   rabbit: { name: '兔肉', sta: 1, hunger: 10 }, deer: { name: '鹿肉', sta: 2, hunger: 15 }, wolf: { name: '狼肉', sta: 3, hunger: 20 }, tiger: { name: '虎肉', sta: 5, hunger: 30 }
 };
 const OLD_SKILLS = ['fireball', 'smash', 'heal', 'shield']; // 旧存档默认已会的技能
-// 炼药材料：每次炼药必须消耗 1 株对应属性的药草（basic）；灵露为可选增益（见 LU）
+// 炼药材料：每次炼药必须消耗 1 株对应属性的药草（basic）；凝露为可选增益（见 LU）
 const MATS = {
   h_agi: { name: '敏捷草', price: 5, basic: 'agi' }, h_str: { name: '力量草', price: 5, basic: 'str' },
   h_def: { name: '防御草', price: 5, basic: 'def' }, h_vit: { name: '生命草', price: 5, basic: 'vit' },
@@ -679,7 +676,8 @@ function newState() {
   const attrs = {}; ATTRS.forEach(k => attrs[k] = K.START_ATTR);
   const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
     stats: { adv: 0, advWin: 0, pk: 0, pkWin: 0, brew: 0, brewOk: 0, checkins: 0 }, log: [], hpCur: null, curseN: 0,
-    wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链
+    wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null,
+    tools: { pick: null, hoe: null }, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, zhenqi: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋
   S.mana = manaMax(S); grantStarter(S); return S;
 }
 function normalize(S) {
@@ -723,6 +721,29 @@ function normalize(S) {
     }
     S.arrays = _keep;
   }
+  // v1128 器具/灵物/灵物种子/阵棋/采集阵分档
+  if (!S.tools || typeof S.tools !== 'object') S.tools = { pick: null, hoe: null };
+  for (const _tk of ['pick', 'hoe']) {
+    const _t = S.tools[_tk];
+    if (!_t || typeof _t !== 'object' || !(_t.dur > 0)) { S.tools[_tk] = null; continue; }
+    _t.tier = Math.max(0, Math.min(2, Math.floor(+_t.tier || 0)));
+    _t.max = Math.max(1, Math.floor(+_t.max || 100));
+    _t.dur = Math.max(0, Math.min(_t.max, Math.floor(+_t.dur || 0)));
+    _t.lvl = Math.max(0, Math.floor(+_t.lvl || 0));
+    _t.uses = Math.max(0, Math.floor(+_t.uses || 0));
+    if (_t.dur <= 0) S.tools[_tk] = null;
+  }
+  if (!Array.isArray(S.lingwu)) S.lingwu = [];
+  S.lingwu = S.lingwu.filter(_w => _w && _w.g >= 1 && _w.g <= 3 && _w.y >= 1).map(_w => ({ g: Math.floor(_w.g), y: Math.floor(_w.y) }));
+  if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = { 1: 0, 2: 0, 3: 0 };
+  for (const _g of [1, 2, 3]) S.lwseeds[_g] = Math.max(0, Math.floor(+S.lwseeds[_g] || 0));
+  if (!S.zhenqi || typeof S.zhenqi !== 'object') S.zhenqi = { 1: 0, 2: 0, 3: 0 };
+  for (const _g of [1, 2, 3]) S.zhenqi[_g] = Math.max(0, Math.floor(+S.zhenqi[_g] || 0));
+  if (!S.formations || typeof S.formations !== 'object') S.formations = {};
+  S.formations.f_gather = Math.max(0, Math.floor(+S.formations.f_gather || 0));
+  S.formations.f_gather2 = Math.max(0, Math.floor(+S.formations.f_gather2 || 0));
+  S.formations.f_gather3 = Math.max(0, Math.floor(+S.formations.f_gather3 || 0));
+  if (Array.isArray(S.arrays)) for (const _a of S.arrays) { if (_a && (!(_a.tier >= 1 && _a.tier <= 3))) _a.tier = 1; }
   if (!Array.isArray(S.binders)) S.binders = [];
   if (!Array.isArray(S.mail)) S.mail = [];
   if (S.spouse === undefined) S.spouse = null; // v264 配偶
@@ -803,7 +824,13 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   const addTo = (o, k, n) => { n = Math.floor(+n || 0); if (n > 0) o[k] = (o[k] || 0) + n; };
   addTo(S.ores, 'sp2', S.ores.spirit); delete S.ores.spirit;           // 最早的通用灵石 → 中品 → 二品
   if (ver < 4) { const old4 = S.ores.sp4; delete S.ores.sp4; addTo(S.ores, 'sp5', old4); } // 旧四档：下/中/上/极品 → 一/二/三/五品
-  addTo(S.mats, 'dw1', S.mats.dew); addTo(S.mats, 'dw1', S.mats.ess); delete S.mats.dew; delete S.mats.ess; // 旧灵露、聚灵精华 → 一品灵露
+  addTo(S.mats, 'dw1', S.mats.dew); addTo(S.mats, 'dw1', S.mats.ess); delete S.mats.dew; delete S.mats.ess; // 旧凝露、聚灵精华 → 一品凝露
+  if (!S.dew3mig) { // v1128 凝露五品 → 凝露三品存量合并：一品+二品→下品、三品→中品、四品+五品→上品
+    const _d1 = (S.mats.dw1|0) + (S.mats.dw2|0), _d2 = (S.mats.dw3|0), _d3 = (S.mats.dw4|0) + (S.mats.dw5|0);
+    delete S.mats.dw1; delete S.mats.dw2; delete S.mats.dw3; delete S.mats.dw4; delete S.mats.dw5;
+    if (_d1 > 0) S.mats.dw1 = _d1; if (_d2 > 0) S.mats.dw2 = _d2; if (_d3 > 0) S.mats.dw3 = _d3;
+    S.dew3mig = 1;
+  }
   for (const k in S.mats) if (!MATS[k] || !(S.mats[k] > 0)) delete S.mats[k];
   for (const g of Object.values(GATHER)) {
     if (!S[g.store] || typeof S[g.store] !== 'object') S[g.store] = {};
@@ -1599,7 +1626,7 @@ function useSpirit(S, k, n) {
   if (it.lvl) return { n, xp: 0, ups: levelUp(S, it.lvl * n) };
   return { n, xp: it.xp * n, ups: gainXp(S, it.xp * n) };
 }
-function useLu(S, k, n) { // 服用灵露：每点随机加到一项属性
+function useLu(S, k, n) { // 服用凝露：每点随机加到一项属性
   const it = LU[k]; if (!it) return null;
   n = Math.min(n || 1, S.mats[k] || 0); if (n <= 0) return null;
   S.mats[k] -= n; if (!S.mats[k]) delete S.mats[k];
@@ -2363,7 +2390,7 @@ function brew(S, attr, opt) {
   takeEgg(S, 1);
   payLife(S); S.stats.brew++; hungerDown(S, K.HUNGER_ACT, 1); /* 炼药消耗活力/法力，不再消耗体力 */
   opt = opt || {};
-  const lu = (opt.lu && LU[opt.lu] && useMat(S, opt.lu)) ? opt.lu : null; // 可选投入 1 瓶灵露
+  const lu = (opt.lu && LU[opt.lu] && useMat(S, opt.lu)) ? opt.lu : null; // 可选投入 1 瓶凝露
   let sp = null; if (opt.spirit && ORES[opt.spirit] && ORES[opt.spirit].alc && (S.ores[opt.spirit] || 0) > 0) { sp = opt.spirit; S.ores[sp]--; if (!S.ores[sp]) delete S.ores[sp]; } // 可选投入 1 块灵石
   const rate = alcRate(S, lu, sp), ok = R() < rate, potions = [];
   const duilu = extras.length > 0 && extras.every(e => e === 'h_' + attr); // v998 对路
@@ -2966,14 +2993,14 @@ const ADV_EVENTS = {
   // —— 奇遇 ——
   hermit:   { type: 'fortune', t: '路边坐着一位白发老者', ch: [
     { l: '行礼请教', a: 'int', f: (X, ok) => ok ? (R() < 0.5 ? X.item('skillPages', pick(Object.keys(SKILLS)), 1, '老者赠你一张技能残页') : X.xp(0.6, '老者指点迷津，你茅塞顿开')) : X.xp(0.15, '老者说的玄之又玄，你只听懂了一点') },
-    { l: '奉上金元', cost: 0.4, f: X => X.item('mats', X.lu(), 1 + (R() < 0.3 ? 1 : 0), '老者收下金元，回赠灵露') },
+    { l: '奉上金元', cost: 0.4, f: X => X.item('mats', X.lu(), 1 + (R() < 0.3 ? 1 : 0), '老者收下金元，回赠凝露') },
     { l: '默默离开', f: X => X.say('你拱手作别，继续赶路。') }] },
   cave:     { type: 'fortune', t: '前方有一个幽深山洞', ch: [
     { l: '探查洞口', a: 'int', f: (X, ok) => ok ? X.gain(0.5, '你看破洞中机关，取走了前人遗留的宝物') : X.hurt('poison', '洞中瘴气弥漫，你吸入了毒气') },
     { l: '径直闯入', f: X => R() < 0.5 ? X.gain(0.7, '洞底竟是一处小宝库！') : X.ambush(1, '洞中沉睡的怪物被你惊醒了！') },
     { l: '绕开洞口', f: X => X.say('你没有冒险，绕道而行。') }] },
   merchant: { type: 'fortune', t: '遇到一位行脚商人', ch: [
-    { l: '买一瓶灵露', cost: 0.5, f: X => X.item('mats', X.lu(), 1, '商人递来一瓶灵露') },
+    { l: '买一瓶凝露', cost: 0.5, f: X => X.item('mats', X.lu(), 1, '商人递来一瓶凝露') },
     { l: '买解毒丹与止血药', cost: 0.5, f: X => { X.item('meds', 'antidote', 1, '买到解毒丹'); return X.item('meds', 'bandage', 1, '买到止血药'); } },
     { l: '讨价还价', a: 'int', f: (X, ok) => ok ? X.item('meds', pick(['antidote', 'bandage', 'incense']), 1, '你口若悬河，商人忍痛送你一瓶药') : X.say('商人翻了个白眼，挑着担子走了。') },
     { l: '摆手离开', f: X => X.say('你谢过商人，继续前行。') }] },
@@ -2983,14 +3010,14 @@ const ADV_EVENTS = {
     { l: '不去碰它', f: X => X.say('越美的东西越危险，你转身离开。') }] },
   spring:   { type: 'fortune', t: '前方有一汪灵泉', ch: [
     { l: '掬水而饮', f: X => { const l = X.heal(0.3, '泉水清冽，伤势好转'); return R() < 0.25 ? l + '；' + X.attr(pick(ATTRS), 1, '灵气入体') : l; } },
-    { l: '装一壶带走', f: X => X.item('mats', X.lu(), 1, '你装了一壶泉水，竟凝成了灵露') },
+    { l: '装一壶带走', f: X => X.item('mats', X.lu(), 1, '你装了一壶泉水，竟凝成了凝露') },
     { l: '捞取灵石', a: 'agi', f: (X, ok) => ok ? X.item('ores', X.sp(), 1, '你身手敏捷地捞起一块灵石') : X.say('泉底湿滑，你差点跌进水里，一无所获。') }] },
   bones:    { type: 'fortune', t: '路边有一具古修骸骨', ch: [
     { l: '翻找遗物', f: X => R() < 0.6 ? X.gain(0.4, '你在骸骨旁找到了一些值钱的东西') : X.hurt('depress', '一缕冤魂缠上了你，心头阴霾不散') },
     { l: '将其安葬', f: X => X.item('pages', pick(['pg1', 'pg2', 'pg3']), 1, '埋骨时，你发现一本残破的手札') },
     { l: '不打扰亡者', f: X => X.say('你默哀片刻，悄然离去。') }] },
   fox:      { type: 'fortune', t: '路边有一只受伤的灵狐', ch: [
-    { l: '用止血药包扎', need: ['meds', 'bandage', 1], f: X => { X.take('meds', 'bandage', 1); return X.gain(0.5, '小狐狸伤愈后衔来一只小布袋，里面装着宝物') + '；' + X.item('mats', X.lu(), 1, '还有一瓶灵露'); } },
+    { l: '用止血药包扎', need: ['meds', 'bandage', 1], f: X => { X.take('meds', 'bandage', 1); return X.gain(0.5, '小狐狸伤愈后衔来一只小布袋，里面装着宝物') + '；' + X.item('mats', X.lu(), 1, '还有一瓶凝露'); } },
     { l: '轻声安抚', a: 'vit', f: (X, ok) => ok ? X.xp(0.4, '小狐狸蹭了蹭你的手，你心生暖意') : X.say('小狐狸受了惊吓，一溜烟跑了。') },
     { l: '继续赶路', f: X => X.say('你叹了口气，继续前行。') }] },
   stele:    { type: 'fortune', t: '前方有一块刻着谜语的石碑', ch: [
@@ -3015,7 +3042,7 @@ const ADV_EVENTS = {
     { l: '婉言谢绝', f: X => X.say('青年有些失望，拱手离去。') }] },
   alchemist:{ type: 'fortune', t: '路边有位丹士在试药', ch: [
     { l: '尝一口', a: 'vit', f: (X, ok) => ok ? X.attr(pick(ATTRS), 1 + (R() < 0.3 ? 1 : 0), '药力化开，你只觉通体舒泰') : X.hurt('poison', '一口下去，你脸都绿了') },
-    { l: '替他看火候', a: 'int', f: (X, ok) => ok ? X.item('mats', X.lu(), 1, '丹成之时，丹士分你一瓶灵露') : X.say('锅炸了，你们俩都被熏成了黑炭。') },
+    { l: '替他看火候', a: 'int', f: (X, ok) => ok ? X.item('mats', X.lu(), 1, '丹成之时，丹士分你一瓶凝露') : X.say('锅炸了，你们俩都被熏成了黑炭。') },
     { l: '敬谢不敏', f: X => X.say('你捂着鼻子快步走开。') }] },
   beggar:   { type: 'fortune', t: '路边有个老乞丐', ch: [
     { l: '施舍金元', cost: 0.2, f: X => R() < 0.4 ? X.item('pages', pick(['pg3', 'pg4']), 1, '乞丐忽然目露精光，塞给你一卷残页，转眼消失不见') : X.xp(0.2, '乞丐连声道谢，你心中欢喜') },
@@ -3106,7 +3133,7 @@ const ADV_EVENTS = {
     { l: '屏息穿过', a: 'vit', f: (X, ok) => ok ? X.say('你憋着气走出了沼泽。') : X.hurt('poison', '你吸进了沼气') },
     { l: '踩着树根跳过', a: 'agi', f: (X, ok) => ok ? X.say('你身轻如燕，几步就跳了过去。') : X.loseGold(0.08, '你一脚踩空，钱袋掉进了泥里') }] },
   spider_web:{ type: 'trap', t: '踩上了一张巨大的蛛网', ch: [
-    { l: '用力挣开', a: 'str', f: (X, ok) => ok ? X.item('mats', X.lu(), 1, '蛛网中还缠着一瓶别人遗落的灵露') : X.hurt('poison', '巨蛛从天而降咬了你一口') },
+    { l: '用力挣开', a: 'str', f: (X, ok) => ok ? X.item('mats', X.lu(), 1, '蛛网中还缠着一瓶别人遗落的凝露') : X.hurt('poison', '巨蛛从天而降咬了你一口') },
     { l: '冷静割断', a: 'agi', f: (X, ok) => ok ? X.say('你小心割断蛛丝，悄然脱身。') : X.ambush(0, '巨蛛被惊动了！') }] },
   pitfall:  { type: 'trap', t: '踩中了猎人的陷坑', ch: [
     { l: '空中借力', a: 'agi', f: (X, ok) => ok ? X.say('你在坑壁一点，翻身跃出。') : X.hurt('bleed', '你摔进坑里，被竹签扎伤') },
@@ -3126,7 +3153,7 @@ const ADV_EVENTS = {
     { l: '以体温慢慢融化', a: 'vit', f: (X, ok) => ok ? X.gain(0.5, '你盘坐了一个时辰，终于融开了冰层') : X.hurt('depress', '冻得你直打哆嗦，心情很差') },
     { l: '离开', f: X => X.say('你放弃了这只宝箱。') }] },
   chest_tree:{ type: 'chest', t: '树洞里有一个小木盒', ch: [
-    { l: '伸手去拿', f: X => R() < 0.7 ? X.item('mats', X.lu(), 1, '盒子里是一瓶灵露和一张纸条："送给路过的你"') : X.hurt('poison', '树洞里有一窝毒蜂！') },
+    { l: '伸手去拿', f: X => R() < 0.7 ? X.item('mats', X.lu(), 1, '盒子里是一瓶凝露和一张纸条："送给路过的你"') : X.hurt('poison', '树洞里有一窝毒蜂！') },
     { l: '放点东西进去', cost: 0.1, f: X => X.xp(0.3, '你也留下一份心意，心中莫名欢喜') },
     { l: '不动它', f: X => X.say('你笑了笑，走开了。') }] },
   chest_bandit:{ type: 'chest', t: '发现山贼的藏宝点', ch: [
@@ -3143,7 +3170,7 @@ const ADV_EVENTS = {
     { l: '一笑置之', f: X => X.say('"信则有，不信则无。"你大步离去。') }] },
   lotus:    { type: 'fortune', t: '湖心开着一朵青莲', ch: [
     { l: '踏水取莲', a: 'agi', f: (X, ok) => ok ? X.attr('int', 1 + (R() < 0.3 ? 1 : 0), '莲子入口，灵台清明') : X.say('你踩水失败，落入湖中。') },
-    { l: '以石击落', a: 'str', f: (X, ok) => ok ? X.item('mats', X.lu(), 1, '莲心坠落，化作灵露') : X.say('石子太重，把青莲砸碎了……') },
+    { l: '以石击落', a: 'str', f: (X, ok) => ok ? X.item('mats', X.lu(), 1, '莲心坠落，化作凝露') : X.say('石子太重，把青莲砸碎了……') },
     { l: '欣赏', f: X => X.xp(0.15, '你静静看着青莲，心境平和') }] },
   cat:      { type: 'fortune', t: '一只黑猫挡在岔路口', ch: [
     { l: '跟着黑猫走', f: X => R() < 0.5 ? X.gain(0.4, '黑猫把你带到一处无人的宝地') : X.hurt('depress', '黑猫把你带进了死胡同，然后跑了') },
@@ -3151,11 +3178,11 @@ const ADV_EVENTS = {
     { l: '走左边', f: X => X.say('你选了左边的路，平平无奇。') }] },
   drunk_immortal:{ type: 'fortune', t: '路边躺着一个醉道人', ch: [
     { l: '请他喝酒', cost: 0.3, f: X => R() < 0.5 ? X.item('skillPages', pick(Object.keys(SKILLS)), 1, '道人大笑，随手甩给你一页残卷') : X.xp(0.3, '道人与你称兄道弟，酒后吐真言') },
-    { l: '偷他的葫芦', a: 'agi', f: (X, ok) => ok ? X.item('mats', X.lu(), 2, '葫芦里装的竟是灵露') : X.loseAttr(1, '道人翻身一脚把你踢飞') },
+    { l: '偷他的葫芦', a: 'agi', f: (X, ok) => ok ? X.item('mats', X.lu(), 2, '葫芦里装的竟是凝露') : X.loseAttr(1, '道人翻身一脚把你踢飞') },
     { l: '绕过去', f: X => X.say('道人的鼾声震天响。') }] },
   // —— 深渊 / 噩梦 专属稀有事件 ——
   abyss_gate:{ type: 'fortune', min: 5, t: '【深渊】虚空中浮现一座上古祭坛', ch: [
-    { l: '取走晶石', a: 'int', f: (X, ok) => ok ? X.item(R() < 0.5 ? 'mats' : 'ores', R() < 0.5 ? 'dw5' : 'sp5', 1, '你破开禁制，取得一枚五品至宝') : X.ambush(2, '祭坛守卫苏醒了！') },
+    { l: '取走晶石', a: 'int', f: (X, ok) => ok ? X.item(R() < 0.5 ? 'mats' : 'ores', R() < 0.5 ? 'dw3' : 'sp5', 1, '你破开禁制，取得一枚五品至宝') : X.ambush(2, '祭坛守卫苏醒了！') },
     { l: '以血祭坛', f: X => X.loseAttr(1, '你割破手掌献祭') + '；' + X.gain(1.0, '祭坛回赠了丰厚的宝藏') },
     { l: '速速离开', f: X => X.say('深渊凶险，你不敢久留。') }] },
   demon_whisper:{ type: 'fortune', min: 5, t: '【深渊】魔音要与你立约', ch: [
@@ -3223,7 +3250,7 @@ function lootTable() {
   const L = [], add = (st, k, w, r, n, mj) => L.push({ st, k, w, r, n: n || 1, mj: !!mj });
   ['iron', 'copper', 'silver', 'gold'].forEach((k, i) => add('ores', k, [30, 18, 9, 4][i], i, [3, 2, 2, 1][i]));
   ['sp1', 'sp2', 'sp3', 'sp4', 'sp5'].forEach((k, i) => add('ores', k, [12, 6, 3, 1.2, 0.3][i], i));
-  ['dw1', 'dw2', 'dw3', 'dw4', 'dw5'].forEach((k, i) => add('mats', k, [12, 6, 3, 1.2, 0.3][i], i));
+  ['dw1', 'dw2', 'dw3'].forEach((k, i) => add('mats', k, [12, 3, 0.3][i], [0, 2, 4][i])); // v1128 凝露三品
   Object.keys(MATS).filter(k => MATS[k].basic).forEach(k => add('mats', k, 8, 0, 2));
   Object.keys(PREY).forEach((k, i) => add('prey', k, [10, 6, 3, 1.2][i], i));
   Object.keys(MEATS).forEach((k, i) => add('food', k, [8, 5, 3, 1.2][i], i));
@@ -3305,7 +3332,7 @@ function advGenGrid() { // 起点左下，终点右上；12 个事件格，其�
   const bag = ['fight', 'fight', 'fight', 'fortune', 'fortune', 'trap', 'trap', 'rest', 'rest', 'gchest', 'gchest', 'gherb', 'gherb', 'rherb', 'rherb', 'rore', 'rore', 'rvein']; // v185 宝箱/草药格均有守怪；v1125 加资源格（本地图）；v1126 加灵脉格
   const pos = []; for (let y = 0; y < ADV_GH; y++) for (let x = 0; x < ADV_GW; x++) { if ((x === sx && y === sy) || (x === ex && y === ey)) continue; pos.push([x, y]); }
   for (let i = pos.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const tmp = pos[i]; pos[i] = pos[j]; pos[j] = tmp; }
-  bag.forEach((t, i) => { const p = pos[i]; tiles[p[1]][p[0]].t = t; });
+  bag.forEach((t, i) => { const p = pos[i]; tiles[p[1]][p[0]].t = t; if (t === 'rherb' || t === 'rvein') tiles[p[1]][p[0]].rg = rollResGradeL(); }); // v1128 资源格刷出即定档
   return { w: ADV_GW, h: ADV_GH, tiles, px: sx, py: sy, ex, ey, moves: 0 };
 }
 function advTileEvent(S, run, type) { // 在格子上生成指定类型的事件（复用事件库）
@@ -3335,8 +3362,61 @@ function guardedLoot(S, run, loot) { // v185 守宝战利品（已发放，返�
 const ADV_RES_HERBS = ['h_str', 'h_agi', 'h_def', 'h_vit', 'h_int'];
 const ADV_RES_ORES = [['iron', 475], ['copper', 285], ['silver', 142], ['gold', 48], ['sp1', 35], ['sp2', 15]];
 function advResOreKey() { let r = Math.random() * 1000; for (const [k, w] of ADV_RES_ORES) { r -= w; if (r < 0) return k; } return 'iron'; }
-function advResGrant(S, run, kind) { const X = advCtx(S, run); if (kind === 'vein') { const r = Math.random(); const tier = r < 0.7 ? 0 : r < 0.9 ? 1 : 2; let k; if (tier === 2) { const x = Math.random(); k = x < 0.45 ? 'sp4' : x < 0.8 ? 'sp5' : 'xy'; } else { const pool = tier === 0 ? ['sp1', 'sp2', 'sp3'] : ['sp3', 'sp4', 'sp5']; k = pool[Math.floor(Math.random() * 3)]; } if (k === 'xy') { S.xianyu = (S.xianyu | 0) + 1; if (run && run.rew) run.rew.items['xianyu:xianyu'] = (run.rew.items['xianyu:xianyu'] || 0) + 1; return '获得 <span class="y">仙玉×1</span>'; } return X.item('ores', k, 1); } return kind === 'herb' ? X.item('mats', ADV_RES_HERBS[Math.floor(Math.random() * ADV_RES_HERBS.length)], 1) : X.item('ores', advResOreKey(), 1); }
-// v1127 灵脉直接出灵石（与服务端 advGrantRes 同表）：掷档 小70%/中20%/巨10%；小 sp1/sp2/sp3 均匀、中 sp3/sp4/sp5 均匀、巨 sp4 45%/sp5 35%/仙玉 20%
+// ===== v1128 器具/灵物（与服务端 lw.js 同规；本地图、灵田、背包/锻造 UI 共用）=====
+const TOOL_NAMES = { pick: ['普通矿镐', '法器矿镐', '仙品矿镐'], hoe: ['普通药锄', '法器药锄', '仙品药锄'] };
+const TOOL_TIER_COLORS = ['#f2f2f2', '#ff9f43', '#ff5f57']; // 器具名按档位：普通白/法器橙/仙品红
+const TOOL_LVL_COLORS = ['#f2f2f2', '#4ade80', '#6db3ff', '#22d3ee', '#c084fc', '#ff7eb6', '#ff9f43', '#ffd94d', '#e8f6ff', '#ff3b30']; // 等级数字按百级分段 0/100/.../900；1000 级七彩单独处理
+const LW_GRADE_NAMES = ['地品灵物', '天品灵物', '仙品灵物'];
+const LW_SEED_NAMES = ['地品灵物种子', '天品灵物种子', '仙品灵物种子'];
+const GRADE_COLORS = ['#6db3ff', '#ff7eb6', '#ff9f43']; // 资源等级色（地图显示）：一级蓝/二级粉红/三级橙
+function toolNeedL(lvl) { return 10 * (lvl + 1); }
+function toolCritMultL(tool) { if (!tool) return 1; const p = Math.min(1, (tool.lvl | 0) * 0.001); return Math.random() < p ? 1 + Math.floor(Math.random() * 10) : 1; }
+function toolUseL(tool) { tool.dur = (tool.dur | 0) - 1; tool.uses = (tool.uses | 0) + 1; while (tool.uses >= toolNeedL(tool.lvl | 0)) { tool.uses -= toolNeedL(tool.lvl | 0); tool.lvl = (tool.lvl | 0) + 1; } return tool.dur <= 0; }
+const LW_EPOCH_L = Date.UTC(2026, 9, 30, 0, 0, 0); // 灵物年份阶梯起点（与服务端一致）
+function lwYearCapL(now) { const n = Math.floor(((now || Date.now()) - LW_EPOCH_L) / (182.5 * 24 * 3600 * 1000)); if (n <= 0) return 10000; if (n === 1) return 100000; return Math.min(10000000, 1000000 * (n - 1)); }
+function rollLwYearsL() { return 1 + Math.floor(Math.random() * lwYearCapL()); }
+function herbBonusL(grade) { const out = { lw: [], seeds: { 1: 0, 2: 0, 3: 0 }, dew: { 1: 0, 2: 0, 3: 0 } }; for (let g = 1; g <= grade; g++) { const st = grade - g; if (Math.random() < 0.05 + 0.05 * st) out.lw.push({ g, y: rollLwYearsL() }); if (Math.random() < 0.005 + 0.005 * st) out.seeds[g] += 1; if (Math.random() < 0.05 + 0.05 * st) out.dew[g] += 1; } return out; }
+function veinStoneL(grade) { if (grade >= 3) { const x = Math.random(); return x < 0.45 ? 'sp4' : x < 0.8 ? 'sp5' : 'xy'; } const pool = grade === 2 ? ['sp3', 'sp4', 'sp5'] : ['sp1', 'sp2', 'sp3']; return pool[Math.floor(Math.random() * 3)]; }
+function rollResGradeL() { const r = Math.random(); return r < 0.7 ? 1 : r < 0.9 ? 2 : 3; }
+function toolGateL(S, kind, grade) { // 采集门槛：草药用药锄、矿石/灵脉用矿镐；矿石任意档，草药/灵脉需器具档 ≥ 资源等级
+  const which = kind === 'herb' ? 'hoe' : 'pick';
+  const tool = S.tools && S.tools[which];
+  if (!tool) return { err: which === 'hoe' ? '没有药锄，采不了草药（商店有售）' : '没有矿镐，采不了（商店有售）', which };
+  if (kind !== 'ore' && (tool.tier | 0) + 1 < (grade || 1)) return { err: (which === 'hoe' ? '药锄' : '矿镐') + '档位不足', which };
+  return { tool, which };
+}
+// v1128 资源格产出（本地图；调用前先过 toolGateL）：属性草 5×等级株、灵脉按格档位出石，器具暴击乘倍，附加掷灵物/种子/凝露
+function advResGrant(S, run, kind, grade) {
+  const X = advCtx(S, run);
+  grade = grade || 1;
+  const which = kind === 'herb' ? 'hoe' : 'pick';
+  const tool = S.tools && S.tools[which];
+  const crit = toolCritMultL(tool);
+  const parts = [];
+  if (crit > 1) parts.push(`<b class="y">💥 暴击×${crit}</b>`);
+  if (kind === 'herb') {
+    const cnt = {}; const n = 5 * grade * crit;
+    for (let i = 0; i < n; i++) { const k = ADV_RES_HERBS[Math.floor(Math.random() * ADV_RES_HERBS.length)]; cnt[k] = (cnt[k] || 0) + 1; }
+    for (const k in cnt) parts.push(X.item('mats', k, cnt[k]));
+    const b = herbBonusL(grade);
+    for (const it of b.lw) { if (!Array.isArray(S.lingwu)) S.lingwu = []; S.lingwu.push(it); parts.push(`获得 <span class="y">${LW_GRADE_NAMES[it.g - 1]}（${it.y} 年）</span>`); }
+    for (let g = 1; g <= 3; g++) {
+      if (b.seeds[g] > 0) { if (!S.lwseeds) S.lwseeds = { 1: 0, 2: 0, 3: 0 }; S.lwseeds[g] = (S.lwseeds[g] | 0) + b.seeds[g]; parts.push(`获得 <span class="y">${LW_SEED_NAMES[g - 1]}×${b.seeds[g]}</span>`); }
+      if (b.dew[g] > 0) parts.push(X.item('mats', 'dw' + g, b.dew[g]));
+    }
+  } else if (kind === 'ore') {
+    const cnt = {};
+    for (let i = 0; i < crit; i++) { const k = advResOreKey(); cnt[k] = (cnt[k] || 0) + 1; }
+    for (const k in cnt) parts.push(X.item('ores', k, cnt[k]));
+  } else {
+    const k = veinStoneL(grade);
+    if (k === 'xy') { S.xianyu = (S.xianyu | 0) + crit; if (run && run.rew) run.rew.items['xianyu:xianyu'] = (run.rew.items['xianyu:xianyu'] || 0) + crit; parts.push(`获得 <span class="y">仙玉×${crit}</span>`); }
+    else parts.push(X.item('ores', k, crit));
+  }
+  if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
+  return parts.join('；');
+}
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL });
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
@@ -3351,7 +3431,7 @@ function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件�
     run.ev = t.ev; return { moved: true, ev: run.ev };
   }
   if (t.ev && !t.evDone) { run.ev = t.ev; return { moved: true, ev: run.ev }; } // 回到未解决的事件格
-  if (t.t === 'rherb' || t.t === 'rore' || t.t === 'rvein') { const _rm = advResGrant(S, run, t.t === 'rherb' ? 'herb' : t.t === 'rvein' ? 'vein' : 'ore'); t.t = 'empty'; t.seen = 1; return { moved: true, resMsg: _rm }; } // v1125 资源格：踩上即采（本地图）；v1126 加灵脉格
+  if (t.t === 'rherb' || t.t === 'rore' || t.t === 'rvein') { const _kind = t.t === 'rherb' ? 'herb' : t.t === 'rvein' ? 'vein' : 'ore'; const _gate = toolGateL(S, _kind, t.rg || 1); if (_gate.err) { t.seen = 1; return { moved: true, resMsg: _gate.err }; } const _rm = advResGrant(S, run, _kind, t.rg || 1); t.t = 'empty'; t.seen = 1; return { moved: true, resMsg: _rm }; } // v1125 资源格：踩上即采（本地图）；v1128 器具门槛（不过不消耗格）
   if (!t.seen && t.t !== 'empty' && t.t !== 'start') { t.seen = 1; run.evCount = (run.evCount | 0) + 1; advTileEvent(S, run, t.t); t.ev = run.ev; return { moved: true, ev: run.ev }; }
   t.seen = 1; return { moved: true };
 }
@@ -3444,6 +3524,8 @@ async function advSharedRefresh() {
 function advApplyGains(j) { // 把服务端 gains 同步进本地存档（与 collectArray 同口径）
   const got = [];
   for (const gg of (j.gains || [])) {
+    if (gg.st === 'lw') { if (!Array.isArray(S.lingwu)) S.lingwu = []; S.lingwu.push({ g: gg.g | 0, y: gg.y | 0 }); got.push(`${C.LW_GRADE_NAMES[(gg.g | 0) - 1] || '灵物'}（${gg.y}年）`); continue; } // v1128 灵物逐株
+    if (gg.st === 'lwseeds') { if (!S.lwseeds) S.lwseeds = { 1: 0, 2: 0, 3: 0 }; S.lwseeds[gg.k] = (S.lwseeds[gg.k] | 0) + (gg.n | 0); got.push(`${C.LW_SEED_NAMES[(+gg.k || 1) - 1]}×${gg.n}`); continue; } // v1128 灵物种子
     if (gg.st === 'xianyu') { S.xianyu = (S.xianyu | 0) + (gg.n | 0); got.push(`仙玉×${gg.n}`); continue; }
     if (!S[gg.st] || (gg.st === 'veins' && !Array.isArray(S[gg.st]))) S[gg.st] = gg.st === 'veins' ? [0, 0, 0] : {};
     S[gg.st][gg.k] = (S[gg.st][gg.k] | 0) + (gg.n | 0);
@@ -3460,12 +3542,13 @@ window.advGatherRes = async function() {
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
       const got = advApplyGains(j);
+      if (j.which) { if (!S.tools) S.tools = { pick: null, hoe: null }; S.tools[j.which] = j.tool || null; } // v1128 器具状态以服务端为准
       try { const _t = S.run.shared.tiles[gy] && S.run.shared.tiles[gy][gx]; if (_t) _t.res = null; } catch (_) {}
-      if (got.length) log('good', `✨ 采集：${got.join('、')}`);
+      if (got.length) log('good', `✨ 采集${(j.crit | 0) > 1 ? `（<b class="y">💥暴击×${j.crit}</b>）` : ''}：${got.join('、')}${j.broke ? `；<span class="r">${j.which === 'hoe' ? '药锄' : '矿镐'}持久耗尽，碎了</span>` : ''}`);
       commit();
     } else {
-      const _e = (j || {}).error;
-      log('bad', _e === 'no_res' ? '资源刚被采走了' : _e === 'not_there' ? '位置已变化，采不到' : '采集失败');
+      const _e = (j || {}).error, _wn = (j || {}).which === 'hoe' ? '药锄' : '矿镐';
+      log('bad', _e === 'no_res' ? '资源刚被采走了' : _e === 'not_there' ? '位置已变化，采不到' : _e === 'no_tool' ? `没有${_wn}，采不了（商会有售）` : _e === 'tool_broke' ? `${_wn}持久耗尽了` : _e === 'tool_tier' ? `${_wn}档位不足（资源等级高于器具档）` : '采集失败');
       await advSharedRefresh();
     }
   } catch (e) {}
@@ -3474,14 +3557,26 @@ window.advGatherRes = async function() {
 window.advPlaceArray = async function() {
   try {
     if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
+    const fm = S.formations || {};
+    const owned = [1, 2, 3].filter(t => ((t === 1 ? fm.f_gather : t === 2 ? fm.f_gather2 : fm.f_gather3) | 0) > 0);
+    if (owned.length > 1) { // v1128 多档可选时先选档
+      openSheet(`<h2>🧭 选择采集阵档位</h2><div class="hint">阵档决定能收的资源等级（小型收一级、中型收到二级、大型全收）；阵不收矿石。</div>` + owned.map(t => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[t - 1]}">${['', '小型', '中型', '大型'][t]}采集阵</b><small>拥有 ${(t === 1 ? fm.f_gather : t === 2 ? fm.f_gather2 : fm.f_gather3) | 0}</small></div><button class="btn gold" onclick="window.advPlaceArrayTier(${t})">布此阵</button></div>`).join('') + `<button class="btn full" data-a2back>返回地图</button>`);
+      return;
+    }
+    await window.advPlaceArrayTier(owned[0] || 1);
+  } catch (e) {}
+};
+window.advPlaceArrayTier = async function(tier) {
+  try {
+    if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
     const dk = S.run.shared.dk || S.run.dk, gx = S.run.grid.px, gy = S.run.grid.py;
-    const resp = await MHXY.api('/api/array2/place', { method: 'POST', body: { dk, x: gx, y: gy } });
+    const resp = await MHXY.api('/api/array2/place', { method: 'POST', body: { dk, x: gx, y: gy, tier } });
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
       log('good', `🧭 采集阵已布于(${gx},${gy})，加灵石后自动采集这格刷新的资源`);
     } else {
       const _e = (j || {}).error;
-      log('bad', _e === 'no_formation' ? '没有采集阵（阵法台制作）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' ? '只能布在空格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
+      log('bad', _e === 'no_formation' ? '没有采集阵（阵法台用阵棋合成）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' ? '只能布在空格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
     }
   } catch (e) {}
   await advSharedRefresh();
@@ -3494,7 +3589,11 @@ window.advArrayPanel = function() {
     if (!a) { log('bad', '这张图上没有你的采集阵'); return; }
     const fuelH = a.fuel_ms ? (a.fuel_ms / 3600000).toFixed(1) : '0';
     const stoneCount = (S.ores && S.ores.sp4) | 0;
-    openSheet(`<h2>🧭 采集阵 (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的上品灵石：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：草药 ×${a.h | 0} · 矿石 ×${a.o | 0} · 灵脉 ×${a.v | 0}</div><div class="grid2"><button class="btn gold" data-a2fuel>💎 加灵石</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>💥 拆除</button><button class="btn" data-a2back>返回地图</button></div>`);
+    const inv = a.inv || { mats: {}, ores: {}, xy: 0, lw: [], seeds: {} };
+    const _sum = o => Object.values(o || {}).reduce((s, v) => s + (v | 0), 0);
+    const invTxt = `材料 ×${_sum(inv.mats) + _sum(inv.ores)} · 灵物 ×${(inv.lw || []).length} · 种子 ×${_sum(inv.seeds)}${(inv.xy | 0) > 0 ? ` · 仙玉 ×${inv.xy}` : ''}`;
+    const tierNm = ['', '小型', '中型', '大型'][Math.min(3, Math.max(1, a.tier | 0 || 1))];
+    openSheet(`<h2>🧭 <span style="color:${C.GRADE_COLORS[(a.tier | 0 || 1) - 1]}">${tierNm}采集阵</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的上品灵石：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：${invTxt}<br>阵只收草药与灵脉（按阵档），矿石留格上等手挖；阵收取无暴击。</div><div class="grid2"><button class="btn gold" data-a2fuel>💎 加灵石</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>💥 拆除</button><button class="btn" data-a2back>返回地图</button></div>`);
   } catch (e) {}
 };
 window.advArrayFuel = async function() {
@@ -4319,8 +4418,8 @@ const rarTxt = (kind, k) => { const it = GATHER[kind].items[k], n = it.name, t =
   const i = Object.keys(GATHER[kind].items).indexOf(k); return i === 3 ? `<span class="q3">${n}</span>` : i === 2 ? `<span class="q2">${n}</span>` : n; };
 const useOpt = { lu: '', spirit: '' };
 const alcExtraSel = {}; // v998 加料选择
-const alcExtrasArr = () => { const a = []; for (const k in alcExtraSel) for (let i = 0; i < alcExtraSel[k]; i++) a.push(k); return a; }; // 炼药时投入哪一品灵露 / 灵石（可选，各 1）
-const LU = C.LU, SPK = ['sp1', 'sp2', 'sp3', 'sp4', 'sp5'], LUK = ['dw1', 'dw2', 'dw3', 'dw4', 'dw5'];
+const alcExtrasArr = () => { const a = []; for (const k in alcExtraSel) for (let i = 0; i < alcExtraSel[k]; i++) a.push(k); return a; }; // 炼药时投入哪一品凝露 / 灵石（可选，各 1）
+const LU = C.LU, SPK = ['sp1', 'sp2', 'sp3', 'sp4', 'sp5'], LUK = ['dw1', 'dw2', 'dw3']; // v1128 凝露三品
 const $ = id => document.getElementById(id);
 var S, pk = null; window.S = S;
 
@@ -4519,12 +4618,13 @@ if (!window._arrayWatchdog) { window._arrayWatchdog = setInterval(() => { try { 
 window.placeArray = function(x, y) {
   try {
     S.formations = S.formations || {};
-    if ((S.formations.f_gather|0) <= 0) { log('bad', '没有采集阵（阵法台制作）'); return; }
+    const _tier = (S.formations.f_gather | 0) > 0 ? 1 : (S.formations.f_gather2 | 0) > 0 ? 2 : (S.formations.f_gather3 | 0) > 0 ? 3 : 0; // v1128 优先用最低档
+    if (!_tier) { log('bad', '没有采集阵（阵法台合成）'); return; }
     S.arrays = S.arrays || [];
     if (S.arrays.some(a => a.map === 'world' && a.x === x && a.y === y)) { log('bad', '该格已有采集阵（一人一格一个）'); return; } // v920 一人一格一个
-    S.formations.f_gather--;
-    S.arrays.push({ id: Date.now(), map: 'world', x, y, fuelUntil: 0, storage: {}, guarded: false, lastTick: Date.now() });
-    log('good', `🧭 采集阵已布于(${x},${y})，放入上品灵石启动（1颗=1小时）`);
+    S.formations[_tier === 1 ? 'f_gather' : _tier === 2 ? 'f_gather2' : 'f_gather3']--;
+    S.arrays.push({ id: Date.now(), map: 'world', x, y, tier: _tier, fuelUntil: 0, storage: {}, guarded: false, lastTick: Date.now() });
+    log('good', `🧭 ${['', '小型', '中型', '大型'][_tier]}采集阵已布于(${x},${y})，放入上品灵石启动（1颗=1小时）`);
     commit(); renderWorldMap();
   } catch(e) {}
 };
@@ -4646,7 +4746,8 @@ window.destroyArray = function(id) {
     if ((st.m|0) > 0) { S.food = S.food || {}; S.food.rabbit = (S.food.rabbit|0) + (st.m|0); } // v1038 肉入 food.rabbit
     if ((st.e|0) > 0) S.petEggs = (S.petEggs|0) + (st.e|0); // v1038 蛋入 petEggs 计数
     S.arrays.splice(idx, 1);
-    log('good', `💥 采集阵已拆除，库存已收取`);
+    S.formations = S.formations || {}; const _rt = Math.min(3, Math.max(1, a.tier | 0 || 1)); S.formations[_rt === 1 ? 'f_gather' : _rt === 2 ? 'f_gather2' : 'f_gather3'] = (S.formations[_rt === 1 ? 'f_gather' : _rt === 2 ? 'f_gather2' : 'f_gather3'] | 0) + 1; // v1128 拆阵按档退回
+    log('good', `💥 采集阵已拆除，库存已收取，${['', '小型', '中型', '大型'][_rt]}采集阵已退回`);
     commit(); closeSheet(); renderWorldMap();
   } catch(e) {}
 };
@@ -5050,19 +5151,19 @@ window.openReserveSheet = function() {
     reserveTick(S); const rn = S.reserveNode;
     const _vn = ['小型灵脉','中型灵脉','巨型灵脉'];
     const vtxt = (rn.v|0) > 0 ? '灵脉×' + rn.v : '无';
-    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&((S.formations.f_gather|0)+(S.formations.f_gather2|0)+(S.formations.f_gather3|0))>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openHerbSheet = function() {
   try {
     herbTick(S); const hg = S.herbGarden;
-    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? '<button class="btn gold full" onclick="window.placeArray(3,2)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===3&&a.y===2).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&((S.formations.f_gather|0)+(S.formations.f_gather2|0)+(S.formations.f_gather3|0))>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? '<button class="btn gold full" onclick="window.placeArray(3,2)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===3&&a.y===2).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openRanchSheet = function() {
   try {
     ranchTick(S); const r = S.ranch;
-    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button>${(S.formations&&S.formations.f_gather>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? '<button class="btn gold full" onclick="window.placeArray(2,0)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===2&&a.y===0).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button>${(S.formations&&((S.formations.f_gather|0)+(S.formations.f_gather2|0)+(S.formations.f_gather3|0))>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? '<button class="btn gold full" onclick="window.placeArray(2,0)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===2&&a.y===0).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义）
@@ -6709,13 +6810,13 @@ function sheetAlchemy(warn) {
   const tRow = (title, kind, keys, store, items) => `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">${title}<small>可选 1 品，每次炼制消耗 1 个，成功率与上品概率同时提升</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${keys.map(k => tBtn(kind, k, store[k], items[k])).join('')}</div>`;
   openSheet(`<h2>炼药 · Lv.${S.alc.lv} <small style="font-size:12px;color:var(--dim)">关联 智力 ${S.attrs.int}（成功率 +${C.pct(C.lifeAttrRate(S, 'alc'))}，上品 +${C.pct(C.lifeAttrQ(S, 'alc'))}）</small></h2>` + (warn ? `<div class="warn">${warn}</div>` : '') +
     `<div class="hint">每次消耗 ${C.useFali(S) ? C.lifeManaCost(S) + ' 法力' : K.COST_LIFE + ' 活力'} + 1 株对应药草 + 1 枚兽蛋（药引，优先低级，当前 <b style="color:#7fd6ff">${eggTotal(S)}</b> 枚）（当前${C.useFali(S) ? `法力 <b style="color:#5fd8e0">${S.mana}/${C.manaMax(S)}</b>` : `活力 <b style="color:#7fd6ff">${S.vigor}</b>`}，药草可种植或在商店购买）。成功率 <b class="y">${C.pct(C.alcRate(S, useOpt.lu, useOpt.spirit))}</b>；成丹 <b class="y">1-10 枚随机</b>；品质 <span class="q3">完美+5</span> ${C.pct(gp.q5)} · <span class="q2">丹纹+4</span> ${C.pct(gp.q4)} · <span class="q3">上品+3</span> ${C.pct(gp.q3)} · <span class="q2">中品+2</span> ${C.pct(gp.q2)} · <span class="q1">下品+1</span> ${C.pct(gp.q1)}</div>` +
-    tRow('💧 灵露', 'lu', LUK, m, LU) + tRow('💠 灵石', 'spirit', SPK, S.ores, ORES) +
-    `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">🧪 加料<small>自选 0-3 味投进炉里（点按增减）。搭配对了有惊喜，不对会炸炉——基础料损 1 份、加料全损，结果自负</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${[['h_str', MATS['h_str'].name], ['h_agi', MATS['h_agi'].name], ['h_def', MATS['h_def'].name], ['h_vit', MATS['h_vit'].name], ['h_int', MATS['h_int'].name], ['dw1', '一品灵露'], ['dw2', '二品灵露'], ['dw3', '三品灵露']].map(([ek, nm]) => { const have = m[ek] || 0, sel = alcExtraSel[ek] || 0; return `<button class="btn ${sel ? 'on' : ''}" data-extra="${ek}" ${have > 0 ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${nm} ×${have}<br><small>${sel ? '已投 ' + sel : '未投'}</small></button>`; }).join('')}</div>` +
+    tRow('💧 凝露', 'lu', LUK, m, LU) + tRow('💠 灵石', 'spirit', SPK, S.ores, ORES) +
+    `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">🧪 加料<small>自选 0-3 味投进炉里（点按增减）。搭配对了有惊喜，不对会炸炉——基础料损 1 份、加料全损，结果自负</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${[['h_str', MATS['h_str'].name], ['h_agi', MATS['h_agi'].name], ['h_def', MATS['h_def'].name], ['h_vit', MATS['h_vit'].name], ['h_int', MATS['h_int'].name], ['dw1', '下品凝露'], ['dw2', '中品凝露'], ['dw3', '上品凝露']].map(([ek, nm]) => { const have = m[ek] || 0, sel = alcExtraSel[ek] || 0; return `<button class="btn ${sel ? 'on' : ''}" data-extra="${ek}" ${have > 0 ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${nm} ×${have}<br><small>${sel ? '已投 ' + sel : '未投'}</small></button>`; }).join('')}</div>` +
     `<div class="hint">🧪 丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b>/100（${C.toxTier(S.danDu|0)}）· 当前丹药药效 <b class="y">${Math.round(C.toxFactor(S) * 100)}%</b> · 化无丹可清毒（见下方丹方）</div>` +
     ATTRS.map(k => { const h = m['h_' + k] || 0, noEgg = eggTotal(S) < 1; return `<div class="row"><div class="lab">${AN[k]}丹<small>${MATS['h_' + k].name} ×<b class="${h ? 'g' : 'r'}">${h}</b> + 兽蛋 ×<b class="${noEgg ? 'r' : 'g'}">${eggTotal(S)}</b></small></div>
       <button class="btn" data-brew="${k}" data-n="1" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 1 次</button>
       <button class="btn gold" data-brew="${k}" data-n="5" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 5 次</button></div>`; }).join('') +
-    `<div class="row"><div class="lab">🍃 化无丹<small>${MATS['h_vit'].name} ×<b class="${(m['h_vit']||0) ? 'g' : 'r'}">${m['h_vit']||0}</b> + 一品灵露 ×<b class="${(m['dw1']||0) ? 'g' : 'r'}">${m['dw1']||0}</b> · 成丹 1-3 颗 · 服 1 颗清丹毒 20 点（持有 <b class="y">${S.inv['detox']|0}</b>）</small></div>
+    `<div class="row"><div class="lab">🍃 化无丹<small>${MATS['h_vit'].name} ×<b class="${(m['h_vit']||0) ? 'g' : 'r'}">${m['h_vit']||0}</b> + 一品凝露 ×<b class="${(m['dw1']||0) ? 'g' : 'r'}">${m['dw1']||0}</b> · 成丹 1-3 颗 · 服 1 颗清丹毒 20 点（持有 <b class="y">${S.inv['detox']|0}</b>）</small></div>
       <button class="btn" data-brewdetox="1" ${(C.lifeCost(S) || !(m['h_vit'] > 0) || !(m['dw1'] > 0)) ? 'disabled' : ''}>炼 1 次</button>
       <button class="btn gold" data-brewdetox="5" ${(C.lifeCost(S) || !(m['h_vit'] > 0) || !(m['dw1'] > 0)) ? 'disabled' : ''}>炼 5 次</button></div>` +
     `<div class="row"><div class="lab">🍘 辟谷丸<small>${MATS['h_vit'].name} ×<b class="${(m['h_vit']||0) ? 'g' : 'r'}">${m['h_vit']||0}</b> + 兽蛋 ×<b class="${eggTotal(S) ? 'g' : 'r'}">${eggTotal(S)}</b> · 饱食 +20 · 丸非丹，不积丹毒（持有 <b class="y">${(S.dan && S.dan.bigu)|0}</b>）</small></div>
@@ -6807,8 +6908,14 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     }
     else if (tileT === 'exit') { icon = '🚪'; cls = ' exit'; }
     else if (tileCleared) { icon = '<span style="opacity:0.35">💨</span>'; cls = ' cleared'; }
-    else if (tileRes) icon = tileRes === 'herb' ? '🌱' : tileRes === 'vein' ? '💎' : '⛏️'; // v1125 资源格；v1126 灵脉
-    else if (t.seen || shared) icon = TICON[tileT] || '⬜';
+    else if (tileRes) { // v1128 资源码 h1~h3/o/v1~v3：等级徽（蓝/粉红/橙）
+      const _rk = tileRes.charAt(0), _rg = tileRes.length > 1 ? parseInt(tileRes.charAt(1), 10) || 1 : 1;
+      const _base = _rk === 'h' ? '🌱' : _rk === 'v' ? '💎' : '⛏️';
+      icon = _rk === 'o' ? _base : `<span style="position:relative;display:inline-block">${_base}<span style="position:absolute;right:-5px;bottom:-5px;background:${C.GRADE_COLORS[_rg - 1]};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_rk === 'h' ? _rg + '级' : ['小', '中', '巨'][_rg - 1]}</span></span>`;
+    }
+    else if (t.seen || shared) { icon = TICON[tileT] || '⬜'; // v1128 本地图资源格等级徽
+      if (!shared && (tileT === 'rherb' || tileT === 'rvein') && (t.rg | 0) > 0) icon = `<span style="position:relative;display:inline-block">${icon}<span style="position:absolute;right:-5px;bottom:-5px;background:${C.GRADE_COLORS[(t.rg | 0) - 1]};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${tileT === 'rherb' ? t.rg + '级' : ['小', '中', '巨'][(t.rg | 0) - 1]}</span></span>`;
+    }
     // v1125 采集阵标记（共享图）
     if (shared && (shared.arrays || []).some(a => a.x === x && a.y === y)) {
       if (isP) icon += `<span style="position:absolute;left:0;bottom:0;font-size:10px">🧭</span>`;
@@ -6837,9 +6944,9 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     const arrHere = myArr && myArr.x === g.px && myArr.y === g.py;
     const arrOnTile = (shared.arrays || []).some(a => a.x === g.px && a.y === g.py);
     const btns = [];
-    if (mySt && mySt.res) btns.push(`<button class="btn gold" data-advres style="flex:1">${mySt.res === 'herb' ? '🌿 采草药' : mySt.res === 'vein' ? '💎 采灵脉' : '⛏️ 挖矿石'}</button>`);
-    if (arrHere) btns.push(`<button class="btn" data-advarr style="flex:1">🧭 采集阵（草药×${myArr.h | 0} 矿石×${myArr.o | 0} 灵脉×${myArr.v | 0}）</button>`);
-    else if (mySt && mySt.t === 'empty' && !arrOnTile && !myArr && ((S.formations && S.formations.f_gather) | 0) > 0) btns.push(`<button class="btn" data-advplace style="flex:1">🧭 在此布采集阵</button>`);
+    if (mySt && mySt.res) { const _rk = mySt.res.charAt(0), _rg = mySt.res.length > 1 ? parseInt(mySt.res.charAt(1), 10) || 1 : 1; btns.push(`<button class="btn gold" data-advres style="flex:1">${_rk === 'h' ? `🌿 采${['', '一级', '二级', '三级'][_rg]}草药` : _rk === 'v' ? `💎 采${['', '小型', '中型', '巨型'][_rg]}灵脉` : '⛏️ 挖矿石'}</button>`); }
+    if (arrHere) { const _iv = myArr.inv || { mats: {}, ores: {}, lw: [], seeds: {} }; const _cnt = o => Object.values(o || {}).reduce((s, v) => s + (v | 0), 0); btns.push(`<button class="btn" data-advarr style="flex:1">🧭 ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myArr.tier | 0 || 1))]}采集阵（存货 ${_cnt(_iv.mats) + _cnt(_iv.ores) + (_iv.lw || []).length + _cnt(_iv.seeds)}）</button>`); }
+    else if (mySt && mySt.t === 'empty' && !arrOnTile && !myArr && ((S.formations && ((S.formations.f_gather | 0) + (S.formations.f_gather2 | 0) + (S.formations.f_gather3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplace style="flex:1">🧭 在此布采集阵</button>`);
     if (myArr && !arrHere) btns.push(`<button class="btn" data-advarr style="flex:1">🧭 我的采集阵（${myArr.x},${myArr.y}）</button>`);
     if (btns.length) resRow = `<div class="row" style="display:flex;gap:8px">${btns.join('')}</div>`;
   }
@@ -6922,18 +7029,47 @@ function medSection() {
   const ks = Object.keys(C.MEDS).filter(k => S.meds[k] > 0);
   return `<h3>疗伤药</h3>` + (ks.length ? ks.map(k => { const m = C.MEDS[k], need = m.cure === 'curse' ? (S.curseN|0) > 0 : C.hasSt(S, m.cure); return `<div class="row"><div class="lab">💊 ${m.name} ×${S.meds[k]}<small>${m.desc}</small></div><button class="btn ${need ? 'gold' : ''}" data-med="${k}" ${need ? '' : 'disabled'}>${need ? '使用' : '无需'}</button></div>`; }).join('') : '<div class="empty">暂无，可在商店购买</div>');
 }
+const ZQ_DEFS = [ // v1128 阵棋：小/中/大三档，合成采集阵（个数 64/128/256）
+  { g: 1, name: '小型阵棋', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['prey', 'rabbit', 10], ['prey', 'deer', 5]], synth: 64, fkey: 'f_gather', fname: '小型采集阵' },
+  { g: 2, name: '中型阵棋', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['prey', 'deer', 10], ['prey', 'wolf', 5]], synth: 128, fkey: 'f_gather2', fname: '中型采集阵' },
+  { g: 3, name: '大型阵棋', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['prey', 'wolf', 10], ['prey', 'tiger', 5]], synth: 256, fkey: 'f_gather3', fname: '大型采集阵' },
+];
 function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓制作
   const fRecipes = C.FORMATIONS || {}, tRecipes = C.TALISMANS || {};
-  const fHtml = Object.keys(fRecipes).map(k => {
+  const fHtml = Object.keys(fRecipes).filter(k => k !== 'f_gather').map(k => { // v1128 采集阵旧直做配方取消，改阵棋合成（见下方）
     const r = fRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'mats' ? ((typeof MATS !== 'undefined' && MATS[ik]||{}).name||ik) : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">🧭 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有阵法 ${S.formations && S.formations[k] || 0}</small></div><button class="btn gold" onclick="doCraftFormation('${k}')">制作</button></div>`;
   }).join('');
+  const zqHtml = `<h3>♟️ 阵棋（合成采集阵）</h3>` + ZQ_DEFS.map(z => { const own = (S.zhenqi && S.zhenqi[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${st === 'prey' ? PREY[ik].name : ORES[ik].name}×${n}`).join(' + '); return `<div class="row"><div class="lab">♟️ <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 阵档决定可收资源等级，阵不收矿石</small></div><button class="btn" onclick="window.craftZhenqi(${z.g})">做阵棋</button><button class="btn gold" onclick="window.synthZhenqi(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
   const tHtml = Object.keys(tRecipes).map(k => {
     const r = tRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'pages' ? PAGES[ik].name : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">📜 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有符箓 ${S.talismans && S.talismans[k] || 0}</small></div><button class="btn gold" onclick="doCraftTalisman('${k}')">制作</button></div>`;
   }).join('');
-  openSheet(`<h2>🧭📜 制阵室·画符台</h2><div class="hint">阵法需「阵法」生活技能，符箓需「制符」生活技能（主宰轮回后参悟）。</div><h3>🧭 阵法台</h3>${fHtml}<h3>📜 画符台</h3>${tHtml}<div class="row"><button class="btn full" data-a="close">关闭</button></div>`);
+  openSheet(`<h2>🧭📜 制阵室·画符台</h2><div class="hint">阵法需「阵法」生活技能，符箓需「制符」生活技能（主宰轮回后参悟）。</div><h3>🧭 阵法台</h3>${fHtml}${zqHtml}<h3>📜 画符台</h3>${tHtml}<div class="row"><button class="btn full" data-a="close">关闭</button></div>`);
 }
+window.craftZhenqi = function (g) { // v1128 做阵棋：材料直扣（无失败），需阵法生活技能
+  try {
+    if (lifeLocked('formation')) { log('bad', '需要「阵法」生活技能（轮回后参悟）'); return; }
+    const z = ZQ_DEFS.find(v => v.g === g); if (!z) return;
+    for (const [st, ik, n] of z.need) if (((S[st] || {})[ik] | 0) < n) { log('bad', `材料不足：${st === 'prey' ? PREY[ik].name : ORES[ik].name} 需 ${n}`); return; }
+    for (const [st, ik, n] of z.need) { S[st][ik] -= n; if (S[st][ik] <= 0) delete S[st][ik]; }
+    if (!S.zhenqi) S.zhenqi = { 1: 0, 2: 0, 3: 0 };
+    S.zhenqi[g] = (S.zhenqi[g] | 0) + 1;
+    log('good', `♟️ 制成【${z.name}】×1（现有 ${S.zhenqi[g]}，满 ${z.synth} 可合成${z.fname}）`);
+    save(); sheetFormationTalisman();
+  } catch (e) { try { log('bad', '制作出错:' + e.message); } catch (_) {} }
+};
+window.synthZhenqi = function (g) { // v1128 阵棋合成采集阵
+  try {
+    const z = ZQ_DEFS.find(v => v.g === g); if (!z) return;
+    if (!S.zhenqi || (S.zhenqi[g] | 0) < z.synth) { log('bad', `阵棋不足（需 ${z.synth}）`); return; }
+    S.zhenqi[g] -= z.synth;
+    S.formations = S.formations || {};
+    S.formations[z.fkey] = (S.formations[z.fkey] | 0) + 1;
+    log('good', `🧭 ${z.synth} 个${z.name}合成【${z.fname}】×1！`);
+    save(); sheetFormationTalisman();
+  } catch (e) { try { log('bad', '合成出错:' + e.message); } catch (_) {} }
+};
 window.doCraftFormation = function(key) { // v790 制作阵法；v901 noskill提示
   try {
     const r = C.craft(S, 'formation', key);
@@ -6963,9 +7099,11 @@ function sheetShop(msg) {
     `<div class="grid2" style="grid-template-columns:1fr 1fr;gap:8px;margin:8px 0"><button class="btn gold" data-consign style="padding:10px">🏪 寄售行</button><button class="btn gold" data-auction style="padding:10px">🔨 拍卖行</button></div>` +
     `<h3>药草（炼药必需）</h3>` + Object.keys(MATS).filter(k => MATS[k].basic).map(mRow).join('') +
     `<h3>🌱灵植种子</h3>` + Object.keys(MATS).filter(k => MATS[k].seed).map(mRow).join('') +
-    `<h3>灵露（炼药增益，二品以上仅可种植获得）</h3>` + Object.keys(MATS).filter(k => !MATS[k].basic && !MATS[k].token && !MATS[k].seed && MATS[k].price).map(mRow).join('') +
+    `<h3>凝露（炼药增益，中品以上仅可种植获得）</h3>` + Object.keys(MATS).filter(k => !MATS[k].basic && !MATS[k].token && !MATS[k].seed && MATS[k].price).map(mRow).join('') +
     `<h3>🧧 红包（买了去真人世界频道发）</h3>` + rpShopHtml() +
       `<h3>洞府令（开辟洞府）</h3>` + Object.keys(MATS).filter(k => MATS[k].token).map(k => { const it = MATS[k]; const _canB = g >= _dgp(it.price) && (S.realm|0) >= (it.needRealm|0); return `<div class="row"><div class="lab">${it.name} <span class="tag">${it.price} 金</span><small>${it.desc} · 拥有 ${S.mats[k] || 0}</small></div><button class="btn" data-buy="mat" data-k="${k}" data-n="1" ${_canB ? '' : 'disabled'}>买 1</button></div>`; }).join('') +
+    `<h3>⛏️ 器具（冒险采集）</h3>` + [['pick', '⛏️'], ['hoe', '🌿']].map(([tk, ic]) => { const t = S.tools && S.tools[tk]; return `<div class="row"><div class="lab">${ic} <b style="color:${C.TOOL_TIER_COLORS[0]}">${C.TOOL_NAMES[tk][0]}</b> <span class="tag">100 金</span><small>${tk === 'pick' ? '挖矿石、采灵脉用（灵脉需镐档不低于灵脉大小）' : '采草药用（需锄档不低于草药等级）'} · ${t ? `已拥有 ${C.TOOL_NAMES[tk][t.tier]}（持久 ${t.dur}/${t.max}）` : '未拥有'}</small></div>${t ? '<button class="btn" disabled>已拥有</button>' : `<button class="btn gold" data-buy="tool" data-k="${tk}" data-n="1" ${g >= _dgp(100) ? '' : 'disabled'}>购买</button>`}</div>`; }).join('') +
+    `<div class="row"><div class="lab">🎫 强化符 <span class="tag">200 金</span><small>普通器具持久上限 +100 并回满（背包里使用，升法器后不可再用） · 拥有 ${(S.inv && S.inv.fuq) | 0}</small></div><button class="btn" data-buy="tool" data-k="fuq" data-n="1" ${g >= _dgp(200) ? '' : 'disabled'}>买 1</button><button class="btn gold" data-buy="tool" data-k="fuq" data-n="5" ${g >= _dgp(200) * 5 ? '' : 'disabled'}>买 5</button></div>` +
     `<h3>灵石</h3><div class="row"><div class="lab">🪨 灵气石 <span class="tag">100 金</span><small>服用：经验 +20 · 炼药投入：成功率/上品 +5% · 拥有 ${S.ores.sp1 || 0}</small></div>
       <button class="btn" data-buy="spirit" data-k="sp1" data-n="1" ${g >= _dgp(100) ? '' : 'disabled'}>买 1</button>
       <button class="btn gold" data-buy="spirit" data-k="sp1" data-n="5" ${g >= _dgp(100) * 5 ? '' : 'disabled'}>买 5</button></div>
@@ -7826,10 +7964,10 @@ function sheetConsignList(msg, sec) {
         <button class="btn gold" data-clist="elixir:${_ek}">上架</button></div>`;
       }
     }
-    // v999 寄售扩容：药草灵露（mat 全键）
+    // v999 寄售扩容：药草凝露（mat 全键）
   const _matKs = Object.keys(S.mats || {}).filter(k => (S.mats[k]||0) > 0);
   if (_matKs.length) {
-    html += `<h3>🌿 药草灵露</h3>`;
+    html += `<h3>🌿 药草凝露</h3>`;
     for (const _k of _matKs) {
       const _h = S.mats[_k] || 0; const _n = ((MATS[_k] || LU[_k] || {}).name || _k); const _b = C.consignPrice('mat', _k);
       html += `<div class="row"><div class="lab">🌿 ${esc(_n)} ×${_h} <small>参考价 ${_b}${_cur.name}</small></div>
@@ -7872,6 +8010,69 @@ function sheetConsignList(msg, sec) {
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
   openSheet(html);
 }
+// ===== v1128 器具 UI（锻造页 + 背包共用）：升档/修复/强化符均为本地材料增减（只减不增，过存档守卫）=====
+function toolCardHtml(which, from) {
+  const t = S.tools && S.tools[which];
+  const icon = which === 'pick' ? '⛏️' : '🌿';
+  if (!t) return `<div class="row"><div class="lab">${icon} ${which === 'pick' ? '矿镐' : '药锄'}<small>未拥有，去商会购买（100 金）</small></div></div>`;
+  const nm = C.TOOL_NAMES[which][t.tier | 0], tc = C.TOOL_TIER_COLORS[t.tier | 0];
+  const lvl = t.lvl | 0;
+  const lvlTxt = lvl >= 1000 ? `<span class="toolRainbow">${lvl} 级</span>` : `<span style="color:${C.TOOL_LVL_COLORS[Math.min(9, Math.floor(lvl / 100))]};font-weight:700">${lvl} 级</span>`;
+  const upCost = t.tier === 0 ? '铁500·铜300·银150·金50·极品灵石×1' : t.tier === 1 ? '铁5000·铜3000·银1500·金500·仙玉×1' : '';
+  const fixCost = t.tier === 0 ? (which === 'pick' ? '铁矿×5' : '金矿×1') : t.tier === 1 ? '极品灵石×1' : '仙玉×1';
+  return `<div class="row"><div class="lab">${icon} <b style="color:${tc}">${nm}</b> ${lvlTxt}<small>持久 <b class="${t.dur <= 10 ? 'r' : 'y'}">${t.dur}</b>/${t.max} · 本级采集 ${t.uses | 0}/${C.toolNeedL(lvl)} · 暴击率 <b class="y">${(Math.min(100, lvl * 0.1)).toFixed(1)}%</b>（暴击产量 ×1~10）</small><small>${t.tier < 2 ? `升档：${upCost}（升档后上限 = 当前持久） · ` : ''}修复（修满）：${fixCost}${t.tier === 0 ? ' · 强化符：上限 +100 并回 100' : ''}</small></div>` +
+    `${t.tier < 2 ? `<button class="btn gold" onclick="window.toolUp('${which}','${from}')">升档</button>` : ''}<button class="btn" onclick="window.toolFix('${which}','${from}')" ${t.dur >= t.max ? 'disabled' : ''}>修复</button>${t.tier === 0 ? `<button class="btn" onclick="window.toolFuqUse('${which}','${from}')" ${((S.inv && S.inv.fuq) | 0) > 0 ? '' : 'disabled'}>强化符(${(S.inv && S.inv.fuq) | 0})</button>` : ''}</div>`;
+}
+function toolBack(from) { if (from === 'bag') sheetBag(); else sheetLife('forge'); }
+window.toolUp = function (which, from) {
+  try {
+    const t = S.tools && S.tools[which]; if (!t || t.tier >= 2) return;
+    const ores = S.ores || (S.ores = {});
+    const need = t.tier === 0 ? { iron: 500, copper: 300, silver: 150, gold: 50 } : { iron: 5000, copper: 3000, silver: 1500, gold: 500 };
+    for (const k in need) if ((ores[k] | 0) < need[k]) { toastLog('sys', `⚠️ ${ORES[k].name}不足（需 ${need[k]}）`); return; }
+    if (t.tier === 0) { if ((ores.sp5 | 0) < 1) { toastLog('sys', '⚠️ 需要极品灵石×1'); return; } }
+    else if ((S.xianyu | 0) < 1) { toastLog('sys', '⚠️ 需要仙玉×1'); return; }
+    for (const k in need) ores[k] -= need[k];
+    if (t.tier === 0) ores.sp5 -= 1; else S.xianyu -= 1;
+    t.tier += 1; t.max = t.dur; // 升档带上限：新档上限 = 升档时当前持久，满持久开局
+    log('good', `✨ 升档成功：<b style="color:${C.TOOL_TIER_COLORS[t.tier]}">${C.TOOL_NAMES[which][t.tier]}</b>，持久 ${t.dur}/${t.max}`);
+    commit(); toolBack(from);
+  } catch (_) {}
+};
+window.toolFix = function (which, from) {
+  try {
+    const t = S.tools && S.tools[which]; if (!t || t.dur >= t.max) return;
+    const ores = S.ores || (S.ores = {});
+    if (t.tier === 0) {
+      if (which === 'pick') { if ((ores.iron | 0) < 5) { toastLog('sys', '⚠️ 修复需铁矿×5'); return; } ores.iron -= 5; }
+      else { if ((ores.gold | 0) < 1) { toastLog('sys', '⚠️ 修复需金矿×1'); return; } ores.gold -= 1; }
+    } else if (t.tier === 1) { if ((ores.sp5 | 0) < 1) { toastLog('sys', '⚠️ 修复需极品灵石×1'); return; } ores.sp5 -= 1; }
+    else { if ((S.xianyu | 0) < 1) { toastLog('sys', '⚠️ 修复需仙玉×1'); return; } S.xianyu -= 1; }
+    t.dur = t.max;
+    log('good', `🔧 ${C.TOOL_NAMES[which][t.tier]} 修复完成，持久 ${t.dur}/${t.max}`);
+    commit(); toolBack(from);
+  } catch (_) {}
+};
+window.toolFuqUse = function (which, from) {
+  try {
+    const t = S.tools && S.tools[which]; if (!t || t.tier !== 0) return;
+    if (!S.inv || (S.inv.fuq | 0) < 1) { toastLog('sys', '⚠️ 没有强化符（商会有售）'); return; }
+    S.inv.fuq -= 1; t.max += 100; t.dur += 100;
+    log('good', `🎫 ${C.TOOL_NAMES[which][0]} 强化完成：持久 ${t.dur}/${t.max}`);
+    commit(); toolBack(from);
+  } catch (_) {}
+};
+window.lwEat = function (idx) {
+  try {
+    const arr = S.lingwu || [];
+    const it = arr[idx | 0]; if (!it) return;
+    const gain = Math.floor(it.y * 0.1);
+    arr.splice(idx | 0, 1);
+    S.lifespan = (S.lifespan || 100) + gain;
+    log('good', `🌿 生吃<b style="color:${C.GRADE_COLORS[it.g - 1]}">${C.LW_GRADE_NAMES[it.g - 1]}</b>（${it.y} 年），寿元 <span class="g">+${gain}</span>`);
+    commit(); sheetBag();
+  } catch (_) {}
+};
 let lifeTab = 'cook', tameAttr = 'str', tameTargetId = 0, forgeSlot = 'weapon', forgeSet = 'crit', forgeKind = 'char', forgePet = null;
 const VIG = n => `<b style="color:#7fd6ff">${n}</b>`;
 const needTxt = need => need.map(([st, k, n]) => { const have = S[st][k] || 0, nm = st === 'food' ? MEATS[k].name : st === 'eggs' ? EGGS[k].name : st === 'mats' ? (MATS[k] || LU[k]).name : st === 'prey' ? PREY[k].name : st === 'pages' ? PAGES[k].name : ORES[k].name; return `<span class="${have >= n ? '' : 'r'}">${nm}×${n}<small style="display:inline">(${have})</small></span>`; }).join(' + ');
@@ -7923,11 +8124,11 @@ function sheetLife(tab) {
   let body = '';
   if (tab === 'cook') body = Object.keys(C.DISHES).filter(k => !C.DISHES[k].zx).map(k => { const d = C.DISHES[k]; return `<div class="row"><div class="lab">${d.name}<small>${needTxt(d.need)}<br>饱食 +${d.hunger} · 体力 +${C.dishSta(k, 1)}/${C.dishSta(k, 2)}/${C.dishSta(k, 3)} · 精良/极品：${d.buff === 'luck' ? '气运 ×1.15/×1.3（10 点体力）' : AN[d.buff] + ' +10%/+20%（3 场战斗）'}</small></div>${btns(k, d.lv)}</div>`; }).join('') + `<div class="empty" style="padding:6px">做好的菜肴在背包中食用</div>` +
     `<h3>🍲 珍馐<small style="font-weight:normal;color:var(--dim)"> · PK 战前使用，最先手无视敏捷</small></h3>` + Object.keys(C.DISHES).filter(k => C.DISHES[k].zx).map(k => { const d = C.DISHES[k], n = (S.zx || {})[k] || 0; return `<div class="row"><div class="lab">${d.name}${n ? ` <b class="y">×${n}</b>` : ''}<small>${needTxt(d.need)}<br>${d.zxDesc}</small></div>${btns(k, d.lv)}</div>`; }).join('');
-  else if (tab === 'forge') body = `<div class="grid2" style="grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:8px"><button class="btn ${forgeKind === 'char' ? 'on' : ''}" data-fkind="char" style="padding:6px 2px">🗡️ 人物装备</button><button class="btn ${forgeKind === 'pet' ? 'on' : ''}" data-fkind="pet" style="padding:6px 2px">🐾 灵宠装备</button></div>` + (forgeKind === 'pet' ? forgePetBody() :
+  else if (tab === 'forge') body = `<h3>⛏️ 采集器具</h3>` + toolCardHtml('pick', 'forge') + toolCardHtml('hoe', 'forge') + `<div class="grid2" style="grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:8px"><button class="btn ${forgeKind === 'char' ? 'on' : ''}" data-fkind="char" style="padding:6px 2px">🗡️ 人物装备</button><button class="btn ${forgeKind === 'pet' ? 'on' : ''}" data-fkind="pet" style="padding:6px 2px">🐾 灵宠装备</button></div>` + (forgeKind === 'pet' ? forgePetBody() :
     `<h3>当前装备</h3><div class="row"><div class="lab">${setTxt()}</div></div>` + Object.keys(C.SLOTS).map(sl => { const g = S.equip[sl]; return `<div class="row"><div class="lab">${C.SLOTS[sl].name}：${g ? gearName(g) : '<small style="display:inline">空</small>'}</div>${g ? `<button class="btn" data-unequip="${sl}">卸下</button><button class="btn" data-refine="equip:${sl}">炼灵</button>` : ''}</div>`; }).join('') +
     (S.gearBag.length ? `<h3>装备包（${S.gearBag.length}/${C.bagCap(S)}件）</h3>` + S.gearBag.map(g => `<div class="row"><div class="lab">${gearName(g)}</div><button class="btn gold" data-equip="${g.id}">装备</button><button class="btn" data-sellgear="${g.id}">卖 ${C.gearPrice(g)}金</button><button class="btn" data-refine="bag:${g.id}">炼灵</button></div>`).join('') : '') +
     `<h3>打造</h3><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${Object.keys(C.GEAR_SETS).map(st => `<button class="btn ${forgeSet === st ? 'on' : ''}" data-fset="${st}" style="padding:6px 2px;font-size:12px;line-height:1.3">${C.GEAR_SETS[st].name}套<br><small>+${AN[C.GEAR_SETS[st].attr]}</small></button>`).join('')}</div><div class="empty" style="padding:2px 0 6px;text-align:left">${C.GEAR_SETS[forgeSet].name}套（每件 +${AN[C.GEAR_SETS[forgeSet].attr]}）：2/3/4/5 件 ${C.GEAR_SETS[forgeSet].v.map(v => C.GEAR_SETS[forgeSet].fmt(v)).join(' / ')}</div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${Object.keys(C.SLOTS).map(sl => `<button class="btn ${forgeSlot === sl ? 'on' : ''}" data-fslot="${sl}" style="padding:6px 2px;font-size:12px;line-height:1.3">${C.SLOTS[sl].name}<br><small>${C.SET_ITEMS[forgeSet][sl]}</small></button>`).join('')}</div>` + Object.keys(C.GEAR).filter(k => C.GEAR[k].slot === forgeSlot).map(k => { const g = C.GEAR[k]; return `<div class="row"><div class="lab">${C.gearItemName(k, forgeSet)}<small>${AN[C.GEAR_SETS[forgeSet].attr]} +${[1, 2, 3, 4, 5].map(q => `<span class="gq${q}">${C.gearVal(k, q)}</span>`).join('/')} · ${needTxt(g.need)}</small><small>成功率 <b class="y">${C.pct(C.forgeRate(S, k))}</b> · 品质 ${C.forgeQProbs(S, k).map((p, i) => `<span class="gq${i + 1}">${C.GQNAME[i + 1]} ${C.pct(p)}</span>`).join(' ')}</small></div>${btns(k, g.lv)}</div>`; }).join(''));
-  else if (tab === 'refine') body = `<div class="empty" style="padding:6px">双倍产出概率 ${C.pct(C.refineDouble(S))} · 极品灵石/灵露只能掉落</div>` + Object.keys(C.REFINES).map(k => { const r = C.REFINES[k]; return `<div class="row"><div class="lab">${r.name}${k.startsWith('r_gold') ? ' → 金矿×1' : ''}<small>${needTxt(r.need)}${r.pot ? ` · 回复${C.POTIONS[r.pot].res}上限 <span class="q1">30%</span>/<span class="q2">40%</span>/<span class="q3">50%</span>（品质 <span class="q3">极品</span> ${C.pct(qp.q3)} / <span class="q2">精良</span> ${C.pct(qp.q2)}）${r.pot === 'mp' ? ' · 场外使用' : ''}` : ''}</small></div>${btns(k, r.lv)}</div>`; }).join('');
+  else if (tab === 'refine') body = `<div class="empty" style="padding:6px">双倍产出概率 ${C.pct(C.refineDouble(S))} · 极品灵石/凝露只能掉落</div>` + Object.keys(C.REFINES).map(k => { const r = C.REFINES[k]; return `<div class="row"><div class="lab">${r.name}${k.startsWith('r_gold') ? ' → 金矿×1' : ''}<small>${needTxt(r.need)}${r.pot ? ` · 回复${C.POTIONS[r.pot].res}上限 <span class="q1">30%</span>/<span class="q2">40%</span>/<span class="q3">50%</span>（品质 <span class="q3">极品</span> ${C.pct(qp.q3)} / <span class="q2">精良</span> ${C.pct(qp.q2)}）${r.pot === 'mp' ? ' · 场外使用' : ''}` : ''}</small></div>${btns(k, r.lv)}</div>`; }).join('');
   else { const ap = C.activePet(S), hp = C.hatchProbs(S);
     const bp = S.beastPills || {}, meatN = ['rabbit', 'deer', 'wolf', 'tiger'].reduce((a, k) => a + (S.food[k] || 0), 0);
     const pillRows = `<div class="row"><div class="lab">🦴 炼制灵兽丹<small>肉×2（优先低级，当前 ${meatN} 份）+ 📜普通残页×1（当前 ${S.pages.pg1 || 0} 张，成功才扣）· 成功率 <b class="y">${C.pct(C.lifeRate(S, 'tame'))}</b> · 品质 <span class="q1">普通</span>/<span class="q2">精良</span>/<span class="q3">极品</span>（灵宠经验 +${K.BEASTPILL_XP[1]}/+${K.BEASTPILL_XP[2]}/+${K.BEASTPILL_XP[3]}）· 失败只耗 1 份肉 · 极品全服通告</small></div><button class="btn" data-tamepill="1" ${(C.lifeCost(S) || meatN < 2 || !(S.pages.pg1 > 0)) ? 'disabled' : ''}>炼 1</button><button class="btn gold" data-tamepill="5" ${(C.lifeCost(S) || meatN < 2 || !(S.pages.pg1 > 0)) ? 'disabled' : ''}>炼 5</button></div>` +
@@ -8079,6 +8280,8 @@ function sheetBag() {
   const list = C.invList(S), mats = Object.keys(MATS).filter(k => MATS[k].basic && S.mats[k] > 0);
   const _seals = (S.sealed || []).filter(x => x && !x.done);
   openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 🌒下品 <b class="y">${S.ores.sp2|0}</b> · 🌗中品 <b class="y">${S.ores.sp3|0}</b> · 💎上品 <b class="y">${S.ores.sp4|0}</b> · 💠极品 <b class="y">${S.ores.sp5|0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（小型储物袋可扩充）。服用丹药可永久提升属性。</div>` +
+    `<h3>⛏️ 器具</h3>` + toolCardHtml('pick', 'bag') + toolCardHtml('hoe', 'bag') +
+    (((S.lingwu || []).length || [1, 2, 3].some(g => ((S.lwseeds || {})[g] | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b> · ${w.y} 年<small>炼高级丹药的材料；生吃：寿元 +${Math.floor(w.y * 0.1)}</small></div><button class="btn" onclick="window.lwEat(${i})">生吃</button></div>`).join('') + [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0).map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>种到洞府灵田，可长${C.LW_GRADE_NAMES[g - 1]}</small></div></div>`).join('') : '') +
     `<h3>丹药</h3>` +
     (list.length ? list.map(p => `<div class="row"><div class="lab">${potName(p.attr, p.grade)} ×${p.count}<small>${AN[p.attr]} +${p.grade}</small></div>
       <button class="btn" data-drink="${p.attr}" data-g="${p.grade}" data-n="1">服用</button>
@@ -8099,12 +8302,12 @@ function sheetBag() {
     (((S.inv['chestN']|0) + (S.inv['chestR']|0) + (S.inv['chestA']|0) + (S.inv['chestB']|0)) > 0 ? `<h3>宝箱</h3>` +
       ((S.inv['chestB']|0) > 0 ? `<div class="row"><div class="lab">🎲 <b class="y">盲盒</b> ×${S.inv['chestB']}<small>擂台日榜奖励，开出随机惊喜</small></div><button class="btn gold" data-chest="chestB" data-n="1">开启</button>${(S.inv['chestB']|0) > 1 ? `<button class="btn" data-chest="chestB" data-n="${S.inv['chestB']}">全开</button>` : ''}</div>` : '') +
       ((S.inv['chestN']|0) > 0 ? `<div class="row"><div class="lab">🎀 <b class="y">精致盲盒</b> ×${S.inv['chestN']}<small>擂台周榜奖励，开出灵石/金元</small></div><button class="btn gold" data-chest="chestN" data-n="1">开启</button>${(S.inv['chestN']|0) > 1 ? `<button class="btn" data-chest="chestN" data-n="${S.inv['chestN']}">全开</button>` : ''}</div>` : '') +
-      ((S.inv['chestR']|0) > 0 ? `<div class="row"><div class="lab">🎁 <b class="y">稀有宝箱</b> ×${S.inv['chestR']}<small>擂台月榜奖励，开出高品灵石/灵露</small></div><button class="btn gold" data-chest="chestR" data-n="1">开启</button>${(S.inv['chestR']|0) > 1 ? `<button class="btn" data-chest="chestR" data-n="${S.inv['chestR']}">全开</button>` : ''}</div>` : '') +
+      ((S.inv['chestR']|0) > 0 ? `<div class="row"><div class="lab">🎁 <b class="y">稀有宝箱</b> ×${S.inv['chestR']}<small>擂台月榜奖励，开出高品灵石/凝露</small></div><button class="btn gold" data-chest="chestR" data-n="1">开启</button>${(S.inv['chestR']|0) > 1 ? `<button class="btn" data-chest="chestR" data-n="${S.inv['chestR']}">全开</button>` : ''}</div>` : '') +
       ((S.inv['chestA']|0) > 0 ? `<div class="row"><div class="lab">💎 <b class="y">高级宝箱</b> ×${S.inv['chestA']}<small>擂台年榜奖励，开出极品灵石/珍稀</small></div><button class="btn gold" data-chest="chestA" data-n="1">开启</button>${(S.inv['chestA']|0) > 1 ? `<button class="btn" data-chest="chestA" data-n="${S.inv['chestA']}">全开</button>` : ''}</div>` : '') : '') +
     `<h3>材料</h3>` + (mats.length ? mats.map(k => `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}</div></div>`).join('') : '<div class="empty">暂无材料，可在商店购买</div>') +
     `<h3>🏠 洞府令</h3>` + ((S.mats['cave_token']|0) + (S.mats['xianfu_token']|0) > 0 ? ['cave_token','xianfu_token'].filter(k => (S.mats[k]|0) > 0).map(k => { const _eg = k === 'cave_token' ? `洞府 ${S.dongfuGrids|0} 格·灵气 ${S.dongfuEnergy|0}·下格需${(S.dongfuGrids|0) + 1}令牌` : `仙府 ${S.xianfuGrids|0} 格·灵气 ${S.xianfuEnergy|0}`; return `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}<small>${MATS[k].desc} · ${_eg}</small></div><button class="btn gold" onclick="useCaveToken('${k}')">使用</button></div>`; }).join('') : '<div class="empty">暂无，商店有售</div>') +
-    `<h3>灵露</h3>` + (LUK.some(k => S.mats[k] > 0) ? LUK.filter(k => S.mats[k] > 0).map(k => `<div class="row"><div class="lab">${rarTxt('farm', k)} ×${S.mats[k]}<small>服用：随机属性 +${LU[k].pts} · 炼药投入：成功率/上品 +${C.pct(LU[k].alc)}</small></div>
-      <button class="btn" data-lu="${k}" data-n="1">服用</button>${S.mats[k] > 1 ? `<button class="btn gold" onclick="qtyPrompt('lu','${k}',${S.mats[k]})">数量</button>` : ''}</div>`).join('') : '<div class="empty">暂无灵露，种植时偶尔可得（一品可在商店购买）</div>') +
+    `<h3>凝露</h3>` + (LUK.some(k => S.mats[k] > 0) ? LUK.filter(k => S.mats[k] > 0).map(k => `<div class="row"><div class="lab">${rarTxt('farm', k)} ×${S.mats[k]}<small>服用：随机属性 +${LU[k].pts} · 炼药投入：成功率/上品 +${C.pct(LU[k].alc)}</small></div>
+      <button class="btn" data-lu="${k}" data-n="1">服用</button>${S.mats[k] > 1 ? `<button class="btn gold" onclick="qtyPrompt('lu','${k}',${S.mats[k]})">数量</button>` : ''}</div>`).join('') : '<div class="empty">暂无凝露，种植时偶尔可得（一品可在商店购买）</div>') +
     `<h3>灵石</h3>` + (Object.keys(ORES).some(k => ORES[k].extra && S.ores[k] > 0) ? Object.keys(ORES).filter(k => ORES[k].extra && S.ores[k] > 0).map(k => `<div class="row"><div class="lab">${rarTxt('mine', k)} ×${S.ores[k]}<small>服用：${ORES[k].lvl ? '直接提升 1 级' : '经验 +' + ORES[k].xp} · 炼药投入：成功率/上品 +${C.pct(ORES[k].alc)}</small></div>
       <button class="btn" data-spirit="${k}" data-n="1">服用</button>${S.ores[k] > 1 ? `<button class="btn gold" onclick="qtyPrompt('spirit','${k}',${S.ores[k]})">数量</button>` : ''}</div>${k === 'sp5' ? `<div class="row" style="padding-top:0"><div class="lab"><small>🔨 砸开：每块碎成 ${C.SMASH_N} 块一~上品灵石</small></div><button class="btn" data-smash="1">砸开</button>${S.ores[k] > 1 ? `<button class="btn gold" onclick="qtyPrompt('smash','',${S.ores[k]})">数量砸开</button>` : ''}</div>` : ''}`).join('') : '<div class="empty">暂无灵石，挖矿时偶尔可得</div>') +
     (((S.veins || []).some(v => (v | 0) > 0)) ? `<h3>灵脉</h3>` + [0, 1, 2].filter(t => ((S.veins && S.veins[t]) | 0) > 0).map(t => `<div class="row"><div class="lab">💎 ${['小型灵脉', '中型灵脉', '巨型灵脉'][t]} ×${(S.veins && S.veins[t]) | 0}<small>吃下出灵石，巨型可出仙玉</small></div><button class="btn gold" onclick="window.doEatVein(${t})">吃</button></div>`).join('') : '') +
@@ -8270,7 +8473,7 @@ function sheetMenu(tab) {
     <div class="grid2"><button class="btn red full" data-reset>重置存档</button><button class="btn full" data-close>关闭</button></div>`;
   } else {
     html += `
-    <div class="row"><div class="lab">玩法说明<small>每日签到得体力 = 4 + 等级（当前 Lv.${S.level} 可得 ${C.checkinAmount(S)}）；活力 = 10 + 每 2 级 +1（当前 ${C.vigorGain(S)}，最多囤 ${K.VIGOR_CAP_DAYS} 天量 = ${C.vigorCap(S)}，死亡不清空）。体力用于修炼、冒险与 PK；<b>活力用于生活技能</b>。<br>· 法力：10 级前生活技能只耗活力，没有法力；10 级后法力取代活力，每次生活技能耗 2 法力（不再耗活力）。法力上限 = 8 + 智力×2，签到回满，法力药水可回复。新角色五项属性均为 1（生命上限 10）。<br>· 生活技能（炼药/烹饪/锻造/炼金/驯兽）：10 级前每次 1 活力、10 级后每次 2 法力，成功得经验 10、失败 4，升级需 等级×30；关联属性：炼药-智力、锻造-力量、烹饪-防御、炼金-敏捷、驯兽-生命，每点成功率 +0.1%（上限 +10%）、极品/上品 +0.05%（上限 +5%）。烹饪/锻造/炼金/驯兽成功率 60% + 每级 4% + 属性加成（上限 95%），极品 5% + 每级 2% + 属性加成（上限 40%）×气运、精良 30%；失败只损耗第一种材料 1 份。🍳烹饪：肉/蛋/药草做成菜肴，比生食多回饱食与体力，精良/极品附带增益（属性 +10%/+20% 持续 3 场战斗，或气运 ×1.15/×1.3 持续 10 点体力）。🔨锻造：选择部位用矿石 + 1 张同档猎物皮（铁兔/铜鹿/银狼/金虎）打造装备，5 个装备栏：头/项链/武器/衣服/鞋子；每件装备加的属性由套装决定（暴击套+敏捷、致命套+力量、防御套+防御、治愈套+生命、幸运套+智力），铁/铜/银/金 需锻造 Lv1/2/4/6，冒险与 PK 生效。锻造时选择套装与部位，装备名 = 矿石+套装+部位（如 铜暴击头盔、铁防御项链、金致命剑；部位：头盔/项链/剑/衣服/鞋子）；品质 5 档：普通/优秀/精良/史诗/传说（名字颜色 白/绿/蓝/紫/橙），每件加套装属性：铁 +1/+2/+3/+4/+5、铜 +2/+3/+4/+5/+6、银 +3/+4/+5/+6/+7、金 +4/+5/+6/+7/+8（品质 普通/优秀/精良/史诗/传说 + 档位加成），套装效果 ×1/1.1/1.25/1.4/1.6；铁矿锻造 Lv1 约 50/30/14/5/1%，Lv10 约 25/30/25/14/6%；矿石越好越容易出好品质（铜小幅、银中幅、金约让史诗/传说翻倍）且成功率 +0/5/10/15%（上限 98%），力量与气运也略提升，材质与品质决定数值；同套穿 2/3/4/5 件逐级生效（可同时激活多套）；🎒<b>小型储物袋</b>：物品包每只+100格（默认100），连续签到7天送1只、商店1000金限购1只；💍<b>储物戒指</b>：物品包与装备包上限×2，下/中/上品灵石各限购1枚；📦<b>储物空间（小）</b>：物品包×3，极品灵石限购1个；📦<b>储物空间（大）</b>：物品包×4，1仙玉限购1个；每号商店每种限购1次；包满时冒险掉落装备自动卖金；<b>防御套与治愈（生命）套同样作用于出战灵宠</b>（按灵宠自身防御加成、按灵宠自身最大生命回血；将来的队友同理）：暴击套暴击率 +5/8/12/18%；幸运套气运 +10/18/28/40%（修炼掉落、冒险等）；防御套防御 +10/18/28/40%（按各自防御的百分比，四舍五入）；治愈套每回合回复 2/3/4/6% 最大生命；致命套每次攻击 6/10/14/20% 触发（5件+🔥燃血30%、+🔥燃寿每层+10%）<b>致命一击</b>（以上数值再 × 同套装备平均品质系数；致命套只放大触发率）（本场对同一目标累计：第1次扣 50% 最大生命；第2次扣 49% 并锁血至 1；第3次若只剩 1 血则直接死亡，若已回血则再次锁至 1；第4次起<b>绝杀</b>）。✨炼金：3 个同品灵石/灵露 + 1 张普通残页合成 1 个高一品（最高四品，五品只能掉落），或 5 铁矿/3 铜矿 + 1 张普通残页点化为 1 金矿（失败残页不损耗），等级越高越易双倍产出；还能炼制<b>生命药水</b>（1 生命草 + 1 一品灵露 + 1 普通残页）与<b>法力药水</b>（1 智力草 + 1 一品灵露 + 1 普通残页），品质 普通/精良/极品 回复 30%/40%/50%：生命药水在背包随时可喝（场外按到达过的最高生命计上限，补回流血/中毒/被咬掉的生命，但不解除状态；被夺走的属性补不回）；战斗中点🎒背包可使用药水与疗伤药（消耗本回合），疗伤药可解除战斗中的流血/中毒；法力药水回复法力（场外使用）。🐾驯兽：选择出战灵宠的一项属性训练，成功时该属性 +1（精良 +2、极品 +3），同时忠诚 +3（每 3 级 +1），15%+ 概率得灵宠经验；<b class="r">成仙后每次驯养耗10年寿元，仙级以上灵宠双倍（20年）</b>；每级降低灵宠咬人概率 5%（最多 50%），并提高孵出青龙/白虎的概率（每级 +10%，最多翻倍）。可炼制🦴<b>灵兽丹</b>（肉×2 + 1 张普通残页（驯兽诀，成功才扣），优先消耗低级肉；成功率 = 驯兽成功率，失败只耗 1 份肉）：品质 普通/精良/极品，喂给出战灵宠 +30/+80/+200 经验（可升级、领悟技能），极品全服通告。经验书可用于任一生活技能。<br>· 修炼：力量为挖矿（得矿石，偶得灵石），敏捷为打猎（得猎物，偶得兔/鹿/狼/虎肉，食用恢复 1/2/3/5 体力），防御为种植（收获炼药用药草，丰收可得多株，偶得灵露），生命为掏兽蛋（得鸡/鸭/鹅/鸵鸟蛋，暴击可得多枚），智力为<b>看书</b>（1 体力智力 +1，每次随机得学习/深度学习/小悟/中悟/大悟之一，对应普通/精读/小悟/中悟/大悟残页各 1 张，基础 50/30/13/5/2%，智力越高高档越多；另有 1.5%~3% 得随机战斗技能的技能观相残页）。矿石、猎物与兽蛋可在商店出售。<br>· 📜残页：在背包中同品 10 张合成 1 本经验书（普通/精读/小悟/中悟/大悟经验书 = 生活技能经验 +20/50/120/300/800），使用时任选一项生活技能（炼药/烹饪/锻造/炼金/驯兽）。同一技能的技能残页 10 张合成该技能书，学习效果与商店购买相同；已会的技能书可按原价 50% 出售。<br>· 掏兽蛋每次有 ${C.pct(K.PET_EGG_CHANCE)} 掏到灵宠蛋，<b>玩家 ${K.HATCH_LV} 级后</b>可在背包孵化（之前可先收集保存），得随机灵宠（灵狐 38% / 玄龟 27% / 朱雀 16% / 青龙 11% / 白虎 8%），初始五项属性均为 1（与新角色相同）；每只灵宠孵化时独立随机品质：普通 30% / 优秀 25% / 稀有 18% / 卓越 12% / 史诗 8% / 传说 4% / 仙 2% / 神 1%，名字颜色即品质（白/绿/蓝/青/紫/橙/金/红）。<br>· PK 中出战灵宠亲自参战：每回合在主人行动后自动出手，伤害/闪避/防御/生命按灵宠自身属性、与玩家相同的公式计算。灵狐迅捷可连咬；玄龟护主，主人受伤 -35%；朱雀喷火并可能灼烧 2 回合；青龙吐息并回复主人生命；白虎撕裂并可能使敌方流血。对手攻击有 30% 会落在灵宠身上，灵宠倒下后本场不再出手。灵宠本场阵亡则<b class="r">寿命 -${K.PET_DEATH_LIFE}、忠诚 -${K.PET_DEATH_LOYAL}</b>（寿命初始 ${K.PET_LIFE_MAX}，归零则永久死亡）。部分 AI 对手也会带灵宠。<br>· ✨灵宠技能：每次升级有 ${C.pct(K.PET_SKILL_P)} 领悟本系套装技能（灵狐-暴击 / 白虎-致命 / 玄龟-防御 / 青龙-治愈 / 朱雀-幸运）；吞噬时对方每项已掌握技能有 ${C.pct(K.PET_DEVOUR_P)} 被习得（可跨系累积）。<b>技能属性优先级：灵宠自身套装 > 主人同套装 > 2 件基础</b>（如灵宠穿 2 件精良暴击套则 +6.25%，无自身套装时主人穿 5 件暴击套则 +18%，都无则 2 件基础：暴击+5%/致命3%/防御+10%/治愈+2%/幸运闪避+10%）。<br>· 🌟<b class="y">天赋神通</b>：<b>神级</b>灵宠每次升级有 ${C.pct(K.TALENT_LEARN_P)} 领悟本系天赋神通——灵狐【魅惑】（10% 魅惑敌方全体，1 回合无法行动，含吃药）、玄龟【嘲讽】（50% 嘲讽，敌方全体 2 回合只能攻击玄龟）、朱雀【重生】（倒下时 20% 浴火重生，可无限触发）、青龙【沐浴】（30% 甘霖，主仆恢复 25% 最大生命）、白虎【狂袭】（按 40%/30%/20%/10% 连续再击，最多 5 连）。<br>· 🎽灵宠套装：锻造 → 灵宠装备，可打造 5 套灵宠装备（兽盔/项圈/利爪/软甲/踏云靴，铁矿即可），在锻造页选择灵宠穿戴；同套 2/3/4/5 件激活，与人物套装同规则（含品质加成）。<br>· 灵宠成长：出战灵宠参加 PK 得经验（等级上限：普通30/优秀40/稀有50/卓越60/史诗70/传说80/仙90/神100级）（胜 +${K.PET_XP_WIN} / 负 +${K.PET_XP_LOSE}，认输不得），升级需 ${K.PET_XP_PER_LV}×当前等级 经验，每升 1 级得 ${K.PET_LV_PTS} 点自由属性点（各品质相同，在背包自由分配），并按品质全属性自动成长：普通 +1 / 优秀 +2 / 稀有 +3 / 卓越 +4 / 史诗 +5 / 传说 +6 / 仙 +7 / 神 +8。<br>· 吞噬：在背包选一只灵宠吞噬另一只，吞噬者获得对方全部五项属性和全部经验，被吞噬者永久消失；<b>同品种同品质</b>吞噬有15%概率品质进阶1级（最高到神）。<br>· 冒险中出战灵宠仅提供小额被动加成（灵狐·敏捷·暴击套 / 白虎·力量·致命套 / 玄龟·防御·防御套 / 青龙·生命·治愈套 / 朱雀·智力·幸运套，各 +5%）。<br>· 饱食度（0~100）：修炼/炼药每点体力 -${K.HUNGER_ACT}，冒险/PK 每次 -${K.HUNGER_FIGHT}。<b class="r">饱食为0时饥饿劳作扣寿元</b>：凡人每1次扣1年/练气每2次扣2年/筑基每3次扣4年/金丹每4次扣8年/元婴每10次扣20年/化神每20次扣40年/大乘每40次扣80年/渡劫每80次扣160年，仙人以上不扣（修炼/生活技能/冒险/PK均计）。≥${K.WELL_FED} 时有<b class="g">气运</b>：掉落稀有度、暴击、灵石/灵露/肉/灵宠蛋概率 ×${K.LUCK_FED}。在背包吃肉（饱食 +10/15/20/30，另回体力）或蛋（鸡/鸭/鹅/鸵鸟蛋 +5/8/12/25）恢复，也可选择喂给灵宠。<br>· 灵宠饥饿每参战 -${K.PET_HUNGER_FIGHT}、每天 -${K.PET_HUNGER_DAY}；忠诚初始 ${K.PET_LOYAL_START}，喂食（${C.pct(K.FEED_LOYAL_P)} +2~4）、并肩作战（${C.pct(K.FIGHT_LOYAL_P)} +1~2）、升级（${C.pct(K.LVUP_LOYAL_P)} +3~5）时可能提升。饥饿低于 ${K.PET_HUNGRY} 的灵宠每次行动/上线有 ${C.pct(K.PET_BITE_OUT)} 咬主人（生命 -力量×25%，忠诚 -${K.BITE_LOYAL}，可能流血/抑郁）。PK 中忠诚低于 50 或饥饿时灵宠可能反咬主人。<br>· 状态：<b class="r">🩸流血</b>——战斗中每回合 -5% 最大生命（玩家、灵宠、敌人皆然）；战斗外不会自愈，每次签到扣除当前生命的 20%（不足1按1扣），<b>只能用止血药</b>治愈；第 5 次签到仍在流血将<b class="r">流血身亡</b>。<br>· ☠️死亡（流血或中毒致死）：失去全部体力、活力清空、寿元-0.1%，当天无法修炼、炼药、冒险、PK；背包中随机 ${K.DEATH_LOSE_MIN}~${K.DEATH_LOSE_MAX} 件物品会被路过的玩家顺手牵羊拿走（按数量随机，可能涉及多种；灵宠与技能不会丢失）。次日签到即复活：流血致死者流血清除、生命只剩 1；毒发致死者生命恢复为中毒时生命上限的一半，但<b>中毒仍在</b>（进冒险仍扣 10%、修炼仍扣 2%，不治很快会再次毒发），务必尽快服用解毒丹。<br>· 🛡️<b class="y">新人保护</b>：新角色前 ${K.PROTECT_N} 次死亡、冒险战败、PK战败免除全部惩罚（不掉落物品、体力不清零、不扣属性），死亡时生命保留 1 点并清除流血/中毒；每次触发会提示剩余次数与本次免除的惩罚。用完 ${K.PROTECT_N} 次后正常结算（老存档不补发）。<br>· <b class="r">☠️中毒</b>——战斗中每回合 -4%；战斗外<b>不会自行消退</b>，每次进入冒险扣当前生命的 10%、每次修炼扣当前生命的 2%（不足1按1扣），生命扣到 0 即<b class="r">毒发身亡</b>（次日复活时生命为原上限一半且毒仍在，约 5 次行动后再次毒发），<b>只能用解毒丹</b>治愈。<b class="r">🌧️抑郁</b>——${K.DEPRESS_HOURS} 小时内战斗属性 -10%、气运 ×${K.DEPRESS_LUCK}、修炼 ${C.pct(K.DEPRESS_FAIL)} 失败；进食/喂灵宠有机会驱散，或用兴奋剂。野兽（狼、野猪、蝙蝠、熊、鹰）攻击可致流血，蛇妖/炼尸道人可致中毒，吸血斩可致流血，冒险惨败与被灵宠咬伤也可能留下伤病。<br>· 灵石分灵气石/二~五品（约 50/25/15/8/2%，力量/防御越高高品越易出），灵露各分一~五品。<br>· 灵石不可出售，服用得经验：灵气石 +20、二品 +50、三品 +120、四品 +300，五品直接升 1 级。炼金合成链：10灵气石→下品（+200经验）→10下品→中品（+2000经验）→100中品→上品（+200000经验）→1000上品→极品（直接升1级）。<br>· 极品灵石也可在背包「砸开」，每块碎成 ${C.SMASH_N} 块一~上品灵石（各品约 51/26/15/8%）。<br>· 灵露服用得随机属性：一品 +1、二品 +2、三品 +3、四品 +5、五品 +8；一品灵露可在商店购买。<br>· 炼药时可各投入 1 块灵石、1 瓶灵露，按品阶使成功率与上品概率各 +5/10/15/25/40%（成功率最高 ${C.pct(K.ALC_BOOST_RATE_MAX)}、上品最高 ${C.pct(K.ALC_BOOST_Q3_MAX)}）。<br>· 每升 1 级全属性 +（境界+1）（凡人1/练气2/筑基3…主宰13）（+轮回加成），签到体力 +1。<br>· 🌟<b class="y">境界</b>：凡人→练气→筑基→金丹→元婴→化神→大乘→渡劫→仙人→金仙→合体→尊者→主宰，每境 10 级，10 级为<b>大圆满</b>，需<b>突破</b>才能继续升级。<b>⚡突破</b>：（60%-境界×5%）×气运成功率（凡人60%/练气55%/筑基50%/金丹45%…每境-5%，尊者→主宰5%，上限 95%），成功进下境 1 级且<b>全属性×突破倍率</b>（凡人→练气×1无加成，练气→筑基×1.1，之后每境+0.1，尊者→主宰×2.1）；失败则当前经验清零并退 1~2 级；突破需<b>法力 100/100</b>（签到回满或喝法力药水，凡人用经验不限）；<b>⚡渡劫</b>（筑基→金丹起）：判定成功后先扛<b>⚡天雷</b>（雷数按突破品级：下品 9 道、中品 18、上品 27、完美 36、圆满 45、压条满 2000% 引九九 81 道极劫；每 9 道为一层、一层比一层狠，按防御减免，扛不住则突破失败），雷劫后必经<b>👹心魔劫</b>（随机<b>斗法</b>或<b>问心</b>：斗法是与属性为自身九成的心魔一战（身上诅咒每层使心魔增强 5%，渡劫前宜先解咒）；问心是 3 道 ABCD 问答，仙人以下考游戏机制、仙人以上问道，答对 2 道即过）；渡劫失败退 1~9 级并折寿 10%（不死）；灵气（仙力）可<b>压条</b>超出上限、最高 1000%——压条越高天劫越强，1000% 为最强天劫（雷伤×2.5、天魔 2.5 倍属性）；<b>金丹/元婴品质</b>按突破前压条定档：900%为<b>圆满</b>（×2.0）、700%<b>完美</b>（×1.8）、500%<b>上品</b>（×1.6）、超200%<b>中品</b>（×1.4）、否则<b>下品</b>（×1.2），压条 1000% 则结出<b>圆满金丹极</b>（×2.2，圆满之上独立一档），品质倍率替代原突破倍率；压条≤200% 时另有 1% 概率<b>天劫异变</b>，随机撞上中品/上品/完美/圆满级雷劫，扛过即按该档结丹；历次突破成功每次永久 +1% 成功率（上限 +20%）。<b>🔄轮回</b>：任何境界都回到<b>凡人</b> 1 级，选<b>一个属性封存</b>为<b class="y">前世遗物</b>（自取名+刻录<b class="r">灵魂印记</b>，存入背包，全属性重置为 1，<b class="r">不再直接继承</b>），<b class="r">已学技能消失需重学</b>（技能书/残页保留），物品等其余全部保留；<b>🌟胎中之谜</b>：遗物有寿数——练气遗物3世、每高一境+1世（筑基4/金丹5/…/主宰14），逾期未觉醒则消散。每次<b>突破成功</b>时，每件遗物独立 <b class="y">50%</b> 概率觉醒（幸运套每2件+5%、出战灵宠有幸运技能+10%，上限95%），一次突破最多觉醒一件（多件同时成功由玩家选择）；觉醒时需输入<b class="r">灵魂印记</b>，输对才继承前世属性、遗物消散，输错则无法继承、下次突破继续判定；遗物可永久保留；加成按走过的境界计：练气起到当前境界-1各池 +1，当前境界大圆满再 +1（如金丹大圆满轮回=练气/筑基/金丹各+1=3点，金丹未大圆满=练气/筑基各+1=2点）；每个池子另奖励🌀开脉丹×1；加成<b>下次突破后生效</b>：只计当前境界以下各境（如金丹1层只享受练气+筑基=20点，突破到元婴后才享受金丹池），每点使每升 1 级全属性多 +1（每境上限 10 次，多境累加，凡人轮回不计）（次数记在轮回前所在境界，各境上限 10 次，多境累加，如凡人 10 次+筑基 3 次则金丹每级 +14）；<b>主宰</b>轮回则前面各境池各 +1。<br>· 🧪<b class="y">加料 · 变异 · 丹毒</b>：炼药时可自选加料 0-3 味，搭配对了出<b>变异丹</b>、不对会<b>炸炉</b>（基础料损 1 份、加料全损），搭配全靠自试。服丹积<b>丹毒</b>（0-100）：20 点以内药效十成，其后每多 10 点药效降一成，100 点时只剩两成；<b>化无丹</b>（生命草 + 一品灵露炼制）服 1 颗清 20 点，轮回全清。<br>· 炼药需消耗 1 株对应药草 + 1 枚兽蛋（药引，优先低级），可种植/掏蛋获得或在商店购买。炼药 Lv.3 可炼辟谷丸（饱食 +20）、Lv.5 可炼气力丸（体力 +3），丸非丹，不积丹毒。<br>· 🌀<b class="y">秘境</b>：独立于7档难度的特殊冒险，每日限3次，每次10体力、10-15步随机；怪物更强、高阶怪更多，守关必为👑王阶，稀有掉落大幅提升。秘境专属产出<b>🌀脉络残页</b>（背包直接使用，每张+1实络，永久）与各种珍稀物资（高品灵石/灵露、技能书、开脉丹等）。<br>· 冒险是<b>文字冒险</b>，分 7 档：初级 1 / 中级 3 / 高级 5 / 困难 10 / 地狱 15 / 深渊 20 / 噩梦 30 体力（出发时扣除），每轮 3/3/4/4/5/5/6 步；冒险地图<b>全服共用</b>（每档一张不同的图），空格会随机刷新 🌱草药 / ⛏️矿石 / 💎灵脉（灵脉较稀有）：站在格上点采集获得（草药 = 五种属性草之一；矿石 = 铁/铜/银/金，低概率出灵气石与下品灵石；采灵脉直接出灵石，灵脉越大出得越好，巨型灵脉有概率出仙玉），先到先得；<b>采集阵</b>可布在空格上，上品灵石驱动，自动收走该格刷新的资源；每步随机事件：遇怪、奇遇（隐士、山洞、商人、毒蘑菇、灵泉、石碑谜题…）、宝箱、陷阱、休息点，每个事件 2~4 个选择，部分选择要检定属性（敏捷躲陷阱、智力解谜、力量推石…，按钮上显示成功率），非陷阱事件可随时<b>撤退</b>保住收获；最后一步必定遇到守关怪。怪物分 <span class="rk1">普通</span>/<span class="rk2">精英</span>/<span class="rk3">变异</span>/<span class="rk4">领主</span>/<span class="rk5">王</span> 五阶，越高越强、奖励与掉落越好（王可能掉极品灵石/灵露），高难度更常遇到领主与王；遇怪可选战斗或逃跑（敏捷检定，失败被迫迎战）。战斗沿用原战斗规则（灵宠加成、装备与套装生效）。事件共数百种，均为一句话描述+选项。游戏里的所有物品（矿石、兽皮、肉、兽蛋、药草、各品灵石/灵露、各档残页与经验书、技能残页、技能书、丹药、药水、菜肴、止血药/解毒丹/兴奋剂、各套装各部位各品质装备、灵宠蛋、金元）都可能在冒险中获得：越稀有越少见，难度越高、怪物阶级越高越容易出好东西。战败：扣属性、清空剩余体力、损失金元、可能染上伤病，冒险结束（新人保护期内免除）。建议等级 Lv1/2/3/5/7/9/12、总属性 5/30/60/120/200/300/450，总属性不足时怪物按建议值强度出现；战败扣除属性、清空体力并损失 ${C.pct(K.DEATH_GOLD_PCT)} 金元。<br>· PK 胜者夺取对方指定属性（按境界：基数=对方境界每级属性点，凡人1…主宰13；同境全额，高打低差1/2/3/4境×0.5/0.3/0.2/0.1、差5+无，低打高差1/2/3境×2/3/5、差4+×10封顶）并获得金元；胜利另有 30% 得👹<b class="y">煞气</b>×1（击杀敌方灵宠每只另 30%、冒险击杀怪物 10%、王阶 30%）、60% 被👻<b class="r">诅咒</b>（永久，每层突破成功率 -1%，可叠加；商店买💧<b>神水</b>50金可消除一层）。煞气放在背包中每个被动+1%攻击或+1%防御（背包中自选）；习得《吞魔》（商店 800 金）后可吞噬，每次加1个法力上限的法力、无视上限无限叠加。<br>· 🍲<b class="y">珍馐</b>：烹饪 Lv6+ 可烹制 5 种珍馐（虎肉 + 药草 / 三品灵露，无品质）：<b>珍馐毒</b>（敌方全体中毒）、<b>珍馐离</b>（敌方混乱 3 回合，50% 概率转头互砍）、<b>珍馐力</b>（己方主人+灵宠力量 +50%，持续 5 回合）、<b>珍馐衰</b>（敌方全属性 -30%，持续 5 回合）、<b>回魂珍馐</b>（本场战斗中主人或灵宠首次倒下时复活，恢复 50% 生命）。PK 战前可使用 1 种，<b>最先手、无视敏捷</b>。<br>· 📢<b class="y">全服通告</b>：获得橙色以上物品时全服通告——传说装备（掉落/锻造）、极品丹药/药水/菜肴、传说及以上品质灵宠（传说/仙/神）。<br>· 商店出售药草、一品灵露、疗伤药（止血药 25、解毒丹 20、兴奋剂 30 金）与技能书，收购矿石、猎物与兽蛋。<br>· 🏪<b class="y">寄售行</b>：商店→🏪寄售行，线上玩家市场，可上架矿石/药草灵露/丹药（含变异丹）/疗伤药等，成交收5%手续费。<br>· 💬<b class="y">世界聊天</b>：菜单→💬世界聊天，可与天下真人道友畅谈；突破成功时全服通告。<br>· 🏆<b class="y">修仙榜单</b>：菜单→🏆修仙榜单，与天下真人道友一较高下；共7榜：<b>等级榜</b>（境界+等级）、<b>力量/敏捷/防御/生命/智力</b>五榜、<b>📅签到榜</b>（累计签到次数）与<b>🧘闭关榜</b>（累计闭关时长），每榜取前20名。<b>每日榜单奖励</b>（等级/五维/签到榜，每榜按名次）：第1名🌀脉络残页×1、第2-3名🌀开脉丹×1、第4-10名👹煞气×1、第11名及以后💠极品灵石×1，每日可领一次。<br>· 🔥<b class="y">连续签到</b>：每天签到累积，断签清零；连续签到7天送 🎒小型储物袋 ×1（每个号限领1次）。<br>· 🎒<b class="y">物品上限</b>：背包物品默认上限100，装备包默认5件；超出上限的物品无法获得、直接消失；小型储物袋/储物戒指/储物空间可扩充上限。<br>· ⏳<b class="y">寿元</b>：凡人100年，每日签到-1年；突破后寿元取max(当前,新境界基础)，每突破一境×2（练气200/筑基400/金丹800/元婴1600/化神3200/大乘6400/渡劫12800/仙人25600/金仙51200/合体10万/尊者20万/主宰409600年）；寿元≤10年变红预警，耗尽则<b class="r">强制抉择</b>：<b class="y">轮回转世</b>（选一个属性保留，物品保留）或<b class="r">☠️坐化死亡</b>（失去一切，重开一局）；轮回后寿元重置为100年。战斗中可<b class="y">🔥燃血</b>/<b class="y">💧燃法</b>/<b class="y">⏳燃寿</b>：点一下+1层，最高10层（燃血/燃法10层后再点关闭）。<b class="y">🔥燃血</b>配合<b>防御</b>=<b class="r">🔥燃血御守</b>：防御加成百分比与攻击加成相同，对方物理攻击<b class="y">反弹100%伤害</b>，法术攻击则防御无效。<b class="y">⏳燃寿</b>：每层燃烧10年寿元，本场攻击+30%（最多10层），寿元不足10年无法燃烧。<b class="y">🔰法术防御</b>：消耗法力/仙力换取本回合法术防御（练气~渡劫1法力=10点，仙人以上1仙力=100万点），专门抵挡火球术/雷击等法术伤害（与防御叠加），灵宠同样生效；<b class="y">💧燃法</b>配合<b>🔰法术防御</b>=<b class="pu">💧燃法灵盾</b>：对方的法术伤害优先扣<span class="pu">法力</span>（蓝条空了则扣血），并反弹<span class="y">流失法力×10</span>的法术回击；<b class="pu">⚡仙力攻击</b>也会被反弹，反弹=<span class="y">仙术伤害+攻击者消耗仙力×10</span>；即使被秒杀回击依然有效，可<span class="r">☠️同归于尽</span>（双方各自承受死亡惩罚，互夺：双方从对方背包各夺1件物品，属性互相转移，外加各自全属性消散1%）。<b class="y">🛡️仙力防御</b>：仙人境以上可用，1仙力=100万防御，只持续1回合，灵宠同样生效；<b class="y">只反弹⚡仙力攻击</b>（反弹100%所受伤害，物理/法术攻击不反弹）。<b class="y">⚡仙力攻击</b>：1仙力=100万直接伤害，无视防御；仙人境以上的对手也有概率使用（耗5-20仙力）。<br>· 🌀<b class="y">经络</b>：分<b>络</b>（加闭关速度）与<b>脉</b>（加法力溢出上限）两种，各分虚/实。<b>虚络</b>：<b>开脉丹</b>（冒险低概率掉落）服用每颗开一穴（点亮神藏穴位）、虚络 +1（不加气旋）；<b>实络</b>：<b>🌀脉络残页</b>（秘境专属）在背包直接使用，每张+1<span class="g">（永久，轮回保留）</span>。每条络闭关+1/秒（洞府1+络+经验/秒，灵脉2+络+经验/秒）。<b>虚脉</b>：10虚络在背包合成1条<span class="r">（临时）</span>；<b>实脉</b>：每用10张脉络残页<b>📖开脉术</b>升1级，实脉+1<span class="g">（永久）</span>。溢出上限=基础2倍+虚脉（最多12条生效）+实脉（不封顶，可突破10倍）。每用1张脉络残页开脉术经验+1，每点经验闭关+1/秒。<b>🌀神藏</b>：星藏分13座神藏（一座一经、任督合一，座名按境界），图外围气旋即进度；每座吃10张脉络残页开满（不按穴数），开脉丹每颗开一穴、不动气旋，部分进度按比例亮星，轮回只清丹开的穴、气旋保留；虚络由开脉丹开穴派生；开脉丹点满一条经络一侧得虚脉1条（12经左右共24条、任督各1条，共26条），左右成对多压一条、任督各压一条（虚脉最多压14条）；气旋吃满一座为大气旋、算实脉1条，实脉封顶13条。<br>· 🌫️<b class="y">天地灵气</b>：全服共享的灵气浓度（末法/稀薄/平常/浓郁/潮汐），影响所有人闭关收益与凝气（×0.6~×1.4）；灵脉闭关可养气，往灵脉投灵石可聚灵，灵气会自然衰减。<br>· 🎖️<b class="y">身份</b>：声望攒身份（散修→客卿→供奉→长老→太上长老），签到/突破/观礼/奇遇/放生/发红包都攒声望；身份给特权：签到体力加成、秘境次数、观礼体力加成。<br>· 🌩️<b class="y">功德大劫</b>：大乘起 30 天一劫，结算时功德 ≥100 安然渡过得天道赐福，<100 劫火焚身扣寿元 5%，结算后功德减半。<br>· 🧧<b class="y">红包</b>：商会卖红包皮（金元/下品/中品/上品/极品灵石/仙玉六种，各 1 个对应货币一张），发放时放入对应货币（≥100 个、≥10 人抢，每人随机至少 1、最多整包一半），24 小时没抢完的回收进<b class="y">天道池</b>；天道池全服可见，玩家可捐献补池，池亏空过深则灵气不稳引大劫。<br>· 🖼️<b class="y">玩家头像图库</b>：上传头像可自己取名，私用只存本机，入库则提交审核、通过后进头像页「玩家图库」全服可选；攒得多了将来逐步替换官方图。· 🐾<b class="y">灵宠开口</b>：出战灵宠有性格，会在出战、战斗、喂食、升级、奇遇时说话。<br>· 🌠<b class="y">定命星</b>：开局所定命星，只论命格，不论强弱。<br>· 🗡️<b class="y">本命飞剑</b>：练气后在个人面板「本命」页铸剑，择一剑意（雷意/河意/山意）；悟剑耗观相残页提升剑意，换意须斩旧剑重铸。<br>· ⚖️<b class="y">法宝规则词条</b>：传说品质装备必带一条规则（不灭/噬灵/连珠/背水），改写战斗规则而非堆数值。<br>· 🧘<b class="y">闭关</b>：闭关期间只能点商会/背包/生活，修炼/冒险/PK不可用；<b>灵脉闭关</b>可PK（点PK即出关迎战并结算收益）；闭关调息每秒恢复 <b class="g">10% 生命上限</b>（出关结算）。<br>· ⚔️<b class="y">仙术五行修炼</b>：仙人境起可进，金/木/水/火/土五条修炼线，每条固定10步，每次耗<b>10仙力+5体力</b>；每日五条线共计：仙人1次/金仙2次/合体3次/尊者4次/主宰5次。守关必为👑王阶且必掉1个对应属性残物（其他怪极低概率掉落，每次不出+1%直到出，出后重计）；10个同属性残物在冒险页⚗️五行合成中合1件，自选<b>X之力</b>或<b>X之抗</b>。X之力：攻击附带对应属性伤害（每件+10%，<b>无法闪避</b>，颜色：金<span style="color:#ffd700">金</span>/木<span style="color:#22c55e">绿</span>/水<span style="color:#3b9ddd">蓝</span>/火<span style="color:#ef4444">红</span>/土<span style="color:#a16207">褐</span>）；X之抗：免除对应属性伤害，且被命中时按（抗件数-力件数）反弹10%/件（例：1金之力打3金之抗，抗方无属性伤害并反弹20%）。</small></div></div>
+    <div class="row"><div class="lab">玩法说明<small>每日签到得体力 = 4 + 等级（当前 Lv.${S.level} 可得 ${C.checkinAmount(S)}）；活力 = 10 + 每 2 级 +1（当前 ${C.vigorGain(S)}，最多囤 ${K.VIGOR_CAP_DAYS} 天量 = ${C.vigorCap(S)}，死亡不清空）。体力用于修炼、冒险与 PK；<b>活力用于生活技能</b>。<br>· 法力：10 级前生活技能只耗活力，没有法力；10 级后法力取代活力，每次生活技能耗 2 法力（不再耗活力）。法力上限 = 8 + 智力×2，签到回满，法力药水可回复。新角色五项属性均为 1（生命上限 10）。<br>· 生活技能（炼药/烹饪/锻造/炼金/驯兽）：10 级前每次 1 活力、10 级后每次 2 法力，成功得经验 10、失败 4，升级需 等级×30；关联属性：炼药-智力、锻造-力量、烹饪-防御、炼金-敏捷、驯兽-生命，每点成功率 +0.1%（上限 +10%）、极品/上品 +0.05%（上限 +5%）。烹饪/锻造/炼金/驯兽成功率 60% + 每级 4% + 属性加成（上限 95%），极品 5% + 每级 2% + 属性加成（上限 40%）×气运、精良 30%；失败只损耗第一种材料 1 份。🍳烹饪：肉/蛋/药草做成菜肴，比生食多回饱食与体力，精良/极品附带增益（属性 +10%/+20% 持续 3 场战斗，或气运 ×1.15/×1.3 持续 10 点体力）。🔨锻造：选择部位用矿石 + 1 张同档猎物皮（铁兔/铜鹿/银狼/金虎）打造装备，5 个装备栏：头/项链/武器/衣服/鞋子；每件装备加的属性由套装决定（暴击套+敏捷、致命套+力量、防御套+防御、治愈套+生命、幸运套+智力），铁/铜/银/金 需锻造 Lv1/2/4/6，冒险与 PK 生效。锻造时选择套装与部位，装备名 = 矿石+套装+部位（如 铜暴击头盔、铁防御项链、金致命剑；部位：头盔/项链/剑/衣服/鞋子）；品质 5 档：普通/优秀/精良/史诗/传说（名字颜色 白/绿/蓝/紫/橙），每件加套装属性：铁 +1/+2/+3/+4/+5、铜 +2/+3/+4/+5/+6、银 +3/+4/+5/+6/+7、金 +4/+5/+6/+7/+8（品质 普通/优秀/精良/史诗/传说 + 档位加成），套装效果 ×1/1.1/1.25/1.4/1.6；铁矿锻造 Lv1 约 50/30/14/5/1%，Lv10 约 25/30/25/14/6%；矿石越好越容易出好品质（铜小幅、银中幅、金约让史诗/传说翻倍）且成功率 +0/5/10/15%（上限 98%），力量与气运也略提升，材质与品质决定数值；同套穿 2/3/4/5 件逐级生效（可同时激活多套）；🎒<b>小型储物袋</b>：物品包每只+100格（默认100），连续签到7天送1只、商店1000金限购1只；💍<b>储物戒指</b>：物品包与装备包上限×2，下/中/上品灵石各限购1枚；📦<b>储物空间（小）</b>：物品包×3，极品灵石限购1个；📦<b>储物空间（大）</b>：物品包×4，1仙玉限购1个；每号商店每种限购1次；包满时冒险掉落装备自动卖金；<b>防御套与治愈（生命）套同样作用于出战灵宠</b>（按灵宠自身防御加成、按灵宠自身最大生命回血；将来的队友同理）：暴击套暴击率 +5/8/12/18%；幸运套气运 +10/18/28/40%（修炼掉落、冒险等）；防御套防御 +10/18/28/40%（按各自防御的百分比，四舍五入）；治愈套每回合回复 2/3/4/6% 最大生命；致命套每次攻击 6/10/14/20% 触发（5件+🔥燃血30%、+🔥燃寿每层+10%）<b>致命一击</b>（以上数值再 × 同套装备平均品质系数；致命套只放大触发率）（本场对同一目标累计：第1次扣 50% 最大生命；第2次扣 49% 并锁血至 1；第3次若只剩 1 血则直接死亡，若已回血则再次锁至 1；第4次起<b>绝杀</b>）。✨炼金：3 个同品灵石/凝露 + 1 张普通残页合成 1 个高一品（最高四品，五品只能掉落），或 5 铁矿/3 铜矿 + 1 张普通残页点化为 1 金矿（失败残页不损耗），等级越高越易双倍产出；还能炼制<b>生命药水</b>（1 生命草 + 1 一品凝露 + 1 普通残页）与<b>法力药水</b>（1 智力草 + 1 一品凝露 + 1 普通残页），品质 普通/精良/极品 回复 30%/40%/50%：生命药水在背包随时可喝（场外按到达过的最高生命计上限，补回流血/中毒/被咬掉的生命，但不解除状态；被夺走的属性补不回）；战斗中点🎒背包可使用药水与疗伤药（消耗本回合），疗伤药可解除战斗中的流血/中毒；法力药水回复法力（场外使用）。🐾驯兽：选择出战灵宠的一项属性训练，成功时该属性 +1（精良 +2、极品 +3），同时忠诚 +3（每 3 级 +1），15%+ 概率得灵宠经验；<b class="r">成仙后每次驯养耗10年寿元，仙级以上灵宠双倍（20年）</b>；每级降低灵宠咬人概率 5%（最多 50%），并提高孵出青龙/白虎的概率（每级 +10%，最多翻倍）。可炼制🦴<b>灵兽丹</b>（肉×2 + 1 张普通残页（驯兽诀，成功才扣），优先消耗低级肉；成功率 = 驯兽成功率，失败只耗 1 份肉）：品质 普通/精良/极品，喂给出战灵宠 +30/+80/+200 经验（可升级、领悟技能），极品全服通告。经验书可用于任一生活技能。<br>· 修炼：力量为挖矿（得矿石，偶得灵石），敏捷为打猎（得猎物，偶得兔/鹿/狼/虎肉，食用恢复 1/2/3/5 体力），防御为种植（收获炼药用药草，丰收可得多株，偶得凝露），生命为掏兽蛋（得鸡/鸭/鹅/鸵鸟蛋，暴击可得多枚），智力为<b>看书</b>（1 体力智力 +1，每次随机得学习/深度学习/小悟/中悟/大悟之一，对应普通/精读/小悟/中悟/大悟残页各 1 张，基础 50/30/13/5/2%，智力越高高档越多；另有 1.5%~3% 得随机战斗技能的技能观相残页）。矿石、猎物与兽蛋可在商店出售。<br>· 📜残页：在背包中同品 10 张合成 1 本经验书（普通/精读/小悟/中悟/大悟经验书 = 生活技能经验 +20/50/120/300/800），使用时任选一项生活技能（炼药/烹饪/锻造/炼金/驯兽）。同一技能的技能残页 10 张合成该技能书，学习效果与商店购买相同；已会的技能书可按原价 50% 出售。<br>· 掏兽蛋每次有 ${C.pct(K.PET_EGG_CHANCE)} 掏到灵宠蛋，<b>玩家 ${K.HATCH_LV} 级后</b>可在背包孵化（之前可先收集保存），得随机灵宠（灵狐 38% / 玄龟 27% / 朱雀 16% / 青龙 11% / 白虎 8%），初始五项属性均为 1（与新角色相同）；每只灵宠孵化时独立随机品质：普通 30% / 优秀 25% / 稀有 18% / 卓越 12% / 史诗 8% / 传说 4% / 仙 2% / 神 1%，名字颜色即品质（白/绿/蓝/青/紫/橙/金/红）。<br>· PK 中出战灵宠亲自参战：每回合在主人行动后自动出手，伤害/闪避/防御/生命按灵宠自身属性、与玩家相同的公式计算。灵狐迅捷可连咬；玄龟护主，主人受伤 -35%；朱雀喷火并可能灼烧 2 回合；青龙吐息并回复主人生命；白虎撕裂并可能使敌方流血。对手攻击有 30% 会落在灵宠身上，灵宠倒下后本场不再出手。灵宠本场阵亡则<b class="r">寿命 -${K.PET_DEATH_LIFE}、忠诚 -${K.PET_DEATH_LOYAL}</b>（寿命初始 ${K.PET_LIFE_MAX}，归零则永久死亡）。部分 AI 对手也会带灵宠。<br>· ✨灵宠技能：每次升级有 ${C.pct(K.PET_SKILL_P)} 领悟本系套装技能（灵狐-暴击 / 白虎-致命 / 玄龟-防御 / 青龙-治愈 / 朱雀-幸运）；吞噬时对方每项已掌握技能有 ${C.pct(K.PET_DEVOUR_P)} 被习得（可跨系累积）。<b>技能属性优先级：灵宠自身套装 > 主人同套装 > 2 件基础</b>（如灵宠穿 2 件精良暴击套则 +6.25%，无自身套装时主人穿 5 件暴击套则 +18%，都无则 2 件基础：暴击+5%/致命3%/防御+10%/治愈+2%/幸运闪避+10%）。<br>· 🌟<b class="y">天赋神通</b>：<b>神级</b>灵宠每次升级有 ${C.pct(K.TALENT_LEARN_P)} 领悟本系天赋神通——灵狐【魅惑】（10% 魅惑敌方全体，1 回合无法行动，含吃药）、玄龟【嘲讽】（50% 嘲讽，敌方全体 2 回合只能攻击玄龟）、朱雀【重生】（倒下时 20% 浴火重生，可无限触发）、青龙【沐浴】（30% 甘霖，主仆恢复 25% 最大生命）、白虎【狂袭】（按 40%/30%/20%/10% 连续再击，最多 5 连）。<br>· 🎽灵宠套装：锻造 → 灵宠装备，可打造 5 套灵宠装备（兽盔/项圈/利爪/软甲/踏云靴，铁矿即可），在锻造页选择灵宠穿戴；同套 2/3/4/5 件激活，与人物套装同规则（含品质加成）。<br>· 灵宠成长：出战灵宠参加 PK 得经验（等级上限：普通30/优秀40/稀有50/卓越60/史诗70/传说80/仙90/神100级）（胜 +${K.PET_XP_WIN} / 负 +${K.PET_XP_LOSE}，认输不得），升级需 ${K.PET_XP_PER_LV}×当前等级 经验，每升 1 级得 ${K.PET_LV_PTS} 点自由属性点（各品质相同，在背包自由分配），并按品质全属性自动成长：普通 +1 / 优秀 +2 / 稀有 +3 / 卓越 +4 / 史诗 +5 / 传说 +6 / 仙 +7 / 神 +8。<br>· 吞噬：在背包选一只灵宠吞噬另一只，吞噬者获得对方全部五项属性和全部经验，被吞噬者永久消失；<b>同品种同品质</b>吞噬有15%概率品质进阶1级（最高到神）。<br>· 冒险中出战灵宠仅提供小额被动加成（灵狐·敏捷·暴击套 / 白虎·力量·致命套 / 玄龟·防御·防御套 / 青龙·生命·治愈套 / 朱雀·智力·幸运套，各 +5%）。<br>· 饱食度（0~100）：修炼/炼药每点体力 -${K.HUNGER_ACT}，冒险/PK 每次 -${K.HUNGER_FIGHT}。<b class="r">饱食为0时饥饿劳作扣寿元</b>：凡人每1次扣1年/练气每2次扣2年/筑基每3次扣4年/金丹每4次扣8年/元婴每10次扣20年/化神每20次扣40年/大乘每40次扣80年/渡劫每80次扣160年，仙人以上不扣（修炼/生活技能/冒险/PK均计）。≥${K.WELL_FED} 时有<b class="g">气运</b>：掉落稀有度、暴击、灵石/凝露/肉/灵宠蛋概率 ×${K.LUCK_FED}。在背包吃肉（饱食 +10/15/20/30，另回体力）或蛋（鸡/鸭/鹅/鸵鸟蛋 +5/8/12/25）恢复，也可选择喂给灵宠。<br>· 灵宠饥饿每参战 -${K.PET_HUNGER_FIGHT}、每天 -${K.PET_HUNGER_DAY}；忠诚初始 ${K.PET_LOYAL_START}，喂食（${C.pct(K.FEED_LOYAL_P)} +2~4）、并肩作战（${C.pct(K.FIGHT_LOYAL_P)} +1~2）、升级（${C.pct(K.LVUP_LOYAL_P)} +3~5）时可能提升。饥饿低于 ${K.PET_HUNGRY} 的灵宠每次行动/上线有 ${C.pct(K.PET_BITE_OUT)} 咬主人（生命 -力量×25%，忠诚 -${K.BITE_LOYAL}，可能流血/抑郁）。PK 中忠诚低于 50 或饥饿时灵宠可能反咬主人。<br>· 状态：<b class="r">🩸流血</b>——战斗中每回合 -5% 最大生命（玩家、灵宠、敌人皆然）；战斗外不会自愈，每次签到扣除当前生命的 20%（不足1按1扣），<b>只能用止血药</b>治愈；第 5 次签到仍在流血将<b class="r">流血身亡</b>。<br>· ☠️死亡（流血或中毒致死）：失去全部体力、活力清空、寿元-0.1%，当天无法修炼、炼药、冒险、PK；背包中随机 ${K.DEATH_LOSE_MIN}~${K.DEATH_LOSE_MAX} 件物品会被路过的玩家顺手牵羊拿走（按数量随机，可能涉及多种；灵宠与技能不会丢失）。次日签到即复活：流血致死者流血清除、生命只剩 1；毒发致死者生命恢复为中毒时生命上限的一半，但<b>中毒仍在</b>（进冒险仍扣 10%、修炼仍扣 2%，不治很快会再次毒发），务必尽快服用解毒丹。<br>· 🛡️<b class="y">新人保护</b>：新角色前 ${K.PROTECT_N} 次死亡、冒险战败、PK战败免除全部惩罚（不掉落物品、体力不清零、不扣属性），死亡时生命保留 1 点并清除流血/中毒；每次触发会提示剩余次数与本次免除的惩罚。用完 ${K.PROTECT_N} 次后正常结算（老存档不补发）。<br>· <b class="r">☠️中毒</b>——战斗中每回合 -4%；战斗外<b>不会自行消退</b>，每次进入冒险扣当前生命的 10%、每次修炼扣当前生命的 2%（不足1按1扣），生命扣到 0 即<b class="r">毒发身亡</b>（次日复活时生命为原上限一半且毒仍在，约 5 次行动后再次毒发），<b>只能用解毒丹</b>治愈。<b class="r">🌧️抑郁</b>——${K.DEPRESS_HOURS} 小时内战斗属性 -10%、气运 ×${K.DEPRESS_LUCK}、修炼 ${C.pct(K.DEPRESS_FAIL)} 失败；进食/喂灵宠有机会驱散，或用兴奋剂。野兽（狼、野猪、蝙蝠、熊、鹰）攻击可致流血，蛇妖/炼尸道人可致中毒，吸血斩可致流血，冒险惨败与被灵宠咬伤也可能留下伤病。<br>· 灵石分灵气石/二~五品（约 50/25/15/8/2%，力量/防御越高高品越易出），凝露各分一~五品。<br>· 灵石不可出售，服用得经验：灵气石 +20、二品 +50、三品 +120、四品 +300，五品直接升 1 级。炼金合成链：10灵气石→下品（+200经验）→10下品→中品（+2000经验）→100中品→上品（+200000经验）→1000上品→极品（直接升1级）。<br>· 极品灵石也可在背包「砸开」，每块碎成 ${C.SMASH_N} 块一~上品灵石（各品约 51/26/15/8%）。<br>· 凝露服用得随机属性：一品 +1、二品 +2、三品 +3、四品 +5、五品 +8；一品凝露可在商店购买。<br>· 炼药时可各投入 1 块灵石、1 瓶凝露，按品阶使成功率与上品概率各 +5/10/15/25/40%（成功率最高 ${C.pct(K.ALC_BOOST_RATE_MAX)}、上品最高 ${C.pct(K.ALC_BOOST_Q3_MAX)}）。<br>· 每升 1 级全属性 +（境界+1）（凡人1/练气2/筑基3…主宰13）（+轮回加成），签到体力 +1。<br>· 🌟<b class="y">境界</b>：凡人→练气→筑基→金丹→元婴→化神→大乘→渡劫→仙人→金仙→合体→尊者→主宰，每境 10 级，10 级为<b>大圆满</b>，需<b>突破</b>才能继续升级。<b>⚡突破</b>：（60%-境界×5%）×气运成功率（凡人60%/练气55%/筑基50%/金丹45%…每境-5%，尊者→主宰5%，上限 95%），成功进下境 1 级且<b>全属性×突破倍率</b>（凡人→练气×1无加成，练气→筑基×1.1，之后每境+0.1，尊者→主宰×2.1）；失败则当前经验清零并退 1~2 级；突破需<b>法力 100/100</b>（签到回满或喝法力药水，凡人用经验不限）；<b>⚡渡劫</b>（筑基→金丹起）：判定成功后先扛<b>⚡天雷</b>（雷数按突破品级：下品 9 道、中品 18、上品 27、完美 36、圆满 45、压条满 2000% 引九九 81 道极劫；每 9 道为一层、一层比一层狠，按防御减免，扛不住则突破失败），雷劫后必经<b>👹心魔劫</b>（随机<b>斗法</b>或<b>问心</b>：斗法是与属性为自身九成的心魔一战（身上诅咒每层使心魔增强 5%，渡劫前宜先解咒）；问心是 3 道 ABCD 问答，仙人以下考游戏机制、仙人以上问道，答对 2 道即过）；渡劫失败退 1~9 级并折寿 10%（不死）；灵气（仙力）可<b>压条</b>超出上限、最高 1000%——压条越高天劫越强，1000% 为最强天劫（雷伤×2.5、天魔 2.5 倍属性）；<b>金丹/元婴品质</b>按突破前压条定档：900%为<b>圆满</b>（×2.0）、700%<b>完美</b>（×1.8）、500%<b>上品</b>（×1.6）、超200%<b>中品</b>（×1.4）、否则<b>下品</b>（×1.2），压条 1000% 则结出<b>圆满金丹极</b>（×2.2，圆满之上独立一档），品质倍率替代原突破倍率；压条≤200% 时另有 1% 概率<b>天劫异变</b>，随机撞上中品/上品/完美/圆满级雷劫，扛过即按该档结丹；历次突破成功每次永久 +1% 成功率（上限 +20%）。<b>🔄轮回</b>：任何境界都回到<b>凡人</b> 1 级，选<b>一个属性封存</b>为<b class="y">前世遗物</b>（自取名+刻录<b class="r">灵魂印记</b>，存入背包，全属性重置为 1，<b class="r">不再直接继承</b>），<b class="r">已学技能消失需重学</b>（技能书/残页保留），物品等其余全部保留；<b>🌟胎中之谜</b>：遗物有寿数——练气遗物3世、每高一境+1世（筑基4/金丹5/…/主宰14），逾期未觉醒则消散。每次<b>突破成功</b>时，每件遗物独立 <b class="y">50%</b> 概率觉醒（幸运套每2件+5%、出战灵宠有幸运技能+10%，上限95%），一次突破最多觉醒一件（多件同时成功由玩家选择）；觉醒时需输入<b class="r">灵魂印记</b>，输对才继承前世属性、遗物消散，输错则无法继承、下次突破继续判定；遗物可永久保留；加成按走过的境界计：练气起到当前境界-1各池 +1，当前境界大圆满再 +1（如金丹大圆满轮回=练气/筑基/金丹各+1=3点，金丹未大圆满=练气/筑基各+1=2点）；每个池子另奖励🌀开脉丹×1；加成<b>下次突破后生效</b>：只计当前境界以下各境（如金丹1层只享受练气+筑基=20点，突破到元婴后才享受金丹池），每点使每升 1 级全属性多 +1（每境上限 10 次，多境累加，凡人轮回不计）（次数记在轮回前所在境界，各境上限 10 次，多境累加，如凡人 10 次+筑基 3 次则金丹每级 +14）；<b>主宰</b>轮回则前面各境池各 +1。<br>· 🧪<b class="y">加料 · 变异 · 丹毒</b>：炼药时可自选加料 0-3 味，搭配对了出<b>变异丹</b>、不对会<b>炸炉</b>（基础料损 1 份、加料全损），搭配全靠自试。服丹积<b>丹毒</b>（0-100）：20 点以内药效十成，其后每多 10 点药效降一成，100 点时只剩两成；<b>化无丹</b>（生命草 + 一品凝露炼制）服 1 颗清 20 点，轮回全清。<br>· 炼药需消耗 1 株对应药草 + 1 枚兽蛋（药引，优先低级），可种植/掏蛋获得或在商店购买。炼药 Lv.3 可炼辟谷丸（饱食 +20）、Lv.5 可炼气力丸（体力 +3），丸非丹，不积丹毒。<br>· 🌀<b class="y">秘境</b>：独立于7档难度的特殊冒险，每日限3次，每次10体力、10-15步随机；怪物更强、高阶怪更多，守关必为👑王阶，稀有掉落大幅提升。秘境专属产出<b>🌀脉络残页</b>（背包直接使用，每张+1实络，永久）与各种珍稀物资（高品灵石/凝露、技能书、开脉丹等）。<br>· 冒险是<b>文字冒险</b>，分 7 档：初级 1 / 中级 3 / 高级 5 / 困难 10 / 地狱 15 / 深渊 20 / 噩梦 30 体力（出发时扣除），每轮 3/3/4/4/5/5/6 步；冒险地图<b>全服共用</b>（每档一张不同的图），空格会随机刷新 🌱草药 / ⛏️矿石 / 💎灵脉（灵脉较稀有）：站在格上点采集获得（草药 = 五种属性草之一；矿石 = 铁/铜/银/金，低概率出灵气石与下品灵石；采灵脉直接出灵石，灵脉越大出得越好，巨型灵脉有概率出仙玉），先到先得；<b>采集阵</b>可布在空格上，上品灵石驱动，自动收走该格刷新的资源；每步随机事件：遇怪、奇遇（隐士、山洞、商人、毒蘑菇、灵泉、石碑谜题…）、宝箱、陷阱、休息点，每个事件 2~4 个选择，部分选择要检定属性（敏捷躲陷阱、智力解谜、力量推石…，按钮上显示成功率），非陷阱事件可随时<b>撤退</b>保住收获；最后一步必定遇到守关怪。怪物分 <span class="rk1">普通</span>/<span class="rk2">精英</span>/<span class="rk3">变异</span>/<span class="rk4">领主</span>/<span class="rk5">王</span> 五阶，越高越强、奖励与掉落越好（王可能掉极品灵石/凝露），高难度更常遇到领主与王；遇怪可选战斗或逃跑（敏捷检定，失败被迫迎战）。战斗沿用原战斗规则（灵宠加成、装备与套装生效）。事件共数百种，均为一句话描述+选项。游戏里的所有物品（矿石、兽皮、肉、兽蛋、药草、各品灵石/凝露、各档残页与经验书、技能残页、技能书、丹药、药水、菜肴、止血药/解毒丹/兴奋剂、各套装各部位各品质装备、灵宠蛋、金元）都可能在冒险中获得：越稀有越少见，难度越高、怪物阶级越高越容易出好东西。战败：扣属性、清空剩余体力、损失金元、可能染上伤病，冒险结束（新人保护期内免除）。建议等级 Lv1/2/3/5/7/9/12、总属性 5/30/60/120/200/300/450，总属性不足时怪物按建议值强度出现；战败扣除属性、清空体力并损失 ${C.pct(K.DEATH_GOLD_PCT)} 金元。<br>· PK 胜者夺取对方指定属性（按境界：基数=对方境界每级属性点，凡人1…主宰13；同境全额，高打低差1/2/3/4境×0.5/0.3/0.2/0.1、差5+无，低打高差1/2/3境×2/3/5、差4+×10封顶）并获得金元；胜利另有 30% 得👹<b class="y">煞气</b>×1（击杀敌方灵宠每只另 30%、冒险击杀怪物 10%、王阶 30%）、60% 被👻<b class="r">诅咒</b>（永久，每层突破成功率 -1%，可叠加；商店买💧<b>神水</b>50金可消除一层）。煞气放在背包中每个被动+1%攻击或+1%防御（背包中自选）；习得《吞魔》（商店 800 金）后可吞噬，每次加1个法力上限的法力、无视上限无限叠加。<br>· 🍲<b class="y">珍馐</b>：烹饪 Lv6+ 可烹制 5 种珍馐（虎肉 + 药草 / 三品凝露，无品质）：<b>珍馐毒</b>（敌方全体中毒）、<b>珍馐离</b>（敌方混乱 3 回合，50% 概率转头互砍）、<b>珍馐力</b>（己方主人+灵宠力量 +50%，持续 5 回合）、<b>珍馐衰</b>（敌方全属性 -30%，持续 5 回合）、<b>回魂珍馐</b>（本场战斗中主人或灵宠首次倒下时复活，恢复 50% 生命）。PK 战前可使用 1 种，<b>最先手、无视敏捷</b>。<br>· 📢<b class="y">全服通告</b>：获得橙色以上物品时全服通告——传说装备（掉落/锻造）、极品丹药/药水/菜肴、传说及以上品质灵宠（传说/仙/神）。<br>· 商店出售药草、一品凝露、疗伤药（止血药 25、解毒丹 20、兴奋剂 30 金）与技能书，收购矿石、猎物与兽蛋。<br>· 🏪<b class="y">寄售行</b>：商店→🏪寄售行，线上玩家市场，可上架矿石/药草凝露/丹药（含变异丹）/疗伤药等，成交收5%手续费。<br>· 💬<b class="y">世界聊天</b>：菜单→💬世界聊天，可与天下真人道友畅谈；突破成功时全服通告。<br>· 🏆<b class="y">修仙榜单</b>：菜单→🏆修仙榜单，与天下真人道友一较高下；共7榜：<b>等级榜</b>（境界+等级）、<b>力量/敏捷/防御/生命/智力</b>五榜、<b>📅签到榜</b>（累计签到次数）与<b>🧘闭关榜</b>（累计闭关时长），每榜取前20名。<b>每日榜单奖励</b>（等级/五维/签到榜，每榜按名次）：第1名🌀脉络残页×1、第2-3名🌀开脉丹×1、第4-10名👹煞气×1、第11名及以后💠极品灵石×1，每日可领一次。<br>· 🔥<b class="y">连续签到</b>：每天签到累积，断签清零；连续签到7天送 🎒小型储物袋 ×1（每个号限领1次）。<br>· 🎒<b class="y">物品上限</b>：背包物品默认上限100，装备包默认5件；超出上限的物品无法获得、直接消失；小型储物袋/储物戒指/储物空间可扩充上限。<br>· ⏳<b class="y">寿元</b>：凡人100年，每日签到-1年；突破后寿元取max(当前,新境界基础)，每突破一境×2（练气200/筑基400/金丹800/元婴1600/化神3200/大乘6400/渡劫12800/仙人25600/金仙51200/合体10万/尊者20万/主宰409600年）；寿元≤10年变红预警，耗尽则<b class="r">强制抉择</b>：<b class="y">轮回转世</b>（选一个属性保留，物品保留）或<b class="r">☠️坐化死亡</b>（失去一切，重开一局）；轮回后寿元重置为100年。战斗中可<b class="y">🔥燃血</b>/<b class="y">💧燃法</b>/<b class="y">⏳燃寿</b>：点一下+1层，最高10层（燃血/燃法10层后再点关闭）。<b class="y">🔥燃血</b>配合<b>防御</b>=<b class="r">🔥燃血御守</b>：防御加成百分比与攻击加成相同，对方物理攻击<b class="y">反弹100%伤害</b>，法术攻击则防御无效。<b class="y">⏳燃寿</b>：每层燃烧10年寿元，本场攻击+30%（最多10层），寿元不足10年无法燃烧。<b class="y">🔰法术防御</b>：消耗法力/仙力换取本回合法术防御（练气~渡劫1法力=10点，仙人以上1仙力=100万点），专门抵挡火球术/雷击等法术伤害（与防御叠加），灵宠同样生效；<b class="y">💧燃法</b>配合<b>🔰法术防御</b>=<b class="pu">💧燃法灵盾</b>：对方的法术伤害优先扣<span class="pu">法力</span>（蓝条空了则扣血），并反弹<span class="y">流失法力×10</span>的法术回击；<b class="pu">⚡仙力攻击</b>也会被反弹，反弹=<span class="y">仙术伤害+攻击者消耗仙力×10</span>；即使被秒杀回击依然有效，可<span class="r">☠️同归于尽</span>（双方各自承受死亡惩罚，互夺：双方从对方背包各夺1件物品，属性互相转移，外加各自全属性消散1%）。<b class="y">🛡️仙力防御</b>：仙人境以上可用，1仙力=100万防御，只持续1回合，灵宠同样生效；<b class="y">只反弹⚡仙力攻击</b>（反弹100%所受伤害，物理/法术攻击不反弹）。<b class="y">⚡仙力攻击</b>：1仙力=100万直接伤害，无视防御；仙人境以上的对手也有概率使用（耗5-20仙力）。<br>· 🌀<b class="y">经络</b>：分<b>络</b>（加闭关速度）与<b>脉</b>（加法力溢出上限）两种，各分虚/实。<b>虚络</b>：<b>开脉丹</b>（冒险低概率掉落）服用每颗开一穴（点亮神藏穴位）、虚络 +1（不加气旋）；<b>实络</b>：<b>🌀脉络残页</b>（秘境专属）在背包直接使用，每张+1<span class="g">（永久，轮回保留）</span>。每条络闭关+1/秒（洞府1+络+经验/秒，灵脉2+络+经验/秒）。<b>虚脉</b>：10虚络在背包合成1条<span class="r">（临时）</span>；<b>实脉</b>：每用10张脉络残页<b>📖开脉术</b>升1级，实脉+1<span class="g">（永久）</span>。溢出上限=基础2倍+虚脉（最多12条生效）+实脉（不封顶，可突破10倍）。每用1张脉络残页开脉术经验+1，每点经验闭关+1/秒。<b>🌀神藏</b>：星藏分13座神藏（一座一经、任督合一，座名按境界），图外围气旋即进度；每座吃10张脉络残页开满（不按穴数），开脉丹每颗开一穴、不动气旋，部分进度按比例亮星，轮回只清丹开的穴、气旋保留；虚络由开脉丹开穴派生；开脉丹点满一条经络一侧得虚脉1条（12经左右共24条、任督各1条，共26条），左右成对多压一条、任督各压一条（虚脉最多压14条）；气旋吃满一座为大气旋、算实脉1条，实脉封顶13条。<br>· 🌫️<b class="y">天地灵气</b>：全服共享的灵气浓度（末法/稀薄/平常/浓郁/潮汐），影响所有人闭关收益与凝气（×0.6~×1.4）；灵脉闭关可养气，往灵脉投灵石可聚灵，灵气会自然衰减。<br>· 🎖️<b class="y">身份</b>：声望攒身份（散修→客卿→供奉→长老→太上长老），签到/突破/观礼/奇遇/放生/发红包都攒声望；身份给特权：签到体力加成、秘境次数、观礼体力加成。<br>· 🌩️<b class="y">功德大劫</b>：大乘起 30 天一劫，结算时功德 ≥100 安然渡过得天道赐福，<100 劫火焚身扣寿元 5%，结算后功德减半。<br>· 🧧<b class="y">红包</b>：商会卖红包皮（金元/下品/中品/上品/极品灵石/仙玉六种，各 1 个对应货币一张），发放时放入对应货币（≥100 个、≥10 人抢，每人随机至少 1、最多整包一半），24 小时没抢完的回收进<b class="y">天道池</b>；天道池全服可见，玩家可捐献补池，池亏空过深则灵气不稳引大劫。<br>· 🖼️<b class="y">玩家头像图库</b>：上传头像可自己取名，私用只存本机，入库则提交审核、通过后进头像页「玩家图库」全服可选；攒得多了将来逐步替换官方图。· 🐾<b class="y">灵宠开口</b>：出战灵宠有性格，会在出战、战斗、喂食、升级、奇遇时说话。<br>· 🌠<b class="y">定命星</b>：开局所定命星，只论命格，不论强弱。<br>· 🗡️<b class="y">本命飞剑</b>：练气后在个人面板「本命」页铸剑，择一剑意（雷意/河意/山意）；悟剑耗观相残页提升剑意，换意须斩旧剑重铸。<br>· ⚖️<b class="y">法宝规则词条</b>：传说品质装备必带一条规则（不灭/噬灵/连珠/背水），改写战斗规则而非堆数值。<br>· 🧘<b class="y">闭关</b>：闭关期间只能点商会/背包/生活，修炼/冒险/PK不可用；<b>灵脉闭关</b>可PK（点PK即出关迎战并结算收益）；闭关调息每秒恢复 <b class="g">10% 生命上限</b>（出关结算）。<br>· ⚔️<b class="y">仙术五行修炼</b>：仙人境起可进，金/木/水/火/土五条修炼线，每条固定10步，每次耗<b>10仙力+5体力</b>；每日五条线共计：仙人1次/金仙2次/合体3次/尊者4次/主宰5次。守关必为👑王阶且必掉1个对应属性残物（其他怪极低概率掉落，每次不出+1%直到出，出后重计）；10个同属性残物在冒险页⚗️五行合成中合1件，自选<b>X之力</b>或<b>X之抗</b>。X之力：攻击附带对应属性伤害（每件+10%，<b>无法闪避</b>，颜色：金<span style="color:#ffd700">金</span>/木<span style="color:#22c55e">绿</span>/水<span style="color:#3b9ddd">蓝</span>/火<span style="color:#ef4444">红</span>/土<span style="color:#a16207">褐</span>）；X之抗：免除对应属性伤害，且被命中时按（抗件数-力件数）反弹10%/件（例：1金之力打3金之抗，抗方无属性伤害并反弹20%）。</small></div></div>
     <div class="row"><button class="btn full" data-close>关闭</button></div>`;
   }
   openSheet(html + `</div>`);
@@ -8844,7 +9047,7 @@ function doBrewDetox(n) { // v998 炼制化无丹（本地判定）
   const lines = []; let ok = 0, fail = 0, got = 0, ups = 0, stop = '';
   for (let i = 0; i < n; i++) {
     const r = C.brewDetox(S); if (!r) break;
-    if (r.err) { stop = r.err === 'mat' ? '缺生命草或一品灵露，无法炼制化无丹。' : r.err === 'mana' ? '法力不足，无法继续炼药。' : r.err === 'dead' ? '你毒发身亡了。' : '活力不足，无法继续炼药。'; break; }
+    if (r.err) { stop = r.err === 'mat' ? '缺生命草或一品凝露，无法炼制化无丹。' : r.err === 'mana' ? '法力不足，无法继续炼药。' : r.err === 'dead' ? '你毒发身亡了。' : '活力不足，无法继续炼药。'; break; }
     if (r.ok) { ok++; got += r.n; lines.push('✅ 成丹 化无丹 ×' + r.n); } else { fail++; lines.push('💨 丹炉炸裂，炼制失败'); }
     ups += r.lvUp;
   }
@@ -8930,7 +9133,7 @@ async function doOpenChest(kind, n) { // v251 开宝箱
         for (const gg of (j.gains||[])) {
           if (gg.st === 'gold') { S.gold = (S.gold|0) + gg.n; gains.push('金元+' + gg.n); }
           else if (gg.st === 'ores') { S.ores[gg.k] = (S.ores[gg.k]|0) + gg.n; gains.push((gg.k==='sp1'?'下品灵石':gg.k==='sp2'?'中品灵石':gg.k==='sp3'?'上品灵石':gg.k==='sp4'?'极品灵石':gg.k==='sp5'?'💠极品灵石':gg.k) + '×' + gg.n); }
-          else if (gg.st === 'mats') { S.mats[gg.k] = (S.mats[gg.k]|0) + gg.n; if (gg.k === 'maiPages') gains.push('🌀脉络残页×1'); else gains.push((gg.k==='lu1'?'一':gg.k==='lu2'?'二':'三') + '品灵露×1'); }
+          else if (gg.st === 'mats') { S.mats[gg.k] = (S.mats[gg.k]|0) + gg.n; if (gg.k === 'maiPages') gains.push('🌀脉络残页×1'); else gains.push((gg.k==='lu1'?'一':gg.k==='lu2'?'二':'三') + '品凝露×1'); }
           else if (gg.st === 'inv') { S.inv[gg.k] = (S.inv[gg.k]|0) + gg.n; gains.push('🌟补天丹×1'); }
         }
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
@@ -8957,7 +9160,7 @@ async function doOpenChest(kind, n) { // v251 开宝箱
     } else if (kind === 'chestR') {
       if (r < 0.4) { S.ores['sp3'] = (S.ores['sp3'] | 0) + 1; gains.push('上品灵石×1'); }
       else if (r < 0.7) { S.ores['sp4'] = (S.ores['sp4'] | 0) + 1; gains.push('极品灵石×1'); }
-      else { const k2 = 'lu' + (1 + Math.floor(Math.random() * 3)); S.mats[k2] = (S.mats[k2] | 0) + 1; gains.push((k2 === 'lu1' ? '一' : k2 === 'lu2' ? '二' : '三') + '品灵露×1'); }
+      else { const k2 = 'lu' + (1 + Math.floor(Math.random() * 3)); S.mats[k2] = (S.mats[k2] | 0) + 1; gains.push((k2 === 'lu1' ? '一' : k2 === 'lu2' ? '二' : '三') + '品凝露×1'); }
     } else {
       if (r < 0.4) { S.ores['sp5'] = (S.ores['sp5'] | 0) + 2; gains.push('💠极品灵石×2'); }
       else if (r < 0.7) { S.mats['maiPages'] = (S.mats['maiPages'] | 0) + 1; gains.push('🌀脉络残页×1'); }
@@ -9019,6 +9222,39 @@ async function sellServer(type, idOrKey) {
   } catch(e) { return false; } // 网络异常 → 回落本地
 }
 async function doBuy(kind, k, n) {
+  if (kind === 'tool') { // v1128 器具购买：登录走服务端原子扣金发器具；网络异常回落本地（本地扣金只减不增过守卫）
+    const price = k === 'fuq' ? 200 : 100;
+    const applyToolBuy = (nn) => {
+      if (k === 'pick' || k === 'hoe') { if (!S.tools) S.tools = { pick: null, hoe: null }; S.tools[k] = { tier: 0, dur: 100, max: 100, lvl: 0, uses: 0 }; }
+      else { if (!S.inv) S.inv = {}; S.inv.fuq = (S.inv.fuq | 0) + Math.max(1, nn | 0); }
+    };
+    const toolLabel = () => k === 'pick' ? '普通矿镐' : k === 'hoe' ? '普通药锄' : '强化符';
+    if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+      try {
+        const resp = await MHXY.api('/api/shop/buy', { method: 'POST', body: { kind, key: k, n } });
+        const j = resp && resp.json;
+        if (resp.ok && j && j.ok) {
+          if (typeof j.gold === 'number') S.gold = j.gold; else S.gold = (S.gold | 0) - j.cost;
+          applyToolBuy(j.n);
+          if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+          log('gold', `🛒 购买 ${toolLabel()} ×${j.n}（金元 -${j.cost}）`);
+          try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch (_) {}
+          commit(); const _sy = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy;
+          return;
+        }
+        if (!resp.netErr) { sheetShop((j || {}).error === 'have_tool' ? '已拥有该器具。' : (j || {}).error === 'no_money' ? '金元不足。' : '购买失败：' + ((j || {}).error || resp.status)); return; }
+      } catch (e) { /* 回落本地 */ }
+    }
+    if ((k === 'pick' || k === 'hoe') && S.tools && S.tools[k]) { sheetShop('已拥有该器具。'); return; }
+    const cnt = k === 'fuq' ? Math.max(1, n | 0) : 1;
+    const cost = (S.race === 'traveler' ? Math.ceil(price * 0.95) : price) * cnt;
+    if ((S.gold | 0) < cost) { sheetShop('金元不足。'); return; }
+    S.gold = (S.gold | 0) - cost; applyToolBuy(cnt);
+    log('gold', `🛒 购买 ${toolLabel()} ×${cnt}（金元 -${cost}）`);
+    try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch (_) {}
+    commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2;
+    return;
+  }
   // v964 彻底版：med/mat/spirit 登录在线时走服务端（固定价兑换，服务端验算）
   if ((kind === 'med' || kind === 'mat' || kind === 'spirit') && window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
     try {
@@ -10812,10 +11048,14 @@ document.addEventListener('click', e => {
             _run.ev = _t.ev; _r.ev = _run.ev;
           } else if (_t.ev && !_t.evDone) {
             _run.ev = _t.ev; _r.ev = _run.ev;
-          } else if ((_t.t === 'rherb' || _t.t === 'rore' || _t.t === 'rvein') && !_run.dungeon) { // v1125 本地图资源格：踩上即采；v1126 加灵脉格
+          } else if ((_t.t === 'rherb' || _t.t === 'rore' || _t.t === 'rvein') && !_run.dungeon) { // v1125 本地图资源格：踩上即采；v1128 器具门槛（不过不消耗格）
             const _rkind = _t.t === 'rherb' ? 'herb' : _t.t === 'rvein' ? 'vein' : 'ore';
-            _t.t = 'empty'; _t.seen = 1;
-            try { const _rm2 = C.advResGrant(S, _run, _rkind); if (_rm2) toastLog('good', _rm2); } catch(_) {}
+            const _gate = C.toolGateL(S, _rkind, _t.rg || 1);
+            if (_gate.err) { _t.seen = 1; try { toastLog('bad', _gate.err); } catch(_) {} }
+            else {
+              _t.t = 'empty'; _t.seen = 1;
+              try { const _rm2 = C.advResGrant(S, _run, _rkind, _t.rg || 1); if (_rm2) toastLog('good', _rm2); } catch(_) {}
+            }
           } else if (!_t.seen && _t.t !== 'empty' && _t.t !== 'start') {
             _t.seen = 1; _run.evCount = (_run.evCount|0) + 1;
             if (_run.dungeon && _t.t === 'event') { // v1094 秘境事件格：只显示作者写的一句文本，不进系统事件库
