@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1135</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1136</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1388,6 +1388,25 @@ function awakenRollAll(S) { // v1134 突破觉醒：每条现有基础灵根各�
   const out = [];
   for (const base of LINGGEN_ELEMS) { const m = tryAwakenRoot(S, base); if (m) out.push(base + '→' + m); }
   return out;
+}
+const HERB_ELE = { h_str: '金', h_vit: '木', h_agi: '水', h_int: '火', h_def: '土' }; // v1136 属性草对应行（LINGGEN_ATTR 反查）
+function herbEatenToday(S) { const d = new Date().toISOString().slice(0, 10); return (S.herbEat && S.herbEat.d === d) ? (S.herbEat.n | 0) : 0; }
+function eatHerb(S, key) { // v1136 Ye 定：属性草每天可吃 5 棵——饱食 +20、对应属性 +1、丹毒 +20；带 v1134 觉醒 / v1135 领悟判定
+  const e = HERB_ELE[key]; if (!e) return null;
+  if (!S.mats || (S.mats[key] | 0) <= 0) return { err: 'none' };
+  const d = new Date().toISOString().slice(0, 10);
+  if (!S.herbEat || S.herbEat.d !== d) S.herbEat = { d, n: 0 };
+  if ((S.herbEat.n | 0) >= 5) return { err: 'daily' };
+  S.mats[key]--; if (S.mats[key] <= 0) delete S.mats[key];
+  S.herbEat.n++;
+  S.hunger = Math.min(100, (S.hunger | 0) + 20);
+  const attr = LINGGEN_ATTR[e];
+  if (!S.attrs) S.attrs = {};
+  S.attrs[attr] = (S.attrs[attr] | 0) + 1;
+  S.danDu = Math.min(100, (S.danDu | 0) + 20);
+  const awakened = tryAwakenRoot(S, e);
+  const comprehended = awakened ? null : tryComprehendRoot(S, e);
+  return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended };
 }
 function tryComprehendRoot(S, e) { // v1135 Ye 定：吃不相对应的灵物/丹药，极稀有概率（0.1%）领悟从未拥有的灵根（得基础根，灵根未满 5 条时）
   const base = rootBaseL(e);
@@ -3507,7 +3526,7 @@ function advResGrant(S, run, kind, grade) {
   if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot }); // v1129 五行导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb }); // v1129 五行导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
@@ -8206,6 +8225,18 @@ window.lwEat = function (idx) {
     commit(); sheetBag();
   } catch (_) {}
 };
+window.eatHerb = function (key) { // v1136 吃属性草
+  try {
+    const r = C.eatHerb(S, key); if (!r) return;
+    if (r.err === 'daily') { log('bad', '🌿 今日属性草已吃满 5 棵，明日再来'); return; }
+    if (r.err) { log('bad', '没有这种药草'); return; }
+    const _an = { str: '力量', vit: '体质', agi: '身法', int: '智力', def: '防御' }[r.attr] || r.attr;
+    log('good', `🌿 吃下${MATS[key].name}：饱食 <span class="g">+20</span> · ${_an} <span class="g">+1</span> · 丹毒 <span class="r">+20</span>（今日 ${r.n}/5）`);
+    if (r.awakened) log('good', `🌟 <b>灵根觉醒！</b>${r.e}灵根食草而醒，化作<b>${r.awakened}</b>灵根！`);
+    if (r.comprehended) log('good', `🌟 <b>顿悟新灵根！</b>竟领悟了从未有过的<b>${r.comprehended}</b>灵根！`);
+    commit(); sheetBag();
+  } catch (_) {}
+};
 let lifeTab = 'cook', tameAttr = 'str', tameTargetId = 0, forgeSlot = 'weapon', forgeSet = 'crit', forgeKind = 'char', forgePet = null;
 const VIG = n => `<b style="color:#7fd6ff">${n}</b>`;
 const needTxt = need => need.map(([st, k, n]) => { const have = S[st][k] || 0, nm = st === 'food' ? MEATS[k].name : st === 'eggs' ? EGGS[k].name : st === 'mats' ? (MATS[k] || LU[k]).name : st === 'prey' ? PREY[k].name : st === 'pages' ? PAGES[k].name : ORES[k].name; return `<span class="${have >= n ? '' : 'r'}">${nm}×${n}<small style="display:inline">(${have})</small></span>`; }).join(' + ');
@@ -8438,7 +8469,7 @@ function sheetBag() {
       ((S.inv['chestN']|0) > 0 ? `<div class="row"><div class="lab">🎀 <b class="y">精致盲盒</b> ×${S.inv['chestN']}<small>擂台周榜奖励，开出灵石/金元</small></div><button class="btn gold" data-chest="chestN" data-n="1">开启</button>${(S.inv['chestN']|0) > 1 ? `<button class="btn" data-chest="chestN" data-n="${S.inv['chestN']}">全开</button>` : ''}</div>` : '') +
       ((S.inv['chestR']|0) > 0 ? `<div class="row"><div class="lab">🎁 <b class="y">稀有宝箱</b> ×${S.inv['chestR']}<small>擂台月榜奖励，开出高品灵石/凝露</small></div><button class="btn gold" data-chest="chestR" data-n="1">开启</button>${(S.inv['chestR']|0) > 1 ? `<button class="btn" data-chest="chestR" data-n="${S.inv['chestR']}">全开</button>` : ''}</div>` : '') +
       ((S.inv['chestA']|0) > 0 ? `<div class="row"><div class="lab">💎 <b class="y">高级宝箱</b> ×${S.inv['chestA']}<small>擂台年榜奖励，开出极品灵石/珍稀</small></div><button class="btn gold" data-chest="chestA" data-n="1">开启</button>${(S.inv['chestA']|0) > 1 ? `<button class="btn" data-chest="chestA" data-n="${S.inv['chestA']}">全开</button>` : ''}</div>` : '') : '') +
-    `<h3>材料</h3>` + (mats.length ? mats.map(k => `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}</div></div>`).join('') : '<div class="empty">暂无材料，可在商店购买</div>') +
+    `<h3>材料</h3>` + (mats.length ? mats.map(k => `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}<small>直接吃：饱食 +20 · 对应属性 +1 · 丹毒 +20（今日已吃 ${C.herbEatenToday(S)}/5）</small></div><button class="btn" onclick="window.eatHerb('${k}')">吃</button></div>`).join('') : '<div class="empty">暂无材料，可在商店购买</div>') +
     `<h3>🏠 洞府令</h3>` + ((S.mats['cave_token']|0) + (S.mats['xianfu_token']|0) > 0 ? ['cave_token','xianfu_token'].filter(k => (S.mats[k]|0) > 0).map(k => { const _eg = k === 'cave_token' ? `洞府 ${S.dongfuGrids|0} 格·灵气 ${S.dongfuEnergy|0}·下格需${(S.dongfuGrids|0) + 1}令牌` : `仙府 ${S.xianfuGrids|0} 格·灵气 ${S.xianfuEnergy|0}`; return `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}<small>${MATS[k].desc} · ${_eg}</small></div><button class="btn gold" onclick="useCaveToken('${k}')">使用</button></div>`; }).join('') : '<div class="empty">暂无，商店有售</div>') +
     `<h3>凝露</h3>` + (LUK.some(k => S.mats[k] > 0) ? LUK.filter(k => S.mats[k] > 0).map(k => `<div class="row"><div class="lab">${rarTxt('farm', k)} ×${S.mats[k]}<small>服用：随机属性 +${LU[k].pts} · 炼药投入：成功率/上品 +${C.pct(LU[k].alc)}</small></div>
       <button class="btn" data-lu="${k}" data-n="1">服用</button>${S.mats[k] > 1 ? `<button class="btn gold" onclick="qtyPrompt('lu','${k}',${S.mats[k]})">数量</button>` : ''}</div>`).join('') : '<div class="empty">暂无凝露，种植时偶尔可得（一品可在商店购买）</div>') +
