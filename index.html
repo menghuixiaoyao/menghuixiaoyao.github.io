@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1137</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1138</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1727,6 +1727,8 @@ function checkin(S, force) {
   if (!(S.lifespan > 0)) S.lifespan = REALM_LIFESPAN[Math.min(12, Math.max(0, S.realm|0))] || 100;
   if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(5000, S.danDu | 0); // v998 danDu
   S.lifespan = Math.max(0, S.lifespan - 1);
+  const toxLoss = (!S.dead && (S.danDu | 0) > 1000) ? Math.floor((S.danDu | 0) / 1000) : 0; // v1138 Ye 定：丹毒超过 1000 自动掉寿元（签到日结，每满千点扣 1 年）
+  if (toxLoss > 0) S.lifespan = Math.max(0, S.lifespan - toxLoss);
   let bled = 0, died = null, forceReinc = false;
   if (S.lifespan <= 0 && !S.dead) { forceReinc = true; S.forceReinc = true; } // 寿元耗尽：强制轮回，不再坐化
   const vigor = Math.max(0, Math.min(vigorGain(S), vigorCap(S) - S.vigor)); S.vigor += vigor; /* 活力可结转，最多 3 天量；死亡不清空活力 */
@@ -1735,7 +1737,7 @@ function checkin(S, force) {
     bled = Math.max(1, Math.ceil(S.attrs.vit * K.BLEED_CHECKIN)); S.attrs.vit = Math.max(0, S.attrs.vit - bled);
     if (S.attrs.vit <= 0) died = die(S, 'bleed');
   }
-  return { ok: true, gain, vigor, mana, bled, died, revived, forceReinc, ringReward, consecDays: S.consecDays || 0 };
+  return { ok: true, gain, vigor, mana, bled, died, revived, forceReinc, ringReward, consecDays: S.consecDays || 0, toxLoss };
 }
 function train(S, attr, n) {
   if (S.dead) return 0;
@@ -8815,6 +8817,7 @@ function doCheckin(force) {
       log('gold', '🎖️ <span class="y">X 认证</span>加成：签到体力翻倍！');
     }
   } catch(_) {}
+  if (r.toxLoss) log('bad', `🧪 <b>丹毒攻心</b>（丹毒 ${S.danDu|0}），寿元 <span class="r">-${r.toxLoss} 年</span>`); // v1138
   // v1086 拍卖行已改服务端结算，本地 auc3Daily 停用（避免重复结算）
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
   log('gold', `📅 ${force ? '<span class="pu">[测试]</span> ' : ''}签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
