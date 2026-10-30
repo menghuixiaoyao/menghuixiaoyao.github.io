@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1134</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1135</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1389,6 +1389,16 @@ function awakenRollAll(S) { // v1134 突破觉醒：每条现有基础灵根各�
   for (const base of LINGGEN_ELEMS) { const m = tryAwakenRoot(S, base); if (m) out.push(base + '→' + m); }
   return out;
 }
+function tryComprehendRoot(S, e) { // v1135 Ye 定：吃不相对应的灵物/丹药，极稀有概率（0.1%）领悟从未拥有的灵根（得基础根，灵根未满 5 条时）
+  const base = rootBaseL(e);
+  if (hasRootEleL(S, base)) return null;
+  if (!Array.isArray(S.lingGen)) S.lingGen = [];
+  if (S.lingGen.length >= 5) return null;
+  if (Math.random() >= 0.001) return null;
+  S.lingGen.push(base);
+  S.faZeDone = 0; // 灵根变化，本命圆满需重判（与补天丹同规）
+  return base;
+}
 function assignLingGen(S) { // 练气突破随机灵根：1-5条加权
   if (S.lingGen && S.lingGen.length) return S.lingGen;
   const r = Math.random();
@@ -1451,7 +1461,7 @@ function faZeBenMingTxt(S) { // v873 本命圆满加成显示
   const n = (S.lingGen||[]).length;
   return `对应灵根属性各+5%，突破主宰成功率+${5 * n}%`;
 }
-try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus, faZeBtBonus: faZeBtBonus, benMingTxt: faZeBenMingTxt, base: rootBaseL, hasEle: hasRootEleL, factor: eleFactorL, mut: mutRootL, MUT: ROOT_MUT, tryAwaken: tryAwakenRoot, awakenAll: awakenRollAll }; } catch(_) {} // v1129 变异助手 // v867 跨script块用window.LG
+try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus, faZeBtBonus: faZeBtBonus, benMingTxt: faZeBenMingTxt, base: rootBaseL, hasEle: hasRootEleL, factor: eleFactorL, mut: mutRootL, MUT: ROOT_MUT, tryAwaken: tryAwakenRoot, awakenAll: awakenRollAll, comprehend: tryComprehendRoot }; } catch(_) {} // v1129 变异助手 // v867 跨script块用window.LG
 function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 breakthrough / finishTribQuiz 共用）
   S.thunderOk = false; S._trigFail = 0; S._succFail = 0; // v659 突破后重置雷云判定
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
@@ -2405,7 +2415,8 @@ function eatSyd(S, idx) { // v1129 服寿元丹：灵根对应全效，否则减
   S.lifespan = (S.lifespan || 100) + gain;
   S.danDu = Math.min(100, (S.danDu | 0) + 1);
   const awakened = tryAwakenRoot(S, rootBaseL(p.e)); // v1134 吃对应行丹觉醒：须有该基础灵根
-  return { gain, f, e: p.e, val: p.val, awakened };
+  const comprehended = awakened ? null : tryComprehendRoot(S, p.e); // v1135 吃不相对应丹：极稀有领悟新灵根
+  return { gain, f, e: p.e, val: p.val, awakened, comprehended };
 }
 Object.assign(C, { lwCritP, brewSyd, brewKm, eatSyd });
 function useDanwan(S, key, n) { // v1096 服丸
@@ -3496,7 +3507,7 @@ function advResGrant(S, run, kind, grade) {
   if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot }); // v1129 五行导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot }); // v1129 五行导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
@@ -8187,9 +8198,11 @@ window.lwEat = function (idx) {
     const base = Math.floor(it.y * 0.1), f = C.eleFactorL(S, it.e), gain = Math.floor(base * f), note = C.eleNoteL(f); // v1130 倍率矩阵
     arr.splice(idx | 0, 1);
     const _aw = C.tryAwakenRoot(S, C.rootBaseL(it.e)); // v1134 生吃灵物觉醒判定：须有该行基础灵根
+    const _cp = _aw ? null : C.tryComprehendRoot(S, it.e); // v1135 吃不相对应灵物：极稀有领悟新灵根
     S.lifespan = (S.lifespan || 100) + gain;
     log('good', `🌿 生吃<b style="color:${C.GRADE_COLORS[it.g - 1]}">${C.LW_GRADE_NAMES[it.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[it.e]}">${it.e}</b>（${it.y} 年），寿元 <span class="g">+${gain}</span>${note ? `（${note}）` : ''}`);
     if (_aw) log('good', `🌟 <b>灵根觉醒！</b>${C.rootBaseL(it.e)}灵根食灵而醒，化作<b>${_aw}</b>灵根！`); // v1134
+    if (_cp) log('good', `🌟 <b>顿悟新灵根！</b>此物与自身灵根不合，却意外领悟了从未有过的<b>${_cp}</b>灵根！`); // v1135
     commit(); sheetBag();
   } catch (_) {}
 };
@@ -9237,6 +9250,7 @@ window.eatSyd = function (idx) { // v1129 服寿元丹
     const r = C.eatSyd(S, idx); if (!r) return;
     log('good', `💊 服下<b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b>，寿元 <span class="g">+${r.gain}</span>${C.eleNoteL(r.f) ? `（${C.eleNoteL(r.f)}）` : ''}`);
     if (r.awakened) log('good', `🌟 <b>灵根觉醒！</b>${C.rootBaseL(r.e)}灵根应丹气而醒，化作<b>${r.awakened}</b>灵根！`); // v1134
+    if (r.comprehended) log('good', `🌟 <b>顿悟新灵根！</b>此丹与自身灵根不合，却意外领悟了从未有过的<b>${r.comprehended}</b>灵根！`); // v1135
     commit(); sheetBag();
   } catch (_) {}
 };
