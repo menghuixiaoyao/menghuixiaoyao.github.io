@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1141</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1142</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2096,7 +2096,7 @@ function shareAura(owner, allies) {
     if (a.isPet && a.psk) for (const sk of a.psk) if (sk !== 'luck' && !a.pset[sk] && owner.sets && owner.sets[sk]) a.sets[sk] = owner.sets[sk]; // 灵宠有自身套装用自己的，否则与主人同套装一致
     a.auraFrom = owner; applySetDef(a); });
 }
-function playerFighter(S, adv) { const f = fighter('你', fightAttrs(S, adv), true, S.skills, activePets(S)); const _peakHp = Math.max(1, Math.floor(C.bumpPeak(S) * 5)); if (f.maxHp < _peakHp) { f.maxHp = _peakHp; f.hp = Math.max(f.hp, Math.min(_peakHp, f.hp)); } if (S.race === 'yi') { const _om = f.maxHp; f.maxHp = Math.floor(_om * 1.05); if (f.hp >= _om) f.hp = f.maxHp; } /* v1088 异族强健：生命上限 +5% */ if (C.useFali(S)) { f.maxMp = Math.max(1, Math.floor(C.manaMax(S))); f.mp = Math.max(0, Math.floor(S.mana)); } if (S.hpCur != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.floor(S.hpCur))); f.xbOn = (S.xianBurstOn|0); f.xbPts = (S.xianBurst|0); if (f.xbOn && f.xbPts > 0) { f._xb = 1 + f.xbPts * 0.2; f._xbDef = 1 + f.xbPts * 0.2; } if (adv && (S.advVit|0) > 0) { const _av = S.advVit|0, _avHp = _av * 5; f.a.vit += _av; f.maxHp += _avHp; f.hp = Math.min(f.maxHp, f.hp + _avHp); } f.burnBloodTier = Math.min(10, S.burnBloodTier|0) || (S.burnBlood ? 1 : 0); f.burnTier = Math.min(10, S.burnTier|0) || (S.burnSpirit ? 1 : 0); f.burnLife = 0; f.S = S; for (const _pp of (f.pets || [])) _pp.biteMult = tameBiteMult(S); f.sets = activeSets(S); f.elixirs = adv ? null : S.elixirs; f.wxPow = S.wxPow; f.wxRes = S.wxRes; applySetDef(f); shareAura(f, f.pets || []); if (S.buff && AN[S.buff.k] && --S.buff.left <= 0) S.buff = null; try { const _rl6 = equipRules(S); f.ruleBumie = _rl6.includes('bumie'); f.ruleShiling = _rl6.includes('shiling'); f.ruleLianzhu = _rl6.includes('lianzhu'); f.ruleBeishui = _rl6.includes('beishui'); } catch(_) {} // v1006 法宝规则
+function playerFighter(S, adv) { const f = fighter('你', fightAttrs(S, adv), true, S.skills, activePets(S)); const _peakHp = Math.max(1, Math.floor(C.bumpPeak(S) * 5)); if (f.maxHp < _peakHp) { f.maxHp = _peakHp; f.hp = Math.max(f.hp, Math.min(_peakHp, f.hp)); } if (S.race === 'yi') { const _om = f.maxHp; f.maxHp = Math.floor(_om * 1.05); if (f.hp >= _om) f.hp = f.maxHp; } /* v1088 异族强健：生命上限 +5% */ if (C.useFali(S)) { f.maxMp = Math.max(1, Math.floor(C.manaMax(S))); f.mp = Math.max(0, Math.floor(S.mana)); } if (S.hpCur != null) f.hp = Math.max(0, Math.min(f.maxHp, Math.floor(S.hpCur))); f.xbOn = (S.xianBurstOn|0); f.xbPts = (S.xianBurst|0); if (f.xbOn && f.xbPts > 0) { f._xb = 1 + f.xbPts * 0.2; f._xbDef = 1 + f.xbPts * 0.2; } if (adv && (S.advVit|0) > 0) { const _av = S.advVit|0, _avHp = _av * 5; f.a.vit += _av; f.maxHp += _avHp; f.hp = Math.min(f.maxHp, f.hp + _avHp); } f.burnBloodTier = Math.min(10, S.burnBloodTier|0) || (S.burnBlood ? 1 : 0); f.burnTier = Math.min(10, S.burnTier|0) || (S.burnSpirit ? 1 : 0); f.burnLife = 0; f.S = S; f.toxAtk = toxImmune(S) ? 1 : 0; for (const _pp of (f.pets || [])) _pp.biteMult = tameBiteMult(S); f.sets = activeSets(S); f.elixirs = adv ? null : S.elixirs; f.wxPow = S.wxPow; f.wxRes = S.wxRes; applySetDef(f); shareAura(f, f.pets || []); if (S.buff && AN[S.buff.k] && --S.buff.left <= 0) S.buff = null; try { const _rl6 = equipRules(S); f.ruleBumie = _rl6.includes('bumie'); f.ruleShiling = _rl6.includes('shiling'); f.ruleLianzhu = _rl6.includes('lianzhu'); f.ruleBeishui = _rl6.includes('beishui'); } catch(_) {} // v1006 法宝规则
   f.bleed = !!S.status.bleed; f.poison = hasSt(S, 'poison') ? 999 : 0; f.pre = { bleed: f.bleed, poison: f.poison > 0 }; return f; }
 function carryOut(S, f, res) { // 战斗中新得的流血/中毒：胜利不带，战败100%带出
   if (res.win) return;
@@ -2762,6 +2762,16 @@ function inflict(f, k, L) {
   if (k === 'bleed') { if (f.bleed) return; f.bleed = true; L.push(`${nm(f)}<span class="r">🩸 开始流血</span>`); }
   else if (k === 'poison') { if (f.poison >= K.POISON_ROUNDS) return; f.poison = K.POISON_ROUNDS; L.push(`${nm(f)}<span class="r">☠️ 中毒了</span>`); }
 }
+function addPoisonStack(f, L) { // v1142 百毒不侵叠毒：给目标 +1 层毒（上限 10 层），持续刷新 3 回合；毒发伤害 = 层数 × 每层 4% 最大生命
+  f.pStacks = Math.min(10, (f.pStacks | 0) + 1);
+  f.poison = K.POISON_ROUNDS;
+  L.push(`${nm(f)}<span class="r">☠️ 毒层叠加（${f.pStacks}层）</span>`);
+}
+function toxOnHit(att, tgt, L) { // v1142 百毒不侵双向带毒：佩戴者打中目标→目标叠毒；佩戴者被打中→攻击者叠毒
+  if (tgt.hp <= 0) return;
+  if (att.toxAtk) addPoisonStack(tgt, L);
+  if (tgt.toxAtk && att.hp > 0 && att !== tgt) addPoisonStack(att, L);
+}
 function wuxingHit(att, tgt, baseDmg, L) { // 五行：力附加属性伤害（每件+10%）；有对应抗则免除属性伤害，并按(抗-力)件数反弹10%/件
   const pow = att.wxPow; if (!pow || !(baseDmg > 0) || tgt.hp <= 0) return;
   for (const e of WUXING) {
@@ -2814,6 +2824,7 @@ function physical(att, tgt, mult, verb, L) {
   if (tgt._bbDef && r.dealt > 0 && att.hp > 0) { const rr = applyDamage(att, r.dealt); L.push(`${nm(tgt)}<span class="r">🔥燃血反弹</span>！${nm(att)}受到 <span class="r">${rr.dealt}</span> 点反弹伤害${absTxt(rr)}`); } // 燃血御守：物理攻击全额反弹
   if (tgt.hp > 0) wuxingHit(att, tgt, r.dealt, L); // 五行之力附加属性伤害
   if (att.inflict && tgt.hp > 0 && R() < K.STATUS_HIT) inflict(tgt, att.inflict, L); // 野兽/毒物攻击
+  toxOnHit(att, tgt, L); // v1142 百毒不侵带毒
   fatalStrike(att, tgt, L);
   return r.dealt + r.abs;
 }
@@ -2844,6 +2855,7 @@ function magic(att, tgt, L, strong) {
     L.push(`${nm(tgt)}<span class="pu">🔰灵盾</span>以法力抵挡 <span class="pu">${_msAbs}</span> 点法术伤害`);
     if (att.hp > 0) { const _rr = applyDamage(att, _msAbs * 10); L.push(`${nm(tgt)}<span class="pu">💧法力回击</span>！反弹 <span class="r">${_rr.dealt}</span> 点法术伤害${absTxt(_rr)}`); } // 被秒回击依然有效，可同归于尽
   }
+  toxOnHit(att, tgt, L); // v1142 百毒不侵带毒（法术同样触发）
   fatalStrike(att, tgt, L);
 }
 const OFFENSIVE = ['attack', 'smash', 'fireball', 'thunder', 'vamp', 'xian_attack'];
@@ -2855,7 +2867,7 @@ function execAction(me, foe, act, L) {
   }
   if (act.startsWith('pot:')) { const t = act.slice(4), k = bestPot(me.elixirs, t), P = potOf(k); if (P && t === 'mp') { if (me.mp >= me.maxMp) { L.push(`${nm(me)}法力已满，收起了药水`); return; } if (!--me.elixirs[k]) delete me.elixirs[k]; const g = Math.min(me.maxMp - me.mp, Math.max(1, Math.round(me.maxMp * P.pct))); me.mp += g; L.push(`${nm(me)}饮下<span class="${['', '', 'q2', 'q3'][P.q]}">${QNAME[P.q]}法力药水</span>💧，回复 <span class="pu">${g}</span> 点法力`); return; } if (P && me.hp >= me.maxHp) { L.push(`${nm(me)}生命已满，收起了药水`); return; } if (P) { if (!--me.elixirs[k]) delete me.elixirs[k];
       const g = Math.min(me.maxHp - me.hp, Math.max(1, Math.round(me.maxHp * P.pct))); me.hp += g; L.push(`${nm(me)}饮下<span class="${['', '', 'q2', 'q3'][P.q]}">${QNAME[P.q]}生命药水</span>❤️，回复 <span class="g">${g}</span> 点生命`); } return; }
-  if (act.startsWith('med:')) { const k = act.slice(4), m = MEDS[k]; if (m && me.isPlayer && (S.meds[k] > 0)) { S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); if (m.cure === 'bleed') me.bleed = false; if (m.cure === 'poison') me.poison = 0; L.push(`${nm(me)}使用💊<b>${m.name}</b>，${STATUS[m.cure].icon}${STATUS[m.cure].name}<span class="g">已解除</span>`); } else { L.push(`${nm(me)}想使用疗伤药，但没有可用的`); } return; }
+  if (act.startsWith('med:')) { const k = act.slice(4), m = MEDS[k]; if (m && me.isPlayer && (S.meds[k] > 0)) { S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); if (m.cure === 'bleed') me.bleed = false; if (m.cure === 'poison') { me.poison = 0; me.pStacks = 0; } L.push(`${nm(me)}使用💊<b>${m.name}</b>，${STATUS[m.cure].icon}${STATUS[m.cure].name}<span class="g">已解除</span>`); } else { L.push(`${nm(me)}想使用疗伤药，但没有可用的`); } return; }
   switch (act) {
     case 'defend': { L.push(`${nm(me)}摆出防御姿态🛡，本回合减伤`); break; }
     case 'smash': physical(me, foe, 1.6, '施展<span class="pu">【重击】</span>', L); break;
@@ -2968,7 +2980,7 @@ Battle.prototype.finishRound = function () {
   for (const f of [A, A.pet, B, B.pet]) {
     if (!f || f.hp <= 0 || A.hp <= 0 || B.hp <= 0) continue;
     if (f.bleed) { f.hp = Math.max(0, f.hp - Math.max(1, Math.round(f.maxHp * K.BLEED_RND))); out.push(`${nm(f)}🩸 流血不止，生命 <span class="r">-${Math.max(1, Math.round(f.maxHp * K.BLEED_RND))}</span>`); }
-    if (f.poison > 0 && f.hp > 0) { const d = Math.max(1, Math.round(f.maxHp * K.POISON_RND)); f.hp = Math.max(0, f.hp - d); f.poison--; out.push(`${nm(f)}☠️ 毒发，生命 <span class="r">-${d}</span>`); }
+    if (f.poison > 0 && f.hp > 0) { const _stk = Math.max(1, f.pStacks | 0); const d = Math.max(1, Math.round(f.maxHp * K.POISON_RND * _stk)); f.hp = Math.max(0, f.hp - d); f.poison--; if (f.poison <= 0) f.pStacks = 0; out.push(`${nm(f)}☠️ 毒发${_stk > 1 ? `（${_stk}层）` : ''}，生命 <span class="r">-${d}</span>`); } // v1142 毒层叠加伤害，毒尽层清
   }
   for (const f of [A, ...(A.allies || []), B, ...(B.allies || [])]) if (f.sets && f.sets.heal && f.hp > 0 && f.hp < f.maxHp && A.hp > 0 && B.hp > 0) { const h = Math.min(f.maxHp - f.hp, Math.max(1, Math.round(f.maxHp * f.sets.heal))); f.hp += h; out.push(`${nm(f)}【治愈套${f.auraFrom ? '·共享' : ''}】回复 <span class="g">${h}</span> 点生命`); }
   for (const f of [A, A.pet, B, B.pet]) {
