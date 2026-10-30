@@ -969,6 +969,15 @@ function cityMoveThunder() {
             try { if (typeof toastLog === 'function') toastLog('sys', '👥 组队跟随中，移动由队长控制'); else if (typeof glog === 'function') glog('sys', '👥 组队跟随中，移动由队长控制'); } catch(_){}
             return;
           }
+          // v1159 移动新规（Ye 定）：闭关期间不能移动、冒险未脱离不能回主城；化神及以上例外
+          if ((S.realm|0) < 5 && S.afk) {
+            try { if (typeof toastLog === 'function') toastLog('sys', '🧘 闭关期间不能移动，先出关（化神以上不受此限）'); } catch(_){}
+            return;
+          }
+          if ((S.realm|0) < 5 && S.run) {
+            try { if (typeof toastLog === 'function') toastLog('sys', '🗺️ 冒险未脱离，不能回主城（先撤退/走完冒险；化神以上不受此限）'); } catch(_){}
+            return;
+          }
           // v557 地图点NPC不再弹资料/PK（Ye取消），只走移动逻辑；NPC资料从信息栏"点我查看"进
           const isPortalCell = (x === 5 && y === 3);
           const isShopCell = (x === 2 && y === 3);
@@ -4046,7 +4055,7 @@ function sheetDebug() {
   ];
   openSheet(`<h2>调试后台</h2>` + d.map(x => `<button class="act" data-a="debug" data-dbg="${x[1]}"><span class="t">${x[0]}</span></button>`).join(''));
 }
-const RANK_TABS = [['level','🏆等级榜'],['str','💪力量榜'],['agi','💨敏捷榜'],['def','🛡️防御榜'],['vit','❤️生命榜'],['int','🧠智力榜'],['checkin','📅签到榜'],['afk','🧘闭关榜']];
+const RANK_TABS = [['level','🏆等级榜'],['str','💪力量榜'],['agi','💨敏捷榜'],['def','🛡️防御榜'],['vit','❤️生命榜'],['int','🧠智力榜'],['checkin','📅签到榜'],['afk','🧘闭关榜'],['deathmatch','☠️生死局榜'],['bounty','📜赏金猎人榜']];
 let _rankCache = null, _rankTab = 'level';
 function sheetPersonInfo(e, backBtn) {
   if (!e) return;
@@ -6475,7 +6484,7 @@ function doMail() {
   if (!S.mail.length) html += `<div class="empty">空空如也</div>`;
   else html += S.mail.slice().reverse().map((m, ri) => {
     const i = S.mail.length - 1 - ri;
-    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${(m.pk && m.pk.revenge && !m.pkDone) ? `<button class="btn danger sm" onclick="window.pkMailRevenge('${m.sid || ''}','${String(m.pk.victim || '').replace(/'/g, '')}')">${(typeof myAid === 'function' && m.pk.victim === myAid()) ? '⚔️ 开启复仇' : '⚔️ 代为复仇'}</button>` : ''}${m.claimed ? '<small>已领取</small><button class="btn sm" data-maildel="' + i + '">删除</button>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
+    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${(m.pk && m.pk.steal) ? `<button class="btn gold sm" onclick="window.pkStealPick('${String(m.pk.steal).replace(/'/g, '')}')">🎁 挑选战利品</button>` : ''}${(m.pk && m.pk.death && m.pk.bountyRight && m.pk.code) ? `<button class="btn danger sm" onclick="window.pkMailBounty('${String(m.pk.code).replace(/'/g, '')}')">📜 发布通缉</button>` : ''}${(m.pk && m.pk.revenge && !m.pkDone) ? `<button class="btn danger sm" onclick="window.pkMailRevenge('${m.sid || ''}','${String(m.pk.victim || '').replace(/'/g, '')}')">${(typeof myAid === 'function' && m.pk.victim === myAid()) ? '⚔️ 开启复仇' : '⚔️ 代为复仇'}</button>` : ''}${m.claimed ? '<small>已领取</small><button class="btn sm" data-maildel="' + i + '">删除</button>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
   }).join('');
   html += `<div class="row"><button class="btn full" data-a="xianyuan">← 返回仙缘</button></div>`;
   openSheet(html);

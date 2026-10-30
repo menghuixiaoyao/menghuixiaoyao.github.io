@@ -103,7 +103,9 @@ window.showPlayerDetail = function(accountId){
       + '<span>等级 <b class="y">Lv.' + lv + '</b></span></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn gold" style="flex:1" onclick="window.teamInvitePlayer(\'' + _aid + '\')">👥 组队</button>'
-      + '<button class="btn" style="flex:1" onclick="window.pkPlayer(\'' + _aid + '\')">⚔️ PK</button></div>'
+      + '<button class="btn" style="flex:1" onclick="window.pkPlayer(\'' + _aid + '\')">🤝 切磋</button></div>'
+      + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
+      + '<button class="btn" style="flex:1" onclick="window.pkAttackPlayer(\'' + _aid + '\')">⚔️ 攻击（按我的模式）</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn" style="flex:1" onclick="window.xyRequestPlayer(\'' + _aid + '\')">💞 仙缘</button>'
       + '<button class="btn" style="flex:1" onclick="(function(){try{if(typeof log===\'function\')log(\'sys\',\'🙇 拜师系统开发中\');else alert(\'拜师系统开发中\');}catch(e){}})()">🙇 拜师</button></div>'
@@ -778,13 +780,16 @@ async function chatSend(){
 
 /* ---------- 真人PK ---------- */
 function pkPanel(){
-  openSheet('<h2>⚔️ 在线约战</h2><div class="hint">挑战在线道友，真人对战由服务端结算（防作弊）。对方60秒内接受即开打。</div>'
+  openSheet('<h2>⚔️ 在线约战</h2><div class="hint">切磋须对方接受，不抢不掉；攻击按你的模式即时开打（服务端结算）。主城不能杀人，灭口只在野外（冒险图）与生死局生效。</div>'
+    + '<div id="pkModeBox"><div class="hint">加载模式…</div></div>'
+    + '<div class="row"><button class="btn full" data-mhxybounty>📜 通缉令</button></div>'
     + '<div id="mhxyPkList"><div class="hint">加载在线道友…</div></div>'
     + '<div class="row"><button class="btn gold full" data-mhxyraid>⛰️ 匹配灵脉闭关者（真人PK）</button></div>'
     + '<div class="hint">灵脉闭关满 1 小时者会进匹配池：自动应战、输赢照常结算、不打断其闭关；优先匹配还没被打过的。</div>'
     + '<div class="row"><button class="btn full" data-mhxypkrefresh>刷新</button></div>'
     + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
   pkRefresh();
+  pkModeRefresh();
 }
 async function pkRefresh(){
   var box = document.getElementById('mhxyPkList'); if (!box) return;
@@ -793,7 +798,8 @@ async function pkRefresh(){
   if (!ps.length){ box.innerHTML = '<div class="hint">暂无其他道友在线</div>'; return; }
   box.innerHTML = ps.slice(0, 30).map(function(p){
     return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(p.username) + '</b><span style="color:#666">[' + (p.playerNo || '?') + ']</span></span>'
-      + '<button class="btn gold" data-mhxypkgo="' + escH(p.accountId) + '">挑战</button></div>';
+      + '<button class="btn" data-mhxypkgo="' + escH(p.accountId) + '">切磋</button>'
+      + '<button class="btn gold" data-mhxypkatk="' + escH(p.accountId) + '">攻击</button></div>';
   }).join('');
 }
 async function pkChallenge(targetId){
@@ -931,10 +937,10 @@ setInterval(function(){
     }).catch(function(){});
   } catch(_){}
 }, 3000);
-  var r = await api('/api/pk/challenge', { method:'POST', body:{ target_account_id:targetId, arena:false, take_attr:'str' } });
+  var r = await api('/api/pk/challenge', { method:'POST', body:{ target_account_id:targetId, arena:false, spar:true, take_attr:'str' } });
   if (r.ok && r.json && r.json.ok){
     M.challenging = r.json.challenge_id;
-    glog('sys', '⚔️ 已向对方发出挑战，等待接受（60秒）。可在"在线约战"面板等结果。');
+    glog('sys', '🤝 已向对方发出切磋邀请，等待接受（60秒）。可在"在线约战"面板等结果。');
     pkPollResult(r.json.challenge_id, 0);
   } else {
     var err = (r.json||{}).error || r.status;
@@ -983,7 +989,9 @@ function pkWsConnect(){
 function closePkWs(){ if (M.pkWs){ try{ M.pkWs.close(); }catch(_){} M.pkWs = null; } }
 function pkOnChallenge(ch){
   var from = ch.challenger || {};
-  var msg = '⚔️ ' + (from.username || '?') + '[' + (from.playerNo || '?') + '] 向你发起真人PK！60秒内有效，是否接受？（服务端结算）';
+  var msg = ch.spar
+    ? '🤝 ' + (from.username || '?') + '[' + (from.playerNo || '?') + '] 邀你比试切磋（不抢不掉不结仇），60秒内有效，是否接受？'
+    : '⚔️ ' + (from.username || '?') + '[' + (from.playerNo || '?') + '] 向你发起真人PK！60秒内有效，是否接受？（服务端结算）';
   var ok = false;
   try{ ok = confirm(msg); }catch(_){}
   if (ok) pkAccept(ch.id); else pkDecline(ch.id);
@@ -1016,6 +1024,170 @@ async function pkRaidVein(){
     glog('bad', '⛰️ 匹配失败：' + escH((r.json||{}).error || r.status));
   }
 }
+
+/* ---------- v1159 二期：PK 模式 / 即时攻击 / 通缉令 / 战利品 ---------- */
+const PK_MODE_TXT = { peace: '🕊️ 和平', duobao: '⚔️ 夺宝', mieko: '💀 灭口' };
+const PK_KIND_TXT = { gold: '金元', sp2: '下品灵石', sp3: '中品灵石', sp4: '上品灵石', sp5: '极品灵石', xy: '仙玉' };
+function pkPoolText(pool){
+  if (!pool) return '无';
+  var parts = [];
+  ['gold', 'sp2', 'sp3', 'sp4', 'sp5', 'xy'].forEach(function(k){ if ((pool[k] | 0) > 0) parts.push(PK_KIND_TXT[k] + ' ' + pool[k]); });
+  return parts.length ? parts.join(' · ') : '空池';
+}
+async function pkFetchMe(){
+  var r = await api('/api/pk2/me');
+  if (r.ok && r.json && r.json.ok){ window._pkMe = r.json; window._pkMode = r.json.mode; return r.json; }
+  return null;
+}
+async function pkModeRefresh(){
+  var box = document.getElementById('pkModeBox'); if (!box) return;
+  var me = await pkFetchMe();
+  if (!me){ box.innerHTML = '<div class="hint">模式加载失败（网络不通）</div>'; return; }
+  var modes = ['peace', 'duobao', 'mieko'].map(function(m){
+    return '<button class="btn' + (me.mode === m ? ' gold' : '') + '" style="flex:1" data-mhxymode="' + m + '">' + PK_MODE_TXT[m] + '</button>';
+  }).join('');
+  var h = '<div class="row" style="display:flex;gap:8px">' + modes + '</div>'
+    + '<div class="hint">我的编码：<b class="y">' + escH(me.code || '?') + '</b> · 生死局 ' + ((me.stats && me.stats.dmLife) | 0) + '/' + ((me.stats && me.stats.dmTotal) | 0) + '（本世/累计） · 通缉击杀 ' + ((me.stats && me.stats.bkLife) | 0) + '/' + ((me.stats && me.stats.bkTotal) | 0)
+    + '<br>和平不能主动 PK；夺宝胜方抢属性+物品 1 件；灭口同夺宝，野外战死直接轮回。</div>';
+  if (me.myBounty) h += '<div class="hint" style="color:var(--red,#e55)">📜 你正被通缉中！悬赏池：' + pkPoolText(me.myBounty.pool) + '（通缉在身不能开和平）</div>';
+  box.innerHTML = h;
+}
+async function pkSetMode(m){
+  var r = await api('/api/pk2/mode', { method: 'POST', body: { mode: m } });
+  if (r.ok && r.json && r.json.ok){
+    window._pkMode = m;
+    glog('good', '⚔️ 已切换为' + (PK_MODE_TXT[m] || m) + '模式');
+  } else {
+    var e = (r.json || {}).error;
+    glog('bad', '⚔️ 切换失败：' + (e === 'bountied_no_peace' ? '你正被通缉，不能开和平' : escH(e || r.status)));
+  }
+  pkModeRefresh();
+  if (document.getElementById('bountyBox')) bountyPanel(window._bountyPrefill || '');
+}
+async function pkAttack(targetId){
+  var mode = window._pkMode;
+  if (!mode){ var me = await pkFetchMe(); mode = me && me.mode; }
+  if (mode === 'peace'){ glog('bad', '🕊️ 和平模式不能主动 PK（在"在线约战"面板切换模式）'); return; }
+  var dk = null;
+  try { if (typeof S !== 'undefined' && S && S.run && S.run.shared) dk = S.run.shared.dk || S.run.dk || null; } catch(_){}
+  glog('sys', '⚔️ 正在出击…');
+  var r = await api('/api/pk/attack', { method: 'POST', body: { target_account_id: targetId, take_attr: 'str', dk: dk } });
+  if (r.ok && r.json && r.json.ok){
+    pkShowResult(r.json.result, r.json.consequences);
+    await downloadSave(true);
+  } else {
+    var e = (r.json || {}).error;
+    var msg = e === 'target_offline' ? '对方已离线' : e === 'target_dead' ? '对方已死亡' : e === 'realm_protected' ? '境界保护：凡人/练气只能被同境界 PK' : e === 'peace_mode' ? '和平模式不能主动 PK' : e === 'missing_save' ? '对方尚无云端存档' : escH(e || r.status);
+    glog('bad', '⚔️ 攻击失败：' + msg);
+  }
+}
+window.pkAttackPlayer = function(accountId){
+  try { pkAttack(accountId); } catch(e) {}
+};
+async function pkStealPick(token){
+  var r = await api('/api/pk2/steal-options?token=' + encodeURIComponent(token));
+  if (!r.ok || !r.json || !r.json.ok){ glog('bad', '🎁 战利品已失效'); return; }
+  var opts = r.json.options || [];
+  var nameOf = function(bag, kind){
+    try {
+      if (typeof consignName === 'function') return consignName(bag === 'meds' ? 'med' : bag === 'elixirs' ? 'elixir' : 'inv', kind);
+    } catch(_){}
+    return kind;
+  };
+  var h = '<h2>🎁 挑选战利品</h2><div class="hint">胜方夺 1 件（30 分钟内有效）：</div>';
+  if (!opts.length) h += '<div class="empty">对方身上没有可夺的物品</div>';
+  else h += opts.map(function(o){
+    return '<div class="row"><div class="lab">' + escH(nameOf(o.bag, o.kind)) + '<small>持有 ×' + o.n + '</small></div><button class="btn gold sm" data-mhxystealpick="' + escH(token) + ':' + escH(o.bag) + ':' + escH(o.kind) + '">夺取</button></div>';
+  }).join('');
+  h += '<div class="row"><button class="btn full" data-close>关闭</button></div>';
+  openSheet(h);
+}
+window.pkStealPick = pkStealPick;
+async function pkStealDo(token, bag, kind){
+  var r = await api('/api/pk2/steal', { method: 'POST', body: { token: token, bag: bag, kind: kind } });
+  if (r.ok && r.json && r.json.ok){
+    glog('good', '🎁 已夺得 1 件战利品');
+    await downloadSave(true);
+    try { closeSheet(); } catch(_){}
+  } else {
+    glog('bad', '🎁 夺取失败：' + escH((r.json || {}).error || r.status));
+  }
+}
+async function bountyPanel(prefill){
+  window._bountyPrefill = prefill || '';
+  openSheet('<h2>📜 通缉令</h2><div id="bountyBox"><div class="hint">加载中…</div></div><div class="row"><button class="btn full" data-close>关闭</button></div>');
+  var me = await pkFetchMe();
+  var lr = await api('/api/bounty/list');
+  var box = document.getElementById('bountyBox'); if (!box) return;
+  var list = (lr.ok && lr.json && lr.json.list) || [];
+  var h = '';
+  if (me){
+    h += '<div class="hint">我的编码：<b class="y">' + escH(me.code || '?') + '</b> · 当前模式：' + (PK_MODE_TXT[me.mode] || me.mode) + '</div>';
+    if ((me.suffixAllow | 0) > 0){
+      h += '<div class="row"><div class="lab">✏️ 编码改尾<small>通缉结案奖励：可给编码末尾加 ' + (me.suffixAllow | 0) + ' 个字（数字/字母），旧编码立即失效</small></div></div>'
+        + '<div class="row" style="display:flex;gap:8px"><input id="bdChars" maxlength="' + (me.suffixAllow | 0) + '" placeholder="如 X 或 7" style="flex:1;padding:8px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff"><button class="btn gold" data-mhxycodeappend>改尾</button></div>';
+    }
+    if (me.myBounty) h += '<div class="hint" style="color:var(--red,#e55)">📜 你正被通缉中！悬赏池：' + pkPoolText(me.myBounty.pool) + '</div>';
+    if (me.rights && me.rights.length) h += '<div class="hint">你持有发布权（被灭口战死的仇家）：' + me.rights.map(escH).join('、') + '</div>';
+  }
+  h += '<h3>发布 / 追加悬赏</h3>'
+    + '<div class="row" style="display:flex;gap:8px"><input id="bdCode" placeholder="目标编码" value="' + escH(window._bountyPrefill || '') + '" style="flex:1;padding:8px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;min-width:0">'
+    + '<select id="bdKind" style="padding:8px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff"><option value="gold">金元</option><option value="sp2">下品灵石</option><option value="sp3">中品灵石</option><option value="sp4">上品灵石</option><option value="sp5">极品灵石</option><option value="xy">仙玉</option></select>'
+    + '<input id="bdAmt" type="number" min="1" placeholder="数量" style="width:76px;padding:8px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff"></div>'
+    + '<div class="row"><button class="btn gold full" data-mhxybountypost>📜 发布 / 追加</button></div>'
+    + '<div class="hint">首发须有发布权（被灭口或猎杀战死后，凶手编码会随死亡邮件送达）；任何人都能往已有悬赏池加钱。通缉无时限，直到目标被击杀结案。</div>'
+    + '<h3>通缉中</h3>';
+  if (!list.length) h += '<div class="empty">暂无通缉令</div>';
+  else h += list.map(function(b){
+    var act = '';
+    if (b.isMe) act = '<small>这是你</small>';
+    else if (b.hunting) act = '<button class="btn sm" data-mhxyhunt="' + escH(b.code) + ':0">取消猎杀</button><button class="btn gold sm" data-mhxypkatk="' + escH(b.targetId) + '">猎杀</button>';
+    else act = '<button class="btn gold sm" data-mhxyhunt="' + escH(b.code) + ':1">领猎</button>';
+    return '<div class="row"><div class="lab">📜 ' + escH(b.targetName || '?') + '<small>编码 ' + escH(b.code) + ' · 悬赏池：' + pkPoolText(b.pool) + '</small></div>' + act + '</div>';
+  }).join('');
+  box.innerHTML = h;
+}
+window.openBountyPanel = bountyPanel;
+window.pkMailBounty = function(code){ bountyPanel(code || ''); };
+async function bountyPost(){
+  var code = (val('bdCode') || '').trim();
+  var kind = val('bdKind') || 'gold';
+  var amt = parseInt(val('bdAmt') || '0', 10) || 0;
+  if (!code){ glog('bad', '📜 请填目标编码'); return; }
+  if (!(amt >= 1)){ glog('bad', '📜 请填悬赏数量'); return; }
+  var r = await api('/api/bounty/post', { method: 'POST', body: { code: code, kind: kind, amount: amt } });
+  if (r.ok && r.json && r.json.ok){
+    glog('good', '📜 悬赏已挂上，池内：' + pkPoolText(r.json.pool));
+    await downloadSave(true);
+    bountyPanel(code);
+  } else {
+    var e = (r.json || {}).error;
+    var msg = e === 'bad_code' ? '编码不存在（可能已改尾）' : e === 'no_right' ? '你没有对此编码的发布权（须先被其灭口战死）' : e === 'insufficient' ? '余额不足' : e === 'cannot_bounty_self' ? '不能通缉自己' : escH(e || r.status);
+    glog('bad', '📜 发布失败：' + msg);
+  }
+}
+async function bountyHunt(code, on){
+  var r = await api('/api/bounty/hunt', { method: 'POST', body: { code: code, on: !!on } });
+  if (r.ok && r.json && r.json.ok){
+    glog(on ? 'good' : 'sys', on ? '📜 已领猎：遇到被通缉者即可开打（生死局，无视主城）' : '📜 已取消猎杀');
+  } else {
+    glog('bad', '📜 操作失败：' + escH((r.json || {}).error || r.status));
+  }
+  bountyPanel(window._bountyPrefill || '');
+}
+async function bountyAppend(){
+  var chars = (val('bdChars') || '').trim();
+  if (!/^[0-9A-Za-z]{1,2}$/.test(chars)){ glog('bad', '✏️ 只能加 1-2 个数字/字母'); return; }
+  var r = await api('/api/bounty/append-code', { method: 'POST', body: { chars: chars } });
+  if (r.ok && r.json && r.json.ok){
+    glog('good', '✏️ 你的新编码：' + r.json.code + '（旧编码已失效）');
+    bountyPanel('');
+  } else {
+    var e = (r.json || {}).error;
+    glog('bad', '✏️ 改尾失败：' + (e === 'no_allowance' ? '改尾额度不足（须通缉结案后获得）' : escH(e || r.status)));
+  }
+}
+
 function pkShowResult(res, cons){
   if (!res) return;
   var me = myAid();
@@ -1029,11 +1201,17 @@ function pkShowResult(res, cons){
     + '<div class="hint">回合数：' + (res.rounds || '?') + '　剩余生命：' + escH(JSON.stringify(res.hpLeft || {})) + '</div>';
   if (cons){
     var cs = [];
+    if (cons.spar) cs.push('🤝 切磋：不抢不掉不结仇');
     if (cons.meritLost) cs.push('功德 -' + cons.meritLost);
     if (cons.attrTake) cs.push('夺取 ' + escH(cons.attrTake.attr) + ' +' + cons.attrTake.n);
     if (cons.revengeGranted) cs.push('对方获得对你的复仇');
     if (cons.arena) cs.push('擂台：无复仇无功德惩罚');
+    if (cons.lethal) cs.push('☠️ 生死局');
+    if (cons.death) cs.push(cons.death.victim === me ? '☠️ 你已坠入轮回（同步存档后生效）' : '☠️ 对方已坠入轮回');
+    if (cons.bountyClaimed) cs.push('📜 领得悬赏：' + pkPoolText(cons.bountyClaimed));
+    if (cons.codeRevealed) cs.push('对方编码：' + escH(cons.codeRevealed));
     if (cs.length) html += '<div class="hint">结算：' + cs.join('、') + '</div>';
+    if (cons.stealToken) html += '<div class="row"><button class="btn gold full" data-mhxysteal="' + escH(cons.stealToken) + '">🎁 挑选战利品（胜方夺 1 件）</button></div>';
   }
   var logHtml = '';
   try{
@@ -1149,6 +1327,14 @@ function onClick(d, t, e){
   if ('mhxypkrefresh' in d){ pkRefresh(); return true; }
   if ('mhxyraid' in d){ pkRaidVein(); return true; }
   if (d.mhxypkgo){ pkChallenge(d.mhxypkgo); return true; }
+  if (d.mhxypkatk){ pkAttack(d.mhxypkatk); return true; }
+  if (d.mhxymode){ pkSetMode(d.mhxymode); return true; }
+  if ('mhxybounty' in d){ bountyPanel(); return true; }
+  if (d.mhxyhunt){ var _hp = String(d.mhxyhunt).split(':'); bountyHunt(_hp[0], _hp[1] === '1'); return true; }
+  if ('mhxybountypost' in d){ bountyPost(); return true; }
+  if ('mhxycodeappend' in d){ bountyAppend(); return true; }
+  if (d.mhxysteal){ pkStealPick(d.mhxysteal); return true; }
+  if (d.mhxystealpick){ var _sp = String(d.mhxystealpick).split(':'); pkStealDo(_sp[0], _sp[1], _sp[2]); return true; }
   if ('mhxyteam' in d){ window.teamPanel(); return true; }
   if ('mhxyteamcreate' in d){ teamCreate(); return true; }
   if ('mhxyteamleave' in d){ teamLeave(); return true; }
