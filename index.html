@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1140</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1141</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1408,12 +1408,13 @@ function eatHerb(S, key) { // v1136 Ye 定：属性草每天可吃 5 棵——�
   const comprehended = awakened ? null : tryComprehendRoot(S, e);
   return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended };
 }
-function tryToxRootOnBt(S) { // v1140 Ye 定：丹毒达到 10000 后，突破时 5% 概率觉醒异灵根【毒】（额外灵根，不占五行；须已有灵根承载）
-  if ((S.danDu | 0) < 10000) return null;
+function tryToxRoot(S) { // v1141 Ye 定：只在突破成功时掷一次觉醒异灵根【毒】——丹毒 ≥5000 起判，基础概率 5%，丹毒每多 10 点 +0.1%（6000→15%，10000→55%）；额外灵根不占五行，须已有灵根承载
+  if ((S.danDu | 0) < 5000) return null;
   const g = S.lingGen || [];
   if (g.indexOf('毒') >= 0) return null;
   if (!g.some(e => e !== '毒')) return null;
-  if (Math.random() >= 0.05) return null;
+  const p = 0.05 + Math.floor(((S.danDu | 0) - 5000) / 10) * 0.001;
+  if (Math.random() >= p) return null;
   g.push('毒');
   S.faZeDone = 0; // 灵根变化，本命圆满需重判
   return '毒';
@@ -1541,7 +1542,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   if (fromRealm === 0 && S.xp > 0) S.savedXp = (S.savedXp || 0) + S.xp; S.realm++; S.lifespan = Math.max((S.lifespan|0) * 2, REALM_LIFESPAN[Math.min(12, S.realm|0)] || 100); S.level = 1; S.xp = 0; S.btTotal = (S.btTotal || 0) + 1;
   if (fromRealm === 0) { assignLingGen(S); try { log('good', `🌟 踏入练气，灵根觉醒：<b>${lingGenName(S)}</b>！`); } catch(_) {} } // v867 练气突破随机灵根
   else { const _aw = awakenRollAll(S); if (_aw.length) try { log('good', `🌟 <b>突破之机，灵根觉醒！</b>${_aw.join('、')}`); } catch(_) {} } // v1134 突破觉醒：须现有基础灵根，每条 5%
-  const _toxR = tryToxRootOnBt(S); if (_toxR) try { log('gold', `☣️ <b>丹毒淬体，突破之机觉醒异灵根【毒】！</b>`); } catch(_) {} // v1140 丹毒 10000 后突破 5% 概率觉醒毒灵根
+  const _toxR = tryToxRoot(S); if (_toxR) try { log('gold', `☣️ <b>丹毒淬体，突破之机觉醒异灵根【毒】！</b>`); } catch(_) {} // v1141 突破也掷一次毒根觉醒（丹毒 ≥5000，概率随丹毒涨）
   if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v857 修v856：realm++后存到新境界索引 chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true); if (/散仙|游仙|虚气|伪气|虚基|残基|虚丹|假丹|虚婴|假婴|虚神|散神|伪乘|残乘|怯劫|避劫|劫余|残仙|虚合|假合|伪尊|空尊|凡胎|燃尽/.test(REALMS[S.realm]||'')) _btm = 1.2; // v811 降级状态突破倍率1.2
   ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 8) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } tribBtFlavor(S, fromRealm); return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
 } // 突破全属性×倍率表；渡劫→仙人时100万法力=1仙力转换，上限=转换后值
@@ -3544,7 +3545,7 @@ function advResGrant(S, run, kind, grade) {
   if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRootOnBt }); // v1129 五行导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot }); // v1129 五行导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
