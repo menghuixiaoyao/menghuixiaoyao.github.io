@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1145</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1146</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2363,7 +2363,7 @@ function addDanDu(S, n) { // v1145 丹毒增加统一入口：本体涨到上限
   S.danDu = Math.min(cap, before + n);
   if (S.toxDan && before + n > cap) S.toxPool = Math.min(10000, (S.toxPool | 0) + (before + n - cap));
 }
-function toxEff(S) { return (S.danDu | 0) + (S.toxDan ? (S.toxPool | 0) : 0); } // v1145 相克比较用：本体丹毒 + 累积池
+function toxEff(S) { return (S.danDu | 0) * 2 + (S.toxDan ? (S.toxPool | 0) : 0); } // v1146 Ye 定：毒修对战相克值 = 丹毒×2 + 毒丹累积池，看谁高
 function tryToxDan(S, fromRealm) { // v1145 Ye 定：只在筑基→金丹突破时判结毒丹——丹毒 >1000 后，每多 100 点 +1%（2000→10%，5000→40%，10000→90%）
   if ((fromRealm | 0) !== 2 || S.toxDan) return null;
   const d = S.danDu | 0;
