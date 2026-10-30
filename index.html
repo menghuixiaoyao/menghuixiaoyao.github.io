@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1138</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1139</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1364,7 +1364,7 @@ function tribGrade(S) { // v175 金丹/元婴品质：按突破前灵气条/仙�
 /* ---------- v867 灵根/法则 ---------- */
 const LINGGEN_ELEMS = ['金','木','水','火','土'];
 const LINGGEN_ATTR = {金:'str', 木:'vit', 水:'agi', 火:'int', 土:'def'};
-const LINGGEN_ELE_ICON = {金:'⚙️', 木:'🌿', 水:'💧', 火:'🔥', 土:'🪨', 雷:'⚡', 冰:'❄️', 风:'🌪️', 光:'☀️', 暗:'🌑'}; // v1130 变异出满 5 种（火→光/土→暗）
+const LINGGEN_ELE_ICON = {金:'⚙️', 木:'🌿', 水:'💧', 火:'🔥', 土:'🪨', 雷:'⚡', 冰:'❄️', 风:'🌪️', 光:'☀️', 暗:'🌑', 毒:'☣️'}; // v1139 毒：丹毒 5000 觉醒的特殊异灵根
 const ROOT_MUT = { '金': '雷', '水': '冰', '木': '风', '火': '光', '土': '暗' }; // v1130 变异出满 5 种（Ye 定光/暗补火/土）
 const ROOT_BASE = { '雷': '金', '冰': '水', '风': '木', '光': '火', '暗': '土' }; // 变异根的来源行
 function rootBaseL(e) { return ROOT_BASE[e] || e; }
@@ -1406,13 +1406,23 @@ function eatHerb(S, key) { // v1136 Ye 定：属性草每天可吃 5 棵——�
   S.danDu = Math.min(5000, (S.danDu | 0) + 20);
   const awakened = tryAwakenRoot(S, e);
   const comprehended = awakened ? null : tryComprehendRoot(S, e);
-  return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended };
+  const toxRoot = checkToxRoot(S); // v1139
+  return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended, toxRoot };
+}
+function checkToxRoot(S) { // v1139 Ye 定：丹毒达到 5000 时觉醒异灵根【毒】（额外灵根，不占五行；须已有灵根承载）
+  if ((S.danDu | 0) < 5000) return null;
+  const g = S.lingGen || [];
+  if (g.indexOf('毒') >= 0) return null;
+  if (!g.some(e => e !== '毒')) return null;
+  g.push('毒');
+  S.faZeDone = 0; // 灵根变化，本命圆满需重判
+  return '毒';
 }
 function tryComprehendRoot(S, e) { // v1135 Ye 定：吃不相对应的灵物/丹药，极稀有概率（0.1%）领悟从未拥有的灵根（得基础根，灵根未满 5 条时）
   const base = rootBaseL(e);
   if (hasRootEleL(S, base)) return null;
   if (!Array.isArray(S.lingGen)) S.lingGen = [];
-  if (S.lingGen.length >= 5) return null;
+  if (S.lingGen.filter(e => e !== '毒').length >= 5) return null; // v1139 毒根不占常规灵根数
   if (Math.random() >= 0.001) return null;
   S.lingGen.push(base);
   S.faZeDone = 0; // 灵根变化，本命圆满需重判（与补天丹同规）
@@ -1446,7 +1456,7 @@ function lingGenTrainBonus(S) { // 修炼加成概率
 function lingGenAfkMult(S) { // 闭关收益系数：五档齐全；v1133 Ye 定方案二：异灵根每条扣 10 个百分点，带满 5 条收益对半（10 变 5，非归零）
   const g = S.lingGen || [], n = g.length;
   const base = n === 1 ? 0.30 : n === 2 ? 0.15 : n === 3 ? 0.05 : n === 4 ? -0.10 : n >= 5 ? -0.20 : 0;
-  const k = g.filter(r => ROOT_BASE[r]).length;
+  const k = g.filter(r => ROOT_BASE[r] || r === '毒').length; // v1139 毒根也是异灵根，计入闭关扣点
   return (1 + base) * (1 - 0.1 * k) - 1;
 }
 function lingGenAfkTxt(S) { // 闭关加成显示
@@ -1462,9 +1472,10 @@ function faZeBonus(S) { // 法则战斗加成：{attr: mult}；v871本命只加�
     const fz = S.faZe || {}, lg = S.lingGen || [], n = lg.length;
     for (const el of LINGGEN_ELEMS) if ((fz[el]|0) >= 100) out[LINGGEN_ATTR[el]] = 0.15;
     const allFive = LINGGEN_ELEMS.every(e => (fz[e]|0) >= 100);
-    const allMine = n > 0 && lg.every(e => (fz[rootBaseL(e)]|0) >= 100); // v1129 变异根按来源行判本命
+    const lgF = lg.filter(e => e !== '毒'); // v1139 毒根无法则，不计本命
+    const allMine = lgF.length > 0 && lgF.every(e => (fz[rootBaseL(e)]|0) >= 100); // v1129 变异根按来源行判本命
     if (allFive) ATTRS.forEach(k => out[k] = (out[k]||0) + 0.05);
-    else if (allMine) lg.forEach(el => { const k = LINGGEN_ATTR[rootBaseL(el)]; out[k] = (out[k]||0) + 0.05; });
+    else if (allMine) lgF.forEach(el => { const k = LINGGEN_ATTR[rootBaseL(el)]; out[k] = (out[k]||0) + 0.05; });
   } catch(_) {}
   return out;
 }
@@ -1472,12 +1483,13 @@ function faZeBtBonus(S) { // v873 法则主宰突破加成：本命圆满+5%×�
   try {
     const fz = S.faZe || {}, lg = S.lingGen || [], n = lg.length;
     if (LINGGEN_ELEMS.every(e => (fz[e]|0) >= 100)) return 0.25;
-    if (n > 0 && lg.every(e => (fz[rootBaseL(e)]|0) >= 100)) return 0.05 * n; // v1129 变异根按来源行
+    const lgF = lg.filter(e => e !== '毒'); // v1139 毒根不计本命
+    if (lgF.length > 0 && lgF.every(e => (fz[rootBaseL(e)]|0) >= 100)) return 0.05 * lgF.length; // v1129 变异根按来源行
   } catch(_) {}
   return 0;
 }
 function faZeBenMingTxt(S) { // v873 本命圆满加成显示
-  const n = (S.lingGen||[]).length;
+  const n = (S.lingGen||[]).filter(e => e !== '毒').length; // v1139 毒根不计
   return `对应灵根属性各+5%，突破主宰成功率+${5 * n}%`;
 }
 try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus, faZeBtBonus: faZeBtBonus, benMingTxt: faZeBenMingTxt, base: rootBaseL, hasEle: hasRootEleL, factor: eleFactorL, mut: mutRootL, MUT: ROOT_MUT, tryAwaken: tryAwakenRoot, awakenAll: awakenRollAll, comprehend: tryComprehendRoot }; } catch(_) {} // v1129 变异助手 // v867 跨script块用window.LG
@@ -1729,6 +1741,7 @@ function checkin(S, force) {
   S.lifespan = Math.max(0, S.lifespan - 1);
   const toxLoss = (!S.dead && (S.danDu | 0) > 1000) ? Math.floor((S.danDu | 0) / 1000) : 0; // v1138 Ye 定：丹毒超过 1000 自动掉寿元（签到日结，每满千点扣 1 年）
   if (toxLoss > 0) S.lifespan = Math.max(0, S.lifespan - toxLoss);
+  const toxRoot = checkToxRoot(S); // v1139 丹毒达到 5000 觉醒毒灵根
   let bled = 0, died = null, forceReinc = false;
   if (S.lifespan <= 0 && !S.dead) { forceReinc = true; S.forceReinc = true; } // 寿元耗尽：强制轮回，不再坐化
   const vigor = Math.max(0, Math.min(vigorGain(S), vigorCap(S) - S.vigor)); S.vigor += vigor; /* 活力可结转，最多 3 天量；死亡不清空活力 */
@@ -1737,7 +1750,7 @@ function checkin(S, force) {
     bled = Math.max(1, Math.ceil(S.attrs.vit * K.BLEED_CHECKIN)); S.attrs.vit = Math.max(0, S.attrs.vit - bled);
     if (S.attrs.vit <= 0) died = die(S, 'bleed');
   }
-  return { ok: true, gain, vigor, mana, bled, died, revived, forceReinc, ringReward, consecDays: S.consecDays || 0, toxLoss };
+  return { ok: true, gain, vigor, mana, bled, died, revived, forceReinc, ringReward, consecDays: S.consecDays || 0, toxLoss, toxRoot };
 }
 function train(S, attr, n) {
   if (S.dead) return 0;
@@ -2437,7 +2450,8 @@ function eatSyd(S, idx) { // v1129 服寿元丹：灵根对应全效，否则减
   S.danDu = Math.min(5000, (S.danDu | 0) + 1);
   const awakened = tryAwakenRoot(S, rootBaseL(p.e)); // v1134 吃对应行丹觉醒：须有该基础灵根
   const comprehended = awakened ? null : tryComprehendRoot(S, p.e); // v1135 吃不相对应丹：极稀有领悟新灵根
-  return { gain, f, e: p.e, val: p.val, awakened, comprehended };
+  const toxRoot = checkToxRoot(S); // v1139
+  return { gain, f, e: p.e, val: p.val, awakened, comprehended, toxRoot };
 }
 Object.assign(C, { lwCritP, brewSyd, brewKm, eatSyd });
 function useDanwan(S, key, n) { // v1096 服丸
@@ -2465,7 +2479,7 @@ function useMutPill(S, id) {
   else if (id === 'xisui') { ATTRS.forEach(a => add(a, 5)); S.danDu = 0; txt = '丹毒尽去'; }
   else if (id === 'pojing') { if ((S.realm | 0) <= 0) { const x = Math.round(400 * f); S.xp = (S.xp || 0) + x; txt = '经验 +' + x; } else { S.mana = manaMax(S); txt = '法力回满'; } }
   if (id !== 'xisui' && def.tox) S.danDu = Math.min(5000, (S.danDu || 0) + def.tox);
-  return { gains, txt, f };
+  return { gains, txt, f, toxRoot: checkToxRoot(S) };
 }
 function useDetoxPill(S, n) {
   const have = S.inv['detox'] || 0; n = Math.min(n || 1, have); if (n <= 0) return 0;
@@ -2583,7 +2597,7 @@ function drink(S, attr, grade, n) {
   const _f998 = toxFactor(S); const _gain998 = Math.round(grade * n * _f998);
   S.attrs[attr] += _gain998;
   const _tox998 = (TOX_BY_GRADE[grade] || 5) * n; S.danDu = Math.min(5000, (S.danDu || 0) + _tox998);
-  S._drinkFx = { f: _f998, tox: _tox998 };
+  S._drinkFx = { f: _f998, tox: _tox998, toxRoot: checkToxRoot(S) }; // v1139
   return _gain998; // v998 丹毒打折+积毒
 }
 /* ---------- 脉络系统 v89：虚络/实络/虚脉/实脉 ---------- */
@@ -3479,7 +3493,7 @@ const TOOL_TIER_COLORS = ['#f2f2f2', '#ff9f43', '#ff5f57']; // 器具名按档�
 const TOOL_LVL_COLORS = ['#f2f2f2', '#4ade80', '#6db3ff', '#22d3ee', '#c084fc', '#ff7eb6', '#ff9f43', '#ffd94d', '#e8f6ff', '#ff3b30']; // 等级数字按百级分段 0/100/.../900；1000 级七彩单独处理
 const LW_GRADE_NAMES = ['地品灵物', '天品灵物', '仙品灵物'];
 const LW_ELES = ['金', '木', '水', '火', '土']; // v1129 灵物五行（变异：金→雷/水→冰/木→风，与灵根共用 mutRootL）
-const LW_ELE_COLORS = { '金': '#ffd94d', '木': '#6bcb77', '水': '#4d96ff', '火': '#ff5f57', '土': '#d29a5b', '雷': '#b77cff', '冰': '#7fe7f2', '风': '#8ef0c8', '光': '#ffe97a', '暗': '#7c6fd0' };
+const LW_ELE_COLORS = { '金': '#ffd94d', '木': '#6bcb77', '水': '#4d96ff', '火': '#ff5f57', '土': '#d29a5b', '雷': '#b77cff', '冰': '#7fe7f2', '风': '#8ef0c8', '光': '#ffe97a', '暗': '#7c6fd0', '毒': '#a3e635' };
 function rollLwEleL() { return mutRootL(LW_ELES[(Math.random() * LW_ELES.length) | 0]); } // 定行：五选一 + 5% 变异
 const LW_SEED_NAMES = ['地品灵物种子', '天品灵物种子', '仙品灵物种子'];
 const GRADE_COLORS = ['#6db3ff', '#ff7eb6', '#ff9f43']; // 资源等级色（地图显示）：一级蓝/二级粉红/三级橙
@@ -3528,7 +3542,7 @@ function advResGrant(S, run, kind, grade) {
   if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb }); // v1129 五行导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, checkToxRoot }); // v1129 五行导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
@@ -8236,6 +8250,7 @@ window.eatHerb = function (key) { // v1136 吃属性草
     log('good', `🌿 吃下${MATS[key].name}：饱食 <span class="g">+20</span> · ${_an} <span class="g">+1</span> · 丹毒 <span class="r">+20</span>（今日 ${r.n}/5）`);
     if (r.awakened) log('good', `🌟 <b>灵根觉醒！</b>${r.e}灵根食草而醒，化作<b>${r.awakened}</b>灵根！`);
     if (r.comprehended) log('good', `🌟 <b>顿悟新灵根！</b>竟领悟了从未有过的<b>${r.comprehended}</b>灵根！`);
+    if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`);
     commit(); sheetBag();
   } catch (_) {}
 };
@@ -8818,6 +8833,7 @@ function doCheckin(force) {
     }
   } catch(_) {}
   if (r.toxLoss) log('bad', `🧪 <b>丹毒攻心</b>（丹毒 ${S.danDu|0}），寿元 <span class="r">-${r.toxLoss} 年</span>`); // v1138
+  if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); // v1139
   // v1086 拍卖行已改服务端结算，本地 auc3Daily 停用（避免重复结算）
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
   log('gold', `📅 ${force ? '<span class="pu">[测试]</span> ' : ''}签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
@@ -8841,7 +8857,7 @@ function doFaZe(el) { // v867 参悟法则：尊者解锁，3体力/次，仅对
   if (S.faZe[el] >= 100) log('good', `✨ <b>${el}之法则圆满！</b>${{str:'力量',vit:'体质',agi:'身法',int:'智力',def:'防御'}[window.LG.ATTR[el]]}+15%！`);
   else log('good', `${dw ? '💡 顿悟！' : '☯️ '}${el}之法则参悟 +${add}%（${S.faZe[el]}%/100%）`);
   const _awF = C.tryAwakenRoot(S, el); if (_awF) log('good', `🌟 <b>灵根觉醒！</b>${el}灵根参悟有感，觉醒为<b>${_awF}</b>灵根！`); // v1134 参悟觉醒：须现有基础灵根
-  const _allMine = (S.lingGen||[]).every(e => (S.faZe[e]|0) >= 100);
+  const _allMine = (S.lingGen||[]).filter(e => e !== '毒').every(e => (S.faZe[e]|0) >= 100); // v1139 毒根无法则不计本命
   const _allFive = window.LG.ELES.every(e => (S.faZe[e]|0) >= 100);
   if (_allFive && !S.faZeDone5) { S.faZeDone5 = 1; log('warn', `🌈 <b>五行圆满！成就【混元道体】！</b>各属性+5%，突破主宰成功率+25%！`); }
   else if (_allMine && !S.faZeDone) { S.faZeDone = 1; log('warn', `☯️ <b>本命法则圆满！</b>${window.LG.benMingTxt(S)}！`); }
@@ -9229,6 +9245,7 @@ function doUseMut(id) { // v998 服变异丹
   const def = C.MUT_PILLS[id];
   const gtxt = Object.keys(r.gains).map(a => AN[a] + ' <span class="g">+' + r.gains[a] + '</span>').join('、');
   log('good', '🌀 服下变异丹【<b class="y">' + def.name + '</b>】：' + [gtxt, r.txt].filter(Boolean).join('，') + (r.f < 1 ? '（丹毒未清，药效仅 ' + Math.round(r.f * 100) + '%）' : '') + '（丹毒 ' + (S.danDu|0) + '/5000）');
+  if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); // v1139
   commit(); sheetBag();
 }
 function doUseDetox() { // v998 服化无丹
@@ -9285,6 +9302,7 @@ window.eatSyd = function (idx) { // v1129 服寿元丹
     log('good', `💊 服下<b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b>，寿元 <span class="g">+${r.gain}</span>${C.eleNoteL(r.f) ? `（${C.eleNoteL(r.f)}）` : ''}`);
     if (r.awakened) log('good', `🌟 <b>灵根觉醒！</b>${C.rootBaseL(r.e)}灵根应丹气而醒，化作<b>${r.awakened}</b>灵根！`); // v1134
     if (r.comprehended) log('good', `🌟 <b>顿悟新灵根！</b>此丹与自身灵根不合，却意外领悟了从未有过的<b>${r.comprehended}</b>灵根！`); // v1135
+    if (r.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); // v1139
     commit(); sheetBag();
   } catch (_) {}
 };
@@ -10311,7 +10329,7 @@ async function doSell(kind, k, n) {
   try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v1095 卖出也触发雷云判定（与买入同口径）
   commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2; // v200 出售后保持滚动位置
 }
-function doDrink(a, g, n) { const d = C.drink(S, a, g, n); if (d !== null && d !== undefined) { const fx = S._drinkFx; log('good', `💊 服下 ${potName(a, g)} ×${n}，${AN[a]} <span class="g">+${d}</span>${fx && fx.f < 1 ? `（丹毒未清，药效 ${Math.round(fx.f * 100)}%）` : ''}（丹毒 ${S.danDu|0}/5000）`); commit(); sheetBag(); } }
+function doDrink(a, g, n) { const d = C.drink(S, a, g, n); if (d !== null && d !== undefined) { const fx = S._drinkFx; log('good', `💊 服下 ${potName(a, g)} ×${n}，${AN[a]} <span class="g">+${d}</span>${fx && fx.f < 1 ? `（丹毒未清，药效 ${Math.round(fx.f * 100)}%）` : ''}（丹毒 ${S.danDu|0}/5000）`); if (fx && fx.toxRoot) log('gold', `☣️ <b>丹毒淬体，觉醒异灵根【毒】！</b>`); commit(); sheetBag(); } }
 function lvUpTxt(n) { const _per = (S.realm|0) + 1; return n ? `<br><span class="y">🎉 ${n > 1 ? '连升 ' + n + ' 级，' : ''}等级提升至 Lv.${S.level}！全属性 +${n * _per}</span>` : ''; }
 function arenaData() { // v246 每个境界独立的擂台数据；v247 加擂主守擂时间
   const cr = S.realm | 0;
