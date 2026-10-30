@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1136</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1137</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -801,7 +801,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   S.vigor = Math.max(0, Math.floor(S.vigor === undefined ? K.VIGOR_BASE : +S.vigor || 0));
   if (!(S.consecDays >= 0)) S.consecDays = 0; // 连续签到天数 /* 生活技能：活力 / 等级 / 菜肴 / 装备 / 增益 */
   if (!(S.lifespan > 0)) S.lifespan = REALM_LIFESPAN[Math.min(12, Math.max(0, S.realm|0))] || 100;
-  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(100, S.danDu | 0); // v998 danDu
+  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(5000, S.danDu | 0); // v998 danDu
   if (!S.life || typeof S.life !== 'object') S.life = {}; for (const k of ['cook', 'forge', 'refine', 'tame']) { const L = S.life[k] || {}; S.life[k] = { lv: Math.max(1, Math.floor(+L.lv || 1)), xp: Math.max(0, Math.floor(+L.xp || 0)) }; }
   if (!S.dishes || typeof S.dishes !== 'object') S.dishes = {}; for (const k in S.dishes) if (!dishOf(k) || !(S.dishes[k] > 0)) delete S.dishes[k]; else S.dishes[k] = Math.floor(S.dishes[k]);
   if (!S.zx || typeof S.zx !== 'object' || Array.isArray(S.zx)) S.zx = {}; for (const k in S.zx) if (!(DISHES[k] && DISHES[k].zx) || !(S.zx[k] > 0)) delete S.zx[k]; else S.zx[k] = Math.floor(S.zx[k]); /* v9 珍馐 */
@@ -1403,7 +1403,7 @@ function eatHerb(S, key) { // v1136 Ye 定：属性草每天可吃 5 棵——�
   const attr = LINGGEN_ATTR[e];
   if (!S.attrs) S.attrs = {};
   S.attrs[attr] = (S.attrs[attr] | 0) + 1;
-  S.danDu = Math.min(100, (S.danDu | 0) + 20);
+  S.danDu = Math.min(5000, (S.danDu | 0) + 20);
   const awakened = tryAwakenRoot(S, e);
   const comprehended = awakened ? null : tryComprehendRoot(S, e);
   return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended };
@@ -1725,7 +1725,7 @@ function checkin(S, force) {
     S.hpCur = (S.realm|0) === 0 ? C.bumpPeak(S) * 5 : null; // 凡人签到回满血到上限，其他境界回满当前
   }
   if (!(S.lifespan > 0)) S.lifespan = REALM_LIFESPAN[Math.min(12, Math.max(0, S.realm|0))] || 100;
-  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(100, S.danDu | 0); // v998 danDu
+  if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(5000, S.danDu | 0); // v998 danDu
   S.lifespan = Math.max(0, S.lifespan - 1);
   let bled = 0, died = null, forceReinc = false;
   if (S.lifespan <= 0 && !S.dead) { forceReinc = true; S.forceReinc = true; } // 寿元耗尽：强制轮回，不再坐化
@@ -2432,7 +2432,7 @@ function eatSyd(S, idx) { // v1129 服寿元丹：灵根对应全效，否则减
   const f = eleFactorL(S, p.e);
   const gain = Math.floor(p.val * f);
   S.lifespan = (S.lifespan || 100) + gain;
-  S.danDu = Math.min(100, (S.danDu | 0) + 1);
+  S.danDu = Math.min(5000, (S.danDu | 0) + 1);
   const awakened = tryAwakenRoot(S, rootBaseL(p.e)); // v1134 吃对应行丹觉醒：须有该基础灵根
   const comprehended = awakened ? null : tryComprehendRoot(S, p.e); // v1135 吃不相对应丹：极稀有领悟新灵根
   return { gain, f, e: p.e, val: p.val, awakened, comprehended };
@@ -2462,7 +2462,7 @@ function useMutPill(S, id) {
   else if (id === 'changsheng') { const ly = Math.round(200 * f); S.lifespan = (S.lifespan || 100) + ly; txt = '寿元 +' + ly + ' 年'; }
   else if (id === 'xisui') { ATTRS.forEach(a => add(a, 5)); S.danDu = 0; txt = '丹毒尽去'; }
   else if (id === 'pojing') { if ((S.realm | 0) <= 0) { const x = Math.round(400 * f); S.xp = (S.xp || 0) + x; txt = '经验 +' + x; } else { S.mana = manaMax(S); txt = '法力回满'; } }
-  if (id !== 'xisui' && def.tox) S.danDu = Math.min(100, (S.danDu || 0) + def.tox);
+  if (id !== 'xisui' && def.tox) S.danDu = Math.min(5000, (S.danDu || 0) + def.tox);
   return { gains, txt, f };
 }
 function useDetoxPill(S, n) {
@@ -2580,7 +2580,7 @@ function drink(S, attr, grade, n) {
   S.inv[key] = have - n; if (!S.inv[key]) delete S.inv[key];
   const _f998 = toxFactor(S); const _gain998 = Math.round(grade * n * _f998);
   S.attrs[attr] += _gain998;
-  const _tox998 = (TOX_BY_GRADE[grade] || 5) * n; S.danDu = Math.min(100, (S.danDu || 0) + _tox998);
+  const _tox998 = (TOX_BY_GRADE[grade] || 5) * n; S.danDu = Math.min(5000, (S.danDu || 0) + _tox998);
   S._drinkFx = { f: _f998, tox: _tox998 };
   return _gain998; // v998 丹毒打折+积毒
 }
@@ -6958,7 +6958,7 @@ function sheetAlchemy(warn) {
     `<div class="hint">每次消耗 ${C.useFali(S) ? C.lifeManaCost(S) + ' 法力' : K.COST_LIFE + ' 活力'} + 1 株对应药草 + 1 枚兽蛋（药引，优先低级，当前 <b style="color:#7fd6ff">${eggTotal(S)}</b> 枚）（当前${C.useFali(S) ? `法力 <b style="color:#5fd8e0">${S.mana}/${C.manaMax(S)}</b>` : `活力 <b style="color:#7fd6ff">${S.vigor}</b>`}，药草可种植或在商店购买）。成功率 <b class="y">${C.pct(C.alcRate(S, useOpt.lu, useOpt.spirit))}</b>；成丹 <b class="y">1-10 枚随机</b>；品质 <span class="q3">完美+5</span> ${C.pct(gp.q5)} · <span class="q2">丹纹+4</span> ${C.pct(gp.q4)} · <span class="q3">上品+3</span> ${C.pct(gp.q3)} · <span class="q2">中品+2</span> ${C.pct(gp.q2)} · <span class="q1">下品+1</span> ${C.pct(gp.q1)}</div>` +
     tRow('💧 凝露', 'lu', LUK, m, LU) + tRow('💠 灵石', 'spirit', SPK, S.ores, ORES) +
     `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">🧪 加料<small>自选 0-3 味投进炉里（点按增减）。搭配对了有惊喜，不对会炸炉——基础料损 1 份、加料全损，结果自负</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${[['h_str', MATS['h_str'].name], ['h_agi', MATS['h_agi'].name], ['h_def', MATS['h_def'].name], ['h_vit', MATS['h_vit'].name], ['h_int', MATS['h_int'].name], ['dw1', '下品凝露'], ['dw2', '中品凝露'], ['dw3', '上品凝露']].map(([ek, nm]) => { const have = m[ek] || 0, sel = alcExtraSel[ek] || 0; return `<button class="btn ${sel ? 'on' : ''}" data-extra="${ek}" ${have > 0 ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${nm} ×${have}<br><small>${sel ? '已投 ' + sel : '未投'}</small></button>`; }).join('')}</div>` +
-    `<div class="hint">🧪 丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b>/100（${C.toxTier(S.danDu|0)}）· 当前丹药药效 <b class="y">${Math.round(C.toxFactor(S) * 100)}%</b> · 化无丹可清毒（见下方丹方）</div>` +
+    `<div class="hint">🧪 丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b>/5000（${C.toxTier(S.danDu|0)}）· 当前丹药药效 <b class="y">${Math.round(C.toxFactor(S) * 100)}%</b> · 化无丹可清毒（见下方丹方）</div>` +
     ATTRS.map(k => { const h = m['h_' + k] || 0, noEgg = eggTotal(S) < 1; return `<div class="row"><div class="lab">${AN[k]}丹<small>${MATS['h_' + k].name} ×<b class="${h ? 'g' : 'r'}">${h}</b> + 兽蛋 ×<b class="${noEgg ? 'r' : 'g'}">${eggTotal(S)}</b></small></div>
       <button class="btn" data-brew="${k}" data-n="1" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 1 次</button>
       <button class="btn gold" data-brew="${k}" data-n="5" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 5 次</button></div>`; }).join('') +
@@ -8457,7 +8457,7 @@ function sheetBag() {
     ((S.inv['butian']|0) > 0 ? `<div class="row"><div class="lab">🌟 <b class="y">补天丹</b> ×${S.inv['butian']}<small>服用：随机+1条灵根（上限5条），每境界限服1颗，当前${window.LG ? window.LG.name(S) : ''}</small></div>
       <button class="btn gold" data-drinkbutian="1">服用</button></div>` : '') +
     (Object.keys(C.MUT_PILLS).filter(id => (S.inv['mut_' + id]|0) > 0).map(id => `<div class="row"><div class="lab">🌀 <b class="y">${C.MUT_PILLS[id].name}</b> ×${S.inv['mut_' + id]}<small>${C.MUT_PILLS[id].desc}（变异丹 · 丹毒 +${C.MUT_PILLS[id].tox}）</small></div><button class="btn gold" data-mut="${id}">服用</button></div>`).join('')) +
-    ((S.inv['detox']|0) > 0 ? `<div class="row"><div class="lab">🍃 <b class="y">化无丹</b> ×${S.inv['detox']}<small>服用：丹毒 -20（当前丹毒 ${S.danDu|0}/100）</small></div><button class="btn gold" data-detoxuse="1">服用</button></div>` : '') +
+    ((S.inv['detox']|0) > 0 ? `<div class="row"><div class="lab">🍃 <b class="y">化无丹</b> ×${S.inv['detox']}<small>服用：丹毒 -20（当前丹毒 ${S.danDu|0}/5000）</small></div><button class="btn gold" data-detoxuse="1">服用</button></div>` : '') +
     (((S.dan && S.dan.bigu)|0) > 0 ? `<div class="row"><div class="lab">🍘 <b class="y">辟谷丸</b> ×${S.dan.bigu}<small>服用：饱食 +20（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="bigu">服用</button></div>` : '') +
     (((S.dan && S.dan.qili)|0) > 0 ? `<div class="row"><div class="lab">💪 <b class="y">气力丸</b> ×${S.dan.qili}<small>服用：体力 +3（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="qili">服用</button></div>` : '') +
     `<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神乘劫余散合尊'[i]}×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
@@ -9225,12 +9225,12 @@ function doUseMut(id) { // v998 服变异丹
   const r = C.useMutPill(S, id); if (!r) return;
   const def = C.MUT_PILLS[id];
   const gtxt = Object.keys(r.gains).map(a => AN[a] + ' <span class="g">+' + r.gains[a] + '</span>').join('、');
-  log('good', '🌀 服下变异丹【<b class="y">' + def.name + '</b>】：' + [gtxt, r.txt].filter(Boolean).join('，') + (r.f < 1 ? '（丹毒未清，药效仅 ' + Math.round(r.f * 100) + '%）' : '') + '（丹毒 ' + (S.danDu|0) + '/100）');
+  log('good', '🌀 服下变异丹【<b class="y">' + def.name + '</b>】：' + [gtxt, r.txt].filter(Boolean).join('，') + (r.f < 1 ? '（丹毒未清，药效仅 ' + Math.round(r.f * 100) + '%）' : '') + '（丹毒 ' + (S.danDu|0) + '/5000）');
   commit(); sheetBag();
 }
 function doUseDetox() { // v998 服化无丹
   const d = C.useDetoxPill(S, 1); if (d <= 0) return;
-  log('good', '🍃 服下化无丹，丹毒 <span class="g">-' + d + '</span>（当前 ' + (S.danDu|0) + '/100 · ' + C.toxTier(S.danDu|0) + '）');
+  log('good', '🍃 服下化无丹，丹毒 <span class="g">-' + d + '</span>（当前 ' + (S.danDu|0) + '/5000 · ' + C.toxTier(S.danDu|0) + '）');
   commit(); sheetBag();
 }
 function doBrewDan(key, n) { // v1096 炼丸（本地判定，照抄化无丹）
@@ -10308,7 +10308,7 @@ async function doSell(kind, k, n) {
   try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v1095 卖出也触发雷云判定（与买入同口径）
   commit(); const _sy2 = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy2; // v200 出售后保持滚动位置
 }
-function doDrink(a, g, n) { const d = C.drink(S, a, g, n); if (d !== null && d !== undefined) { const fx = S._drinkFx; log('good', `💊 服下 ${potName(a, g)} ×${n}，${AN[a]} <span class="g">+${d}</span>${fx && fx.f < 1 ? `（丹毒未清，药效 ${Math.round(fx.f * 100)}%）` : ''}（丹毒 ${S.danDu|0}/100）`); commit(); sheetBag(); } }
+function doDrink(a, g, n) { const d = C.drink(S, a, g, n); if (d !== null && d !== undefined) { const fx = S._drinkFx; log('good', `💊 服下 ${potName(a, g)} ×${n}，${AN[a]} <span class="g">+${d}</span>${fx && fx.f < 1 ? `（丹毒未清，药效 ${Math.round(fx.f * 100)}%）` : ''}（丹毒 ${S.danDu|0}/5000）`); commit(); sheetBag(); } }
 function lvUpTxt(n) { const _per = (S.realm|0) + 1; return n ? `<br><span class="y">🎉 ${n > 1 ? '连升 ' + n + ' 级，' : ''}等级提升至 Lv.${S.level}！全属性 +${n * _per}</span>` : ''; }
 function arenaData() { // v246 每个境界独立的擂台数据；v247 加擂主守擂时间
   const cr = S.realm | 0;
