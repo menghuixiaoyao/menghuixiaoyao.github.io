@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1143</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1144</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -2763,16 +2763,25 @@ function inflict(f, k, L) {
   if (k === 'bleed') { if (f.bleed) return; f.bleed = true; L.push(`${nm(f)}<span class="r">🩸 开始流血</span>`); }
   else if (k === 'poison') { if (f.S && toxImmune(f.S)) return; if (f.poison >= K.POISON_ROUNDS) return; f.poison = K.POISON_ROUNDS; L.push(`${nm(f)}<span class="r">☠️ 中毒了</span>`); } // v1143 百毒不侵：战中亦不中毒
 }
-function addPoisonStack(f, L) { // v1143 百毒不侵叠毒：给目标 +1 层毒（上限 10 层）；每层每回合毒发 1% 最大生命，每 3 回合消退 1 层、最后一层不消退（须解毒药清）
-  if (f.S && toxImmune(f.S)) return;
+function addPoisonStack(f, L) { // v1143 百毒不侵叠毒：给目标 +1 层毒（上限 10 层）；每层每回合毒发 1% 最大生命，每 3 回合消退 1 层、最后一层不消退（须解毒药清）；能否毒到由 toxOnHit 的 canPoison 先判
   f.pStacks = Math.min(10, (f.pStacks | 0) + 1);
   f.poison = 1;
   L.push(`${nm(f)}<span class="r">☠️ 毒层叠加（${f.pStacks}层）</span>`);
 }
+function toxSaveOf(f) { return f.S || (f.owner && f.owner.S) || null; } // 灵宠按主人的存档算
+function canPoison(src, dst, L) { // v1144 Ye 定：百毒不侵战斗内外都挡毒；但佩戴者互遇时比丹毒——来源丹毒更高才毒得到，平/低都被挡
+  const dS = toxSaveOf(dst);
+  if (!(dS && toxImmune(dS))) return true;
+  const sS = toxSaveOf(src);
+  if (!(sS && toxImmune(sS))) return false;
+  if ((sS.danDu | 0) > (dS.danDu | 0)) return true;
+  if (L && !dst._duelLog) { dst._duelLog = 1; L.push(`${nm(dst)}<span class="g">☣️ 百毒相克：对方丹毒 ${sS.danDu | 0} 不敌自身 ${dS.danDu | 0}，毒被挡下</span>`); }
+  return false;
+}
 function toxOnHit(att, tgt, L) { // v1142 百毒不侵双向带毒：佩戴者打中目标→目标叠毒；佩戴者被打中→攻击者叠毒
   if (tgt.hp <= 0) return;
-  if (att.toxAtk) addPoisonStack(tgt, L);
-  if (tgt.toxAtk && att.hp > 0 && att !== tgt) addPoisonStack(att, L);
+  if (att.toxAtk && canPoison(att, tgt, L)) addPoisonStack(tgt, L);
+  if (tgt.toxAtk && att.hp > 0 && att !== tgt && canPoison(tgt, att, L)) addPoisonStack(att, L);
 }
 function wuxingHit(att, tgt, baseDmg, L) { // 五行：力附加属性伤害（每件+10%）；有对应抗则免除属性伤害，并按(抗-力)件数反弹10%/件
   const pow = att.wxPow; if (!pow || !(baseDmg > 0) || tgt.hp <= 0) return;
