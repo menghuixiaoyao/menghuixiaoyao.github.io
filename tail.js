@@ -133,7 +133,7 @@ window.xyRequestPlayer = function(accountId){
     if (typeof MHXY !== 'undefined' && MHXY.api) {
       MHXY.api('/api/xianyuan/request', { method: 'POST', body: { targetId: accountId } }).then(function(r){
         if (r.ok) { if (typeof toastLog === 'function') toastLog('good', '💞 仙缘请求已发出，等对方确认'); else if (typeof log === 'function') log('good', '💞 仙缘请求已发出'); }
-        else { var _m = '仙缘请求失败'; if (r.json && r.json.error === 'already_bound') _m = '已经绑定了'; else if (r.json && r.json.error === 'already_pending') _m = '已有待确认的请求'; else if (r.json && r.json.error === 'bad_target') _m = '不能和自己绑定'; if (typeof toastLog === 'function') toastLog('bad', _m); else if (typeof log === 'function') log('bad', _m); }
+        else { var _m = '仙缘请求失败'; if (r.json && r.json.error === 'already_bound') _m = '已经绑定了'; else if (r.json && r.json.error === 'already_pending') _m = '已有待确认的请求'; else if (r.json && r.json.error === 'bad_target') _m = '不能和自己绑定'; else if (r.json && r.json.error === 'daily_bind_limit') _m = '今天已发起过绑定了（每天只能发起1个）'; if (typeof toastLog === 'function') toastLog('bad', _m); else if (typeof log === 'function') log('bad', _m); }
       });
     }
   } catch(e) {}

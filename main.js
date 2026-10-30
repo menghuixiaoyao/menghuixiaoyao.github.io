@@ -3068,6 +3068,7 @@ function sheetChar() {
   try { const _fs = C.fateSignOf(S); if (_fs) html += `<div class="row" style="padding:4px 0"><div class="lab">🎴 宿命签<small>${_fs.t}</small></div><div class="lab" style="text-align:right"><b class="y">${_fs.n}</b><br><small>${C.fateModText(_fs)}</small></div></div>`; } catch(_) {} // v1012
   try { const _tb = S.taboo | 0; if (_tb > 0) html += `<div class="row" style="padding:4px 0"><div class="lab">${S.tabooAwake ? '🌑 第十人' : '？？？'}<small>${S.tabooAwake ? '已苏醒，伴你而行' : (_tb < 40 ? '沉睡' : _tb < 70 ? '微动' : '低语')}</small></div><div class="lab" style="text-align:right"><b class="pu">苏醒 ${_tb}%</b>${S.tabooAwake ? '<br><small>突破成功率 +5% · 雷劫威力 -5%</small>' : ''}</div></div>`; } catch(_) {} // v1013 禁忌苏醒度
   { xyInit(); const _xyt = xyTotal(); html += `<div class="row" style="padding:4px 0"><div class="lab">💞 仙缘<small>♂ ${S.xianyuan.m|0} · ♀ ${S.xianyuan.f|0} · 共 ${_xyt}</small></div><div class="lab">🔗 编号<small>${S.bindNum}</small></div><button class="btn sm" data-a="xianyuan">仙缘</button></div>`; }
+  { const _spn = window._spouseNames || []; if (_spn.length) html += `<div class="row" style="padding:4px 0"><div class="lab">💕 道侣<small>${_spn.map(function(n){ return String(n).replace(/</g, '&lt;'); }).join('、')}</small></div></div>`; try { if (typeof MHXY !== 'undefined' && MHXY.api) MHXY.api('/api/xianyuan/spouses').then(function(r){ if (r.ok && r.json) window._spouseNames = (r.json.spouses || []).map(function(s){ return s.username; }); }); } catch(_) {} }
   html += `<div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:3.5px;margin-bottom:4px;margin-left:0;margin-right:0;font-size:12px"><span style="white-space:nowrap">⏳寿元 <b class="${(S.lifespan|0) <= 10 ? 'r' : 'g'}">${S.lifespan|0}</b>年</span><span style="white-space:nowrap;text-align:center">🧪丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b><small> ${C.toxTier(S.danDu|0)}</small></span><span class="stam" style="text-align:center">体力 <b style="font-size:12px">${S.stamina|0}</b></span><span style="white-space:nowrap;text-align:center">🌫️灵气 <b>${Math.round(C.qiNow())}</b><small> ${C.qiTierName(C.qiNow())}</small></span><span style="text-align:center;position:relative;left:-15px">🍗饱食 <b class="${S.hunger >= 60 ? 'g' : S.hunger < 30 ? 'r' : 'y'}">${Math.floor(S.hunger)}</b></span></div>`;
   if ((S.realm|0) >= 1 && window.LG) html += `<div class="row" style="padding:4px 0"><div class="lab">🌟 灵根<small>${window.LG.name(S)}</small></div>${S.faZeDone5 ? '<div class="lab">🌈 <b class="y">混元道体</b></div>' : ''}${(S.realm|0) >= 6 ? `<div class="lab">🙏 功德金身<small>功德 <b class="y">${S.merit|0}</b> · 减伤 ${Math.min(30, Math.floor((S.merit|0)/10))}%${(S.merit|0) >= 100 ? ' · 突破+5%' : ''} · 大劫 ${meritDaysLeft()} 天后</small></div>` : ''}${S.toxDan ? `<div class="lab">☣️ <b class="y">毒丹</b><small>累积池 ${S.toxPool|0}</small></div>` : ''}</div>`; // v867 灵根显示；v906 功德金身放灵根一排
 
@@ -6222,8 +6223,7 @@ function doXianyuan() { // 仙缘面板（v1081：玩家互绑版，NPC 模拟�
   let html = `<h2>🔗 仙缘</h2><div class="hint">你的永久编号：<b class="y" style="font-size:18px">${S.bindNum}</b>（玩家间仙缘绑定）</div>`;
   html += `<div class="row"><div class="lab">💞 仙缘<small>♂ ${S.xianyuan.m} · ♀ ${S.xianyuan.f} · 共 ${total}</small></div><div class="lab">👥 绑定者<small id="xyBinderCount">…</small></div></div>`;
   html += `<div class="row"><button class="btn gold full" id="xyCheckinBtn">📬 每日签到（给绑定者发体力邮件）</button></div>`;
-  html += `<div id="xyRequests"></div><div id="xyBinders"></div>`;
-  if (S.spouse) html += `<div class="hint" style="color:var(--gold)">💕 道侣：<b class="y">${S.spouse.name}</b>（${S.spouse.gender === 'm' ? '♂' : '♀'}）</div>`;
+  html += `<div id="xyRequests"></div><div id="xyBinders"></div><div id="xySpouses"></div><div id="xyProposals"></div>`;
   html += `<div class="row"><button class="btn full" data-a="mail">📬 邮箱${S.mail.filter(m => !m.claimed).length ? `（${S.mail.filter(m => !m.claimed).length}未读）` : ''}</button></div>`;
   if (canSect) html += `<div class="row"><button class="btn gold full" data-xysect="1">🏯 开设宗门（需10点仙缘）</button></div>`;
   if (S.sect) html += `<div class="row"><div class="lab">🏯 宗门<small>${S.sect.name}</small></div><button class="btn" data-a="sect">进入</button></div>`;
@@ -6236,7 +6236,8 @@ function doXianyuan() { // 仙缘面板（v1081：玩家互绑版，NPC 模拟�
       MHXY.api('/api/xianyuan/list').then(function(r){
         if (!r.ok || !r.json) return;
         const binders = r.json.binders || [], reqs = r.json.requests || [];
-        const bc = document.getElementById('xyBinderCount'); if (bc) bc.textContent = binders.length + ' 人';
+        window._xyBindersCache = binders;
+        const bc = document.getElementById('xyBinderCount'); if (bc) bc.textContent = binders.length + ' 人 · 今日发起 ' + (r.json.bindUsedToday | 0) + '/1';
         const rq = document.getElementById('xyRequests');
         if (rq) {
           rq.innerHTML = reqs.length ? `<h3>待确认的绑定请求</h3>` + reqs.map(function(q){
@@ -6252,12 +6253,60 @@ function doXianyuan() { // 仙缘面板（v1081：玩家互绑版，NPC 模拟�
           }).join('') : `<div class="empty">暂无绑定者，点玩家资料里的 💞 仙缘发起绑定吧～</div>`;
         }
       });
+      // v1158 道侣：道侣名单 / 求娶与待同意 / 绑定者结道侣按钮
+      MHXY.api('/api/xianyuan/spouses').then(function(sr){
+        if (!sr.ok || !sr.json) return;
+        const sj = sr.json;
+        window._spouseNames = (sj.spouses || []).map(function(s){ return s.username; });
+        const spouseIds = {};
+        (sj.spouses || []).forEach(function(s){ spouseIds[s.accountId] = 1; });
+        const spEl = document.getElementById('xySpouses');
+        if (spEl) {
+          spEl.innerHTML = (sj.spouses && sj.spouses.length) ? `<h3>💕 道侣</h3>` + sj.spouses.map(function(s){
+            const tid = String(s.accountId).replace(/'/g, '');
+            return `<div class="row"><div class="lab">💕 ${String(s.username || '?').replace(/</g, '&lt;')}<small>编号 [${s.playerNo || '?'}]</small></div><button class="btn sm" onclick="window.xyDivorce('${tid}')">离缘</button></div>`;
+          }).join('') : '';
+        }
+        const bd2 = document.getElementById('xyBinders');
+        const cache = window._xyBindersCache || [];
+        if (bd2 && cache.length) {
+          bd2.innerHTML = `<h3>绑定者</h3>` + cache.map(function(b){
+            const tid = String(b.accountId).replace(/'/g, '');
+            const days = Math.floor((Date.now() - (b.since || 0)) / 86400000);
+            let act = '';
+            if (spouseIds[b.accountId]) act = `<span class="y" style="margin-right:6px">💕道侣</span>`;
+            else if (days >= 7) act = `<button class="btn gold sm" onclick="window.xyProposeMarry('${tid}')">💕 结为道侣</button>`;
+            else act = `<small style="margin-right:6px">满7天可结道侣（${days}/7）</small>`;
+            return `<div class="row"><div class="lab">🧑 ${String(b.username || '?').replace(/</g, '&lt;')}<small>编号 [${b.playerNo || '?'}] · 绑定${days}天</small></div>${act}<button class="btn sm" onclick="window.xyUnbind('${tid}')">解绑</button></div>`;
+          }).join('');
+        }
+        const pp = document.getElementById('xyProposals');
+        if (pp) {
+          let h = '';
+          (sj.consentsOwed || []).forEach(function(o){
+            const pid = String(o.proposalId).replace(/'/g, '');
+            h += `<div class="row"><div class="lab">💌 ${String(o.fromName || '?').replace(/</g, '&lt;')}<small>想再娶 ${String(o.toName || '?').replace(/</g, '&lt;')} 为道侣，须你同意</small></div><button class="btn gold sm" onclick="window.xyMarryConsent('${pid}',1)">同意</button><button class="btn sm" onclick="window.xyMarryConsent('${pid}',0)">反对</button></div>`;
+          });
+          (sj.incoming || []).forEach(function(o){
+            const pid = String(o.id).replace(/'/g, '');
+            if (o.status === 'awaiting') h += `<div class="row"><div class="lab">💕 ${String(o.fromName || '?').replace(/</g, '&lt;')}<small>求与你结为道侣（双方各出999金元入天道池）</small></div><button class="btn gold sm" onclick="window.xyMarryRespond('${pid}',1)">同意结为道侣</button><button class="btn sm" onclick="window.xyMarryRespond('${pid}',0)">拒绝</button></div>`;
+            else h += `<div class="row"><div class="lab">💕 ${String(o.fromName || '?').replace(/</g, '&lt;')}<small>求与你结为道侣 · 等他现有道侣同意中…</small></div></div>`;
+          });
+          (sj.outgoing || []).forEach(function(o){
+            const pid = String(o.id).replace(/'/g, '');
+            const st = o.status === 'awaiting' ? '等对方回应' : `等道侣同意（还差${o.consentsLeft}人）`;
+            h += `<div class="row"><div class="lab">💌 求娶 ${String(o.toName || '?').replace(/</g, '&lt;')}<small>${st}</small></div><button class="btn sm" onclick="window.xyMarryCancel('${pid}')">撤回</button></div>`;
+          });
+          if (sj.divorceCdUntil && sj.divorceCdUntil > Date.now()) h += `<div class="hint">🍂 离缘冷却中：${new Date(sj.divorceCdUntil).toLocaleDateString()} 前不能再结道侣</div>`;
+          pp.innerHTML = h ? `<h3>道侣事务</h3>` + h : '';
+        }
+      });
       const cb = document.getElementById('xyCheckinBtn');
       if (cb) cb.onclick = function(){
         MHXY.api('/api/xianyuan/checkin', { method: 'POST', body: {} }).then(function(r){
           if (r.ok) {
             if (r.json && r.json.already) { if (typeof toastLog === 'function') toastLog('sys', '今天已签到过了'); }
-            else if (typeof toastLog === 'function') toastLog('good', `📬 签到成功！连续第${(r.json && r.json.streak) || 1}天，已给${(r.json && r.json.sent) || 0}位绑定者发体力邮件`);
+            else if (typeof toastLog === 'function') toastLog('good', `📬 签到成功！连续第${(r.json && r.json.streak) || 1}天，已给${(r.json && r.json.sent) || 0}位绑定者发体力邮件${(r.json && r.json.capped) ? `（${r.json.capped}位的前20已满，未送达）` : ''}`);
           }
         });
       };
@@ -6286,8 +6335,82 @@ window.xyUnbind = function(targetId){
     if (typeof MHXY !== 'undefined' && MHXY.api) {
       MHXY.api('/api/xianyuan/unbind', { method: 'POST', body: { targetId: targetId } }).then(function(r){
         if (r.ok) { xyInit(); const tot = xyTotal(); if (tot > 0) { if (S.xianyuan.m > 0) S.xianyuan.m--; else if (S.xianyuan.f > 0) S.xianyuan.f--; } commit(); if (typeof toastLog === 'function') toastLog('sys', '已解绑，仙缘-1'); doXianyuan(); }
+        else if (r.json && r.json.error === 'married') { if (typeof toastLog === 'function') toastLog('bad', '已是道侣，先离缘才能解绑'); }
       });
     }
+  } catch(e) {}
+};
+// v1158 道侣：求娶 / 回应 / 同意 / 撤回 / 离缘 + 邮件复仇
+const XY_ERR_TXT = { daily_bind_limit: '今天已发起过绑定了（每天只能发起1个）', not_bound: '还没绑定', bind_too_new: '绑定未满7天', already_spouses: '已是道侣', already_proposed: '已有进行中的求娶', insufficient_gold: '金元不足（双方各需999）', divorce_cooldown: '离缘后7天内不能再结道侣', remarriage_banned: '原配本世不能再婚（除非一方先轮回）', not_spouses: '不是道侣', no_proposal: '请求已失效', not_ready: '还没轮到你回应', not_a_consenter: '这事不用你同意' };
+function xyErrToast(r, fallback) {
+  const e = (r && r.json && r.json.error) || '';
+  if (typeof toastLog === 'function') toastLog('bad', XY_ERR_TXT[e] || (fallback + (e ? '：' + e : '')));
+}
+window.xyProposeMarry = function(targetId){
+  try {
+    MHXY.api('/api/xianyuan/marry/propose', { method: 'POST', body: { targetId: targetId } }).then(function(r){
+      if (r.ok && r.json && r.json.ok) { if (typeof toastLog === 'function') toastLog('good', '💕 求娶已发出' + ((r.json.needConsents | 0) > 0 ? `，须 ${r.json.needConsents} 位现有道侣先同意` : '，等对方回应')); }
+      else xyErrToast(r, '求娶失败');
+      doXianyuan();
+    });
+  } catch(e) {}
+};
+window.xyMarryRespond = function(pid, accept){
+  try {
+    MHXY.api('/api/xianyuan/marry/respond', { method: 'POST', body: { proposalId: pid, accept: !!accept } }).then(function(r){
+      if (r.ok && r.json && r.json.married) { if (typeof toastLog === 'function') toastLog('good', '💒 结为道侣！999金元已入天道池'); try { downloadSave(true); } catch(_) {} }
+      else if (r.ok && r.json && r.json.rejected) { if (typeof toastLog === 'function') toastLog('sys', '已拒绝'); }
+      else xyErrToast(r, '回应失败');
+      doXianyuan();
+    });
+  } catch(e) {}
+};
+window.xyMarryConsent = function(pid, agree){
+  try {
+    MHXY.api('/api/xianyuan/marry/consent', { method: 'POST', body: { proposalId: pid, agree: !!agree } }).then(function(r){
+      if (r.ok && r.json && r.json.ok) { if (typeof toastLog === 'function') toastLog('good', agree ? '💕 已同意' : '已反对，此求娶作罢'); }
+      else xyErrToast(r, '操作失败');
+      doXianyuan();
+    });
+  } catch(e) {}
+};
+window.xyMarryCancel = function(pid){
+  try {
+    MHXY.api('/api/xianyuan/marry/cancel', { method: 'POST', body: { proposalId: pid } }).then(function(r){
+      if (typeof toastLog === 'function') toastLog('sys', '已撤回求娶');
+      doXianyuan();
+    });
+  } catch(e) {}
+};
+window.xyDivorce = function(targetId){
+  let ok = false;
+  try { ok = confirm('确定要离缘吗？离缘后7天内不能再结道侣，且此世不能再与对方结为道侣（除非一方先轮回）。'); } catch(_) { ok = true; }
+  if (!ok) return;
+  try {
+    MHXY.api('/api/xianyuan/divorce', { method: 'POST', body: { targetId: targetId } }).then(function(r){
+      if (r.ok && r.json && r.json.ok) { if (typeof toastLog === 'function') toastLog('sys', '🍂 已离缘'); }
+      else xyErrToast(r, '离缘失败');
+      doXianyuan();
+    });
+  } catch(e) {}
+};
+window.pkMailRevenge = function(sid, victimId){
+  try {
+    const m = (S.mail || []).find(function(x){ return x.sid === sid; });
+    const mine = (typeof myAid === 'function') && victimId === myAid();
+    const url = mine ? '/api/world/revenge/activate' : '/api/world/revenge/activate-for';
+    const body = mine ? {} : { victimId: victimId };
+    MHXY.api(url, { method: 'POST', body: body }).then(function(r){
+      if (r.ok && r.json && r.json.ok) {
+        if (m) { m.pkDone = 1; commit(); }
+        if (typeof toastLog === 'function') toastLog('good', `⚔️ 复仇已开启！目标：${r.json.targetName || '仇人'}（10分钟内在世界中挑战他）`);
+      } else {
+        const e = (r.json && (r.json.error || r.json.err)) || r.status;
+        const txt = e === 'no revenge available' ? '复仇已失效' : e === 'revenge already active' ? '复仇已在进行中' : e === 'no charges left' ? '复仇次数已用完' : e === 'not_spouse' ? '你不是他的道侣' : e;
+        if (typeof toastLog === 'function') toastLog('bad', '开启复仇失败：' + txt);
+      }
+      doMail();
+    });
   } catch(e) {}
 };
 function refreshMainMailBtn(){
@@ -6312,7 +6435,7 @@ async function mailPull(){
     if (!fresh.length) return;
     fresh.forEach(m => {
       const p = (m.payload && typeof m.payload === 'object') ? m.payload : {};
-      S.mail.push({ from: m.from, title: m.title, text: m.text, stamina: Math.floor(Number(p.stamina) || 0), items: (p.items && typeof p.items === 'object') ? p.items : null, claimed: false, sid: m.id, kind: m.kind });
+      S.mail.push({ from: m.from, title: m.title, text: m.text, stamina: Math.floor(Number(p.stamina) || 0), items: (p.items && typeof p.items === 'object') ? p.items : null, claimed: false, sid: m.id, kind: m.kind, pk: (p.pk && typeof p.pk === 'object') ? p.pk : null });
     });
     commit();
     MHXY.api('/api/mail/ack', { method: 'POST', body: { ids: fresh.map(m => m.id) } }).catch(() => {});
@@ -6352,7 +6475,7 @@ function doMail() {
   if (!S.mail.length) html += `<div class="empty">空空如也</div>`;
   else html += S.mail.slice().reverse().map((m, ri) => {
     const i = S.mail.length - 1 - ri;
-    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${m.claimed ? '<small>已领取</small><button class="btn sm" data-maildel="' + i + '">删除</button>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
+    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${(m.pk && m.pk.revenge && !m.pkDone) ? `<button class="btn danger sm" onclick="window.pkMailRevenge('${m.sid || ''}','${String(m.pk.victim || '').replace(/'/g, '')}')">${(typeof myAid === 'function' && m.pk.victim === myAid()) ? '⚔️ 开启复仇' : '⚔️ 代为复仇'}</button>` : ''}${m.claimed ? '<small>已领取</small><button class="btn sm" data-maildel="' + i + '">删除</button>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
   }).join('');
   html += `<div class="row"><button class="btn full" data-a="xianyuan">← 返回仙缘</button></div>`;
   openSheet(html);
@@ -6761,7 +6884,7 @@ document.addEventListener('click', e => {
   if (d.arenaStart) { doArenaStart(); return; }
   if (d.arenaRank) { doArenaRank(d.arenaRank); return; }
   if (d.xyunbind !== undefined) { xyUnbind(+d.xyunbind); doXianyuan(); return; }
-  if (d.xymarry !== undefined) { const b = S.binders[+d.xymarry]; if (b && (b.intimacy|0) >= 50 && !S.spouse) { S.spouse = { name: b.name, gender: b.gender, since: Date.now() }; log('good', `💕 与 <b class="y">${b.name}</b> 结为道侣！`); } commit(); doXianyuan(); return; }
+  if (d.xymarry !== undefined) { log('sys', '💕 道侣须与真人结：去仙缘面板，与绑定满7天的真人绑定者结为道侣。'); doXianyuan(); return; }
   if (d.mailclaim !== undefined) { const m = S.mail[+d.mailclaim]; if (m && !m.claimed) { m.claimed = true; S.stamina = (S.stamina|0) + (m.stamina|0); log('good', `📬 领取邮件体力 <span class="g">+${m.stamina}</span>`); } commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.mailclaimsv !== undefined) { doMailClaimServer(d.mailclaimsv); return; }
   if (d.maildel !== undefined) { S.mail.splice(+d.maildel, 1); commit(); refreshMainMailBtn(); doMail(); return; }
