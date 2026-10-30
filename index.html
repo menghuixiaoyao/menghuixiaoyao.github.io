@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1154</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1155</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -3787,7 +3787,7 @@ window.advPlaceArrayTier = async function(tier) {
       log('good', `🧭 采集阵已布于(${gx},${gy})，加灵石后自动采集这格刷新的资源`);
     } else {
       const _e = (j || {}).error;
-      log('bad', _e === 'no_formation' ? '没有采集阵（阵法台用阵棋合成）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' ? '只能布在空格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
+      log('bad', _e === 'no_formation' ? '没有采集阵（阵法台用阵棋合成）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' || _e === 'not_resource_tile' ? '只能布在资源格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
     }
   } catch (e) {}
   await advSharedRefresh();
@@ -8351,8 +8351,9 @@ window.lwEat = function (idx) {
     commit(); sheetBag();
   } catch (_) {}
 };
-window.eatHerb = function (key) { // v1136 吃属性草
+window.eatHerb = async function (key) { // v1136 吃属性草
   try {
+    await srvProg('/api/progress/eat_herb', { key });
     const r = C.eatHerb(S, key); if (!r) return;
     if (r.err === 'daily') { log('bad', '🌿 今日属性草已吃满 5 棵，明日再来'); return; }
     if (r.err) { log('bad', '没有这种药草'); return; }
@@ -8971,8 +8972,9 @@ function doFaZe(el) { // v867 参悟法则：尊者解锁，3体力/次，仅对
   else if (_allMine && !S.faZeDone) { S.faZeDone = 1; log('warn', `☯️ <b>本命法则圆满！</b>${window.LG.benMingTxt(S)}！`); }
   afterAct(); save(); sheetTrain(); render();
 }
-function doTrain(k, n) { const d = C.train(S, k, n), f = C.train.fail || 0; if (d) { const xpGain = S.realm === 0 ? (C.train.gain || 0) * 10 : 0; const _lgb = C.train._lgb || 0; log(S.dead ? 'bad' : 'good', `📖 挑灯看书，${AN[k]} <span class="g">+${C.train.gain}</span>（体力 -${d}）` + (_lgb ? `，<span class="g">灵根 +${_lgb}</span>` : '') + (xpGain ? `，经验 <span class="g">+${xpGain}</span>` : '') + (f ? `<br><span class="r">🌧️ 心绪低落，${f} 次看书读不进去</span>` : '')); afterAct(); commit(); S.dead ? closeSheet() : sheetTrain(); } }
-function doLvUp() {
+async function doTrain(k, n) { await srvProg('/api/progress/train', { attr: k, n: Math.min(120, n | 0) }); const d = C.train(S, k, n), f = C.train.fail || 0; if (d) { const xpGain = S.realm === 0 ? (C.train.gain || 0) * 10 : 0; const _lgb = C.train._lgb || 0; log(S.dead ? 'bad' : 'good', `📖 挑灯看书，${AN[k]} <span class="g">+${C.train.gain}</span>（体力 -${d}）` + (_lgb ? `，<span class="g">灵根 +${_lgb}</span>` : '') + (xpGain ? `，经验 <span class="g">+${xpGain}</span>` : '') + (f ? `<br><span class="r">🌧️ 心绪低落，${f} 次看书读不进去</span>` : '')); afterAct(); commit(); S.dead ? closeSheet() : sheetTrain(); } }
+async function doLvUp() {
+  await srvProg('/api/progress/levelup', {});
   const r = C.doManualLevelUp(S);
   if (r.err) { toastLog('bad', r.err === 'dead' ? '已死亡' : r.err === 'max' ? '已大圆满' : r.err === 'mana' ? '法力不足' : '经验不足'); return; }
   { const mn2 = (S.realm|0) >= 8 ? '仙力' : '法力'; log('good', `⬆️ <b>升级！</b>当前 Lv.${S.level}，全属性 +${(S.realm|0) + 1 + C.reincBonus(S)}` + (r.manaBoost ? `，<span class="g">满${mn2}升级：当前${mn2} ×1.1（${S.mana}）</span>` : '')); }
@@ -9349,7 +9351,8 @@ function doBrewDetox(n) { // v998 炼制化无丹（本地判定）
   log('alc', '🍃 炼制化无丹 ' + (ok + fail) + ' 次：成功 <span class="g">' + ok + '</span>（得化无丹 ×' + got + '），失败 <span class="r">' + fail + '</span>' + (ok + fail > 1 ? '<details open><summary>炼制详情</summary>' + lines.map(l => '<div class="bl">' + l + '</div>').join('') + '</details>' : '<br>' + lines[0]) + (ups ? '<br><span class="y">炼药等级提升至 Lv.' + S.alc.lv + '！</span>' : '') + (stop ? '<br><span class="r">⚠️ ' + stop + '</span>' : ''));
   afterAct(); commit(); S.dead ? closeSheet() : sheetAlchemy(stop);
 }
-function doUseMut(id) { // v998 服变异丹
+async function doUseMut(id) { // v998 服变异丹
+  await srvProg('/api/progress/eat_mut', { id });
   const r = C.useMutPill(S, id); if (!r) return;
   const def = C.MUT_PILLS[id];
   const gtxt = Object.keys(r.gains).map(a => AN[a] + ' <span class="g">+' + r.gains[a] + '</span>').join('、');
@@ -9404,8 +9407,9 @@ window.brewKm = function () { // v1129 炼开脉丹
     commit(); sheetAlchemy();
   } catch (_) {}
 };
-window.eatSyd = function (idx) { // v1129 服寿元丹
+window.eatSyd = async function (idx) { // v1129 服寿元丹
   try {
+    await srvProg('/api/progress/eat_syd', { idx });
     const r = C.eatSyd(S, idx); if (!r) return;
     log('good', `💊 服下<b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b>，寿元 <span class="g">+${r.gain}</span>${C.eleNoteL(r.f) ? `（${C.eleNoteL(r.f)}）` : ''}`);
     if (r.awakened) log('good', `🌟 <b>灵根觉醒！</b>${C.rootBaseL(r.e)}灵根应丹气而醒，化作<b>${r.awakened}</b>灵根！`); // v1134
@@ -9809,7 +9813,67 @@ function doPetBreak(id) {
 }
 window.sheetPetBreak = sheetPetBreak; window.doPetBreak = doPetBreak; // v1091 灵宠突破入口/动作挂全局（兽园按钮与面板按钮调 window.*；此前未导出致按钮全死）
 
-function doLu(k, n) {
+// v1155 成长服务端化：发放登记助手——登录时先经服务端掷骰记账（成长账本），本地照常执行显示；
+// 服务端拒绝/离线都不拦本地（上传守卫有预算吸收小额差），但服务端已发放的 rev 要接住防冲突。
+async function srvProg(path, body) {
+  if (!(window.MHXY && MHXY.loggedIn && MHXY.loggedIn())) return null;
+  try {
+    const resp = await MHXY.api(path, { method: 'POST', body: body || {} });
+    if (resp && resp.ok && resp.json && resp.json.ok) { if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); return resp.json; }
+    if (resp && !resp.netErr && resp.json && resp.json.error) return { denied: resp.json.error };
+  } catch (e) {}
+  return null;
+}
+// v1155 闭关/突破登记：挂在 save/commit 之后统一侦测（入关盖服务端时间戳、出关按服务端时长对账、突破进境登记）
+window.__afkSrv = false; window.__afkLocalGain = null; window.__srvAfkMark = null;
+window.__srvRealmSeen = null; window.__srvAttrSnap = null; window.__pendingBt = null;
+try { const _afkExit0 = afkExit; if (typeof _afkExit0 === 'function') afkExit = function (S2, reason) { const g = _afkExit0(S2, reason); window.__afkLocalGain = g; return g; }; } catch (e) {}
+function progAfterSave() {
+  try {
+    if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn() || typeof S === 'undefined' || !S) return;
+    if (window.__srvRealmSeen == null) { window.__srvRealmSeen = S.realm | 0; window.__srvAttrSnap = Object.assign({}, S.attrs || {}); }
+    else if ((S.realm | 0) > window.__srvRealmSeen && !window.__pendingBt) {
+      const keys = ['str', 'agi', 'def', 'vit', 'int'], ratios = [];
+      for (const k of keys) { const o = (window.__srvAttrSnap || {})[k] | 0, n = S.attrs[k] | 0; if (o >= 1 && n >= 1) ratios.push(n / o); }
+      ratios.sort((a, b) => a - b);
+      let mult = ratios.length ? ratios[Math.floor(ratios.length / 2)] : 1;
+      mult = Math.round(mult * 10) / 10; if (!(mult >= 1)) mult = 1; if (mult > 2.2) mult = 2.2;
+      window.__pendingBt = { to: S.realm | 0, mult };
+    }
+    if (window.__pendingBt) {
+      const pb = window.__pendingBt;
+      MHXY.api('/api/progress/breakthrough', { method: 'POST', body: { to: pb.to, mult: pb.mult, lingGen: S.lingGen || [] } }).then(function (resp) {
+        if (resp && resp.ok && resp.json && resp.json.ok) { if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); window.__srvRealmSeen = pb.to; window.__pendingBt = null; }
+        else if (resp && resp.json && resp.json.error === 'already_or_skip') { window.__srvRealmSeen = pb.to; window.__pendingBt = null; }
+      }).catch(function () {});
+    }
+    if ((S.realm | 0) < window.__srvRealmSeen) window.__srvRealmSeen = S.realm | 0;
+    window.__srvAttrSnap = Object.assign({}, S.attrs || {});
+    if (S.afk && S.afk.start) {
+      if (window.__srvAfkMark !== S.afk.start) {
+        window.__srvAfkMark = S.afk.start;
+        MHXY.api('/api/progress/afk_begin', { method: 'POST', body: { type: S.afk.type } }).then(function (resp) { if (resp && resp.ok && resp.json && resp.json.ok) { window.__afkSrv = true; if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); } }).catch(function () {});
+      }
+    } else if (window.__srvAfkMark) {
+      window.__srvAfkMark = null;
+      if (window.__afkSrv) {
+        window.__afkSrv = false;
+        const localGain = window.__afkLocalGain; window.__afkLocalGain = null;
+        MHXY.api('/api/progress/afk_settle', { method: 'POST', body: { qi: (typeof C !== 'undefined' && C.qiNow) ? C.qiNow() : 50 } }).then(function (resp) {
+          if (resp && resp.ok && resp.json && resp.json.ok) {
+            const j = resp.json; if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+            if (typeof localGain === 'number') { const diff = (j.gain | 0) - localGain; if (diff !== 0) { if (j.isMana) S.mana = Math.max(0, (S.mana || 0) + diff); else S.xp = Math.max(0, (S.xp || 0) + diff); try { save(); } catch (e) {} } }
+          }
+        }).catch(function () {});
+      }
+    }
+  } catch (e) {}
+}
+try { const _c0 = commit; if (typeof _c0 === 'function') commit = function () { const r = _c0.apply(this, arguments); progAfterSave(); return r; }; } catch (e) {}
+try { const _s0 = save; if (typeof _s0 === 'function') save = function () { const r = _s0.apply(this, arguments); progAfterSave(); return r; }; } catch (e) {}
+
+async function doLu(k, n) {
+  await srvProg('/api/progress/eat_lu', { k, n });
   const r = C.useLu(S, k, n); if (!r) return;
   log('good', `💧 服用 ${rarTxt('farm', k)} ×${r.n}，获得 ${r.pts} 点属性：${gainsTxt(r.gains)}`);
   commit(); sheetBag();
@@ -9837,7 +9901,8 @@ async function doSmash(n) {
   log('gold', `🔨 砸开 ${rarTxt('mine', 'sp5')}${r.n > 1 ? ' ×' + r.n : ''}，得到 ` + ['sp1', 'sp2', 'sp3', 'sp4'].filter(k => r.got[k]).map(k => `${rarTxt('mine', k)}×${r.got[k]}`).join(' '));
   commit(); if (window._charPage) { sheetChar(); } else { sheetBag(); }
 }
-function doSpirit(k, n) {
+async function doSpirit(k, n) {
+  await srvProg('/api/progress/eat_spirit', { k, n });
   const r = C.useSpirit(S, k, n); if (!r) return;
   log('gold', `💠 服用 ${rarTxt('mine', k)} ×${r.n}，` + (r.xp ? `经验 <span class="g">+${r.xp}</span>（${S.xp}/${C.xpNeed(S.level)}）` : '灵力灌顶！') + lvUpTxt(r.ups));
   commit(); sheetBag();
