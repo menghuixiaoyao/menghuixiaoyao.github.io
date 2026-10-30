@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1132</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1133</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -1403,11 +1403,11 @@ function lingGenTrainBonus(S) { // 修炼加成概率
   const n = (S.lingGen && S.lingGen.length) || 0;
   return n === 1 ? 0.25 : n === 2 ? 0.15 : n === 3 ? 0.08 : n === 4 ? 0.03 : 0;
 }
-function lingGenAfkMult(S) { // 闭关收益系数：五档齐全；v1132 Ye 定：异灵根每条 −20%，带满 5 条 −100%（收益归零）
+function lingGenAfkMult(S) { // 闭关收益系数：五档齐全；v1133 Ye 定方案二：异灵根每条扣 10 个百分点，带满 5 条收益对半（10 变 5，非归零）
   const g = S.lingGen || [], n = g.length;
   const base = n === 1 ? 0.30 : n === 2 ? 0.15 : n === 3 ? 0.05 : n === 4 ? -0.10 : n >= 5 ? -0.20 : 0;
   const k = g.filter(r => ROOT_BASE[r]).length;
-  return (1 + base) * Math.max(0, 1 - 0.2 * k) - 1;
+  return (1 + base) * (1 - 0.1 * k) - 1;
 }
 function lingGenAfkTxt(S) { // 闭关加成显示
   const m = lingGenAfkMult(S);
