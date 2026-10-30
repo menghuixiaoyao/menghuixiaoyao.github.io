@@ -198,7 +198,7 @@ body:has(#__aired-bar) #sheet{padding-bottom:calc(50px + var(--safe-b))}
 <div id="meritLine" style="display:none;margin:2px 10px 4px;padding:5px 10px;border-radius:6px;background:rgba(200,80,80,.13);color:#ffb3b3;font-size:12px;text-align:center"></div>
 <header>
   <div class="top">
-    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1155</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
+    <h1 id="title">梦回逍遥 <small style="font-size:10px;color:#666">v1156</small><span id="skyTitle" style="display:none;font-size:11px;font-weight:normal;color:#a9c3ff;margin-left:6px"></span></h1>
     <span class="lvl"><span id="lv">凡人 Lv.1</span></span>
     <button class="icon-btn" id="debugBtn">测试签到</button>
     <button class="icon-btn" id="menuBtn">☰</button>
@@ -9842,7 +9842,7 @@ function progAfterSave() {
     }
     if (window.__pendingBt) {
       const pb = window.__pendingBt;
-      MHXY.api('/api/progress/breakthrough', { method: 'POST', body: { to: pb.to, mult: pb.mult, lingGen: S.lingGen || [] } }).then(function (resp) {
+      MHXY.api('/api/progress/breakthrough', { method: 'POST', body: { to: pb.to, mult: pb.mult, lingGen: S.lingGen || [], xianCap: S.xianCap || 0 } }).then(function (resp) {
         if (resp && resp.ok && resp.json && resp.json.ok) { if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); window.__srvRealmSeen = pb.to; window.__pendingBt = null; }
         else if (resp && resp.json && resp.json.error === 'already_or_skip') { window.__srvRealmSeen = pb.to; window.__pendingBt = null; }
       }).catch(function () {});
@@ -9867,10 +9867,32 @@ function progAfterSave() {
         }).catch(function () {});
       }
     }
+    // v1156 生活技能经验汇报：与上次快照比对总经验增量，攒够/超时批量经服务端发放登记
+    try {
+      const tot = s2 => { const L2 = s2 === 'alc' ? S.alc : (S.life || {})[s2]; if (!L2) return 0; let t2 = L2.xp | 0; for (let i2 = 1; i2 < (L2.lv | 0 || 1); i2++) t2 += i2 * 30; return t2; };
+      const keys2 = ['alc', 'cook', 'forge', 'refine', 'tame'];
+      if (!window.__skillSnap) { window.__skillSnap = {}; window.__skillPend = {}; window.__skillFlushAt = 0; for (const k2 of keys2) window.__skillSnap[k2] = tot(k2); }
+      else {
+        let pendSum = 0;
+        for (const k2 of keys2) { const now2 = tot(k2), d2 = now2 - (window.__skillSnap[k2] | 0); window.__skillSnap[k2] = now2; if (d2 > 0) window.__skillPend[k2] = (window.__skillPend[k2] | 0) + d2; pendSum += window.__skillPend[k2] | 0; }
+        if (pendSum > 0 && (pendSum >= 50 || Date.now() - window.__skillFlushAt > 30000)) {
+          window.__skillFlushAt = Date.now();
+          for (const k2 of keys2) {
+            const p2 = Math.min(500, window.__skillPend[k2] | 0); if (!p2) continue;
+            window.__skillPend[k2] -= p2;
+            srvProg('/api/progress/skillxp', { skill: k2, xp: p2 }).then(function (res) { if (!res || !res.ok) window.__skillPend[k2] = (window.__skillPend[k2] | 0) + p2; else if ((res.applied | 0) < p2) window.__skillPend[k2] = (window.__skillPend[k2] | 0) + (p2 - (res.applied | 0)); });
+          }
+        }
+      }
+    } catch (e) {}
   } catch (e) {}
 }
 try { const _c0 = commit; if (typeof _c0 === 'function') commit = function () { const r = _c0.apply(this, arguments); progAfterSave(); return r; }; } catch (e) {}
 try { const _s0 = save; if (typeof _s0 === 'function') save = function () { const r = _s0.apply(this, arguments); progAfterSave(); return r; }; } catch (e) {}
+// v1156 冒险整场结算汇报：run.rew.gains 经服务端核定（按胜场/事件/难度与每日上限），超核部分当场校正
+try { const _sae0 = showAdvEnd; if (typeof _sae0 === 'function') showAdvEnd = function (r) { const out = _sae0.apply(this, arguments); try { const e = r && r.end; if (e && e.rew && e.rew.gains) { const gains = {}; let tot = 0; for (const a in e.rew.gains) { const v = e.rew.gains[a] | 0; if (v > 0) { gains[a] = v; tot += v; } } if (tot > 0) srvProg('/api/progress/adv', { dk: e.dk, wins: e.rew.wins | 0, ev: e.total | 0, gains }).then(function (res) { if (res && res.ok && res.gains) { let cut = 0; for (const a in gains) { const d = gains[a] - (res.gains[a] | 0); if (d > 0) { S.attrs[a] = Math.max(1, (S.attrs[a] | 0) - d); cut += d; } } if (cut > 0) { log('warn', `🌐 天道核验：本场修为超出核定 ${cut} 点，已校正。`); try { commit(); } catch (e2) {} try { render(); } catch (e2) {} } } }); } } catch (e) {} return out; }; } catch (e) {}
+// v1156 参悟法则服务端版：登录时服务端扣体力掷增量/觉醒，本地按结果落账；离线/被拒回落本地原逻辑
+try { const _dfz0 = doFaZe; if (typeof _dfz0 === 'function') doFaZe = async function (el) { try { if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn()) return _dfz0(el); if ((S.realm | 0) < 11 || !window.LG || !window.LG.hasEle(S, el)) return _dfz0(el); S.faZe = S.faZe || {}; if ((S.faZe[el] | 0) >= 100 || (S.stamina | 0) < 3) return _dfz0(el); const r = await srvProg('/api/progress/faze', { el }); if (!r || !r.ok) return _dfz0(el); S.stamina = Math.max(0, (S.stamina | 0) - 3); S.faZe[el] = r.total; if (r.total >= 100) log('good', `✨ <b>${el}之法则圆满！</b>${{ str: '力量', vit: '体质', agi: '身法', int: '智力', def: '防御' }[window.LG.ATTR[el]]}+15%！`); else log('good', `${r.dw ? '💡 顿悟！' : '☯️ '}${el}之法则参悟 +${r.add}%（${r.total}%/100%）`); if (r.awaken) { const gi = (S.lingGen || []).indexOf(el); if (gi >= 0) S.lingGen[gi] = r.awaken; log('good', `🌟 <b>灵根觉醒！</b>${el}灵根参悟有感，觉醒为<b>${r.awaken}</b>灵根！`); } const _allMine = (S.lingGen || []).filter(e2 => e2 !== '毒').every(e2 => (S.faZe[e2] | 0) >= 100); const _allFive = window.LG.ELES.every(e2 => (S.faZe[e2] | 0) >= 100); if (_allFive && !S.faZeDone5) { S.faZeDone5 = 1; log('warn', `🌈 <b>五行圆满！成就【混元道体】！</b>各属性+5%，突破主宰成功率+25%！`); } else if (_allMine && !S.faZeDone) { S.faZeDone = 1; log('warn', `☯️ <b>本命法则圆满！</b>${window.LG.benMingTxt(S)}！`); } afterAct(); save(); sheetTrain(); render(); } catch (e) { return _dfz0(el); } }; } catch (e) {}
 
 async function doLu(k, n) {
   await srvProg('/api/progress/eat_lu', { k, n });
