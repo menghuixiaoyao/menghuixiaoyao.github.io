@@ -1644,7 +1644,7 @@ function render() {
       }
     }
   } catch(_e) {}
-try { if (typeof afkHourly === 'function' && typeof S !== 'undefined' && S) afkHourly(S); } catch(_) {}
+try { if (typeof C !== 'undefined' && typeof C.afkHourly === 'function' && typeof S !== 'undefined' && S) C.afkHourly(S); } catch(_) {} // v1161 经 C 调 afkHourly（原裸引用解析不到，凝气每小时结算一直被跳过；出关全算不丢收益，但关内引气入体不涨）
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) return;
   try { renderWorldMap(); } catch (_) {}
@@ -4518,7 +4518,7 @@ window.doTribQuizAnswer = function(qi, oi) {
 function sealAwakenProb(S) {
   const n = ((C.setCounts(S).luck || 0));
   let p = 0.5 + Math.floor(n / 2) * 0.05;
-  try { const _ap = activePets(S); if (_ap.some(pt => pt && (pt.skills || []).includes('luck'))) p += 0.10; } catch (e) {}
+  try { const _ap = C.activePets(S); if (_ap.some(pt => pt && (pt.skills || []).includes('luck'))) p += 0.10; } catch (e) {} // v1161 经 C 调 activePets（原裸引用解析不到，灵宠幸运 +10% 一直被 try/catch 吞掉不生效）
   return Math.min(0.95, p);
 }
 function sealAwakenCheck() {

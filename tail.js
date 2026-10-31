@@ -31,6 +31,12 @@ window.shenshiGo = function(){
   } catch(e) { try { alert('神识探查出错：' + e.message); } catch(_) {} }
 };
 // v1072 点击地图玩家标记查看详细资料（Ye：看到5个人但看不到资料）
+// v1161 PK 模式标识（mode 来自 /api/world/state 的 D1 权威值）：人物卡/同格名单/约战列表共用
+window.pkModeTag = function(mode){
+  if (mode === 'peace') return '<span style="color:#7eff9e;font-size:12px">🕊️和平</span>';
+  if (mode === 'mieko') return '<span style="color:#ff7e7e;font-size:12px">💀灭口</span>';
+  return '<span style="color:#ffe27e;font-size:12px">⚔️夺宝</span>';
+};
 window.showPlayersAt = function(x, y){
   try {
     window._lastPlayerPos = { x: x, y: y };
@@ -74,7 +80,7 @@ window.showPlayersAt = function(x, y){
         + _avHtml
         + '<span style="flex:1"><b style="color:#7ec8ff">' + String(nm).replace(/</g, '&lt;') + '</b>'
         + '<span style="color:#666">[' + no + ']</span>'
-        + '<span style="color:#999;font-size:12px"> ' + rl + ' Lv.' + lv + '</span></span>'
+        + '<span style="color:#999;font-size:12px"> ' + rl + ' Lv.' + lv + '</span> ' + window.pkModeTag(p.mode) + '</span>'
         + '<span style="color:#7ec8ff;font-size:12px">›</span></div>';
     });
     html += '<div class="row"><button class="btn full" data-close>关闭</button></div>';
@@ -100,15 +106,15 @@ window.showPlayerDetail = function(accountId){
       + '<div class="hint">编号 [' + no + ']' + _tt + '</div>'
       + '<div class="row" style="display:flex;gap:12px;padding:8px 0">'
       + '<span>境界 <b class="y">' + rl + '</b></span>'
-      + '<span>等级 <b class="y">Lv.' + lv + '</b></span></div>'
+      + '<span>等级 <b class="y">Lv.' + lv + '</b></span>'
+      + '<span>' + window.pkModeTag(p.mode) + '</span></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn gold" style="flex:1" onclick="window.teamInvitePlayer(\'' + _aid + '\')">👥 组队</button>'
       + '<button class="btn" style="flex:1" onclick="window.pkPlayer(\'' + _aid + '\')">🤝 切磋</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn" style="flex:1" onclick="window.pkAttackPlayer(\'' + _aid + '\')">⚔️ 攻击（按我的模式）</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
-      + '<button class="btn" style="flex:1" onclick="window.xyRequestPlayer(\'' + _aid + '\')">💞 仙缘</button>'
-      + '<button class="btn" style="flex:1" onclick="(function(){try{if(typeof log===\'function\')log(\'sys\',\'🙇 拜师系统开发中\');else alert(\'拜师系统开发中\');}catch(e){}})()">🙇 拜师</button></div>'
+      + '<button class="btn" style="flex:1" onclick="window.xyRequestPlayer(\'' + _aid + '\')">💞 仙缘</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn" style="flex:1" onclick="(function(){var _lp=window._lastPlayerPos||{x:0,y:0};window.showPlayersAt(_lp.x,_lp.y);})()">‹ 返回</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
@@ -797,7 +803,7 @@ async function pkRefresh(){
   if (ps === null){ box.innerHTML = '<div class="hint">在线列表加载失败（网络不通）</div>'; return; }
   if (!ps.length){ box.innerHTML = '<div class="hint">暂无其他道友在线</div>'; return; }
   box.innerHTML = ps.slice(0, 30).map(function(p){
-    return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(p.username) + '</b><span style="color:#666">[' + (p.playerNo || '?') + ']</span></span>'
+    return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(p.username) + '</b><span style="color:#666">[' + (p.playerNo || '?') + ']</span> ' + window.pkModeTag(p.mode) + '</span>'
       + '<button class="btn" data-mhxypkgo="' + escH(p.accountId) + '">切磋</button>'
       + '<button class="btn gold" data-mhxypkatk="' + escH(p.accountId) + '">攻击</button></div>';
   }).join('');
@@ -1143,7 +1149,7 @@ async function bountyPanel(prefill){
     if (b.isMe) act = '<small>这是你</small>';
     else if (b.hunting) act = '<button class="btn sm" data-mhxyhunt="' + escH(b.code) + ':0">取消猎杀</button><button class="btn gold sm" data-mhxypkatk="' + escH(b.targetId) + '">猎杀</button>';
     else act = '<button class="btn gold sm" data-mhxyhunt="' + escH(b.code) + ':1">领猎</button>';
-    return '<div class="row"><div class="lab">📜 ' + escH(b.targetName || '?') + '<small>编码 ' + escH(b.code) + ' · 悬赏池：' + pkPoolText(b.pool) + '</small></div>' + act + '</div>';
+    return '<div class="row"><div class="lab">📜 ' + escH(b.targetName || '?') + '<small>编码 ' + escH(b.code) + ' · ' + ((['凡人','练气','筑基','金丹','元婴','化神','大乘','渡劫','仙人','金仙','合体','尊者','主宰'][b.realm|0]) || '') + ' Lv.' + (b.level|0) + ' · 悬赏池：' + pkPoolText(b.pool) + '</small></div>' + act + '</div>';
   }).join('');
   box.innerHTML = h;
 }

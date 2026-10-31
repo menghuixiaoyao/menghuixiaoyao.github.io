@@ -1696,8 +1696,8 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
   if (gain > 0) gain = Math.floor(gain * qiFactor()); // v999 世界灵气加成
   try { if (typeof isXVerified === 'function' && isXVerified() && gain > 0) gain = Math.floor(gain * 1.1); } catch(_) {}
   if (gain > 0) { if (isMana) S.mana = Math.min(C.manaCapEff(S), S.mana + gain); else S.xp += gain; }
-  if (S.hpCur != null && afkSecs > 0) { // v187 闭关调息：每秒恢复 10% 生命上限
-    const hpMaxR = C.bumpPeak(S) * 5, curR = Math.floor(S.hpCur);
+  if (afkSecs > 0) { // v187 闭关调息：每秒恢复 10% 生命上限；v1161 hpCur 为空按当前属性满血算（与主界面 1764 同口径）——此前为空直接跳过：属性被夺低于巅峰时上限更高、空值永远回不满
+    const hpMaxR = C.bumpPeak(S) * 5, curR = S.hpCur != null ? Math.floor(S.hpCur) : (S.attrs.str + S.attrs.def + S.attrs.vit) * 5;
     if (curR < hpMaxR) { const regen = Math.min(hpMaxR - curR, Math.floor(hpMaxR * 0.10 * afkSecs)); if (regen > 0) { S.hpCur = curR + regen; log('good', `🧘 闭关调息，生命 <span class="g">+${regen}</span>`); } }
   }
   try { // v1094 梦境回溯：灵脉闭关出关时必出一场（只设标记，横幅入梦；一天最多一场）
@@ -3343,7 +3343,7 @@ function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：弱=属�
   if (mult !== 1) ATTRS.forEach(k => mon.attrs[k] = Math.max(1, Math.round(mon.attrs[k] * mult)));
   return { type: 'fight', mon, text: tier === 'w' ? '一只弱怪' : tier === 's' ? '一只强怪' : '一只怪物', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv }); // v1129 五行导出；v1154 资源格导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, afkHourly }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   advResSettleGrid(run); // v1154 资源格懒结算
