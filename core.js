@@ -885,6 +885,7 @@ function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗；v632
   const thunder = fighter('⚡雷云', tattrs, false, []);
   const b = new Battle(playerFighter(S, false), thunder);
   b.unlimited = true;
+  b.foeFirst = true; // v1176 雷云绝对先手
   let round = 0;
   while (!b.over && round < 10) {
     round++;
@@ -917,6 +918,7 @@ function startThunderBattle(S, trib, fromRealm, pwOverride) {
   const thunder = fighter('⚡雷云', tattrs, false, []);
   const b = new Battle(playerFighter(S, false), thunder);
   b.unlimited = true;
+  b.foeFirst = true; // v1176 雷云绝对先手
   b.tribStrikes = tribStrikes(S, trib); b.surviveRounds = b.tribStrikes + 1; // v985 雷劫分层
   pk = { battle: b, trib: 'thunder', tribData: { trib, fromRealm, pw }, target: 'foe' };
   try { closeSheet(); } catch(_){}
@@ -2680,7 +2682,8 @@ Battle.prototype.prepRound = function (actA, actB) {
   for (const f of [A, B]) if (f.defending && f._bb > 1) { f._bbDef = f._bb; const _bpct = Math.round((f._bb - 1) * 100); L.push(`${nm(f)}<span class="r">🔥燃血御守</span>！防御 <span class="y">+${_bpct}%</span>，物理攻击<span class="y">全额反弹</span>（法术攻击无效）`); }
   let order;
   const _agiA = A.defending ? 999999999 : A.a.agi, _agiB = B.defending ? 999999999 : B.a.agi; // v839 防御无视先手：选防御直接先摆姿态
-  if (_agiA !== _agiB) order = _agiA > _agiB ? [[A, B, actA], [B, A, actB]] : [[B, A, actB], [A, B, actA]];
+  if (this.foeFirst) order = [[B, A, actB], [A, B, actA]]; // v1176 雷云绝对先手（Ye 定：雷劫里雷云恒先手，无视敏捷）
+  else if (_agiA !== _agiB) order = _agiA > _agiB ? [[A, B, actA], [B, A, actB]] : [[B, A, actB], [A, B, actA]];
   else order = R() < 0.5 ? [[A, B, actA], [B, A, actB]] : [[B, A, actB], [A, B, actA]];
   this._order = order;
   this._out = [];

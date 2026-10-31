@@ -51,6 +51,7 @@ var S, pk = null; window.S = S;
 function load() {
   try { const raw = localStorage.getItem(SAVE_KEY); S = raw ? C.normalize(JSON.parse(raw)) : null; } catch (e) { S = null; }
   if (!S) { S = C.newState(); welcome(); }
+  window.S = S; // v1176 必需：core/tail 封装外函数裸读 S 靠 window.S，load 不回写则恒为 undefined、整层被 try/catch 静默吞掉（冒险采集/攻击/布阵失效根源）
   try { if (window.LG) window.LG.ensure(S); } catch(_) {} // v867 老存档补抽灵根（跨块走window.LG）
 }
 function save() { try { S.log = S.log.slice(-K.LOG_KEEP); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); try{window.MHXY&&MHXY.markDirty(SAVE_KEY)}catch(_){} } catch (e) {} }
@@ -980,6 +981,11 @@ function cityMoveThunder() {
             try { if (typeof toastLog === 'function') toastLog('sys', '👥 组队跟随中，移动由队长控制'); else if (typeof glog === 'function') glog('sys', '👥 组队跟随中，移动由队长控制'); } catch(_){}
             return;
           }
+          // v1176 身死待轮回（Ye 定）：不能移动
+          if (S.forceReinc) {
+            try { showTip('☠️ 你已身死，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>'); } catch(_){}
+            return;
+          }
           // v1159 移动新规（Ye 定）：闭关期间不能移动、冒险未脱离不能回主城；化神及以上例外
           if ((S.realm|0) < 5 && S.afk) {
             try { if (typeof toastLog === 'function') toastLog('sys', '🧘 闭关期间不能移动，先出关（化神以上不受此限）'); } catch(_){} try { showTip('🧘 闭关期间不能移动<br><small>先出关再走（化神以上不受此限）</small>'); } catch(_){}
@@ -1725,6 +1731,7 @@ try { if (typeof C !== 'undefined' && typeof C.afkHourly === 'function' && typeo
   const db = $('deathBanner'); db.style.display = S.dead ? 'block' : 'none';
   if (S.dead) { const t = new Date(); t.setDate(t.getDate() + 1); db.innerHTML = `☠️ <b>你已${S.dead.cause === 'poison' ? '毒发' : '流血'}身亡</b>，今日无法修炼、生活技能、冒险、PK。<br>明日（${t.getMonth() + 1}月${t.getDate()}日）<b>签到</b>即可复活（${S.dead.cause === 'poison' ? `复活后生命为 ${Math.max(1, Math.ceil(S.dead.base / 2))}，但仍身中剧毒，需用解毒丹` : '复活后生命仅剩 1，需重新修炼'}）。`; }
   const ab = $('afkBanner'); // 体力耗尽：闭关挂机选择
+  if (!S.dead && S.forceReinc) { db.style.display = 'block'; db.innerHTML = `☠️ <b>你已身死</b>，行动不得、不能移动。<br>只能在【仙缘】里<b>解除牵绊</b>（退出宗门、解除婚约）、与道友<b>聊天</b>，然后<b>🔄 轮回转世</b>。`; }
   if (!S.dead && S.stamina <= 0 && !S.afk) {
     const lbl = C.resLbl(S);
     ab.style.display = 'block';
@@ -1886,7 +1893,7 @@ function renderCombat() {
       _teamTag = '<div style="text-align:center;margin:8px 0;font-size:13px;color:#7ec8ff">👥 组队战：' + _tnames + '</div>';
     }
   } catch(_){}
-  $('combat').innerHTML = _teamTag + `<div style="margin-bottom:14px">` + fRow(B) + _petsHtml(B) + `</div><div style="text-align:center;margin:10px 0;font-size:15px;font-weight:bold;color:var(--gold);letter-spacing:6px">⚔️ VS ⚔️ <button class=\"btn\" data-battlelog style=\"font-size:12px;padding:2px 8px;letter-spacing:normal\">📜</button></div>${pk.turnBanner ? `<div class="turnbanner ${pk.turnBanner.who}">${pk.turnBanner.txt}</div>` : ''}<div style="margin-top:14px">` + fRow(A) + _petsHtml(A) + `</div><div style="font-size:11px;color:var(--dim)">第 ${b.round + 1} 回合 · ${A.a.agi > B.a.agi ? '你敏捷更高，先手' : A.a.agi < B.a.agi ? '对手敏捷更高，先手' : '敏捷相同，随机先手'}</div>`;
+  $('combat').innerHTML = _teamTag + `<div style="margin-bottom:14px">` + fRow(B) + _petsHtml(B) + `</div><div style="text-align:center;margin:10px 0;font-size:15px;font-weight:bold;color:var(--gold);letter-spacing:6px">⚔️ VS ⚔️ <button class=\"btn\" data-battlelog style=\"font-size:12px;padding:2px 8px;letter-spacing:normal\">📜</button></div>${pk.turnBanner ? `<div class="turnbanner ${pk.turnBanner.who}">${pk.turnBanner.txt}</div>` : ''}<div style="margin-top:14px">` + fRow(A) + _petsHtml(A) + `</div><div style="font-size:11px;color:var(--dim)">第 ${b.round + 1} 回合 · ${b.foeFirst ? '⚡雷云绝对先手' : A.a.agi > B.a.agi ? '你敏捷更高，先手' : A.a.agi < B.a.agi ? '对手敏捷更高，先手' : '敏捷相同，随机先手'}</div>`;
   for (const f of [A, B, ...(A.pets||[]), ...(B.pets||[])]) if (f) { f._wasHit = 0; f._float = null; f._dodged = 0; f._lunge = null; }
   if (pk.zxPending) { // 战前珍馐：最先手，无视敏捷，每场限用 1 种
     const zxs = Object.keys(S.zx || {}).filter(k => S.zx[k] > 0 && DISHES[k] && DISHES[k].zx);
@@ -1937,6 +1944,7 @@ function closeSheet() {
   if (window._fromAdv) { window._fromAdv = false; try { if (S.run && S.run.grid && typeof sheetRun === 'function') sheetRun(); } catch(_) {} } // v770 从冒险打开人物面板，关闭返回冒险
 }
 window.closeSheet = closeSheet;
+window.sheetRun = sheetRun; window.log = log; window.toastLog = toastLog; window.commit = commit; window.afterAct = afterAct; window.render = render; // v1176 跨文件导出：v1157 拆分后 core/tail 封装外裸调这些名字解析不到、又被 try/catch 吞掉——冒险采集/攻击/布阵静默失效的根源
 window.openSheet = openSheet; // v959 联机模块需要（顶层函数默认非全局）
 $('mask').addEventListener('click', e => { if (e.target === $('mask') && !$('mask').dataset.lock) closeSheet(); });
 
@@ -2653,7 +2661,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     let infoLine = '';
     if (rk === 'herb' || rk === 'ore' || rk === 'vein') {
       const lv = ((mySt ? mySt.lv : lt.lv) | 0) || 1, amt = (mySt ? mySt.amt : lt.amt) | 0, mons = (mySt ? mySt.mons : lt.mons) || { w: 0, m: 0, s: 0 };
-      const nm = rk === 'herb' ? `🌿 草药丛·${['', '地品', '天品', '仙品'][lv]}` : rk === 'vein' ? `💎 灵脉·${['', '小型', '中型', '巨型'][lv]}` : '⛏️ 矿石';
+      const nm = rk === 'herb' ? `🌿 灵药丛·${['', '地品', '天品', '仙品'][lv]}` : rk === 'vein' ? `💎 灵脉·${['', '小型', '中型', '巨型'][lv]}` : '⛏️ 矿石'; // v1176 Ye 定：草药丛改名灵药丛
       const monsTxt = [['w', '弱'], ['m', '中'], ['s', '强']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n]) => `${n}×${mons[k]}`).join(' ');
       infoLine = `<div class="hint" style="text-align:center">${nm} · 存量 ×${amt}${monsTxt ? ` · 怪：${monsTxt}` : ''}</div>`;
       if (amt > 0) btns.push(`<button class="btn gold" data-advres2 style="flex:1">✋ 采集</button>`);
@@ -2949,9 +2957,9 @@ function sheetAvatar(gender, cat) {
   // v1173 全服唯一：拉全服占用键（他人），到了自动重渲染置灰
   if (!window._avTaken && !window._avTakenLoading && window.MHXY && window.MHXY.api) { window._avTakenLoading = 1; try { window.MHXY.api('/api/avatar/claims').then(r => { window._avTakenLoading = 0; window._avTaken = new Set((r && r.ok && r.json && Array.isArray(r.json.others)) ? r.json.others : []); const h = document.querySelector('#sheet h2'); if (h && h.textContent.indexOf('选择头像') >= 0) sheetAvatar(gender, cat); }).catch(() => { window._avTakenLoading = 0; window._avTaken = new Set(); }); } catch(_) { window._avTakenLoading = 0; window._avTaken = new Set(); } }
   const avTaken = k => !!(window._avTaken && window._avTaken.has(k));
-  const catIdxs = isR ? ((AVATAR_CATS[gender] && AVATAR_CATS[gender][cat]) || list.map((_, i) => i)) : list.map((_, i) => i);
+  const catIdxs = (isR ? ((AVATAR_CATS[gender] && AVATAR_CATS[gender][cat]) || list.map((_, i) => i)) : list.map((_, i) => i)).filter(i => !(setKey === 'r' && gender === 'f' && i === 219)); // v1176 下架头像「月夜偶像」(r 套女 #219，Ye 定)：仅选择页隐藏，索引/存量/占用登记全不动
   const cats = isR ? Object.keys(AVATAR_CATS[gender] || {}) : [];
-  let html = `<h2>🖼️ 选择头像</h2><div class="hint">图库三套共 3506 张，点任意一张即换上${sealedAvatars.size ? '<br><span class="r">前世遗物未消散，前世头像不可选</span>' : ''}${S._avatarSettings ? '<br>💠 换头像需极品灵石×1（现有 ×' + ((S.ores && S.ores.sp5) | 0) + '）' : ''}<br>全服唯一：已被占用的头像不可选</div>`;
+  let html = `<h2>🖼️ 选择头像</h2><div class="hint">内置三套共 4105 张，玩家图库另算，点任意一张即换上${sealedAvatars.size ? '<br><span class="r">前世遗物未消散，前世头像不可选</span>' : ''}${S._avatarSettings ? '<br>💠 换头像需极品灵石×1（现有 ×' + ((S.ores && S.ores.sp5) | 0) + '）' : ''}<br>全服唯一：已被占用的头像不可选</div>`;
   html += `<div class="row" style="display:flex;gap:8px;margin-bottom:8px">${[['r', '第壹套'], ['g', '第贰套'], ['a', '动漫套'], ['gallery', '玩家图库']].map(([k, n2]) => `<button class="btn" data-avatarset="${k}" style="flex:1;${setKey === k ? 'opacity:0.5' : ''}">${n2}</button>`).join('')}</div>`;
   html += `<div class="row"><div class="lab">📤 上传自己的头像<small>私用仅本机；入库可自取名，审核通过后全服可选</small></div>${S.avatarCustom ? `<img src="${S.avatarCustom}" style="width:40px;height:40px;border-radius:50%;object-fit:cover"><button class="btn sm" data-avsubmit="1">📮 提交入库</button><button class="btn sm" data-clearavatar="1">用回图库</button>` : '<input type="file" id="avatarFile" accept="image/*" style="flex:1;font-size:12px;min-width:0">'}</div>`;
   if (setKey === 'gallery') {
@@ -4344,7 +4352,7 @@ function doDebug(act) {
     return;
   }
   closeSheet();
-  if (act === 'dbg_reset') { if (confirm('确定要恢复初始账号吗？当前存档将清空！')) { localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); closeSheet(); $('log').innerHTML = ''; welcome(); commit(); } return; }
+  if (act === 'dbg_reset') { if (confirm('确定要恢复初始账号吗？当前存档将清空！')) { localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); window.S = S; closeSheet(); $('log').innerHTML = ''; welcome(); commit(); } return; }
   if (act === 'dbg_checkin') { doCheckin(true); return; }
   if (act === 'dbg_allitems') {
     const _give = (store, defObj, n) => { try { if (!defObj) return; for (const k in defObj) store[k] = (store[k]||0) + n; } catch(e) {} };
@@ -4659,6 +4667,21 @@ function sealAwakenDo(sealId, code) {
 function doReincarnate(forced) {
   if (S.dead) return;
   forced = forced || S.forceReinc;
+  // v1176 轮回门禁（Ye 定）：轮回前必须先退出宗门、解除婚约（道侣），没处理完不开轮回面板
+  if (!doReincarnate._gateOk && window.MHXY && MHXY.api) {
+    let _hasTok = false; try { _hasTok = !!localStorage.getItem('mhxy_token'); } catch (_) {}
+    if (_hasTok) {
+      Promise.all([MHXY.api('/api/sect/me'), MHXY.api('/api/xianyuan/spouses')]).then(function (rr) {
+        const blocked = [];
+        try { if (rr[0] && rr[0].ok && rr[0].json && rr[0].json.sect) blocked.push('退出宗门'); } catch (_) {}
+        try { if (rr[1] && rr[1].ok && rr[1].json && (rr[1].json.spouses || []).length) blocked.push('解除婚约（道侣）'); } catch (_) {}
+        if (blocked.length) { const _m = '☠️ 轮回前须先' + blocked.join('、') + '<br><small>去【仙缘】面板处理完，再回来轮回</small>'; try { showTip(_m); } catch (_) {} try { log('warn', '☠️ 轮回前须先' + blocked.join('、') + '，去【仙缘】面板处理。'); } catch (_) {} return; }
+        doReincarnate._gateOk = 1; doReincarnate(forced);
+      }).catch(function () { doReincarnate._gateOk = 1; doReincarnate(forced); });
+      return;
+    }
+  }
+  doReincarnate._gateOk = 0;
   const perf = S.level >= C.REALM_MAX_LV;
   const pools = C.REALMS.map((r, i) => i === 0 ? '' : `${r}<b class="y">${S.reinc && S.reinc[i] ? S.reinc[i] : 0}</b>`).filter(Boolean).join(' · ');
   // v135 凡人轮回无前世遗物：直接确认，不选属性封存
@@ -7146,7 +7169,7 @@ window.finishPk = function(chosen) {
 }
 function doReset() {
   if (!confirm('确定要重置存档吗？所有进度将被清除且无法恢复！')) return;
-  localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); closeSheet(); $('log').innerHTML = ''; welcome(); commit();
+  localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); window.S = S; closeSheet(); $('log').innerHTML = ''; welcome(); commit();
 }
 
 function commit() { if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} } if (typeof S === 'undefined' || !S) return; try { if (typeof arrayTick === 'function') arrayTick(S); } catch(_) {} // v899 采集阵tick
@@ -7190,6 +7213,11 @@ document.addEventListener('click', e => {
   if (ar && ar.dataset.rankinfo !== undefined) { e.preventDefault(); sheetRankInfo(+ar.dataset.rankinfo); return; }
   const t = e.target.closest('button'); if (!t || t.disabled) return;
   const d = t.dataset;
+  if (S.forceReinc && !S.dead) { // v1176 身死待轮回（Ye 定）：只能解除牵绊（退宗/解婚约/解绑）、聊天、轮回，其余一律不行
+    const _okA = { close: 1, xianyuan: 1, sect: 1, reinc: 1, chat: 1 };
+    const _ok = (d.a && _okA[d.a]) || ('close' in d) || ('chat' in d) || ('chatsend' in d) || ('cfsend' in d) || ('mf' in d) || ('mhxy' in d) || ('mhxylogin' in d) || ('mhxyguest' in d) || ('mhxyreg' in d) || ('mhxyrecover' in d) || ('mhxychat' in d) || ('mhxychatsend' in d) || ('reincKeep' in d) || ('reincMortal' in d) || ('reincConfirm' in d) || ('sealPath' in d) || ('rerollSeal' in d);
+    if (!_ok) { try { showTip('☠️ 你已身死，什么都做不了<br><small>只能解除牵绊（仙缘面板：退宗 / 解婚约 / 解绑）、聊天，然后轮回</small>'); } catch (_) {} return; }
+  }
   if (window.MHXY && MHXY.onClick(d, t, e)) return; // v959 联机模块钩子
   if (d.afk) { window._afkShown = false; afkStart(S, d.afk); closeSheet(); log('good', `🧘 开始${d.afk === 'vein' ? '灵脉' : '洞府'}闭关挂机…`); save(); render(); return; }
   if (d.reincKeep) { const _k = d.reincKeep; openSheet(`<div style="min-height:40vh;display:flex;flex-direction:column;justify-content:center;gap:10px"><h2 style="font-size:18px;text-align:center">🔄 轮回之路</h2><div class="hint" style="text-align:center;font-size:13px">此世将尽，当选一条路：</div><div class="row"><button class="btn gold" data-seal-path="dao" data-attr="${_k}" data-v="1" style="flex:1;padding:16px;font-size:15px">求道<br><small style="font-weight:normal">天道随机赐下灵魂印记</small></button></div><div class="row"><button class="btn" data-seal-path="fame" data-attr="${_k}" data-v="1" style="flex:1;padding:16px;font-size:15px">求名<br><small style="font-weight:normal">自选印记主题，留名于世</small></button></div><div class="row"><button class="btn" data-a="close" style="flex:1">取消</button></div></div>`); return; } // v215 先选求道/求名

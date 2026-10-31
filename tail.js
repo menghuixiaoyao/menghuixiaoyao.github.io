@@ -147,15 +147,15 @@ window.showPlayerDetail = function(accountId){
 // v1076 从玩家详情发起组队邀请
 window.teamInvitePlayer = function(accountId){
   try {
-    if (typeof teamInvite === 'function') teamInvite(accountId);
-    else if (typeof log === 'function') log('bad', '组队模块未加载');
+    if (typeof window.teamInvite === 'function') window.teamInvite(accountId);
+    else if (typeof window.toastLog === 'function') window.toastLog('bad', '组队模块未加载');
   } catch(e) {}
 };
 // v1077 从玩家详情发起 PK
 window.pkPlayer = function(accountId){
   try {
-    if (typeof pkChallenge === 'function') pkChallenge(accountId);
-    else if (typeof log === 'function') log('bad', 'PK模块未加载');
+    if (typeof window.pkChallenge === 'function') window.pkChallenge(accountId);
+    else if (typeof window.toastLog === 'function') window.toastLog('bad', 'PK模块未加载');
   } catch(e) {}
 };
 // v1081 从玩家详情发起仙缘绑定请求
@@ -1013,6 +1013,7 @@ setInterval(function(){
 }, 3000);
 window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
 window.pkChallenge = pkChallenge;
+window.pkAttack = pkAttack; // v1176 补导出攻击（外层 pkAttackPlayer 改调 window.*，v1171 只导出名字、调用方仍用裸名所以一直没通）
 async function pkPollResult(cid, n){
   // WS 推送为主，轮询兜底（最多约65秒）
   if (n > 13) return;
@@ -1148,7 +1149,7 @@ async function pkAttack(targetId){
   }
 }
 window.pkAttackPlayer = function(accountId){
-  try { pkAttack(accountId); } catch(e) {}
+  try { if (typeof window.pkAttack === 'function') window.pkAttack(accountId); } catch(e) {}
 };
 async function pkStealPick(token){
   var r = await api('/api/pk2/steal-options?token=' + encodeURIComponent(token));
