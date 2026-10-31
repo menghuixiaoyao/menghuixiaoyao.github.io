@@ -862,11 +862,12 @@ function tribFull(S) { // v175 灵气条/仙力充满度（压条可超出上限
   return mm > 0 ? Math.max(0, Math.min(29, (S.mana | 0) / mm)) : 0;
 }
 window.tribFull = tribFull; // v816 暴露给雷云战斗跨script块用
-function tribPower(S) { // v175 渡劫强度系数：压条越高天劫越强；900%×2.0，1000%×2.5（v178 最强天劫）
+function tribPower(S) { // v1177 Ye 定方案B：2000% 前顺延直线（2000%≈3.22），之后斜率减半（2400%≈3.44、2900%≈3.72），不再封顶
   const f = tribFull(S);
   const _skyM = skyToday().key === 'blood' ? 1.05 : 1; // v1015 血月天威
-  if (f >= 20) return K.TRIB_POWER_1000 * _skyM; // v285 2000%最强天劫
-  return (1 + f / 9 * (K.TRIB_POWER_MAX - 1)) * _skyM;
+  const _k = K.TRIB_POWER_MAX - 1;
+  const _v = f <= 20 ? 1 + f / 9 * _k : 1 + 20 / 9 * _k + (f - 20) / 18 * _k;
+  return _v * _skyM;
 }
 function tribStrikes(S, trib) { // v988 雷劫分层（老板定版五档）：下品9/中品18/上品36/完美54/圆满极81
   try {
@@ -903,7 +904,7 @@ function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗；v632
 function demonTrib(S) { // v172 心魔劫：心魔属性为玩家战斗属性九成，无技能，打一场（v175：属性×渡劫强度；v178：压条 1000% 时天魔 2.5 倍属性；v179：诅咒层数增强心魔）
   const fa = fightAttrs(S, false);
   const pw = tribPower(S);
-  const dbase = tribFull(S) >= 20 ? K.TRIB_DEMON_1000 : K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON); // v285 2000%天魔最强
+  const dbase = K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON); // v1177 方案B同形：废 2000% 定值 2.5，跟随新 pw 曲线（2000%≈1.70、2900%≈1.88）
   const dmult = dbase * (1 + (S.curseN | 0) * K.TRIB_CURSE_PER);
   const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * dmult)));
   const demon = fighter('👹心魔', dattrs, false, []);
@@ -935,7 +936,7 @@ function startDemonBattle(S, trib, fromRealm) {
   try { window._demonDeadT = 0; } catch(_) {}
   const fa = fightAttrs(S, false);
   const pw = tribPower(S);
-  const dbase = tribFull(S) >= 20 ? K.TRIB_DEMON_1000 : K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON);
+  const dbase = K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON); // v1177 同 demonTrib：方案B同形跟随
   const dmult = dbase * (1 + (S.curseN | 0) * K.TRIB_CURSE_PER);
   const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * dmult)));
   const demon = fighter('👹心魔', dattrs, false, []);
