@@ -549,7 +549,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   const cleanBag = (key, ref) => { if (!S[key] || typeof S[key] !== 'object' || Array.isArray(S[key])) S[key] = {}; for (const k in S[key]) if (!ref[k] || !(S[key][k] > 0)) delete S[key][k]; else S[key][k] = Math.floor(S[key][k]); };
   S.vigor = Math.max(0, Math.floor(S.vigor === undefined ? K.VIGOR_BASE : +S.vigor || 0));
   if (!(S.consecDays >= 0)) S.consecDays = 0; // 连续签到天数 /* 生活技能：活力 / 等级 / 菜肴 / 装备 / 增益 */
-  if (!(S.lifespan > 0)) S.lifespan = REALM_LIFESPAN[Math.min(12, Math.max(0, S.realm|0))] || 100;
+  if (typeof S.lifespan !== 'number' || isNaN(S.lifespan) || S.lifespan < 0) S.lifespan = REALM_LIFESPAN[Math.min(12, Math.max(0, S.realm|0))] || 100; // v1178 只补缺失/损坏值；寿元恰为 0 是耗尽状态（Ye 定：锁定待轮回），不再回满放行
   if (typeof S.danDu !== 'number' || !(S.danDu >= 0)) S.danDu = 0; S.danDu = Math.min(danDuCap(S), S.danDu | 0); // v998 danDu；v1140 上限随百毒不侵佩戴
   if (!S.life || typeof S.life !== 'object') S.life = {}; for (const k of ['cook', 'forge', 'refine', 'tame']) { const L = S.life[k] || {}; S.life[k] = { lv: Math.max(1, Math.floor(+L.lv || 1)), xp: Math.max(0, Math.floor(+L.xp || 0)) }; }
   if (!S.dishes || typeof S.dishes !== 'object') S.dishes = {}; for (const k in S.dishes) if (!dishOf(k) || !(S.dishes[k] > 0)) delete S.dishes[k]; else S.dishes[k] = Math.floor(S.dishes[k]);
@@ -904,7 +904,7 @@ function thunderTrib(S, pwOverride) { // v628 雷劫改成和雷云战斗；v632
 function demonTrib(S) { // v172 心魔劫：心魔属性为玩家战斗属性九成，无技能，打一场（v175：属性×渡劫强度；v178：压条 1000% 时天魔 2.5 倍属性；v179：诅咒层数增强心魔）
   const fa = fightAttrs(S, false);
   const pw = tribPower(S);
-  const dbase = K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON); // v1177 方案B同形：废 2000% 定值 2.5，跟随新 pw 曲线（2000%≈1.70、2900%≈1.88）
+  const dbase = tribFull(S) >= 20 ? K.TRIB_DEMON_1000 * pw / (1 + 20 / 9 * (K.TRIB_POWER_MAX - 1)) : K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON); // v1178 Ye 令心魔一起提：2000% 起以旧锚 2.5 随雷伤曲线同涨（2400%≈2.67、2900%≈2.89），2000% 以下旧公式不动
   const dmult = dbase * (1 + (S.curseN | 0) * K.TRIB_CURSE_PER);
   const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * dmult)));
   const demon = fighter('👹心魔', dattrs, false, []);
@@ -936,7 +936,7 @@ function startDemonBattle(S, trib, fromRealm) {
   try { window._demonDeadT = 0; } catch(_) {}
   const fa = fightAttrs(S, false);
   const pw = tribPower(S);
-  const dbase = K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON); // v1177 同 demonTrib：方案B同形跟随
+  const dbase = tribFull(S) >= 20 ? K.TRIB_DEMON_1000 * pw / (1 + 20 / 9 * (K.TRIB_POWER_MAX - 1)) : K.TRIB_DEMON_MULT * (1 + (pw - 1) * K.TRIB_POWER_DEMON); // v1178 同 demonTrib：心魔一起提
   const dmult = dbase * (1 + (S.curseN | 0) * K.TRIB_CURSE_PER);
   const dattrs = {}; ATTRS.forEach(k => dattrs[k] = Math.max(1, Math.round(fa[k] * dmult)));
   const demon = fighter('👹心魔', dattrs, false, []);
@@ -1521,7 +1521,7 @@ function checkin(S, force) {
   const toxLoss = (!S.dead && (S.danDu | 0) > 1000) ? Math.floor((S.danDu | 0) / 1000) : 0; // v1138 Ye 定：丹毒超过 1000 自动掉寿元（签到日结，每满千点扣 1 年）
   if (toxLoss > 0) S.lifespan = Math.max(0, S.lifespan - toxLoss);
   let bled = 0, died = null, forceReinc = false;
-  if (S.lifespan <= 0 && !S.dead) { forceReinc = true; S.forceReinc = true; } // 寿元耗尽：强制轮回，不再坐化
+  if (S.lifespan <= 0 && !S.dead) { forceReinc = true; S.forceReinc = true; S.forceReincWhy = 'life'; } // 寿元耗尽：强制轮回，不再坐化；v1178 标记来源供横幅/提示分文案
   const vigor = Math.max(0, Math.min(vigorGain(S), vigorCap(S) - S.vigor)); S.vigor += vigor; /* 活力可结转，最多 3 天量；死亡不清空活力 */
   const mana = 0; /* 签到不回法力 */
   if (S.status.bleed) { // 流血不止：每次签到扣流血时生命上限的 20%，扣到 0 即死亡
@@ -3385,6 +3385,7 @@ function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：弱=属�
 Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, afkHourly }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
+  if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动
   advResSettleGrid(run); // v1154 资源格懒结算
   const g = run.grid, d = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[dir];
   if (!d) return { err: 'bad' };
