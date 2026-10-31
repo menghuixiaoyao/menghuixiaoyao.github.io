@@ -182,7 +182,7 @@ const EGGS = {
 // 疗伤药（商店出售，背包使用）
 const MEDS = {
   bandage:  { name: '止血药', price: 25, cure: 'bleed',   desc: '止住流血（流血唯一解法）' },
-  antidote: { name: '解毒丹', price: 20, cure: 'poison',  desc: '解除中毒（中毒唯一解法，否则会毒发身亡）' },
+  antidote: { name: '解毒丹', price: 1000, cure: 'poison',  desc: '解除中毒（中毒唯一解法，否则会毒发身亡）；炼药可自炼' }, // v1163 Ye 定：1000 金/颗，也可自炼
   incense:  { name: '兴奋剂', price: 30, cure: 'depress', desc: '立即驱散抑郁' },
   shenshui: { name: '神水', price: 50, cure: 'curse', desc: '消除一层诅咒' },
   tpscroll: { name: '随机传送卷', price: 200, desc: '冒险中随机传送到任意一格' }, // v765
@@ -2095,6 +2095,18 @@ function brewDetox(S) {
   let lvUp = 0; while (S.alc.xp >= alcNeed(S.alc.lv)) { S.alc.xp -= alcNeed(S.alc.lv); S.alc.lv++; lvUp++; }
   return { ok, rate, n, xp, lvUp };
 }
+function brewAntidote(S) { // v1163 解毒丹自炼（Ye 定：商店 1000 金/颗，也能自己炼）：敏捷草 + 一品凝露，成丹 1-3 颗（与化无丹同口径）
+  if (S.dead) return { err: 'dead' };
+  if (useFali(S)) { if (S.mana < lifeManaCost(S)) return { err: 'mana' }; } else if (S.vigor < K.COST_LIFE) return { err: 'vigor' };
+  if ((S.mats['h_agi'] || 0) <= 0 || (S.mats['dw1'] || 0) <= 0) return { err: 'mat' };
+  useMat(S, 'h_agi'); useMat(S, 'dw1');
+  payLife(S); S.stats.brew++; hungerDown(S, K.HUNGER_ACT, 1);
+  const rate = alcRate(S), ok = R() < rate; let n = 0;
+  if (ok) { S.stats.brewOk++; n = 1 + Math.floor(R() * 3); if (!S.meds) S.meds = {}; S.meds['antidote'] = (S.meds['antidote'] || 0) + n; }
+  const xp = ok ? K.ALC_XP_OK : K.ALC_XP_FAIL; S.alc.xp += xp;
+  let lvUp = 0; while (S.alc.xp >= alcNeed(S.alc.lv)) { S.alc.xp -= alcNeed(S.alc.lv); S.alc.lv++; lvUp++; }
+  return { ok, rate, n, xp, lvUp };
+}
 const DANWAN = { // v1096 炼药阶梯：辟谷丸/气力丸（丸非丹，不积丹毒；成品走 S.dan 透传，如菜肴）
   bigu: { name: '辟谷丸', icon: '🍘', lv: 3, herb: 'h_vit', desc: '饱食 +20', fx: 'hunger', val: 20 },
   qili: { name: '气力丸', icon: '💪', lv: 5, herb: 'h_str', desc: '体力 +3', fx: 'sta', val: 3 },
@@ -3992,7 +4004,7 @@ try { (typeof window !== 'undefined' ? window : globalThis).pkSettle = pkSettle;
 
 // v960：本地寄售函数（consignList/consignCancel/consignBuy/consignTick/genMarket）已删除，转线上
 Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, SZ_SEATS, SZ_MER_ORDER, szProg, szSetProg, szVMaiCount, szVMaiPress, szDanCap, szBigCount, maiRMaiEff, szOpenCount, szSmallCount, szFirstDanOpen, szSyncMai, szSeatLitNames, szDan, szLitCnt, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advResGrant, advNewEvent, lootTable, lootRoll, lootLabel, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, premiumChance, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
-  alcRate, potCountProbs, gradeProbs, brew, brewDetox, DANWAN, brewDan, useDanwan, useMutPill, useDetoxPill, toxFactor, toxTier, MUT_PILLS, qiNow, qiFactor, qiTierName, qiAdd, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
+  alcRate, potCountProbs, gradeProbs, brew, brewDetox, brewAntidote, DANWAN, brewDan, useDanwan, useMutPill, useDetoxPill, toxFactor, toxTier, MUT_PILLS, qiNow, qiFactor, qiTierName, qiAdd, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
   genMonster, genOpponent, adventure, advBattleSetup, advBattleSettle, advEnd, advMove, advRetreat, sneakP, guardedLoot, pkStart, pkSurrender, pkSettle, applyZhenxiu, applyBtSuccess, applyFailState }); // v688 导出突破函数
 G.Core = C;
 // v1091 跨块导出：块1裸调用的块0函数/表（全游审计 P0+P1：出关 afkExit/afkStart、寄售 consignName/consignStore、寄售列表 MEDS、灵宠突破 petEffLvMax/PET_BREAK_MAX；此前未导出致 ReferenceError）
