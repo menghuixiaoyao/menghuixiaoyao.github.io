@@ -37,12 +37,45 @@ window.pkModeTag = function(mode){
   if (mode === 'mieko') return '<span style="color:#ff7e7e;font-size:12px">💀灭口</span>';
   return '<span style="color:#ffe27e;font-size:12px">⚔️夺宝</span>';
 };
+// v1164 头像解析（同格名单/人物卡共用）：图库→默认库→字母兜底；图库懒加载，好了自动重渲染
+window._avGalCbs = [];
+window.ensureAvGallery = function(cb){
+  if (Array.isArray(window._avGallery)) { if (cb) cb(); return; }
+  if (cb) window._avGalCbs.push(cb);
+  if (window._avGalFetching) return;
+  window._avGalFetching = true;
+  api('/api/avatar/gallery').then(function(r){
+    window._avGalFetching = false;
+    window._avGallery = (r && r.ok && r.json && Array.isArray(r.json.list)) ? r.json.list : [];
+    var cbs = window._avGalCbs.splice(0);
+    for (var i = 0; i < cbs.length; i++) { try { cbs[i](); } catch(_) {} }
+  });
+};
+window.playerAvatarHtml = function(p, size, rc){
+  size = size || 32;
+  var img = '';
+  try {
+    if (p && p.avatar_set) {
+      var gal = window._avGallery || [];
+      for (var gi = 0; gi < gal.length; gi++) { if (String(gal[gi].id) === String(p.avatar_set) && gal[gi].data) { img = gal[gi].data; break; } }
+    }
+    if (!img && p && p.avatar_idx != null && window.AVATARS) {
+      var arr = window.AVATARS[p.gender === 'f' ? 'f' : 'm'];
+      if (arr && arr[p.avatar_idx|0]) img = arr[p.avatar_idx|0];
+    }
+  } catch(_) {}
+  if (img) return '<img src="' + img + '" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;border:2px solid ' + rc + '" onerror="this.remove()">';
+  var nm = (p && (p.username || p.rname || p.roleName)) || '道友';
+  var ini = String(nm).slice(0, 1).replace(/</g, '&lt;');
+  return '<span style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:' + rc + '33;border:2px solid ' + rc + ';display:inline-flex;align-items:center;justify-content:center;font-size:' + Math.round(size / 2) + 'px;font-weight:bold;color:' + rc + '">' + ini + '</span>';
+};
 window.showPlayersAt = function(x, y){
   try {
     window._lastPlayerPos = { x: x, y: y };
     var ps = window._worldPlayers || [];
     var list = ps.filter(function(p){ return p && (p.x|0) === (x|0) && (p.y|0) === (y|0) && p.online; });
     if (!list.length) return;
+    if (!Array.isArray(window._avGallery)) window.ensureAvGallery(function(){ if (window._lastPlayerPos) window.showPlayersAt(window._lastPlayerPos.x, window._lastPlayerPos.y); });
     var html = '<h2>🧑 同格道友（' + list.length + '人）</h2>';
     var _realmName = function(r){ var _n = ['凡人','练气','筑基','金丹','元婴','化神','大乘','渡劫','仙人','金仙','合体','尊者','主宰']; return _n[r|0] || ('境'+r); };
     var _realmColor = ['#999','#7ec8ff','#7eff9e','#ffe27e','#ff9e7e','#d27eff','#7effff','#ff7e7e','#fff27e','#e6e6e6','#a0e7ff','#ffd700','#ff6b9d'];
@@ -52,29 +85,7 @@ window.showPlayersAt = function(x, y){
       var lv = (p.level != null ? p.level : '?');
       var rl = (p.realm != null ? _realmName(p.realm) : '');
       var rc = _realmColor[p.realm|0] || '#999';
-      var _initial = String(nm).slice(0, 1);
-      // v1079 优先显示玩家真实头像（图库ID对 window._avGallery）
-      var _avHtml = '';
-      try {
-        var _avId = String(p.avatar_set || '');
-        var _gal = window._avGallery || [];
-        var _found = null;
-        for (var _gi = 0; _gi < _gal.length; _gi++) { if (String(_gal[_gi].id) === _avId) { _found = _gal[_gi]; break; } }
-        if (_found && _found.data) {
-          _avHtml = '<img src="' + _found.data + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid ' + rc + '" onerror="this.style.display=\'none\'">';
-        }
-        // v1080 默认头像：用 AVATARS[gender][idx] 显示1800张里的
-        if (!_avHtml && p.avatar_idx != null && typeof AVATARS !== 'undefined') {
-          var _pg = (p.gender === 'f' ? 'f' : 'm');
-          var _avArr = AVATARS[_pg];
-          if (_avArr && _avArr[p.avatar_idx|0]) {
-            _avHtml = '<img src="' + _avArr[p.avatar_idx|0] + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid ' + rc + '" onerror="this.style.display=\'none\'">';
-          }
-        }
-      } catch(_) {}
-      if (!_avHtml) {
-        _avHtml = '<span style="width:32px;height:32px;border-radius:50%;background:' + rc + '33;border:2px solid ' + rc + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:bold;color:' + rc + '">' + _initial.replace(/</g, '&lt;') + '</span>';
-      }
+      var _avHtml = window.playerAvatarHtml(p, 32, rc);
       var _aid = String(p.accountId || '').replace(/'/g, '');
       html += '<div class="row" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #333;cursor:pointer" onclick="window.showPlayerDetail(\'' + _aid + '\')">'
         + _avHtml
@@ -95,6 +106,7 @@ window.showPlayerDetail = function(accountId){
     var p = null;
     for (var i = 0; i < ps.length; i++) { if (ps[i] && String(ps[i].accountId) === String(accountId)) { p = ps[i]; break; } }
     if (!p) return;
+    if (!Array.isArray(window._avGallery)) window.ensureAvGallery(function(){ window.showPlayerDetail(accountId); });
     var nm = p.username || p.rname || p.roleName || '道友';
     var no = (p.player_no != null ? p.player_no : p.playerNo) || '?';
     var lv = (p.level != null ? p.level : '?');
@@ -102,7 +114,7 @@ window.showPlayerDetail = function(accountId){
     var rl = (p.realm != null ? (_rn[p.realm|0] || ('境'+p.realm)) : '?');
     var _tt = p.title ? ' 🏷️' + String(p.title).replace(/</g, '&lt;') : '';
     var _aid = String(p.accountId || '').replace(/'/g, '');
-    var html = '<h2>🧑 ' + String(nm).replace(/</g, '&lt;') + '</h2>'
+    var html = '<div style="display:flex;align-items:center;gap:10px">' + window.playerAvatarHtml(p, 40, '#7ec8ff') + '<h2 style="margin:0">🧑 ' + String(nm).replace(/</g, '&lt;') + '</h2></div>'
       + '<div class="hint">编号 [' + no + ']' + _tt + '</div>'
       + '<div class="row" style="display:flex;gap:12px;padding:8px 0">'
       + '<span>境界 <b class="y">' + rl + '</b></span>'
@@ -294,6 +306,7 @@ function panel(){
       + '<div class="row"><input id="mhxyX" maxlength="16" placeholder="X 用户名（注册必填，如 @feyelo）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="row"><input id="mhxySqQ" maxlength="60" placeholder="密保问题（注册可选，如：我第一只灵宠的名字？）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="row"><input id="mhxySqA" maxlength="100" placeholder="密保答案（忘记密码时用）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
+      + '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="color:#999;font-size:13px">生日</span><input id="mhxyBday" type="date" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="grid2"><button class="btn full" data-mhxylogin>登录</button><button class="btn full" data-mhxyreg>注册</button></div>'
       + '<div class="row"><button class="btn full" data-mhxyrecover>忘记密码？用密保找回</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
@@ -365,12 +378,14 @@ async function doRegister(){
   var sqQ = val('mhxySqQ'), sqA = val('mhxySqA');
   var body = { username:u, password:p, x_handle:x };
   if (sqQ && sqA) { body.sq_q = sqQ; body.sq_a = sqA; }
+  var bd2 = val('mhxyBday');
+  if (bd2) body.birthday = bd2;
   var r = await api('/api/register', { method:'POST', noAuth:true, body:body });
   if ((r.status === 201 || r.ok) && r.json && r.json.ok){
     glog('good', '🌐 注册成功：<b class="y">' + escH(u) + '</b> #' + r.json.player_no + '，请登录');
   } else {
     var err = (r.json||{}).error || r.status;
-    glog('bad', '🌐 注册失败' + (r.netErr ? '（网络不通）' : err === 'username_taken' ? '（用户名已被占用）' : err === 'bad_username' ? '（用户名3-16位，字母/数字/下划线/中文）' : err === 'bad_password' ? '（密码至少6位）' : err === 'x_handle_required' ? '（必须填写 X 用户名）' : '：' + escH(err)));
+    glog('bad', '🌐 注册失败' + (r.netErr ? '（网络不通）' : err === 'username_taken' ? '（用户名已被占用）' : err === 'bad_username' ? '（用户名3-16位，字母/数字/下划线/中文）' : err === 'bad_password' ? '（密码至少6位）' : err === 'x_handle_required' ? '（必须填写 X 用户名）' : err === 'x_taken' ? '（该 X 已被其他账号绑定，换一个）' : err === 'bad_birthday' ? '（生日不对）' : '：' + escH(err)));
   }
 }
 // v1082 忘记密码：密保找回
@@ -523,12 +538,12 @@ async function ensurePresence(){
   var realm = curRealm();
   var _p0 = myPos();
   var _gdr = 'm'; try { _gdr = (typeof S !== 'undefined' && S && S.gender) ? S.gender : ((window.M && M.saveKey ? JSON.parse(localStorage.getItem(M.saveKey) || '{}').gender : '') || 'm'); } catch(_) {}
-  await api('/api/world/register', { method:'POST', body:{ realm:realm, x:_p0.x, y:_p0.y, gender:_gdr, avatar:(typeof S !== 'undefined' && S ? (S.avatar|0) : 0) } });
+  await api('/api/world/register', { method:'POST', body:{ realm:realm, x:_p0.x, y:_p0.y, gender:_gdr, avatar:(typeof S !== 'undefined' && S ? (S.avatar|0) : 0), avatar_set:((typeof S !== 'undefined' && S && S.avatarGalleryId) || '') } });
   if (M.hbTimer) clearInterval(M.hbTimer);
   M.hbTimer = setInterval(function(){
     if (!loggedIn()){ stopPresence(); return; }
     var _p = myPos();
-    api('/api/world/heartbeat', { method:'POST', body:{ x:_p.x, y:_p.y } });
+    api('/api/world/heartbeat', { method:'POST', body:{ x:_p.x, y:_p.y, gender:((typeof S !== 'undefined' && S && S.gender) || ''), avatar:(typeof S !== 'undefined' && S ? (S.avatar|0) : 0), avatar_set:((typeof S !== 'undefined' && S && S.avatarGalleryId) || '') } });
   }, 30000);
   // v1009 每15秒拉一次在线玩家位置，变了才重绘地图
   var pollPlayers = function(){
@@ -1287,7 +1302,7 @@ function onClick(d, t, e){
           }
         }
       }
-      else glog('bad', '🌐 绑定失败：' + escH((r.json||{}).error || r.status));
+      else { var _xe = (r.json||{}).error; glog('bad', '🌐 绑定失败' + (_xe === 'x_taken' ? '（该 X 已被其他账号绑定，换一个）' : _xe === 'already_bound' ? '（已绑定，不可换绑）' : '：' + escH(_xe || r.status))); }
     });
     return true;
   }
@@ -1388,6 +1403,10 @@ function showLoginGate(){
     + '<input id="gateU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0">'
     + '<input id="gateP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0">'
     + '</div>'
+    + '<input id="gateX" maxlength="16" placeholder="X 用户名（注册必填，如 @feyelo）" style="width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:8px;box-sizing:border-box">'
+    + '<select id="gateSqQ" style="width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:8px;box-sizing:border-box"><option value="">选择密保问题（注册必填，找回密码用）</option><option>我母亲的名字是？</option><option>我出生的城市是？</option><option>我的第一只宠物叫什么？</option><option>我最喜欢的一本书是？</option><option>我的小学叫什么名字？</option></select>'
+    + '<input id="gateSqA" maxlength="100" placeholder="密保答案（注册必填）" style="width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:8px;box-sizing:border-box">'
+    + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="color:#999;font-size:13px">生日</span><input id="gateBday" type="date" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0"></div>'
     + '<div style="display:flex;gap:8px">'
     + '<button id="gateLogin" style="flex:1;padding:10px;border:1px solid #555;border-radius:8px;background:#222;color:#fff;font-size:14px;cursor:pointer">登录</button>'
     + '<button id="gateReg" style="flex:1;padding:10px;border:1px solid #555;border-radius:8px;background:#222;color:#fff;font-size:14px;cursor:pointer">注册</button>'
@@ -1421,10 +1440,20 @@ async function gateDoLogin(){
 async function gateDoRegister(){
   var u = document.getElementById('gateU').value.trim(), p = document.getElementById('gateP').value;
   if (!u || !p){ gateMsg('请填写用户名和密码'); return; }
+  if (p.length < 6){ gateMsg('密码至少6位'); return; }
+  var gx = document.getElementById('gateX').value.trim().replace(/^@/, '');
+  if (!gx){ gateMsg('注册必须填写 X 用户名'); return; }
+  var gq = document.getElementById('gateSqQ').value, ga = document.getElementById('gateSqA').value.trim();
+  if (!gq || !ga){ gateMsg('请选择密保问题并填写答案（找回密码用）'); return; }
+  var gb = document.getElementById('gateBday').value;
+  if (!gb){ gateMsg('请选择生日'); return; }
   gateMsg('注册中…');
-  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p } });
+  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p, x_handle:gx, sq_q:gq, sq_a:ga, birthday:gb } });
   if (r.ok && r.json && r.json.ok){ await gateAfterAuth(r.json); }
-  else gateMsg('注册失败' + (r.netErr ? '（网络不通）' : '：' + ((r.json||{}).error || r.status)));
+  else {
+    var ge = (r.json || {}).error || r.status;
+    gateMsg('注册失败' + (r.netErr ? '（网络不通）' : ge === 'username_taken' ? '（用户名已被占用）' : ge === 'bad_username' ? '（用户名3-16位，字母/数字/下划线/中文）' : ge === 'bad_password' ? '（密码至少6位）' : ge === 'x_handle_required' ? '（必须填写 X 用户名）' : ge === 'x_taken' ? '（该 X 已被其他账号绑定，换一个）' : ge === 'bad_birthday' ? '（生日不对）' : '：' + ge));
+  }
 }
 async function gateAfterAuth(d){
   saveAuth(d);

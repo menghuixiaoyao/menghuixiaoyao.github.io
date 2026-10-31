@@ -1340,6 +1340,22 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   const _outStar = (() => { try { return destinyStar(S).n; } catch(_) { return ''; } })(); // v1013 前世谱：记录将逝一世
   const _outFate = (() => { const f = fateSignOf(S); return f ? f.n : ''; })();
   const _outFrom = REALMS[S.realm | 0] || '';
+  // 百世书：轮回前全属性快照，必须在下方任何重置之前取（realm/level/attrs/lifespan 都会被清）
+  const _outDetail = (() => {
+    try {
+      const _a = S.attrs || {};
+      return {
+        name: S.name || '', gender: S.gender || '', race: S.race || '',
+        realm: S.realm | 0, level: S.level | 0,
+        attrs: { str: Number(_a.str) || 0, agi: Number(_a.agi) || 0, def: Number(_a.def) || 0, vit: Number(_a.vit) || 0, int: Number(_a.int) || 0 },
+        life: (S.sealLife | 0) + 1,
+        lifespan: Number(S.lifespan) || 0, lifespanMax: REALM_LIFESPAN[S.realm | 0] || 0,
+        roots: Array.isArray(S.lingGen) ? S.lingGen.slice() : [],
+        gold: Number(S.gold) || 0,
+        ts: Date.now()
+      };
+    } catch(_) { return null; }
+  })();
   let n, from;
   if (!Array.isArray(S.reinc)) S.reinc = new Array(13).fill(0);
   const isPerfect = S.level >= REALM_MAX_LV;
@@ -1392,7 +1408,7 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   S.lifeChoices = []; // v98 轮回：清空生活技能选择，重选（各技能等级/经验全保留）
   if (S.stats) { S.stats.afkSecs = 0; S.stats.adv = 0; S.stats.advWin = 0; S.stats.pk = 0; S.stats.pkWin = 0; S.stats.checkins = 0; } // 轮回清零本世战绩/签到/闭关，历世累计保留
   const _fate = drawFateSign(S); // v1012 宿命签：入新一世抽一签
-  S.pastLives = Array.isArray(S.pastLives) ? S.pastLives : []; S.pastLives.push({ n, from: _outFrom, star: _outStar, fate: _outFate, seal: _seal ? String(_seal.value || _seal.name || '').slice(0, 30) : '' }); if (S.pastLives.length > 50) S.pastLives = S.pastLives.slice(-50); // v1013 前世谱
+  S.pastLives = Array.isArray(S.pastLives) ? S.pastLives : []; S.pastLives.push({ n, from: _outFrom, star: _outStar, fate: _outFate, seal: _seal ? String(_seal.value || _seal.name || '').slice(0, 30) : '', detail: _outDetail }); if (S.pastLives.length > 50) S.pastLives = S.pastLives.slice(-50); // v1013 前世谱
   if (_fromRealm >= 12 && _fromLevel >= 10) S.taboo = Math.min(100, (S.taboo | 0) + 10); const _tabooAwoke = !S.tabooAwake && (S.taboo | 0) >= 100; if (_tabooAwoke) S.tabooAwake = true; // v1013 禁忌苏醒度：仅主宰大圆满轮回才 +10（Ye 定）
   return { ok: true, n, from, keepAttr, maiGain, seal: _seal, expired: _expired, fate: _fate, taboo: S.taboo | 0, tabooAwoke: _tabooAwoke };
 }
