@@ -1578,7 +1578,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         const _cf2 = () => document.getElementById('chatFloat');
         const _isTop = (t) => t && t.closest && t.closest('.cftop') && !t.closest('[data-cfclose]'); // v518 点✖️不触发拖动
         const _tstart = (x, y, t) => { if (!_isTop(t)) return false; const cf = _cf2(); if (!cf) return false; const _box = cf.querySelector('.cfbox'); if (!_box) return false; _tsy=y; _th=_box.getBoundingClientRect().height; _tresizing=true; return true; };
-        const _tmove = (x, y) => { if (!_tresizing) return; const cf = _cf2(); if (!cf) return; const _box = cf.querySelector('.cfbox'); if (!_box) return; let _nh = _th + (_tsy - y); _nh = Math.max(120, Math.min(window.innerHeight - 200, _nh)); _box.style.height=_nh+'px'; try { localStorage.setItem('chatFloatH', String(Math.round(_nh))); } catch(e){} };
+        const _tmove = (x, y) => { if (!_tresizing) return; const cf = _cf2(); if (!cf) return; const _box = cf.querySelector('.cfbox'); if (!_box) return; let _nh = _th + (_tsy - y); _nh = Math.max(120, Math.min(window.innerHeight - 200, _nh)); _box.style.height=''; try { localStorage.setItem('chatFloatH', String(Math.round(_nh))); } catch(e){} };
         const _tend = () => { _tresizing=false; };
         document.addEventListener('touchstart', e => { if (e.touches.length===1) { if (_tstart(0, e.touches[0].clientY, e.target)) e.preventDefault(); } }, {passive:false});
         document.addEventListener('touchmove', e => { if (_tresizing && e.touches.length===1) { _tmove(0, e.touches[0].clientY); e.preventDefault(); } }, {passive:false});
@@ -1587,7 +1587,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         document.addEventListener('mousemove', e => _tmove(0, e.clientY));
         document.addEventListener('mouseup', _tend);
         // 恢复保存的高度
-        try { const _sh = parseInt(localStorage.getItem('chatFloatH')||'0', 10); if (_sh >= 120) { const _cf3 = _cf2(); const _b3 = _cf3 && _cf3.querySelector('.cfbox'); if (_b3) _b3.style.height = _sh+'px'; } } catch(e){}
+        try { const _sh = parseInt(localStorage.getItem('chatFloatH')||'0', 10); if (_sh >= 120) { const _cf3 = _cf2(); const _b3 = _cf3 && _cf3.querySelector('.cfbox'); if (_b3) void 0; } } catch(e){}
       } catch(_){}
       return;
       try {
@@ -3196,7 +3196,7 @@ function pastLivesHtml() {
     if (!d) return `<div class="row"><div class="lab">第 ${p.n} 世<small>${p.from || ''}</small></div><div class="lab" style="text-align:right"><small>${p.star ? '🌠 ' + p.star : ''}${p.fate ? ' · 🎴 ' + p.fate : ''}${p.seal ? '<br>印记：' + p.seal : ''}</small></div></div>`;
     const rl = C.REALMS[d.realm | 0] || '';
     const open = !!(window._baishiOpen && window._baishiOpen[i]);
-    let s = `<div class="row"><div class="lab">第 ${d.life} 世<small>${d.name || ''} · ${rl} Lv.${d.level}${p.star ? ' · 🌠 ' + p.star : ''}</small></div><button class="btn" style="font-size:11px;padding:4px 8px" onclick="window.toggleBaishi(${i})">${open ? '收起' : '明细'}</button></div>`;
+    let s = `<div class="row"><div class="lab">第 ${d.life} 世<small>${d.name || ''} · ${rl} Lv.${d.level}${p.star ? ' · 🌠 ' + p.star : ''}${d.reg ? ' · <span style="color:#7ec8ff">已登记</span>' : ''}</small></div><button class="btn" style="font-size:11px;padding:4px 8px" onclick="window.toggleBaishi(${i})">${open ? '收起' : '明细'}</button></div>`;
     if (open) {
       const a = d.attrs || {};
       const raceName = d.race && RACES[d.race] ? RACES[d.race].name : '未选';
@@ -6561,7 +6561,7 @@ function doMail() {
   if (!S.mail.length) html += `<div class="empty">空空如也</div>`;
   else html += S.mail.slice().reverse().map((m, ri) => {
     const i = S.mail.length - 1 - ri;
-    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${(m.pk && m.pk.steal) ? `<button class="btn gold sm" onclick="window.pkStealPick('${String(m.pk.steal).replace(/'/g, '')}')">🎁 挑选战利品</button>` : ''}${(m.pk && m.pk.death && m.pk.bountyRight && m.pk.code) ? `<button class="btn danger sm" onclick="window.pkMailBounty('${String(m.pk.code).replace(/'/g, '')}')">📜 发布通缉</button>` : ''}${(m.pk && m.pk.revenge && !m.pkDone) ? `<button class="btn danger sm" onclick="window.pkMailRevenge('${m.sid || ''}','${String(m.pk.victim || '').replace(/'/g, '')}')">${(typeof myAid === 'function' && m.pk.victim === myAid()) ? '⚔️ 开启复仇' : '⚔️ 代为复仇'}</button>` : ''}${m.claimed ? '<small>已领取</small><button class="btn sm" data-maildel="' + i + '">删除</button>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>`)}</div>`;
+    return `<div class="row"><div class="lab">💌 ${m.from}<small>${m.title ? m.title + '：' : ''}${m.text}</small></div>${(m.pk && m.pk.steal) ? `<button class="btn gold sm" onclick="window.pkStealPick('${String(m.pk.steal).replace(/'/g, '')}')">🎁 挑选战利品</button>` : ''}${(m.pk && m.pk.death && m.pk.bountyRight && m.pk.code) ? `<button class="btn danger sm" onclick="window.pkMailBounty('${String(m.pk.code).replace(/'/g, '')}')">📜 发布通缉</button>` : ''}${(m.pk && m.pk.revenge && !m.pkDone) ? `<button class="btn danger sm" onclick="window.pkMailRevenge('${m.sid || ''}','${String(m.pk.victim || '').replace(/'/g, '')}')">${(typeof myAid === 'function' && m.pk.victim === myAid()) ? '⚔️ 开启复仇' : '⚔️ 代为复仇'}</button>` : ''}${m.claimed ? '<small>已领取</small><button class="btn sm" data-maildel="' + i + '">删除</button>' : (m.sid ? `<button class="btn gold sm" data-mailclaimsv="${m.sid}">领取奖励</button>` : `${(m.stamina|0) > 0 ? `<button class="btn gold sm" data-mailclaim="${i}">领取${m.stamina}体力</button>` : `<button class="btn sm" data-mailclaim="${i}">已读</button>`}`)}</div>`;
   }).join('');
   html += `<div class="row"><button class="btn full" data-a="xianyuan">← 返回仙缘</button></div>`;
   openSheet(html);
@@ -7160,7 +7160,7 @@ document.addEventListener('click', e => {
   if (d.arenaRank) { doArenaRank(d.arenaRank); return; }
   if (d.xyunbind !== undefined) { xyUnbind(+d.xyunbind); doXianyuan(); return; }
   if (d.xymarry !== undefined) { log('sys', '💕 道侣须与真人结：去仙缘面板，与绑定满7天的真人绑定者结为道侣。'); doXianyuan(); return; }
-  if (d.mailclaim !== undefined) { const m = S.mail[+d.mailclaim]; if (m && !m.claimed) { m.claimed = true; S.stamina = (S.stamina|0) + (m.stamina|0); log('good', `📬 领取邮件体力 <span class="g">+${m.stamina}</span>`); } commit(); refreshMainMailBtn(); doMail(); return; }
+  if (d.mailclaim !== undefined) { const m = S.mail[+d.mailclaim]; if (m && !m.claimed) { m.claimed = true; const _mst = m.stamina|0; if (_mst > 0) { S.stamina = (S.stamina|0) + _mst; log('good', `📬 领取邮件体力 <span class="g">+${_mst}</span>`); } } commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.mailclaimsv !== undefined) { doMailClaimServer(d.mailclaimsv); return; }
   if (d.maildel !== undefined) { S.mail.splice(+d.maildel, 1); commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.maildelall !== undefined) { if (!confirm('确定删除全部已读邮件？')) return; S.mail = S.mail.filter(m => !m.claimed); commit(); refreshMainMailBtn(); doMail(); return; }

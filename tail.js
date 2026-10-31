@@ -438,6 +438,34 @@ async function doLogout(){
   glog('sys', '🌐 已登出。');
   showLoginGate(); // v970 登出后弹门禁，不再回单机
 }
+// v1165 百世书服务端登记同步：拉服务端登记表对齐本地 reg 标记，并补登本地未登记的前世记录
+async function baishiSync(){
+  try {
+    if (!loggedIn()) return;
+    const r = await api('/api/baishi/mine');
+    if (!(r.ok && r.json && r.json.ok)) return;
+    const regTs = {};
+    (r.json.list || []).forEach(m => { const t = m.entry && m.entry.detail && m.entry.detail.ts; if (t) regTs[t] = 1; });
+    window._baishiMineTs = regTs;
+    let sv = null;
+    try { sv = window.S || null; } catch(_) {}
+    if (sv && Array.isArray(sv.pastLives)) {
+      let dirty = false;
+      for (const e of sv.pastLives) {
+        if (e && e.detail && e.detail.ts && regTs[e.detail.ts] && !e.detail.reg) { e.detail.reg = 1; dirty = true; }
+      }
+      for (const e of sv.pastLives) {
+        if (e && e.detail && e.detail.ts && !regTs[e.detail.ts]) {
+          try {
+            const rr = await api('/api/baishi/register', { method: 'POST', body: { entry: e } });
+            if (rr.ok && rr.json && rr.json.ok) { e.detail.reg = 1; regTs[e.detail.ts] = 1; dirty = true; }
+          } catch(_) {}
+        }
+      }
+      if (dirty) markDirty();
+    }
+  } catch(_) {}
+}
 async function afterLogin(){
   await ensurePresence();
   pkWsConnect();
@@ -449,6 +477,7 @@ async function afterLogin(){
       try { localStorage.setItem('mhxy_xv', _pr.json.x_verified ? '1' : '0'); var _xh2 = _pr.json.x_handle || _pr.json.xHandle || ''; if (_xh2) localStorage.setItem('mhxy_xh', _xh2); } catch(_) {}
     }
   } catch(_) {}
+  try { baishiSync(); } catch(_) {}
   panel();
 }
 function isXVerified(){ try { return localStorage.getItem('mhxy_xv') === '1'; } catch(_) { return false; } }

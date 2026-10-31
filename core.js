@@ -1409,6 +1409,12 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   if (S.stats) { S.stats.afkSecs = 0; S.stats.adv = 0; S.stats.advWin = 0; S.stats.pk = 0; S.stats.pkWin = 0; S.stats.checkins = 0; } // 轮回清零本世战绩/签到/闭关，历世累计保留
   const _fate = drawFateSign(S); // v1012 宿命签：入新一世抽一签
   S.pastLives = Array.isArray(S.pastLives) ? S.pastLives : []; S.pastLives.push({ n, from: _outFrom, star: _outStar, fate: _outFate, seal: _seal ? String(_seal.value || _seal.name || '').slice(0, 30) : '', detail: _outDetail }); if (S.pastLives.length > 50) S.pastLives = S.pastLives.slice(-50); // v1013 前世谱
+  try { // v1165 百世书服务端登记：轮回当场往服务端记一笔（只追加不可改）；离线/失败不拦轮回，登录后 tail.baishiSync 补登
+    if (window.MHXY && window.MHXY.api && window.MHXY.loggedIn && window.MHXY.loggedIn()) {
+      const _bsE = S.pastLives[S.pastLives.length - 1];
+      if (_bsE && _bsE.detail) window.MHXY.api('/api/baishi/register', { method: 'POST', body: { entry: _bsE } }).then(r => { if (r && r.ok && r.json && r.json.ok) _bsE.detail.reg = 1; }).catch(() => {});
+    }
+  } catch(_) {}
   if (_fromRealm >= 12 && _fromLevel >= 10) S.taboo = Math.min(100, (S.taboo | 0) + 10); const _tabooAwoke = !S.tabooAwake && (S.taboo | 0) >= 100; if (_tabooAwoke) S.tabooAwake = true; // v1013 禁忌苏醒度：仅主宰大圆满轮回才 +10（Ye 定）
   return { ok: true, n, from, keepAttr, maiGain, seal: _seal, expired: _expired, fate: _fate, taboo: S.taboo | 0, tabooAwoke: _tabooAwoke };
 }
