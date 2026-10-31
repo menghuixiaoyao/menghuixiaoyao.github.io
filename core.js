@@ -4055,19 +4055,20 @@ function destinyStar(S) { // 定命星：只论命格不论强弱，无任何数
   return DESTINY_STARS.find(d => d.k === S.destinyStar) || DESTINY_STARS[DESTINY_STARS.length - 1];
 }
 const SWORD_TAGS = { lei: { n: '雷意', sword: '惊雷', attr: 'str', desc: '剑出如雷，势大力沉' }, he: { n: '河意', sword: '沧浪', attr: 'agi', desc: '剑势如河，连绵不绝' }, shan: { n: '山意', sword: '镇岳', attr: 'def', desc: '剑守如山，不动如钟' }, ying: { n: '影意', sword: '穿影', attr: 'agi', desc: '针行如影，无声穿心' }, zhen: { n: '镇意', sword: '玲珑', attr: 'def', desc: '塔影玲珑，镇守四方' }, sheng: { n: '生意', sword: '青葫', attr: 'vit', desc: '葫中生生，绵绵不息' }, ming: { n: '明意', sword: '照心', attr: 'int', desc: '镜照本心，纤毫毕现' } };
-function swordBonus(S) { // 本命法宝战斗加成：每级全属性+1%，器意主属性另+2%/级
-  const b = {}; if (!S.sword || !S.sword.tag) return b; const lv = Math.min(10, S.sword.lv|0); if (lv <= 0) return b;
-  for (const k of ATTRS) b[k] = 0.01 * lv; const tg = SWORD_TAGS[S.sword.tag]; if (tg) b[tg.attr] = (b[tg.attr] || 0) + 0.02 * lv; return b;
+function swordMainExtra(lv) { lv = Math.max(0, Math.min(1000, lv | 0)); return 0.001 * Math.min(lv, 10) + 0.002 * Math.min(20, Math.max(0, lv - 10)) + 0.003 * Math.max(0, lv - 30); }
+function swordBonus(S) { // v1175 本命法宝加成（Ye 定）：顶级 1000；每级全属性 +0.1%，器意主属性另加分段（1–10 级 0.1%/级、11–30 级 0.2%/级、31 级起 0.3%/级，见 swordMainExtra）
+  const b = {}; if (!S.sword || !S.sword.tag) return b; const lv = Math.min(1000, S.sword.lv|0); if (lv <= 0) return b;
+  for (const k of ATTRS) b[k] = 0.001 * lv; const tg = SWORD_TAGS[S.sword.tag]; if (tg) b[tg.attr] = (b[tg.attr] || 0) + swordMainExtra(lv); return b;
 }
 // v1174 本命法宝五骨架：kind → 器名/图标/可选器意；旧存档无 kind 按 jian 兼容
 const WEAPON_KINDS = { jian: { n: '飞剑', icon: '🗡️', tags: ['lei', 'he', 'shan'] }, zhen: { n: '飞针', icon: '🪡', tags: ['ying'] }, ta: { n: '宝塔', icon: '🗼', tags: ['zhen'] }, hulu: { n: '葫芦', icon: '🪴', tags: ['sheng'] }, jing: { n: '宝镜', icon: '🪞', tags: ['ming'] } };
 function weaponKindOf(sw) { return (sw && WEAPON_KINDS[sw.kind]) ? sw.kind : 'jian'; }
-// v1174 悟器成本：SWORD_LV_PAGES[目标级] = 观相残页数；升 7/8/9 级另加上品灵石 sp4×1，升 10 级另加极品灵石 sp5×1
-const SWORD_LV_PAGES = [0, 0, 5, 10, 20, 35, 55, 80, 110, 145, 185];
-function swordLvCost(toLv) { toLv = toLv | 0; const pages = SWORD_LV_PAGES[toLv] || 0; const ore = toLv >= 10 ? 'sp5' : toLv >= 7 ? 'sp4' : null; return { pages, ore }; }
+// v1175 悟器成本（Ye 定）：从 Lv.N 升一级——观相残页 N×2 张；灵石按 N 所在档、颗数 = 档内序号（每档从 1 递增）：1–100 灵气石 sp1 / 101–200 下品 sp2 / 201–300 中品 sp3 / 301–400 上品 sp4 / 401–700 极品 sp5 / 701–999 仙玉（存 S.xianyu）
+const SWORD_LV_BANDS = [[100, 'sp1', '灵气石'], [200, 'sp2', '下品灵石'], [300, 'sp3', '中品灵石'], [400, 'sp4', '上品灵石'], [700, 'sp5', '极品灵石'], [1000, 'xianyu', '仙玉']];
+function swordLvCost(fromLv) { fromLv = fromLv | 0; let prev = 0; for (const bd of SWORD_LV_BANDS) { if (fromLv <= bd[0]) return { pages: fromLv * 2, ore: bd[1], oreN: fromLv - prev, oreName: bd[2] }; prev = bd[0]; } return { pages: 0, ore: null, oreN: 0, oreName: '' }; }
 const GEAR_RULES = { bumie: { n: '不灭', d: '每场战斗首次受到致命伤害时，保留 1 点生命' }, shiling: { n: '噬灵', d: '普通攻击击杀敌人时，回复 10% 最大生命' }, lianzhu: { n: '连珠', d: '普通攻击暴击时，追加一击 50% 伤害' }, beishui: { n: '背水', d: '生命低于 30% 时，受到的伤害降低 25%' } };
 function equipRules(S) { const out = []; try { for (const sl in (S.equip || {})) { const g = S.equip[sl]; if (g && g.rule && GEAR_RULES[g.rule]) out.push(g.rule); } } catch(_) {} return out; }
-Object.assign(C, { DESTINY_STARS, destinyStar, SWORD_TAGS, swordBonus, WEAPON_KINDS, weaponKindOf, SWORD_LV_PAGES, swordLvCost, GEAR_RULES, equipRules });
+Object.assign(C, { DESTINY_STARS, destinyStar, SWORD_TAGS, swordBonus, WEAPON_KINDS, weaponKindOf, SWORD_LV_BANDS, swordLvCost, swordMainExtra, GEAR_RULES, equipRules });
 // ===== v1012 P1 宿命签：轮回随机一签，一正一负，随世生效；轮回次数越高签档越高 =====
 const FATE_SIGNS = [
   { k:'danxin', tier:0, n:'丹心命', t:'丹道顺遂，劫火亦盛', mods:{ brew:0.12, trib:0.06 } },
