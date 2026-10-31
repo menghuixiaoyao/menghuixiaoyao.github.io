@@ -1503,7 +1503,8 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
       const cf = document.getElementById('chatFloat'); if (!cf) return;
       if (!Array.isArray(S.sectChat)) S.sectChat = []; if (!Array.isArray(S.teamChat)) S.teamChat = [];
       const tab = window._chatTab;
-      try { const _mf = JSON.parse(localStorage.getItem('msgFilter') || '{"world":1,"sect":1,"team":1,"diary":1}'); if (tab && _mf[tab] === 0) { cf.innerHTML = `<div class="cfbox"><div class="cftop"><button class="cfclose" data-cfclose>✖️</button></div><div class="cfmsgs"><div class="hint">该频道已在设置中关闭</div></div><div class="cfresize"></div></div>`; const _cc2 = cf.querySelector('[data-cfclose]'); if (_cc2) _cc2.onclick = () => { try { localStorage.setItem('chatFloatOn','0'); } catch(_){} cf.classList.remove('on'); }; return; } } catch(_) {} // v641 频道过滤
+      let _fhCss = ''; try { const _fh = parseInt(localStorage.getItem('chatFloatH') || '0', 10); if (_fh >= 120) _fhCss = ' style="height:' + Math.min(_fh, Math.max(120, window.innerHeight - 200)) + 'px"'; } catch(_) {} // v1166 拖拽高度重渲染不丢失（Ye：拖小了点别的又变高——就是重渲染把高度冲了）
+      try { const _mf = JSON.parse(localStorage.getItem('msgFilter') || '{"world":1,"sect":1,"team":1,"diary":1}'); if (tab && _mf[tab] === 0) { cf.innerHTML = `<div class="cfbox"${_fhCss}><div class="cftop"><button class="cfclose" data-cfclose>✖️</button></div><div class="cfmsgs"><div class="hint">该频道已在设置中关闭</div></div><div class="cfresize"></div></div>`; const _cc2 = cf.querySelector('[data-cfclose]'); if (_cc2) _cc2.onclick = () => { try { localStorage.setItem('chatFloatOn','0'); } catch(_){} cf.classList.remove('on'); }; return; } } catch(_) {} // v641 频道过滤
       let msgs = '', hint = '', canSend = true;
       const _loggedIn = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn());
       if (tab === 'world') {
@@ -1540,7 +1541,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         hint = '组队功能开发中，敬请期待'; canSend = false;
         msgs = (S.teamChat || []).slice(-20).map(m => `<div class="chat-msg"><b style="color:#7ec8ff">${esc(m.n)}</b>：${esc(m.t)}</div>`).join('');
       }
-      cf.innerHTML = `<div class="cfbox"><div class="cftop"><button class="cfclose" data-cfclose>✖️</button></div><div class="cfmsgs">${hint ? `<div class="hint">${hint}</div>` : msgs}</div><div class="cfresize"></div></div>`;
+      cf.innerHTML = `<div class="cfbox"${_fhCss}><div class="cftop"><button class="cfclose" data-cfclose>✖️</button></div><div class="cfmsgs">${hint ? `<div class="hint">${hint}</div>` : msgs}</div><div class="cfresize"></div></div>`;
       cf.querySelectorAll('[data-ctab]').forEach(b => b.onclick = () => { window._chatTab = b.dataset.ctab; window.renderChatFloat(); });
       const _cc = cf.querySelector('[data-cfclose]'); if (_cc) _cc.onclick = (e) => { e.stopPropagation(); try { localStorage.setItem('chatFloatOn', '0'); } catch(_){} const _cf = document.getElementById('chatFloat'); if (_cf) _cf.classList.remove('on'); const _ctb = document.getElementById('chatToggleBtn'); if (_ctb) _ctb.style.opacity = '0.4'; }; // v513；v575 输入栏常驻
       const sendBtn = cf.querySelector('[data-cfsend]'); const inp = cf.querySelector('#cfInput');
@@ -1578,7 +1579,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         const _cf2 = () => document.getElementById('chatFloat');
         const _isTop = (t) => t && t.closest && t.closest('.cftop') && !t.closest('[data-cfclose]'); // v518 点✖️不触发拖动
         const _tstart = (x, y, t) => { if (!_isTop(t)) return false; const cf = _cf2(); if (!cf) return false; const _box = cf.querySelector('.cfbox'); if (!_box) return false; _tsy=y; _th=_box.getBoundingClientRect().height; _tresizing=true; return true; };
-        const _tmove = (x, y) => { if (!_tresizing) return; const cf = _cf2(); if (!cf) return; const _box = cf.querySelector('.cfbox'); if (!_box) return; let _nh = _th + (_tsy - y); _nh = Math.max(120, Math.min(window.innerHeight - 200, _nh)); _box.style.height=''; try { localStorage.setItem('chatFloatH', String(Math.round(_nh))); } catch(e){} };
+        const _tmove = (x, y) => { if (!_tresizing) return; const cf = _cf2(); if (!cf) return; const _box = cf.querySelector('.cfbox'); if (!_box) return; let _nh = _th + (_tsy - y); _nh = Math.max(120, Math.min(window.innerHeight - 200, _nh)); _box.style.height=_nh+'px'; try { localStorage.setItem('chatFloatH', String(Math.round(_nh))); } catch(e){} };
         const _tend = () => { _tresizing=false; };
         document.addEventListener('touchstart', e => { if (e.touches.length===1) { if (_tstart(0, e.touches[0].clientY, e.target)) e.preventDefault(); } }, {passive:false});
         document.addEventListener('touchmove', e => { if (_tresizing && e.touches.length===1) { _tmove(0, e.touches[0].clientY); e.preventDefault(); } }, {passive:false});
@@ -1587,7 +1588,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
         document.addEventListener('mousemove', e => _tmove(0, e.clientY));
         document.addEventListener('mouseup', _tend);
         // 恢复保存的高度
-        try { const _sh = parseInt(localStorage.getItem('chatFloatH')||'0', 10); if (_sh >= 120) { const _cf3 = _cf2(); const _b3 = _cf3 && _cf3.querySelector('.cfbox'); if (_b3) void 0; } } catch(e){}
+        try { const _sh = parseInt(localStorage.getItem('chatFloatH')||'0', 10); if (_sh >= 120) { const _cf3 = _cf2(); const _b3 = _cf3 && _cf3.querySelector('.cfbox'); if (_b3) _b3.style.height = _sh+'px'; } } catch(e){}
       } catch(_){}
       return;
       try {
