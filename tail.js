@@ -33,7 +33,6 @@ window.shenshiGo = function(){
 // v1072 点击地图玩家标记查看详细资料（Ye：看到5个人但看不到资料）
 // v1161 PK 模式标识（mode 来自 /api/world/state 的 D1 权威值）：人物卡/同格名单/约战列表共用
 window.pkModeTag = function(mode){
-  if (mode === 'peace') return '<span style="color:#7eff9e;font-size:12px">🕊️和平</span>';
   if (mode === 'mieko') return '<span style="color:#ff7e7e;font-size:12px">💀灭口</span>';
   return '<span style="color:#ffe27e;font-size:12px">⚔️夺宝</span>';
 };
@@ -1105,7 +1104,7 @@ async function pkRaidVein(){
 }
 
 /* ---------- v1159 二期：PK 模式 / 即时攻击 / 通缉令 / 战利品 ---------- */
-const PK_MODE_TXT = { peace: '🕊️ 和平', duobao: '⚔️ 夺宝', mieko: '💀 灭口' };
+const PK_MODE_TXT = { duobao: '⚔️ 夺宝', mieko: '💀 灭口' }; // v1181 Ye 令取消和平模式（和平=切磋）
 const PK_KIND_TXT = { gold: '金元', sp2: '下品灵石', sp3: '中品灵石', sp4: '上品灵石', sp5: '极品灵石', xy: '仙玉' };
 function pkPoolText(pool){
   if (!pool) return '无';
@@ -1122,13 +1121,13 @@ async function pkModeRefresh(){
   var box = document.getElementById('pkModeBox'); if (!box) return;
   var me = await pkFetchMe();
   if (!me){ box.innerHTML = '<div class="hint">模式加载失败（网络不通）</div>'; return; }
-  var modes = ['peace', 'duobao', 'mieko'].map(function(m){
+  var modes = ['duobao', 'mieko'].map(function(m){
     return '<button class="btn' + (me.mode === m ? ' gold' : '') + '" style="flex:1" data-mhxymode="' + m + '">' + PK_MODE_TXT[m] + '</button>';
   }).join('');
   var h = '<div class="row" style="display:flex;gap:8px">' + modes + '</div>'
     + '<div class="hint">我的编码：<b class="y">' + escH(me.code || '?') + '</b> · 生死局 ' + ((me.stats && me.stats.dmLife) | 0) + '/' + ((me.stats && me.stats.dmTotal) | 0) + '（本世/累计） · 通缉击杀 ' + ((me.stats && me.stats.bkLife) | 0) + '/' + ((me.stats && me.stats.bkTotal) | 0)
-    + '<br>和平不能主动 PK；夺宝胜方抢属性+物品 1 件；灭口同夺宝，野外战死直接轮回。</div>';
-  if (me.myBounty) h += '<div class="hint" style="color:var(--red,#e55)">📜 你正被通缉中！悬赏池：' + pkPoolText(me.myBounty.pool) + '（通缉在身不能开和平）</div>';
+    + '<br>夺宝胜方抢属性+物品 1 件；灭口同夺宝，野外战死直接轮回。友好比试用「切磋」，不抢不掉不结仇。</div>';
+  if (me.myBounty) h += '<div class="hint" style="color:var(--red,#e55)">📜 你正被通缉中！悬赏池：' + pkPoolText(me.myBounty.pool) + '</div>';
   box.innerHTML = h;
 }
 async function pkSetMode(m){
@@ -1138,7 +1137,7 @@ async function pkSetMode(m){
     glog('good', '⚔️ 已切换为' + (PK_MODE_TXT[m] || m) + '模式');
   } else {
     var e = (r.json || {}).error;
-    glog('bad', '⚔️ 切换失败：' + (e === 'bountied_no_peace' ? '你正被通缉，不能开和平' : escH(e || r.status)));
+    glog('bad', '⚔️ 切换失败：' + escH(e || r.status));
   }
   pkModeRefresh();
   if (document.getElementById('bountyBox')) bountyPanel(window._bountyPrefill || '');
@@ -1146,7 +1145,6 @@ async function pkSetMode(m){
 async function pkAttack(targetId){
   var mode = window._pkMode;
   if (!mode){ var me = await pkFetchMe(); mode = me && me.mode; }
-  if (mode === 'peace'){ glog('bad', '🕊️ 和平模式不能主动 PK（在"在线约战"面板切换模式）'); return; }
   var dk = null;
   try { if (typeof S !== 'undefined' && S && S.run && S.run.shared) dk = S.run.shared.dk || S.run.dk || null; } catch(_){}
   glog('sys', '⚔️ 正在出击…');
@@ -1156,7 +1154,7 @@ async function pkAttack(targetId){
     await downloadSave(true);
   } else {
     var e = (r.json || {}).error;
-    var msg = e === 'target_offline' ? '对方已离线' : e === 'target_dead' ? '对方已死亡' : e === 'realm_protected' ? '境界保护：凡人/练气只能被同境界 PK' : e === 'peace_mode' ? '和平模式不能主动 PK' : e === 'missing_save' ? '对方尚无云端存档' : escH(e || r.status);
+    var msg = e === 'target_offline' ? '对方已离线' : e === 'target_dead' ? '对方已死亡' : e === 'realm_protected' ? '境界保护：凡人/练气只能被同境界 PK' : e === 'missing_save' ? '对方尚无云端存档' : escH(e || r.status);
     glog('bad', '⚔️ 攻击失败：' + msg);
   }
 }
