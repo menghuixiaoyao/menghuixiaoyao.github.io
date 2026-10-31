@@ -59,8 +59,8 @@ const K = {
   TRIB_POWER_DEMON: 0.4,  // v175 心魔吃到强度加成的比例（压条 900% 时心魔为 0.9×1.4=1.26 倍：极难但备好技能/灵宠/装备可赢）
   TRIB_GRADES: ['圆满', '完美', '上品', '中品', '下品'], // v175 金丹/元婴品质
   TRIB_GRADE_MULT: [2.0, 1.8, 1.6, 1.4, 1.2], // v175 品质对应突破倍率（下品1.2=原默认值）
-  TRIB_GRADE_FULL: [18, 14, 10, 4, 0], // v175 品质对应压条门槛；v286（1800%/1400%/1000%/400%；超400%必不低于中品）
-  TRIB_GRADE_JI_MULT: 2.2,   // v180 压条极（v285 2000%）：圆满极（圆满之上独立一档）
+  TRIB_GRADE_FULL: [24, 17, 11, 5, 0], // v1172 Ye 定：品质对应压条门槛（圆满2400%/完美1700%/上品1100%/中品500%；超500%必不低于中品）
+  TRIB_GRADE_JI_MULT: 2.2,   // v1172 Ye 定：压条 2900% 为圆满极限（圆满之上独立一档）
   TRIB_JACKPOT_P: 0.01,      // v176 天劫异变：压条≤200% 时 1% 概率撞上高阶雷劫（中品/上品/完美/圆满随机）
   // —— 冒险 ——
   MON_BASE: 25, MON_SCALE: 0.90, // 怪物总属性 ≈ (25 + (玩家总属性-25)×0.90) × 难度倍率 × (0.9~1.1)
@@ -767,8 +767,8 @@ const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {
   { q: '问心答题答错会怎样？', opts: ['直接失败', '显示正解并继续', '扣体力', '重新答题'], ans: 1 },
   { q: '雷云有几种品级图标？', opts: ['3 种', '4 种', '6 种', '8 种'], ans: 2 },
   { q: '击溃雷云（KO）与扛过10回合，哪个能加品？', opts: ['都能', '只有KO', '只有扛过', '都不加'], ans: 1 },
-  { q: '下品雷云的仙力/压条阈值是？', opts: ['400%及以下', '1000%', '1800%', '2000%'], ans: 0 },
-  { q: '圆满极雷云的阈值是？', opts: ['1000%', '1400%', '1800%', '2000%'], ans: 3 },
+  { q: '下品雷云的仙力/压条阈值是？', opts: ['500%以下', '1100%', '2400%', '2900%'], ans: 0 },
+  { q: '圆满极限雷云的阈值是？', opts: ['1100%', '1700%', '2400%', '2900%'], ans: 3 },
   { q: '交易成功会触发雷劫判定吗？', opts: ['会', '不会', '看金额', '看境界'], ans: 0 },
   { q: '赌场获胜会触发雷劫判定吗？', opts: ['20%概率', '必定触发', '不会', '看赌注'], ans: 0 },
   { q: '赌石开出极品灵石，公告几次？', opts: ['1 次', '2 次', '3 次', '不公告'], ans: 2 },
@@ -857,9 +857,9 @@ function pickTribQuiz(fromRealm) { // v174 心魔问心出题：仙人以下考�
   while (qs.length < K.TRIB_QUIZ_N && pool.length) qs.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   return { qs, fromRealm: fromRealm | 0 };
 }
-function tribFull(S) { // v175 灵气条/仙力充满度（压条可超出上限）；v285 最高 2000%
+function tribFull(S) { // v175 灵气条/仙力充满度（压条可超出上限）；v1172 Ye 定最高 2900%
   const mm = manaMax(S);
-  return mm > 0 ? Math.max(0, Math.min(20, (S.mana | 0) / mm)) : 0;
+  return mm > 0 ? Math.max(0, Math.min(29, (S.mana | 0) / mm)) : 0;
 }
 window.tribFull = tribFull; // v816 暴露给雷云战斗跨script块用
 function tribPower(S) { // v175 渡劫强度系数：压条越高天劫越强；900%×2.0，1000%×2.5（v178 最强天劫）
@@ -1264,7 +1264,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   let _btm = BT_MULT[Math.min(11, fromRealm | 0)] || 1, gradeName = null;
   if (fromRealm >= 2) { // v175 筑基→金丹结金丹、金丹→元婴结元婴：品质替代原突破倍率；v284 元婴以上也有品质（v176：天劫异变按异变档位；v180：压条 1000% 为极）
     let g = trib && trib.jackpot ? gradeFromFull(trib.jackpot.full) : tribGrade(S);
-    const isJi = !(trib && trib.jackpot) && tribFull(S) >= 20; // v285 2000%为极
+    const isJi = !(trib && trib.jackpot) && tribFull(S) >= 29; // v1172 Ye 定：2900% 为圆满极限
     // v750 三条件加品：击溃雷云 + 问心全对 + 心魔战打赢（若触发）→ 按完成数给概率；v755 非击溃不加品
     const _koWin = trib && trib.thunder && trib.thunder.koWin;
     if (!_koWin) {
@@ -1285,7 +1285,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
     }
     }
     _btm = isJi ? K.TRIB_GRADE_JI_MULT : g.mult;
-    gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极' : '');
+    gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极限' : ''); // v1172 Ye 定名：圆满极限
     if (fromRealm === 2) S.danGrade = gradeName; else if (fromRealm === 3) S.yingGrade = gradeName;
   }
   if (fromRealm === 0 && S.xp > 0) S.savedXp = (S.savedXp || 0) + S.xp; S.realm++; S.lifespan = Math.max((S.lifespan|0) * 2, REALM_LIFESPAN[Math.min(12, S.realm|0)] || 100); S.level = 1; S.xp = 0; S.btTotal = (S.btTotal || 0) + 1;
@@ -4368,11 +4368,11 @@ C.thunderCloud = function(S) { // v687 6档黑云
   try {
     const _f = (typeof tribFull === 'function' ? tribFull(S) : 0) || 0;
     const _b = (e) => '<span style="filter:brightness(0)">' + e + '</span>';
-    if (_f >= 10) return _b('🫯'); // 圆满极
-    if (_f >= 9) return _b('⛈️'); // 圆满
-    if (_f >= 7) return _b('🌩️'); // 完美
-    if (_f >= 5) return _b('🌫️'); // 上品
-    if (_f > 2) return _b('🌧️'); // 中品
+    if (_f >= 29) return _b('🫯'); // v1172 圆满极限（门槛随新压条阶梯）
+    if (_f >= 24) return _b('⛈️'); // 圆满
+    if (_f >= 17) return _b('🌩️'); // 完美
+    if (_f >= 11) return _b('🌫️'); // 上品
+    if (_f >= 5) return _b('🌧️'); // 中品
     return _b('☁️'); // 下品
   } catch(_) { return '<span style="filter:brightness(0)">🌩️</span>'; }
 };
