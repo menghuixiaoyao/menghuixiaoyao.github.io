@@ -2659,6 +2659,8 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     }
     if (btns.length || infoLine) resRow = infoLine + (btns.length ? `<div class="row" style="display:flex;gap:8px;flex-wrap:wrap">${btns.join('')}</div>` : '');
   }
+  // v1169 冒险内近况：最近 3 条日志直接显示在面板里（此前反馈只进日记、被冒险面板盖住看不见，Ye 报「没提示、没记录、看不了聊天框」）
+  const _recentHtml = (() => { try { const _lg = (Array.isArray(S.log) ? S.log.slice(-3) : []).filter(e => e && e.h); if (!_lg.length) return ''; return `<div class="empty" style="text-align:left;padding:8px 2px">📜 近况${_lg.map(e => `<div style="font-size:11px;color:var(--dim)"><span style="color:#666">${e.t || ''}</span> ${e.h}</div>`).join('')}</div>`; } catch(_) { return ''; } })();
   openSheet(`<h2>${run.dungeon ? '🏰 ' + escDg(run.dungeon.title) + ' <small style="font-size:12px;color:var(--dim)">作者：' + escDg(run.dungeon.by) + '</small>' : '🗺️ ' + d.name + '冒险'} <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
     (out && out.lines && out.lines.length ? `<div class="hint">${out.lines.join('；')}${out.battle ? `<details><summary>战斗记录（${out.battle.round} 回合）</summary>${out.battle.lines.join('')}</details>` : ''}</div>` : '') +
     `<div class="agrid">${cells}</div>${_coLine}` +
@@ -2667,7 +2669,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     (ev && ev.type === 'dungeonText' ? `<div class="grid2"><button class="btn gold full" data-dungeontext>继续前行</button></div>` : ev ? `<div class="grid2">${chs.map((c, i) => `<button class="btn ${c.retreat ? '' : i === 0 ? 'gold' : ''}" data-advc="${i}" ${c.dis ? 'disabled' : ''} style="line-height:1.3">${c.l}${c.hint ? `<br><small>${c.hint}</small>` : ''}</button>`).join('')}</div><div class="hint" style="text-align:center">也可直接走开，事件留在格子上，回来再处理</div>` : '') +
     `<div class="row" style="display:flex;gap:8px"><button class="btn gold" data-dazuo style="flex:1">🧘 调息（回10%生命）</button><button class="btn" data-tpscroll style="flex:1" ${(S.meds.tpscroll|0) > 0 ? '' : 'disabled'}>📜 传送卷×${S.meds.tpscroll|0}</button></div>` +
     `<div class="row" style="display:flex;gap:8px"><button class="btn" data-advretreat style="flex:1">🏳️ 撤退</button><button class="btn" data-close style="flex:1">稍后继续</button></div>` +
-    `<div class="empty" style="text-align:left;padding:8px 2px">本轮收获：${rewTxt(run.rew)}</div>`);
+    `<div class="empty" style="text-align:left;padding:8px 2px">本轮收获：${rewTxt(run.rew)}</div>` + _recentHtml);
 }
 function doAdvMove(dir) {
   const r = C.advMove(S, dir); if (!r || r.err) return;
