@@ -335,6 +335,10 @@ function panel(){
       + '<button class="btn full" data-mhxyencsub>🌀 奇遇投稿</button>'
       + '</div>'
       + '<div class="grid2">'
+      + '<button class="btn full" data-mhxywenxin>❓ 问心投稿</button>'
+      + '<span></span>'
+      + '</div>'
+      + '<div class="grid2">'
       + '<button class="btn full" data-mhxysync>☁️ 同步存档</button>'
       + '<button class="btn full" data-mhxydown>⬇️ 下载云档</button>'
       + '</div>'
@@ -660,16 +664,17 @@ function gmPanel(){
     + '<input id="gmXUser" placeholder="游戏用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
     + '<button class="btn gold" data-mhxygmxverify>通过验证</button></div>'
     + '<div class="hint" style="margin-top:8px">玩家创作审核：</div>'
-    + '<div class="row"><button class="btn gold full" data-mhxygmcrev>🏰🌀 待审秘境与奇遇</button></div>'
+    + '<div class="row"><button class="btn gold full" data-mhxygmcrev>🏰🌀❓ 待审秘境·奇遇·问心</button></div>'
     + '<div id="gmMsg" class="hint" style="margin-top:8px"></div>'
     + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
 }
 function gmCreatorPanel() {
   openSheet('<h2>🛠️ 创作审核</h2><div class="hint">加载中…</div>');
-  Promise.all([MHXY.api('/api/creator/dungeon/pending'), MHXY.api('/api/creator/encounter/pending')]).then(function(rs) {
+  Promise.all([MHXY.api('/api/creator/dungeon/pending'), MHXY.api('/api/creator/encounter/pending'), MHXY.api('/api/creator/wenxin/pending')]).then(function(rs) {
     try {
       const dgs = (rs[0].ok && rs[0].json && rs[0].json.ok) ? (rs[0].json.list || []) : [];
       const encs = (rs[1].ok && rs[1].json && rs[1].json.ok) ? (rs[1].json.list || []) : [];
+      const wxs = (rs[2] && rs[2].ok && rs[2].json && rs[2].json.ok) ? (rs[2].json.list || []) : [];
       let h = '<h2>🛠️ 创作审核</h2>';
       h += '<h3 style="margin:6px 0 2px">🏰 待审秘境（' + dgs.length + '）</h3>';
       if (!dgs.length) h += '<div class="hint">没有待审秘境。</div>';
@@ -682,6 +687,13 @@ function gmCreatorPanel() {
       encs.forEach(function(e) {
         let a = {}, b = {}; try { a = JSON.parse(e.opt_a); b = JSON.parse(e.opt_b); } catch(_) {}
         h += `<div class="row"><div class="lab">🌀 ${escH(e.text)}<small>作者 ${escH(e.author_name)}<br>① ${escH(a.t || '')}（${escH(a.fx || '')}）② ${escH(b.t || '')}（${escH(b.fx || '')}）</small></div><button class="btn gold" data-mhxygmrev="encounter:${e.id}:1">通过</button><button class="btn" data-mhxygmrev="encounter:${e.id}:0">驳回</button></div>`;
+      });
+      h += '<h3 style="margin:8px 0 2px">❓ 待审问心题（' + wxs.length + '）</h3>';
+      if (!wxs.length) h += '<div class="hint">没有待审问心题。</div>';
+      wxs.forEach(function(w) {
+        let opts = []; try { opts = JSON.parse(w.opts); } catch(_) {}
+        const bk = w.bank === 'dao' ? '问道' : '机制';
+        h += `<div class="row"><div class="lab">❓ ${escH(w.q)}<small>作者 ${escH(w.author_name)} · ${bk}题<br>` + opts.map((o, i) => (i === (w.ans | 0) ? '✅' : '·') + ' ' + escH(o)).join('<br>') + `</small></div><button class="btn gold" data-mhxygmrev="wenxin:${w.id}:1">通过</button><button class="btn" data-mhxygmrev="wenxin:${w.id}:0">驳回</button></div>`;
       });
       h += '<div class="row"><button class="btn full" data-close>关闭</button></div>';
       openSheet(h);
@@ -1305,10 +1317,11 @@ function onClick(d, t, e){
   if ('mhxygm' in d){ gmPanel(); return true; }
   if ('mhxydungeon' in d){ window.sheetDungeonList(); return true; }
   if ('mhxyencsub' in d){ window.sheetEncSubmit(); return true; }
+  if ('mhxywenxin' in d){ window.sheetWenxinSubmit(); return true; }
   if ('mhxygmcrev' in d){ gmCreatorPanel(); return true; }
   if ('mhxygmrev' in d){
     const _p = String(d.mhxygmrev).split(':'); const _kind = _p[0], _id = _p[1], _ok = _p[2] === '1';
-    MHXY.api('/api/creator/' + (_kind === 'dungeon' ? 'dungeon' : 'encounter') + '/review', { method: 'POST', body: { id: _id, approve: _ok } }).then(function(r) {
+    MHXY.api('/api/creator/' + (['dungeon', 'encounter', 'wenxin'].indexOf(_kind) >= 0 ? _kind : 'encounter') + '/review', { method: 'POST', body: { id: _id, approve: _ok } }).then(function(r) {
       toastLog('sys', r.ok && r.json && r.json.ok ? '已处理' : '处理失败：' + ((r.json && r.json.error) || '网络不通')); gmCreatorPanel();
     });
     return true;

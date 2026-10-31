@@ -4493,6 +4493,7 @@ async function doLvUp() {
 }
 window.doBreakthrough = doBreakthrough; // v438 突破按钮无响应兜底
 function doBreakthrough() {
+  try { refreshWenxinPool(); } catch(_) {}
   if (S.afk) { log('bad', '⚡ 闭关中无法突破，请先出关。'); return; } // v267 闭关时不能突破
   if (C.isPermanentlyDegraded(S)) { log('bad', `⚡ 你已是【${S.degraded}】，道途已断，无法再破境。`); return; } // v590 第二次失败才不可破境
   if ((S.realm|0) === 0 && (S.xp|0) < C.xpNeed(C.REALM_MAX_LV - 1)) { log('bad', `⚡ 经验不足（<b class="y">${S.xp|0}/${C.xpNeed(C.REALM_MAX_LV - 1)}</b>），需积累经验才能破境。`); return; } // v573 凡人破境需经验满足
@@ -4542,7 +4543,7 @@ function sheetTribQuiz(quiz) {
   try { window.__tqOmen = (window.TRIB_OMEN && window.TRIB_OMEN.text(S, 'quiz')) || ''; } catch(_) { window.__tqOmen = ''; }
   const qn = ['一', '二', '三', '四', '五'];
   openSheet(`<h2>👹 心魔问心</h2>${window.__tqOmen ? '<div class="hint">' + window.__tqOmen + '</div>' : ''}<div class="hint">心魔化作${quiz.qs.length}问，直指道心——答对 <b class="y">${K.TRIB_QUIZ_NEED} 道</b>方可通过。答错则突破失败，退级并折寿！</div>` +
-    quiz.qs.map((qq, qi) => `<div style="margin:10px 0 4px"><b>第${qn[qi]}问：</b>${qq.q}</div><div>` +
+    quiz.qs.map((qq, qi) => `<div style="margin:10px 0 4px"><b>第${qn[qi]}问：</b>${qq.q}${qq.by ? `<small style="color:#9ab">（道友 ${qq.by} 出题）</small>` : ''}</div><div>` +
       qq.opts.map((op, oi) => `<button class="btn${tqAns[qi] === oi ? ' gold' : ''}" data-tq="${qi}" data-to="${oi}"${tqAns[qi] !== undefined ? ' disabled' : ''}>${'ABCD'[oi]}. ${op}</button>`).join('') + `</div>`).join('') +
     `<div class="hint">已答 ${Object.keys(tqAns).length}/${quiz.qs.length}</div>`);
   // v281 直接绑事件（iOS onclick不可靠）
@@ -5742,10 +5743,63 @@ function doEncSubmit() {
     else toastLog('sys', '提交失败：' + ((r.json && r.json.error) || '网络不通'));
   });
 }
+/* --- 问心题投稿（v1180 创作线第一项，走奇遇同款管线） --- */
+function refreshWenxinPool() {
+  try {
+    if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn()) return;
+    if (window._wenxinPoolAt && Date.now() - window._wenxinPoolAt < 60000) return; // 60 秒节流
+    window._wenxinPoolAt = Date.now();
+    MHXY.api('/api/creator/wenxin/pool').then(function(r) {
+      try {
+        if (r.ok && r.json && r.json.ok) {
+          const m = { mech: [], dao: [] };
+          (r.json.list || []).forEach(function(it) { if (m[it.bank]) m[it.bank].push(it); });
+          window._wenxinPool = m;
+        }
+      } catch (_) {}
+    });
+  } catch (_) {}
+}
+window.refreshWenxinPool = refreshWenxinPool;
+function sheetWenxinSubmit() {
+  if (!MHXY.loggedIn()) { openSheet('<h2>❓ 问心投稿</h2><div class="hint">先在联机面板登录。</div><div class="row"><button class="btn full" data-close>关闭</button></div>'); return; }
+  openSheet('<h2>❓ 问心投稿</h2><div class="hint">加载中…</div>');
+  MHXY.api('/api/creator/wenxin/mine').then(function(r) {
+    try {
+      const list = (r.ok && r.json && r.json.ok) ? (r.json.list || []) : [];
+      const stName = { pending: '待审核', approved: '已通过（全服问心题池）', rejected: '未通过' };
+      const bkName = { mech: '机制题', dao: '问道题' };
+      let h = '<h2>❓ 问心投稿</h2><div class="hint">给渡劫问心出题：一句题干 + 四个选项 + 标出正确答案。仙人以下考机制、仙人以上问道，选好题库再投。通过 GM 审核后进全服题池，渡劫时随机抽中，署名跟着走。每人待审+已通过合计上限 10 题。</div>';
+      h += `<div class="row" style="display:flex;gap:6px"><select id="wxBank" style="padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><option value="mech">机制题（仙人以下渡劫考）</option><option value="dao">问道题（仙人以上渡劫考）</option></select></div>`
+        + `<div class="row" style="display:flex;gap:6px"><input id="wxQ" maxlength="60" placeholder="题干（≤60 字）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`
+        + [0, 1, 2, 3].map(i => `<div class="row" style="display:flex;gap:6px"><input id="wxOpt${i}" maxlength="30" placeholder="选项${'ABCD'[i]}（≤30 字）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>`).join('')
+        + `<div class="row" style="display:flex;gap:6px"><select id="wxAns" style="padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><option value="0">正确答案：A</option><option value="1">正确答案：B</option><option value="2">正确答案：C</option><option value="3">正确答案：D</option></select></div>`
+        + `<div class="grid2"><button class="btn gold" data-wenxinsubmit>提交审核</button><button class="btn" data-close>关闭</button></div>`;
+      if (list.length) {
+        h += '<h3 style="margin:8px 0 2px">我的投稿</h3>';
+        list.forEach(function(e) { h += `<div class="row"><div class="lab">❓ ${escDg(e.q)}<small>${bkName[e.bank] || e.bank} · ${stName[e.status] || e.status}</small></div></div>`; });
+      }
+      openSheet(h);
+    } catch(_) {}
+  });
+}
+function doWenxinSubmit() {
+  const gv = id => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const bank = gv('wxBank'), q = gv('wxQ');
+  const opts = [0, 1, 2, 3].map(i => gv('wxOpt' + i));
+  const ans = parseInt(gv('wxAns'), 10);
+  if (!q || opts.some(o => !o)) { toastLog('sys', '题干和四个选项都要填'); return; }
+  if (new Set(opts).size !== 4) { toastLog('sys', '四个选项不能重复'); return; }
+  MHXY.api('/api/creator/wenxin/submit', { method: 'POST', body: { bank: bank, q: q, opts: opts, ans: ans } }).then(function(r) {
+    if (r.ok && r.json && r.json.ok) { toastLog('sys', '问心题已提交，等 GM 审核'); sheetWenxinSubmit(); }
+    else toastLog('sys', '提交失败：' + ((r.json && r.json.error) || '网络不通'));
+  });
+}
 window.sheetDungeonList = sheetDungeonList;
 window.sheetDungeonEditor = sheetDungeonEditor;
 window.sheetDungeonMine = sheetDungeonMine;
 window.sheetEncSubmit = sheetEncSubmit;
+window.sheetWenxinSubmit = sheetWenxinSubmit;
 
 /* ---------- v1015 见闻录 ---------- */
 function encCodexHtml() {
@@ -7284,6 +7338,7 @@ document.addEventListener('click', e => {
   if (d.dgsubmit !== undefined) { doDungeonSubmit(); return; }
   if (d.dgclear !== undefined) { window._dgEdit = dgNewEdit(); sheetDungeonEditor(); return; }
   if (d.encsubmit !== undefined) { doEncSubmit(); return; }
+  if (d.wenxinsubmit !== undefined) { doWenxinSubmit(); return; }
   if (d.encopt !== undefined && d.encopt !== null && d.encopt !== '') { doEncOpt(parseInt(d.encopt, 10)); return; }
   if (d.charpage) { window._charPage = parseInt(d.charpage); sheetChar(); return; }
   if (d.starview) { window._starView = d.starview; sheetChar(); return; }

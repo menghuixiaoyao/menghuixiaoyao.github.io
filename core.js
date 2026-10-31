@@ -854,6 +854,17 @@ try { window.TRIB_OMEN = { show: tribOmenShow, beat: tribOmenBeat, text: tribOme
 function pickTribQuiz(fromRealm) { // v174 心魔问心出题：仙人以下考游戏机制，仙人以上问道
   const bank = (fromRealm | 0) >= 8 ? TRIB_Q_DAO : TRIB_Q_MECH;
   const pool = bank.slice(), qs = [];
+  try { // v1180 玩家问心投稿（GM 审核通过）混入抽题池；文本转义后入池，署名随题走
+    const wp = (typeof window !== 'undefined' && window._wenxinPool) || null;
+    const key = (fromRealm | 0) >= 8 ? 'dao' : 'mech';
+    if (wp && Array.isArray(wp[key])) {
+      const esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      for (const it of wp[key]) {
+        if (it && typeof it.q === 'string' && Array.isArray(it.opts) && it.opts.length === 4 && Number.isInteger(it.ans) && it.ans >= 0 && it.ans <= 3)
+          pool.push({ q: esc(it.q), opts: it.opts.map(esc), ans: it.ans, by: esc(it.by || '') });
+      }
+    }
+  } catch (_) {}
   while (qs.length < K.TRIB_QUIZ_N && pool.length) qs.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
   return { qs, fromRealm: fromRealm | 0 };
 }
