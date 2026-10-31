@@ -4054,14 +4054,20 @@ function destinyStar(S) { // 定命星：只论命格不论强弱，无任何数
   if (!S.destinyStar) { let tw = 0; for (const d of DESTINY_STARS) tw += d.w; let x = Math.random() * tw, done = false; for (const d of DESTINY_STARS) { x -= d.w; if (x <= 0) { S.destinyStar = d.k; done = true; break; } } if (!done) S.destinyStar = 'fanxing'; }
   return DESTINY_STARS.find(d => d.k === S.destinyStar) || DESTINY_STARS[DESTINY_STARS.length - 1];
 }
-const SWORD_TAGS = { lei: { n: '雷意', sword: '惊雷', attr: 'str', desc: '剑出如雷，势大力沉' }, he: { n: '河意', sword: '沧浪', attr: 'agi', desc: '剑势如河，连绵不绝' }, shan: { n: '山意', sword: '镇岳', attr: 'def', desc: '剑守如山，不动如钟' } };
-function swordBonus(S) { // 本命飞剑战斗加成：每级全属性+1%，剑意主属性另+2%/级
+const SWORD_TAGS = { lei: { n: '雷意', sword: '惊雷', attr: 'str', desc: '剑出如雷，势大力沉' }, he: { n: '河意', sword: '沧浪', attr: 'agi', desc: '剑势如河，连绵不绝' }, shan: { n: '山意', sword: '镇岳', attr: 'def', desc: '剑守如山，不动如钟' }, ying: { n: '影意', sword: '穿影', attr: 'agi', desc: '针行如影，无声穿心' }, zhen: { n: '镇意', sword: '玲珑', attr: 'def', desc: '塔影玲珑，镇守四方' }, sheng: { n: '生意', sword: '青葫', attr: 'vit', desc: '葫中生生，绵绵不息' }, ming: { n: '明意', sword: '照心', attr: 'int', desc: '镜照本心，纤毫毕现' } };
+function swordBonus(S) { // 本命法宝战斗加成：每级全属性+1%，器意主属性另+2%/级
   const b = {}; if (!S.sword || !S.sword.tag) return b; const lv = Math.min(10, S.sword.lv|0); if (lv <= 0) return b;
   for (const k of ATTRS) b[k] = 0.01 * lv; const tg = SWORD_TAGS[S.sword.tag]; if (tg) b[tg.attr] = (b[tg.attr] || 0) + 0.02 * lv; return b;
 }
+// v1174 本命法宝五骨架：kind → 器名/图标/可选器意；旧存档无 kind 按 jian 兼容
+const WEAPON_KINDS = { jian: { n: '飞剑', icon: '🗡️', tags: ['lei', 'he', 'shan'] }, zhen: { n: '飞针', icon: '🪡', tags: ['ying'] }, ta: { n: '宝塔', icon: '🗼', tags: ['zhen'] }, hulu: { n: '葫芦', icon: '🪴', tags: ['sheng'] }, jing: { n: '宝镜', icon: '🪞', tags: ['ming'] } };
+function weaponKindOf(sw) { return (sw && WEAPON_KINDS[sw.kind]) ? sw.kind : 'jian'; }
+// v1174 悟器成本：SWORD_LV_PAGES[目标级] = 观相残页数；升 7/8/9 级另加上品灵石 sp4×1，升 10 级另加极品灵石 sp5×1
+const SWORD_LV_PAGES = [0, 0, 5, 10, 20, 35, 55, 80, 110, 145, 185];
+function swordLvCost(toLv) { toLv = toLv | 0; const pages = SWORD_LV_PAGES[toLv] || 0; const ore = toLv >= 10 ? 'sp5' : toLv >= 7 ? 'sp4' : null; return { pages, ore }; }
 const GEAR_RULES = { bumie: { n: '不灭', d: '每场战斗首次受到致命伤害时，保留 1 点生命' }, shiling: { n: '噬灵', d: '普通攻击击杀敌人时，回复 10% 最大生命' }, lianzhu: { n: '连珠', d: '普通攻击暴击时，追加一击 50% 伤害' }, beishui: { n: '背水', d: '生命低于 30% 时，受到的伤害降低 25%' } };
 function equipRules(S) { const out = []; try { for (const sl in (S.equip || {})) { const g = S.equip[sl]; if (g && g.rule && GEAR_RULES[g.rule]) out.push(g.rule); } } catch(_) {} return out; }
-Object.assign(C, { DESTINY_STARS, destinyStar, SWORD_TAGS, swordBonus, GEAR_RULES, equipRules });
+Object.assign(C, { DESTINY_STARS, destinyStar, SWORD_TAGS, swordBonus, WEAPON_KINDS, weaponKindOf, SWORD_LV_PAGES, swordLvCost, GEAR_RULES, equipRules });
 // ===== v1012 P1 宿命签：轮回随机一签，一正一负，随世生效；轮回次数越高签档越高 =====
 const FATE_SIGNS = [
   { k:'danxin', tier:0, n:'丹心命', t:'丹道顺遂，劫火亦盛', mods:{ brew:0.12, trib:0.06 } },
