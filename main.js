@@ -2909,6 +2909,28 @@ function sheetNameInput() {
     <div class="row"><button class="btn gold full" data-savename>确定</button></div>`);
   const inp = $('nameInput'); if (inp) { inp.focus(); inp.select(); }
 }
+function avatarClaimGate(key, selector) { // v1173 全服唯一：选头像先向服务端占位，他人已占则拦下并置灰；未登录/网络异常放行（存档同步兜底）
+  if (window._avClaimOk === key) { window._avClaimOk = null; return true; }
+  if (!window.MHXY || !window.MHXY.api) return true;
+  let tok = null; try { tok = localStorage.getItem('mhxy_token'); } catch(_) {}
+  if (!tok) return true;
+  window.MHXY.api('/api/avatar/claim', { method: 'POST', body: { key } }).then(r => {
+    if (r && r.ok && r.json && r.json.ok) {
+      window._avClaimOk = key;
+      if (window._avTaken) window._avTaken.delete(key);
+      const b = selector && document.querySelector(selector); if (b) b.click();
+    } else if (r && r.status === 409) {
+      if (window._avTaken) window._avTaken.add(key); else window._avTaken = new Set([key]);
+      try { showTip('🚫 这个头像已被别人占用了'); } catch(_) {}
+      try { log('bad', '🚫 这个头像已被别人占用'); } catch(_) {}
+      sheetAvatar(S._pickGender || S.gender || 'm');
+    } else {
+      window._avClaimOk = key;
+      const b = selector && document.querySelector(selector); if (b) b.click();
+    }
+  }).catch(() => { window._avClaimOk = key; const b = selector && document.querySelector(selector); if (b) b.click(); });
+  return false;
+}
 function avatarChangeCost() { // v1171 设置里换头像：扣 1 颗极品灵石（ores.sp5），不足返回 false 并提示（Ye 定）
   const have = (S.ores && S.ores.sp5) | 0;
   if (have < 1) { log('bad', '💠 换头像需要 1 颗极品灵石，你没有'); return false; } // 用 log 落日记（toastLog 只闪现不保存）
@@ -2916,7 +2938,7 @@ function avatarChangeCost() { // v1171 设置里换头像：扣 1 颗极品灵�
 }
 function sheetAvatar(gender, cat) {
   cat = cat || '动漫';
-  let setKey = S._pickSet || S.avatarSet || 'r'; if (typeof AVATAR_SETS === 'undefined' || !AVATAR_SETS[setKey]) setKey = 'r'; // v1090 第叁套下线后旧存档兜底
+  let setKey = S._pickSet || S.avatarSet || 'r'; if (setKey !== 'gallery' && (typeof AVATAR_SETS === 'undefined' || !AVATAR_SETS[setKey])) setKey = 'r'; // v1090 第叁套下线后旧存档兜底；v1173 修：'gallery' 不是图集键，旧兜底把它吞回 r 套、玩家图库页签永远打不开
   const set = (typeof AVATAR_SETS !== 'undefined' && AVATAR_SETS[setKey]) || AVATARS;
   const list = set[gender] || set.m || [];
   const isR = setKey === 'r';
@@ -2924,21 +2946,24 @@ function sheetAvatar(gender, cat) {
   const isA = setKey === 'a';
   const nmOf = i => isR ? (names[i] || '无名修士') : isA ? ((AVATAR_NAMES_ANIME[gender] || [])[i] || '无名修士') : ('修士 ' + (i + 1));
   const sealedAvatars = new Set((S.sealed || []).filter(x => x && !x.done && x.gender === gender && (x.avatarSet || 'r') === setKey).map(x => x.avatar|0));
+  // v1173 全服唯一：拉全服占用键（他人），到了自动重渲染置灰
+  if (!window._avTaken && !window._avTakenLoading && window.MHXY && window.MHXY.api) { window._avTakenLoading = 1; try { window.MHXY.api('/api/avatar/claims').then(r => { window._avTakenLoading = 0; window._avTaken = new Set((r && r.ok && r.json && Array.isArray(r.json.others)) ? r.json.others : []); const h = document.querySelector('#sheet h2'); if (h && h.textContent.indexOf('选择头像') >= 0) sheetAvatar(gender, cat); }).catch(() => { window._avTakenLoading = 0; window._avTaken = new Set(); }); } catch(_) { window._avTakenLoading = 0; window._avTaken = new Set(); } }
+  const avTaken = k => !!(window._avTaken && window._avTaken.has(k));
   const catIdxs = isR ? ((AVATAR_CATS[gender] && AVATAR_CATS[gender][cat]) || list.map((_, i) => i)) : list.map((_, i) => i);
   const cats = isR ? Object.keys(AVATAR_CATS[gender] || {}) : [];
-  let html = `<h2>🖼️ 选择头像</h2><div class="hint">图库三套共 3506 张，点任意一张即换上${sealedAvatars.size ? '<br><span class="r">前世遗物未消散，前世头像不可选</span>' : ''}${S._avatarSettings ? '<br>💠 换头像需极品灵石×1（现有 ×' + ((S.ores && S.ores.sp5) | 0) + '）' : ''}</div>`;
+  let html = `<h2>🖼️ 选择头像</h2><div class="hint">图库三套共 3506 张，点任意一张即换上${sealedAvatars.size ? '<br><span class="r">前世遗物未消散，前世头像不可选</span>' : ''}${S._avatarSettings ? '<br>💠 换头像需极品灵石×1（现有 ×' + ((S.ores && S.ores.sp5) | 0) + '）' : ''}<br>全服唯一：已被占用的头像不可选</div>`;
   html += `<div class="row" style="display:flex;gap:8px;margin-bottom:8px">${[['r', '第壹套'], ['g', '第贰套'], ['a', '动漫套'], ['gallery', '玩家图库']].map(([k, n2]) => `<button class="btn" data-avatarset="${k}" style="flex:1;${setKey === k ? 'opacity:0.5' : ''}">${n2}</button>`).join('')}</div>`;
   html += `<div class="row"><div class="lab">📤 上传自己的头像<small>私用仅本机；入库可自取名，审核通过后全服可选</small></div>${S.avatarCustom ? `<img src="${S.avatarCustom}" style="width:40px;height:40px;border-radius:50%;object-fit:cover"><button class="btn sm" data-avsubmit="1">📮 提交入库</button><button class="btn sm" data-clearavatar="1">用回图库</button>` : '<input type="file" id="avatarFile" accept="image/*" style="flex:1;font-size:12px;min-width:0">'}</div>`;
   if (setKey === 'gallery') {
     const gal = window._avGallery;
-    if (!gal && !window._avGalLoading) { window._avGalLoading = 1; try { window.MHXY.api('GET', '/api/avatar/gallery').then(j => { window._avGalLoading = 0; window._avGallery = (j && j.ok && Array.isArray(j.list)) ? j.list : []; if (S._pickSet === 'gallery') sheetAvatar(gender, cat); }).catch(() => { window._avGalLoading = 0; window._avGallery = []; if (S._pickSet === 'gallery') sheetAvatar(gender, cat); }); } catch (_) { window._avGalLoading = 0; window._avGallery = []; } }
-    html += !gal ? '<div class="hint">⏳ 正在打开玩家图库…</div>' : (gal.length ? `<div class="grid2" style="grid-template-columns:repeat(3,1fr);gap:10px">${gal.map(e => `<button class="act" data-avgal="${e.id}" style="padding:6px"><img src="${e.data}" loading="lazy" style="width:100%;border-radius:10px;display:block"><span class="t" style="font-size:11px">${String(e.name || e.by || '道友').replace(/[<>&"]/g, '')}</span></button>`).join('')}</div>` : '<div class="hint">玩家图库暂无头像——上传自己的头像并提交入库，第一批就从道友们开始攒。</div>');
+    if (!gal && !window._avGalLoading) { window._avGalLoading = 1; try { window.MHXY.api('/api/avatar/gallery').then(j => { window._avGalLoading = 0; window._avGallery = (j && j.ok && j.json && Array.isArray(j.json.list)) ? j.json.list : []; if (S._pickSet === 'gallery') sheetAvatar(gender, cat); }).catch(() => { window._avGalLoading = 0; window._avGallery = []; if (S._pickSet === 'gallery') sheetAvatar(gender, cat); }); } catch (_) { window._avGalLoading = 0; window._avGallery = []; } }
+    html += !gal ? '<div class="hint">⏳ 正在打开玩家图库…</div>' : (gal.length ? `<div class="grid2" style="grid-template-columns:repeat(3,1fr);gap:10px">${gal.map(e => { const tk = avTaken('gal:' + e.id); return `<button class="act" data-avgal="${e.id}" style="padding:6px${tk ? ';opacity:0.3' : ''}" ${tk ? 'disabled' : ''}><img src="${e.data}" loading="lazy" style="width:100%;border-radius:10px;display:block"><span class="t" style="font-size:11px">${String(e.name || e.by || '道友').replace(/[<>&"]/g, '')}</span></button>`; }).join('')}</div>` : '<div class="hint">玩家图库暂无头像——上传自己的头像并提交入库，第一批就从道友们开始攒。</div>');
     html += `${(!S._onboarded || S._reincChain) ? '<div class="row" style="margin-top:10px"><button class="btn" data-back-gender>← 重选性别</button></div>' : ''}`;
     openSheet(html); S._pickGender = gender; save(); bindAvatarFile(); return;
   }
   if (cats.length) html += `<div class="row" style="display:flex;gap:8px;margin-bottom:8px">${cats.map(c => `<button class="btn" data-avatarcat="${c}" style="flex:1;${c === cat ? 'opacity:0.5' : ''}">${c}</button>`).join('')}</div>`;
   html += `<div class="grid2" style="grid-template-columns:repeat(3,1fr);gap:10px">`;
-  const cell = i => { const banned = sealedAvatars.has(i); return `<button class="act" data-avatar="${i}" style="padding:6px;${banned ? 'opacity:0.3' : ''}" ${banned ? 'disabled' : ''}><img src="${list[i]}" loading="lazy" style="width:100%;border-radius:10px;display:block"><span class="t" style="font-size:11px">${nmOf(i)}</span></button>`; };
+  const cell = i => { const banned = sealedAvatars.has(i) || avTaken('set:' + setKey + ':' + gender + ':' + i); return `<button class="act" data-avatar="${i}" style="padding:6px;${banned ? 'opacity:0.3' : ''}" ${banned ? 'disabled' : ''}><img src="${list[i]}" loading="lazy" style="width:100%;border-radius:10px;display:block"><span class="t" style="font-size:11px">${nmOf(i)}</span></button>`; };
   if (isR || isA) {
     const seriesOf = i => isA ? ((AVATAR_SERIES_ANIME[gender] && AVATAR_SERIES_ANIME[gender][i]) || '原创') : ((AVATAR_SERIES[gender] && AVATAR_SERIES[gender][i]) || '原创');
     const seenSeries = [];
@@ -7190,7 +7215,7 @@ document.addEventListener('click', e => {
   if (d.avataredit) { S._avatarSettings = 1; S._pickSet = S.avatarSet || 'r'; S._pickGender = S.gender || 'm'; sheetAvatar(S._pickGender); return; }
   if (d.avatarset) { S._pickSet = d.avatarset; sheetAvatar(S._pickGender || S.gender || 'm'); return; }
   if (d.clearavatar) { S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} save(); sheetAvatar(S._pickGender || S.gender || 'm'); return; }
-  if (d.avgal) { const e2 = (window._avGallery || []).find(x => String(x.id) === String(d.avgal)); if (e2 && e2.data) { if (S._avatarSettings && !avatarChangeCost()) { sheetAvatar(S._pickGender || S.gender || 'm'); return; } S.avatarCustom = e2.data; S.avatarGalleryId = e2.id; try { saveAvatarSeparate(e2.data, e2.id); } catch(_) {} S._avatarSettings = 0; save(); if (!S._onboarded) { S._avatarPicked = true; save(); toastLog('good', '🖼️ 已换上玩家图库头像'); chainNext(); } else if (S._reincChain) { S._reincStep = 'name'; toastLog('good', '🖼️ 已换上玩家图库头像'); chainNext(); } else { toastLog('good', '🖼️ 已换上玩家图库头像'); render(); sheetChar(); } } return; } // v1088 建号/轮回图库头像进链
+  if (d.avgal) { const e2 = (window._avGallery || []).find(x => String(x.id) === String(d.avgal)); if (e2 && e2.data) { if (!(S._avatarSettings && ((S.ores && S.ores.sp5)|0) < 1) && !avatarClaimGate('gal:' + e2.id, '[data-avgal="' + e2.id + '"]')) return; if (S._avatarSettings && !avatarChangeCost()) { sheetAvatar(S._pickGender || S.gender || 'm'); return; } S.avatarCustom = e2.data; S.avatarGalleryId = e2.id; try { saveAvatarSeparate(e2.data, e2.id); } catch(_) {} S._avatarSettings = 0; save(); if (!S._onboarded) { S._avatarPicked = true; save(); toastLog('good', '🖼️ 已换上玩家图库头像'); chainNext(); } else if (S._reincChain) { S._reincStep = 'name'; toastLog('good', '🖼️ 已换上玩家图库头像'); chainNext(); } else { toastLog('good', '🖼️ 已换上玩家图库头像'); render(); sheetChar(); } } return; } // v1088 建号/轮回图库头像进链
   if (d.avsubmit) { if (!S.avatarCustom) { toastLog('bad', '先上传一张自己的头像'); return; } if (!(window.MHXY && MHXY.loggedIn && MHXY.loggedIn())) { toastLog('bad', '先登录联机账号才能提交入库'); return; } const nmIn = prompt('给这张图取个名（入库后按此名展示，12 字内）', ''); if (nmIn === null) return; const avName = String(nmIn).trim().slice(0, 12); if (!avName) { toastLog('bad', '先取个名再入库'); return; } MHXY.api('POST', '/api/avatar/submit', { data: S.avatarCustom, name: avName }).then(j => { if (j && j.ok) toastLog('good', '📮 已提交入库，审核通过后全服可选'); else toastLog('bad', '📮 玩家图库尚未开放'); }).catch(() => toastLog('bad', '📮 玩家图库尚未开放')); return; }
   if (d.wearach !== undefined) { S.titleAch = d.wearach || ''; save(); try { if (window.MHXY && MHXY.loggedIn()) MHXY.api('/api/profile/title', { method: 'POST', body: { title: S.titleAch } }).catch(() => {}); } catch(_) {} sheetChar(); return; }
   if (d.stele !== undefined) { sheetStele(); return; }
@@ -7663,7 +7688,7 @@ document.addEventListener('click', e => {
   else if ('consign' in d) sheetConsign();
   else if ('char' in d) { window._charPage = 1; sheetChar(); }
   else if (d.gender) { if (!S._onboarded || S._reincChain) { S.gender = d.gender; S.avatar = 0; save(); if (S._reincChain) S._reincStep = 'avatar'; chainNext(); } } // v1088 建号/轮回链；v1171 性别仅建号/轮回可改（Ye 定）
-  else if (d.avatar !== undefined) { if (S._avatarSettings && !avatarChangeCost()) { sheetAvatar(S._pickGender || S.gender || 'm'); return; } S.avatar = parseInt(d.avatar)|0; if (S._avatarSettings) { S.avatarSet = S._pickSet || S.avatarSet || 'r'; S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} S._avatarSettings = 0; save(); toastLog('good', '🖼️ 头像已换上（消耗极品灵石💠×1）'); sheetChar(); try { if (typeof renderActions === 'function') renderActions(); } catch(e) {} } else if (S._reincChain) { S._reincStep = 'name'; save(); chainNext(); } else if (!S._onboarded) { S._avatarPicked = true; save(); chainNext(); } else { save(); sheetNameInput(); } } // v1060 恢复 v1036：换头像强制刷新底部导航；v1088 建号头像强制
+  else if (d.avatar !== undefined) { if (!(S._avatarSettings && ((S.ores && S.ores.sp5)|0) < 1) && !avatarClaimGate('set:' + (S._pickSet || S.avatarSet || 'r') + ':' + (S._pickGender || S.gender || 'm') + ':' + (parseInt(d.avatar)|0), '[data-avatar="' + (parseInt(d.avatar)|0) + '"]')) return; if (S._avatarSettings && !avatarChangeCost()) { sheetAvatar(S._pickGender || S.gender || 'm'); return; } S.avatar = parseInt(d.avatar)|0; if (S._avatarSettings) { S.avatarSet = S._pickSet || S.avatarSet || 'r'; S.avatarCustom = null; S.avatarGalleryId = null; try { clearAvatarSeparate(); } catch(_) {} S._avatarSettings = 0; save(); toastLog('good', '🖼️ 头像已换上（消耗极品灵石💠×1）'); sheetChar(); try { if (typeof renderActions === 'function') renderActions(); } catch(e) {} } else if (S._reincChain) { S._reincStep = 'name'; save(); chainNext(); } else if (!S._onboarded) { S._avatarPicked = true; save(); chainNext(); } else { save(); sheetNameInput(); } } // v1060 恢复 v1036：换头像强制刷新底部导航；v1088 建号头像强制
   else if ('savename' in d) { const inp = $('nameInput'); const nm = inp ? inp.value.trim().slice(0, 12) : ''; if (nm) { S.name = nm; } if (S._reincChain) { S._reincStep = 'race'; save(); chainNext(); } else if (!S._onboarded) { if (!nm) { toastLog('bad', '请先取个名字'); sheetNameInput(); $('mask').dataset.lock = '1'; return; } save(); chainNext(); } else { save(); sheetLifeChoice(true); } } // v204 取名后选生活技能；v1088 建号名字强制
   else if (d.race && RACES[d.race]) { S.race = d.race; save(); if (_raceMode === 'reinc') { if (S._reincChain) S._reincStep = 'done'; delete $('mask').dataset.lock; closeSheet(); chainNext(); } else if (_raceMode === 'old') { delete $('mask').dataset.lock; closeSheet(); toastLog('good', `🧬 已选择 ${RACES[S.race].name}，天赋【${RACES[S.race].talent}】已生效`); } else { chainNext(); } } // v1088 种族选择
   else if ('racekeep' in d) { if (S._reincChain) S._reincStep = 'done'; closeSheet(); chainNext(); } // v1088 轮回保持原种族
