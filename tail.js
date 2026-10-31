@@ -44,12 +44,19 @@ window.ensureAvGallery = function(cb){
   if (cb) window._avGalCbs.push(cb);
   if (window._avGalFetching) return;
   window._avGalFetching = true;
-  api('/api/avatar/gallery').then(function(r){
+  // v1167 修：本段位于 tail 的 IIFE 之外，裸 api 不在作用域（ReferenceError 被 showPlayersAt 的 try 吞掉，
+  // 表现为同格名单第一次点不开、图库头像加载不出来）——改走 window.MHXY.api，并加失败兜底防 fetching 卡死
+  var _done = function(list){
     window._avGalFetching = false;
-    window._avGallery = (r && r.ok && r.json && Array.isArray(r.json.list)) ? r.json.list : [];
+    window._avGallery = Array.isArray(list) ? list : [];
     var cbs = window._avGalCbs.splice(0);
     for (var i = 0; i < cbs.length; i++) { try { cbs[i](); } catch(_) {} }
-  });
+  };
+  var _apiFn = (window.MHXY && window.MHXY.api) || null;
+  if (!_apiFn) { _done([]); return; }
+  _apiFn('/api/avatar/gallery').then(function(r){
+    _done((r && r.ok && r.json && Array.isArray(r.json.list)) ? r.json.list : []);
+  }).catch(function(){ _done([]); });
 };
 window.playerAvatarHtml = function(p, size, rc){
   size = size || 32;

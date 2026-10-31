@@ -1446,8 +1446,8 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
           const _myAid1160 = (function(){ try { return localStorage.getItem('mhxy_aid') || ''; } catch(_) { return ''; } })();
           const _wp1160 = (window._worldPlayers || []).filter(function(p){ return p && p.online && (p.x|0) === wx && (p.y|0) === wy && String(p.accountId || '') !== _myAid1160; });
           if (_wp1160.length) {
-            const _pn1160 = _wp1160.map(function(p){ return String(p.username || '道友').replace(/</g, '&lt;'); }).join('、');
-            ci.innerHTML += (ci.innerHTML ? '<br>' : '') + '👥 <b>道友×' + _wp1160.length + '</b>（' + _pn1160 + '）· <u style="cursor:pointer" onclick="event.stopPropagation();window.showPlayersAt(' + wx + ',' + wy + ')">点我查看</u>';
+            const _pn1160 = _wp1160.slice(0, 3).map(function(p){ return String(p.username || '道友').replace(/</g, '&lt;'); }).join('、') + (_wp1160.length > 3 ? ' 等' : ''); // v1167 名字只列前3：信息条单行裁剪，长名单会把「点我查看」挤出可视区点不到（Ye 报）
+            ci.innerHTML += (ci.innerHTML ? '<br>' : '') + '<span style="cursor:pointer" onclick="event.stopPropagation();window.showPlayersAt(' + wx + ',' + wy + ')">👥 <b>道友×' + _wp1160.length + '</b>（' + _pn1160 + '）· <u>点我查看</u></span>'; // v1167 整行可点
           }
         } catch(e) {}
         ci.style.cursor = (furn2 || arena2 || isPortal2 || isShop2 || isTrain2 || isStall2 || isCasino2 || isCultivate2 || isCookRefine2 || isBeastGarden2 || isHerb2 || isRanch2) ? 'pointer' : 'default'; // v452；v458；v465；v553
