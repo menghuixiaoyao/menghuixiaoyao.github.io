@@ -1705,7 +1705,7 @@ try { if (typeof C !== 'undefined' && typeof C.afkHourly === 'function' && typeo
   }
 
   const mpWrap = $('mpBar').parentElement;
-  if (C.useFali(S)) { const isXian = (S.realm|0) >= 8; const _nc = C.manaCap(S), _ec = C.manaCapEff(S); S.mana = Math.max(0, Math.min(_ec, S.mana|0)); if (S.mana <= _nc) S.shaExcess = 0; const mMax = C.manaMax(S); const pct = mMax > 0 ? S.mana / mMax * 100 : 0; const isOver = pct > 100; mpWrap.className = 'bar mp' + (isXian ? ' xian' : ''); const mpFill = mpWrap.querySelector('i'); const mTxt = `${isXian ? '仙力' : '法力'} ${C.fmtN(S.mana)}/${C.fmtN(mMax)}`; if (isOver) { const _pp = Math.min(100, (S.mana - mMax) / (mMax||1) * 100).toFixed(1); mpFill.style.width = '100%'; const oc = isXian ? '#e04040' : '#9b30ff', bc = isXian ? '#7b2ff7' : '#3b9ddd'; mpFill.style.background = `linear-gradient(90deg,${oc} 0%,${oc} ${_pp}%,transparent ${_pp}%),${bc}`; mpWrap.querySelector('span').textContent = mTxt + ` (${Math.round(S.mana / mMax * 100)}%)`; } else { mpFill.style.background = ''; mpFill.style.width = ''; setBar('mp', S.mana, mMax, mTxt); } }
+  if (C.useFali(S)) { const isXian = (S.realm|0) >= 8; const _nc = C.manaCap(S), _ec = C.manaCapEff(S); S.mana = Math.max(0, Math.min(_ec, Math.floor(S.mana || 0))); if (S.mana <= _nc) S.shaExcess = 0; const mMax = C.manaMax(S); const pct = mMax > 0 ? S.mana / mMax * 100 : 0; const isOver = pct > 100; mpWrap.className = 'bar mp' + (isXian ? ' xian' : ''); const mpFill = mpWrap.querySelector('i'); const mTxt = `${isXian ? '仙力' : '法力'} ${C.fmtN(S.mana)}/${C.fmtN(mMax)}`; if (isOver) { const _pp = Math.min(100, (S.mana - mMax) / (mMax||1) * 100).toFixed(1); mpFill.style.width = '100%'; const oc = isXian ? '#e04040' : '#9b30ff', bc = isXian ? '#7b2ff7' : '#3b9ddd'; mpFill.style.background = `linear-gradient(90deg,${oc} 0%,${oc} ${_pp}%,transparent ${_pp}%),${bc}`; mpWrap.querySelector('span').textContent = mTxt + ` (${Math.round(S.mana / mMax * 100)}%)`; } else { mpFill.style.background = ''; mpFill.style.width = ''; setBar('mp', S.mana, mMax, mTxt); } }
   else { mpWrap.className = 'bar vig'; setBar('mp', S.vigor|0, C.vigorCap(S), `活力 ${S.vigor|0}/${C.vigorCap(S)}`); }
   $('manaBarWrap').style.display = 'none'; // 主界面不显示生活技能法力条，只在生活页看
   const xpWrap = $('xpBar').parentElement;
@@ -1792,15 +1792,15 @@ function doDazuo() { // v199 打坐调息：恢复10%生命上限；v277 1分钟
   const now = Date.now(), cd = 60000;
   if (S.dazuoCd && now - S.dazuoCd < cd) { const s = Math.ceil((cd - (now - S.dazuoCd)) / 1000); toastLog('sys', `调息冷却中，还需${s}秒`); return; }
   const hpMax = C.bumpPeak(S) * 5, hpFull = (S.attrs.str + S.attrs.def + S.attrs.vit) * 5, cur = S.hpCur != null ? Math.floor(S.hpCur) : hpFull; // v1114 空值按当前属性算，与主界面/战斗同口径
-  const _mNeed = (S.realm|0) >= 1 && (S.mana|0) < C.manaCapEff(S); if (cur >= hpMax && !_mNeed) { toastLog('sys', '生命已满，无需调息'); return; }
+  const _mNeed = (S.realm|0) >= 1 && (Math.floor(S.mana || 0)) < C.manaCapEff(S); if (cur >= hpMax && !_mNeed) { toastLog('sys', '生命已满，无需调息'); return; }
   S.dazuoCd = now;
   try { if (typeof thunderCheck==='function') thunderCheck(1); } catch(_){} // v642 打坐也触发雷云判定
   const add = cur < hpMax ? Math.min(hpMax - cur, Math.max(1, Math.floor(hpMax * 0.10))) : 0;
   if (add > 0) S.hpCur = cur + add;
   let manaTxt = '';
   const isXian = (S.realm|0) >= 8;
-  if (isXian) { S.mana = Math.min(C.manaCapEff(S), (S.mana|0) + 1); manaTxt = `，仙力 <span class="g">+1</span>`; } // v280 仙人运转仙力回1点仙力
-  else if ((S.realm|0) >= 1 && C.useFali(S)) { const mMax = C.manaMax(S), mAdd = Math.max(1, Math.floor(mMax * 0.05)); S.mana = Math.min(C.manaCapEff(S), (S.mana|0) + mAdd); manaTxt = `，法力 <span class="g">+${mAdd}</span>`; } // v279 调息回5%法力，凡人没有
+  if (isXian) { S.mana = Math.min(C.manaCapEff(S), (Math.floor(S.mana || 0)) + 1); manaTxt = `，仙力 <span class="g">+1</span>`; } // v280 仙人运转仙力回1点仙力
+  else if ((S.realm|0) >= 1 && C.useFali(S)) { const mMax = C.manaMax(S), mAdd = Math.max(1, Math.floor(mMax * 0.05)); S.mana = Math.min(C.manaCapEff(S), (Math.floor(S.mana || 0)) + mAdd); manaTxt = `，法力 <span class="g">+${mAdd}</span>`; } // v279 调息回5%法力，凡人没有
   log('good', `${medIcon()} ${isXian ? '运转仙力' : '调息'}${add > 0 ? `，生命 <span class="g">+${add}</span>（${Math.floor(S.hpCur)}/${hpMax}）` : '，生命已满'}${manaTxt}`);
   save(); render();
 }
@@ -1814,7 +1814,7 @@ function renderActions() {
   const _isMortal = (S.realm|0) === 0;
   const _afkCaveT = _isMortal ? 'wushu' : 'cave', _afkVeinT = _isMortal ? 'ningqi' : 'vein';
   const _afkCaveT2 = _isMortal ? '🥋 习武' : '🏔️ 洞府', _afkVeinT2 = _isMortal ? '🌀 凝气' : ((S.realm|0) >= 8 ? '⚖️ 参悟法则' : '⛰️ 灵脉'); // v306 仙人显示参悟法则
-  const _dzMax = C.bumpPeak(S) * 5, _dzCur = S.hpCur != null ? Math.floor(S.hpCur) : (S.attrs.str + S.attrs.def + S.attrs.vit) * 5, _dzCdOk = !(S.dazuoCd && Date.now() - S.dazuoCd < 60000), _dzManaNeed = (S.realm|0) >= 1 && (S.mana|0) < C.manaCapEff(S), _canDz = !S.dead && !S.afk && (_dzCur < _dzMax || _dzManaNeed) && _dzCdOk; // v1112 调息不耗体力，体力不再是可用条件
+  const _dzMax = C.bumpPeak(S) * 5, _dzCur = S.hpCur != null ? Math.floor(S.hpCur) : (S.attrs.str + S.attrs.def + S.attrs.vit) * 5, _dzCdOk = !(S.dazuoCd && Date.now() - S.dazuoCd < 60000), _dzManaNeed = (S.realm|0) >= 1 && (Math.floor(S.mana || 0)) < C.manaCapEff(S), _canDz = !S.dead && !S.afk && (_dzCur < _dzMax || _dzManaNeed) && _dzCdOk; // v1112 调息不耗体力，体力不再是可用条件
   nav.innerHTML = `
     <div style="display:flex;align-items:center"><button class="act" data-char style="padding:0;overflow:hidden;border-radius:50%;aspect-ratio:1/1;width:30px"><img src="${avatarUrl()}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:50%"></button></div> <!-- v488 再缩小 -->
     <div style="display:flex;flex-direction:column;gap:1px;grid-column:span 2"><button class="act ${ci ? 'primary' : ''}" data-a="checkin" ${ci ? '' : 'disabled'} style="flex:1;padding:1px;min-height:0"><span class="t" style="font-size:9px">签到</span><span class="s" style="font-size:7px">${ci ? '+' + C.checkinAmount(S) + '体力' : '明日再来'}</span></button></div> <!-- v451 移除PK/擂台；v475 缩小；v488 再压 -->
@@ -2553,7 +2553,7 @@ function sheetAdventure(page) {
     content = `<h3 style="margin:10px 0 4px">🖐️ 仙术五行修炼 <small style="color:var(--dim)">10步 · 守关必为👑王阶（必掉1对应残物）· 每日限 ${wxLim} 次（今日剩余 <b class="${wxLeft > 0 ? 'g' : 'r'}">${wxLeft}</b> 次）</small></h3>` +
       C.WUXING.map(e => { const k = 'wx_' + e.k, d = DIFFS[k];
         const _fzOk = ((S.faZe || {})[e.name] | 0) >= 100; // v874 需对应法则圆满
-        const can = S.stamina >= d.cost && (S.mana | 0) >= C.WX_COST_XIAN && !S.dead && wxLeft > 0 && _fzOk;
+        const can = S.stamina >= d.cost && (Math.floor(S.mana || 0)) >= C.WX_COST_XIAN && !S.dead && wxLeft > 0 && _fzOk;
         return `<div class="row"><div class="lab"><b style="color:${e.color}">${e.name}行</b><small>-${C.WX_COST_XIAN} 仙力 · -${d.cost} 体力 · ${C.ADV_STEPS[k]} 步 · ${e.name}属性怪 · 王必掉<b style="color:${e.color}">【${e.name}残物】</b>×1，其他怪 ${C.pct(C.WX_FRAG_DROP)} 掉落（每次不出+1%，出了清零）${_fzOk ? '' : `<br><span class="r">需${e.name}之法则圆满（尊者参悟）</span>`}</small></div>
         <button class="btn gold" data-adv="${k}" ${can ? '' : 'disabled'}>进入</button></div>`; }).join('') +
       `<div class="row"><div class="lab">⚗️ <b>五行合成</b><small>10个同属性残物合成1件，自选 <b>X之力</b>（攻击附带+10%属性伤害/件）或 <b>X之抗</b>（免除X属性伤害，按(抗-力)反弹）</small></div>
@@ -3137,7 +3137,7 @@ function sheetChar() {
 
   // v143 头像+升级/经验/轮回合并一行，确保都可见
   const canLv = C.canLevelUp(S);
-  const needTxt = useMana ? (isXian ? `升级需 ${C.fmtN(S.mana|0)}/${C.fmtN(C.manaNeed(S, S.level))} 仙力` : `升级需 ${C.fmtN(S.mana|0)}/${C.fmtN(C.manaNeed(S, S.level))} 法力`) : (S.level >= C.REALM_MAX_LV ? `经验 ${C.fmtN(S.xp|0)}（大圆满）` : `经验 ${C.fmtN(S.xp|0)}/${C.fmtN(C.xpNeed(S.level))}`);
+  const needTxt = useMana ? (isXian ? `升级需 ${C.fmtN(Math.floor(S.mana || 0))}/${C.fmtN(C.manaNeed(S, S.level))} 仙力` : `升级需 ${C.fmtN(Math.floor(S.mana || 0))}/${C.fmtN(C.manaNeed(S, S.level))} 法力`) : (S.level >= C.REALM_MAX_LV ? `经验 ${C.fmtN(S.xp|0)}（大圆满）` : `经验 ${C.fmtN(S.xp|0)}/${C.fmtN(C.xpNeed(S.level))}`);
   const needPct = useMana ? Math.min(100, S.mana / Math.max(1, C.manaNeed(S, S.level)) * 100) : Math.min(100, (S.xp|0) / Math.max(1, C.xpNeed(S.level)) * 100);
   const checkinTxt = C.canCheckin(S) ? '<span class="y">今日未签到</span>' : '今日已签到 ✓';
   html += `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">${(S.protect|0) > 0 ? `<span class="y" style="font-size:12px">🛡️新人保护×${S.protect}</span>` : '<span></span>'}<span style="font-size:12px">${(S.realm|0) === 0 ? `🌪️引气入体 <b>${S.yinQi|0}</b>/10` : ((S.realm|0) >= 8 ? `⚖️法则之力 <b>${S.yinQi|0}</b>/10` : `🌀凝气 <b>${S.yinQi|0}</b>/10`)}</span><span style="font-size:12px">${checkinTxt}</span></div>`;
@@ -3167,7 +3167,7 @@ function sheetChar() {
   });
   html += `</div>`;
   // 资源：和外面 .meta 一样的排版
-  const resMana = useMana ? `<span class="vig">${isXian ? '仙力' : '法力'} <b>${C.fmtN(S.mana|0)}/${C.fmtN(manaMax)}</b></span>` : `<span class="vig">活力 <b style="color:#7fd6ff">${S.vigor|0}/${C.vigorCap(S)}</b></span>`;
+  const resMana = useMana ? `<span class="vig">${isXian ? '仙力' : '法力'} <b>${C.fmtN(Math.floor(S.mana || 0))}/${C.fmtN(manaMax)}</b></span>` : `<span class="vig">活力 <b style="color:#7fd6ff">${S.vigor|0}/${C.vigorCap(S)}</b></span>`;
   html += `<div class="meta" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:12px"><span class="gold">金元 <b>${C.fmtN(S.gold|0)}</b></span><span>${MAGATAMA}仙玉 <b>${C.fmtN(S.xianyu|0)}</b></span><span></span><span>${(S.ores.sp5|0) > 0 ? `<button class="btn sm" data-smash="1">砸开</button>` : ''}</span></div><div class="meta" style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:12px;margin-top:2px"><span>🌒下品 <b>${S.ores.sp2|0}</b></span><span>🌗中品 <b>${S.ores.sp3|0}</b></span><span>💎上品 <b>${S.ores.sp4|0}</b></span><span>💠极品 <b>${S.ores.sp5|0}</b></span></div>`;
 
   // 生存：生命/饱食/寿元/引气入体/络脉
@@ -4404,8 +4404,8 @@ function doDebug(act) {
   else if (act === 'dbg_mana100k') { S.mana = Math.min(C.manaCapEff(S), S.mana + 100000); toastLog('sys', '法力 +100000'); }
   else if (act === 'dbg_mana1m') { S.mana = Math.min(C.manaCapEff(S), S.mana + 1000000); toastLog('sys', '法力 +100万'); }
   else if (act === 'dbg_mana10m') { S.mana = Math.min(C.manaCapEff(S), S.mana + 10000000); toastLog('sys', '法力 +1000万'); }
-  else if (act === 'dbg_xian10k') { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, (S.xianCap|0) + 10000); S.mana = (S.mana|0) + 10000; toastLog('sys', '仙力 +1万'); } // v844 仙人境加仙力时同步涨上限，否则被cap卡住没用
-  else if (act === 'dbg_xian1m') { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, (S.xianCap|0) + 1000000); S.mana = (S.mana|0) + 1000000; toastLog('sys', '仙力 +100万'); } // v844 同上
+  else if (act === 'dbg_xian10k') { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, (S.xianCap|0) + 10000); S.mana = (Math.floor(S.mana || 0)) + 10000; toastLog('sys', '仙力 +1万'); } // v844 仙人境加仙力时同步涨上限，否则被cap卡住没用
+  else if (act === 'dbg_xian1m') { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, (S.xianCap|0) + 1000000); S.mana = (Math.floor(S.mana || 0)) + 1000000; toastLog('sys', '仙力 +100万'); } // v844 同上
   else if (act === 'dbg_xian_fix') { S.xianCap = 2280; S.mana = 2280; toastLog('sys', '仙力已恢复为2280（22.8亿/100万）'); }
   else if (act === 'dbg_lvup') { C.levelUp(S, 1); afterAct(); commit(); render(); toastLog('sys', '升1级'); } else if (act === 'dbg_yuanman') { C.levelUp(S, 10 - (S.level|0)); toastLog('sys', '已直升圆满'); } else if (act === 'dbg_fullhp') { S.hpCur = null; toastLog('sys', '已回满血'); }
   else if (act === 'dbg_maxlv') { while (S.level < 10) C.levelUp(S); toastLog('sys', '已满级'); }
@@ -4500,7 +4500,7 @@ function doBreakthrough() {
   try { if (window.TRIB_OMEN) window.TRIB_OMEN.foundOpen(S); } catch(_) {}
     const r = C.breakthrough(S);
   if (!r) { log('bad', '⚡ 突破结算异常，请重试。'); return; } // v823 防御r为undefined
-  if (r.err) { if (r.err === 'nohp') log('bad', '⚡ 当前生命为 0，无法突破，请先恢复生命。'); else if (r.err === 'sanshi') log('bad', '⚔️ 需先斩去三尸（上尸·彭倨/中尸·彭质/下尸·彭矫），方能突破尊者！'); else if (r.err === 'nomana') { const _mm = C.manaMax(S), _pp = _mm > 0 ? Math.floor((S.mana|0) / _mm * 100) : 0; log('bad', `⚡ 法力未满（${_pp}/100），突破需法力 100/100，请先补满（签到回满或喝法力药水）。`); } else if (r.err === 'dead') log('bad', '⚡ 已死亡，无法突破。'); else if (r.err === 'nolife') log('bad', '⚡ 寿元已尽，无法突破，请先轮回转世。'); return; }
+  if (r.err) { if (r.err === 'nohp') log('bad', '⚡ 当前生命为 0，无法突破，请先恢复生命。'); else if (r.err === 'sanshi') log('bad', '⚔️ 需先斩去三尸（上尸·彭倨/中尸·彭质/下尸·彭矫），方能突破尊者！'); else if (r.err === 'nomana') { const _mm = C.manaMax(S), _pp = _mm > 0 ? Math.floor((Math.floor(S.mana || 0)) / _mm * 100) : 0; log('bad', `⚡ 法力未满（${_pp}/100），突破需法力 100/100，请先补满（签到回满或喝法力药水）。`); } else if (r.err === 'dead') log('bad', '⚡ 已死亡，无法突破。'); else if (r.err === 'nolife') log('bad', '⚡ 寿元已尽，无法突破，请先轮回转世。'); return; }
   closeSheet();
   if (r.pending === 'thunder') { try {
     const _bx = window._bx || {};
@@ -6983,7 +6983,7 @@ function doPkActionGo(act) {
     const isXian = (S.realm|0) >= 8;
     const curMp = Math.floor(b.A.mp);
     if (amt <= 0 || amt > curMp) { log('bad', '法力不足'); pkClearActing(); return; }
-    b.A.mp = curMp - amt; S.mana = Math.max(0, (S.mana|0) - amt); save();
+    b.A.mp = curMp - amt; S.mana = Math.max(0, (Math.floor(S.mana || 0)) - amt); save();
     if (typeof renderCombat === 'function') try { renderCombat(); } catch (_) {}
     const dmg = Math.round(amt * (isXian ? 1000000 : 10) * (b.A._xb || 1));
     const label = isXian ? '⚡仙力攻击' : '💧法力攻击';
@@ -7506,7 +7506,7 @@ document.addEventListener('click', e => {
     var _pts = Math.max(1, Math.min(_max, Math.floor(+_v || 0)));
     if (!(_pts > 0)) return;
     S.xianBurst = _pts; S.xianBurstOn = 1;
-    S.mana = Math.max(0, (S.mana|0) - _pts);
+    S.mana = Math.max(0, (Math.floor(S.mana || 0)) - _pts);
     if (_bA) { _bA.xbOn = 1; _bA.xbPts = _pts; _bA._xb = 1 + _pts * 0.2; _bA._xbDef = 1 + _pts * 0.2; _bA.mp = Math.max(0, _bA.mp - _pts); if (_bA.S) _bA.S.mana = S.mana; }
     save(); render();
     log('pk', '⚡仙力爆发开！消耗 ' + _pts + ' 点仙力，攻击和防御 +' + (_pts*20) + '%');
@@ -7536,7 +7536,7 @@ document.addEventListener('click', e => {
     b.A.def = (b.A.def|0) + defGain;
     if (b.A.pet && b.A.pet.hp > 0 && !b.A.pet.ko) b.A.pet.def = (b.A.pet.def|0) + defGain;
     b.A.mp = Math.max(0, (b.A.mp|0) - amt);
-    S.mana = Math.max(0, (S.mana|0) - amt);
+    S.mana = Math.max(0, (Math.floor(S.mana || 0)) - amt);
     log('pk', `🛡️仙力防御！消耗 <span class="pu">${amt}</span> 点仙力，你${b.A.pet && b.A.pet.hp > 0 && !b.A.pet.ko ? '和灵宠' : ''}防御 +<span class="g">${C.fmtN(defGain)}</span>（本回合有效）！`);
     save(); render();
     if (typeof renderCombat === 'function') try { renderCombat(); } catch (_) {}
@@ -7584,7 +7584,7 @@ document.addEventListener('click', e => {
     b.A.mdef = (b.A.mdef|0) + mdefGain;
     if (b.A.pet && b.A.pet.hp > 0 && !b.A.pet.ko) b.A.pet.mdef = (b.A.pet.mdef|0) + mdefGain;
     b.A.mp = Math.max(0, (b.A.mp|0) - amt);
-    S.mana = Math.max(0, (S.mana|0) - amt);
+    S.mana = Math.max(0, (Math.floor(S.mana || 0)) - amt);
     log('pk', `🔰法术防御！消耗 <span class="pu">${amt}</span> 点${unit}，你${b.A.pet && b.A.pet.hp > 0 && !b.A.pet.ko ? '和灵宠' : ''}法术防御 +<span class="g">${C.fmtN(mdefGain)}</span>（本回合有效，专门抵挡法术伤害）！`);
     if ((b.A.burnTier|0) > 0) { b.A._manaShield = true; log('pk', `🔰<span class="pu">💧燃法灵盾</span>！法术伤害优先扣<span class="pu">法力</span>（蓝空则扣血），流失法力 <span class="y">×10</span> 法术回击`); }
     save(); render();

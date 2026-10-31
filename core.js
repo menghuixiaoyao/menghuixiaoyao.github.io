@@ -859,7 +859,7 @@ function pickTribQuiz(fromRealm) { // v174 心魔问心出题：仙人以下考�
 }
 function tribFull(S) { // v175 灵气条/仙力充满度（压条可超出上限）；v1172 Ye 定最高 2900%
   const mm = manaMax(S);
-  return mm > 0 ? Math.max(0, Math.min(29, (S.mana | 0) / mm)) : 0;
+  return mm > 0 ? Math.max(0, Math.min(29, (Math.floor(S.mana || 0)) / mm)) : 0;
 }
 window.tribFull = tribFull; // v816 暴露给雷云战斗跨script块用
 function tribPower(S) { // v1177 Ye 定方案B：2000% 前顺延直线（2000%≈3.22），之后斜率减半（2400%≈3.44、2900%≈3.72），不再封顶
@@ -1313,7 +1313,7 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
   if (S.level < REALM_MAX_LV || S.realm >= REALMS.length - 1) return { err: 'cond' };
   if ((S.realm|0) === 10) { S.sanShi = S.sanShi || [0,0,0]; if (S.sanShi.filter(x=>x).length < 3) return { err: 'sanshi' }; } // v818 合体突破需先斩三尸
   const _hpForBt = S.hpCur != null ? (S.hpCur|0) : 1; if ((_hpForBt + (S.advVit|0) * 5) <= 0) return { err: 'nohp' }; // 0血无法突破（黄条也算；hpCur=null为满血）
-  if ((S.realm|0) >= 1) { const _mmBt = manaMax(S); if (_mmBt > 0 && (S.mana|0) < _mmBt) return { err: 'nomana' }; } // v177 法力未满 100/100 不能突破（凡人用经验，不限）
+  if ((S.realm|0) >= 1) { const _mmBt = manaMax(S); if (_mmBt > 0 && (Math.floor(S.mana || 0)) < _mmBt) return { err: 'nomana' }; } // v177 法力未满 100/100 不能突破（凡人用经验，不限）
   if (S.thunderOk && (S.realm|0) >= 2) { const fromRealm = S.realm; let trib = {}; return { ok: null, pending: 'thunder', trib, fromRealm, thunderPw: null }; } // v681 thunderOk直接进战斗
   if (R() < breakthroughRate(S)) { const fromRealm = S.realm;
     let trib = null;
@@ -1392,7 +1392,7 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
   }
   ATTRS.forEach(k => S.attrs[k] = 1);
   S.vitPeak = S.attrs.str + S.attrs.def + S.attrs.vit; S.manaMult = 1; // 轮回重置血量峰值与法力上限倍率
-  S.mana = Math.max(0, Math.min(manaCapEff(S), S.mana | 0)); // v1091 轮回法力钳制：高境轮回后法力不得超新上限（此前 500 法力对 30 上限挂着）
+  S.mana = Math.max(0, Math.min(manaCapEff(S), Math.floor(S.mana || 0))); // v1091 轮回法力钳制：高境轮回后法力不得超新上限（此前 500 法力对 30 上限挂着）
   if (S.status) { S.status.bleed = false; S.status.poison = false; S.status.bleedBase = 0; S.status.poisonBase = 0; S.status.bleedFrac = 0; S.status.poisonFrac = 0; S.status.curse = false; S.status.depress = false; } // 轮回清除所有负面状态：流血/中毒/诅咒/抑郁
   S.shenzangDan = new Array(13).fill(0); S.danDu = 0; szSyncMai(S); // v998 轮回丹毒全清；v1037 轮回只清丹开的穴，气旋进度保留不清；v1058 Ye 定：规则/显示/闭关统一跟虚实模型走，清丹后当场重算虚络/虚脉
   if (S.achv) delete S.achv['baidu']; if (S.titleAch === 'baidu') S.titleAch = ''; // v1140 百毒不侵称号轮回消失
@@ -3660,7 +3660,7 @@ function advStart(S, dk) {
   const diff = DIFFS[dk]; if (!diff || S.dead || S.run || S.stamina < diff.cost) return null;
   const isWx = dk.startsWith('wx_');
   if (isWx) { // 五行：仙人以上可进，10仙力+5体力，按境界每日限次；v874 需对应法则圆满
-    if ((S.realm | 0) < 8 || (S.mana | 0) < WX_COST_XIAN) return null;
+    if ((S.realm | 0) < 8 || (Math.floor(S.mana || 0)) < WX_COST_XIAN) return null;
     const _wxEl = (wxByK(dk.slice(3)) || {}).name;
     if (!_wxEl || (((S.faZe || {})[_wxEl] | 0) < 100)) return null;
     const t = todayStr(); if (S.wxD !== t) { S.wxD = t; S.wxN = 0; }
@@ -3669,7 +3669,7 @@ function advStart(S, dk) {
   if (dk === 'mijing') { const t = todayStr(); if (S.mijingD !== t) { S.mijingD = t; S.mijingN = 0; } if ((S.mijingN | 0) >= MIJING_DAILY) return null; }
   spend(S, diff.cost); if (S.dead) return null; S.stats.adv++; S.stats.advTotal = (S.stats.advTotal || 0) + 1; hungerDown(S, K.HUNGER_FIGHT, 1);
   if (dk === 'mijing') S.mijingN = (S.mijingN | 0) + 1;
-  if (isWx) { S.mana = Math.max(0, (S.mana | 0) - WX_COST_XIAN); S.wxN = (S.wxN | 0) + 1; }
+  if (isWx) { S.mana = Math.max(0, (Math.floor(S.mana || 0)) - WX_COST_XIAN); S.wxN = (S.wxN | 0) + 1; }
   const steps = dk === 'mijing' ? 10 + Math.floor(R() * 6) : ADV_STEPS[dk]; // 秘境：每次10-15步随机（v182 格子模式仅作展示）
   S.run = { dk, step: 1, steps, seen: [], rew: { pts: 0, gains: {}, gold: 0, xp: 0, items: {}, lvUp: 0, wins: 0 }, last: [], grid: advGenGrid(dk), evCount: 0, ev: null }; // v182 格子冒险：起点安全，无初始事件
   return S.run;
