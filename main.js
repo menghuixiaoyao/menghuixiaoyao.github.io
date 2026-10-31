@@ -7259,6 +7259,7 @@ document.addEventListener('click', e => {
           const _t = _gr.tiles[_gy][_gx];
           _run.ev = null;
           let _r = { moved: true };
+          if (_stt && _stt.state === 'cleared') { _t.seen = 1; _t.ev = null; } // v1168 共享图已清理的事件格当空地走：不清这一行会再触发一次事件
           if (_run.dungeon && _t.t === 'exit') { // v1094 秘境通关：到达终点格即通关（无守关 BOSS）
             try { commit(); } catch(_) {}
             doDungeonClear(); return;
@@ -7305,7 +7306,7 @@ document.addEventListener('click', e => {
         const _st = _shared.tiles[_gy][_gx];
         if (['fight', 'gchest', 'gherb'].indexOf(_st.t) >= 0) {
           if (_st.state === 'cleared') {
-            try { toastLog('sys', '💨 来晚了一步，这个格子刚被别人清理了'); } catch(_) {}
+            _doMove(); // v1168 已清理格 = 空地，直接走上去（此前 return 拦死，人永远站不上💨格，Ye 报）
             return;
           }
           // 异步 claim
@@ -7316,6 +7317,17 @@ document.addEventListener('click', e => {
               // claim 成功：更新本地 tile 状态，执行移动
               _st.state = 'cleared';
               _doMove();
+            } else if (r.json && r.json.error === 'not_there' && !window._advClaimRetried) {
+              // v1168 DO 玩家记录 5 分钟无心跳即删：站太久/打太久记录过期，claim 报 not_there——用当前站位补心跳后重试一次
+              window._advClaimRetried = true;
+              try { C.advSharedHeartbeat(_gr.px, _gr.py); } catch(_) {}
+              setTimeout(function() {
+                MHXY.api('/api/advmap/claim?dk=' + encodeURIComponent(_dk), { method: 'POST', body: { x: _gx, y: _gy } }).then(function(r2) {
+                  window._advClaimRetried = false;
+                  if (r2.ok && r2.json && r2.json.ok) { _st.state = 'cleared'; _doMove(); }
+                  else { try { toastLog('sys', '💨 慢了一步，被别人抢先了'); } catch(_) {} }
+                }).catch(function() { window._advClaimRetried = false; });
+              }, 600);
             } else {
               try { toastLog('sys', '💨 慢了一步，被别人抢先了'); } catch(_) {}
               // 刷新共享状态

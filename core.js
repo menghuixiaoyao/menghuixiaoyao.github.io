@@ -3458,6 +3458,7 @@ function advSharedPoll(S) {
             }
           }
         }
+        try { if (S.run.grid) advSharedHeartbeat(S.run.grid.px, S.run.grid.py); } catch (_) {} // v1168 轮询顺带心跳保活 DO 玩家记录（5 分钟 TTL），防站太久记录过期、战斗格 claim not_there
         // 如果冒险面板开着，刷新显示
         if (typeof sheetRun === 'function' && S.run && S.run.grid) {
           try { sheetRun(); } catch (_) {}
