@@ -185,7 +185,8 @@ const MEDS = {
   antidote: { name: '解毒丹', price: 20, cure: 'poison',  desc: '解除中毒（中毒唯一解法，否则会毒发身亡）' },
   incense:  { name: '兴奋剂', price: 30, cure: 'depress', desc: '立即驱散抑郁' },
   shenshui: { name: '神水', price: 50, cure: 'curse', desc: '消除一层诅咒' },
-  tpscroll: { name: '随机传送卷', price: 200, desc: '冒险中随机传送到任意一格' } // v765
+  tpscroll: { name: '随机传送卷', price: 200, desc: '冒险中随机传送到任意一格' }, // v765
+  stealthfu: { name: '隐身符', price: 100, desc: '使用后 30 分钟内采集资源不惊扰怪物（可叠加时长）' } // v1162 Ye 定：商店 100 金/张
 };
 const STATUS = { bleed: { name: '流血', icon: '🩸' }, poison: { name: '中毒', icon: '☠️' }, depress: { name: '抑郁', icon: '🌧️' } }; // 诅咒改为 S.curseN 永久层数，不再走状态系统
 // 灵宠种类：孵化权重 w；bonus 为冒险中的小额被动加成；PK 中灵宠亲自上阵（初始五项属性均为 1，与新角色相同）
@@ -3329,7 +3330,7 @@ function advLocalGather(S, run) { // 本地图手采：门槛 → 惊扰(10%) �
   const gate = toolGateL(S, t.t, t.lv || 1);
   if (gate.err) return { err: gate.err };
   const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0);
-  if (tot > 0 && R() < 0.10) {
+  if (tot > 0 && !(Number(S.stealthUntil || 0) > Date.now()) && R() < 0.10) { // v1162 隐身符：隐身中不惊扰
     let r = R() * tot, tier = 's';
     for (const k of ['w', 'm', 's']) { r -= (t.mons[k] | 0); if (r < 0) { tier = k; break; } }
     return { disturbed: tier };

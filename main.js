@@ -2720,7 +2720,7 @@ function foodSection() {
 }
 function medSection() {
   const ks = Object.keys(C.MEDS).filter(k => S.meds[k] > 0);
-  return `<h3>疗伤药</h3>` + (ks.length ? ks.map(k => { const m = C.MEDS[k], need = m.cure === 'curse' ? (S.curseN|0) > 0 : C.hasSt(S, m.cure); return `<div class="row"><div class="lab">💊 ${m.name} ×${S.meds[k]}<small>${m.desc}</small></div><button class="btn ${need ? 'gold' : ''}" data-med="${k}" ${need ? '' : 'disabled'}>${need ? '使用' : '无需'}</button></div>`; }).join('') : '<div class="empty">暂无，可在商店购买</div>');
+  return `<h3>疗伤药</h3>` + (ks.length ? ks.map(k => { const m = C.MEDS[k], need = k === 'stealthfu' ? true : (m.cure === 'curse' ? (S.curseN|0) > 0 : C.hasSt(S, m.cure)); return `<div class="row"><div class="lab">💊 ${m.name} ×${S.meds[k]}<small>${m.desc}${k === 'stealthfu' && Number(S.stealthUntil || 0) > Date.now() ? ` · <span class="g">🥷 隐身中（剩 ${Math.ceil((Number(S.stealthUntil) - Date.now()) / 60000)} 分钟）</span>` : ''}</small></div><button class="btn ${need ? 'gold' : ''}" data-med="${k}" ${need ? '' : 'disabled'}>${need ? '使用' : '无需'}</button></div>`; }).join('') : '<div class="empty">暂无，可在商店购买</div>');
 }
 const ZQ_DEFS = [ // v1128 阵棋：小/中/大三档，合成采集阵（个数 64/128/256）
   { g: 1, name: '小型阵棋', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['prey', 'rabbit', 10], ['prey', 'deer', 5]], synth: 64, fkey: 'f_gather', fname: '小型采集阵' },
@@ -5916,7 +5916,25 @@ function doFood(kind, k, n) {
   else log('good', `${kind === 'egg' ? '🥚' : '🍖'} 吃下 ${it.name} ×${r.n}，饱食 <span class="g">+${r.hunger}</span>（${Math.floor(S.hunger)}）` + (r.sta ? `，体力 <span class="g">+${r.sta}</span>（当前 ${S.stamina}）` : '') + (r.cured ? '。饱餐一顿，<span class="g">抑郁消散了</span>' : ''));
   commit(); const els = [$('sheet'), $('mask')], ys = els.map(e => e.scrollTop); if (window._charPage) { sheetChar(); } else { sheetBag(); } els.forEach((e, i) => e.scrollTop = ys[i]);
 }
-function doMed(k) { const r = C.useMed(S, k); if (!r.ok) return; log('good', r.cure === 'curse' ? `💧 使用 ${C.MEDS[k].name}，<span class="g">消除一层诅咒</span>（剩余 ${S.curseN|0} 层）` : `💊 使用 ${C.MEDS[k].name}，${C.STATUS[r.cure].icon}${C.STATUS[r.cure].name}<span class="g">已解除</span>`); commit(); sheetBag(); }
+async function useStealthFu() { // v1162 隐身符：服务端结算优先（服务端存档即时生效、线上采集立刻不惊扰）；网络失败回落本地（本地图同样生效，存档同步后线上认）
+  if (!((S.meds.stealthfu|0) > 0)) return;
+  try {
+    const r = await window.MHXY.api('/api/progress/stealth_use', { method: 'POST', body: {} });
+    if (r && r.json && r.json.ok) {
+      if ((r.json.count|0) > 0) S.meds.stealthfu = r.json.count|0; else delete S.meds.stealthfu;
+      S.stealthUntil = Number(r.json.stealthUntil || 0);
+      if (typeof r.json.rev === 'number' && window.MHXY && window.MHXY.setBaseRev) window.MHXY.setBaseRev(r.json.rev);
+      log('good', `🥷 使用 隐身符，<span class="g">隐身 ${Math.ceil((S.stealthUntil - Date.now()) / 60000)} 分钟</span>（采集不惊扰怪物）`);
+      commit(); sheetBag(); return;
+    }
+    if (r && r.json && r.json.error) { log('bad', r.json.error === 'none' ? '隐身符不足' : r.json.error === 'dead' ? '已死亡，无法使用' : '使用失败'); return; }
+  } catch(_) {}
+  S.meds.stealthfu = (S.meds.stealthfu|0) - 1; if (!S.meds.stealthfu) delete S.meds.stealthfu;
+  S.stealthUntil = Math.max(Date.now(), Number(S.stealthUntil || 0)) + 30 * 60000;
+  log('good', `🥷 使用 隐身符，<span class="g">隐身 ${Math.ceil((S.stealthUntil - Date.now()) / 60000)} 分钟</span>（采集不惊扰怪物）`);
+  commit(); sheetBag();
+}
+function doMed(k) { if (k === 'stealthfu') { useStealthFu(); return; } const r = C.useMed(S, k); if (!r.ok) return; log('good', r.cure === 'curse' ? `💧 使用 ${C.MEDS[k].name}，<span class="g">消除一层诅咒</span>（剩余 ${S.curseN|0} 层）` : `💊 使用 ${C.MEDS[k].name}，${C.STATUS[r.cure].icon}${C.STATUS[r.cure].name}<span class="g">已解除</span>`); commit(); sheetBag(); }
 function doEat(k, n) { const d = C.eatMeat(S, k, n); if (d) { log('good', `🍖 吃下 ${MEATS[k].name} ×${n}，体力 <span class="g">+${d}</span>（当前 ${S.stamina}）`); commit(); sheetBag(); } }
 async function doSell(kind, k, n) {
   // v964 彻底版：登录在线时走服务端（固定价，服务端验算）
