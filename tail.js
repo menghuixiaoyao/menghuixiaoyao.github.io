@@ -138,6 +138,10 @@ window.showPlayerDetail = function(accountId){
       + '<button class="btn" style="flex:1" onclick="(function(){var _lp=window._lastPlayerPos||{x:0,y:0};window.showPlayersAt(_lp.x,_lp.y);})()">‹ 返回</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
     if (typeof openSheet === 'function') openSheet(html);
+    try { // v1171 神识扫描：看资料即给对方留提示（Ye 定，服务端同对 60 秒去重）
+      var _ns = Date.now(); window._scanSent = window._scanSent || {};
+      if (typeof MHXY !== 'undefined' && MHXY.api && (!window._scanSent[_aid] || _ns - window._scanSent[_aid] > 60000)) { window._scanSent[_aid] = _ns; MHXY.api('/api/world/scan', { method: 'POST', body: { targetId: _aid } }); }
+    } catch(e) {}
   } catch(e) {}
 };
 // v1076 从玩家详情发起组队邀请
@@ -587,6 +591,9 @@ async function ensurePresence(){
     api('/api/world/state').then(function(r){
       if (!r.ok || !r.json) return;
       var me = myAid();
+      if (r.json.scans && r.json.scans.length) { // v1171 神识扫描提示送达（服务端送达即清，只报一次）
+        r.json.scans.forEach(function(sc){ var _sm = '👁️ ' + (sc.from || '有人') + ' 神识扫描了你'; if (typeof toastLog === 'function') toastLog('sys', _sm); else if (typeof glog === 'function') glog('sys', _sm); });
+      }
       var ps = (r.json.players || []).filter(function(p){ return p.online && p.accountId !== me && typeof p.x === 'number' && typeof p.y === 'number'; });
       var sig = ps.map(function(p){ return p.accountId + ':' + p.x + ',' + p.y; }).join('|');
       if (sig !== M._plSig) { M._plSig = sig; window._worldPlayers = ps; try { if (typeof renderWorldMap === 'function') renderWorldMap(); } catch(_) {} }
@@ -860,6 +867,16 @@ async function pkRefresh(){
   }).join('');
 }
 async function pkChallenge(targetId){
+  var r = await api('/api/pk/challenge', { method:'POST', body:{ target_account_id:targetId, arena:false, spar:true, take_attr:'str' } });
+  if (r.ok && r.json && r.json.ok){
+    M.challenging = r.json.challenge_id;
+    glog('sys', '🤝 已向对方发出切磋邀请，等待接受（60秒）。可在"在线约战"面板等结果。');
+    pkPollResult(r.json.challenge_id, 0);
+  } else {
+    var err = (r.json||{}).error || r.status;
+    glog('bad', '⚔️ 挑战失败' + (r.netErr ? '（网络不通）' : err === 'target_offline' ? '（对方已离线）' : err === 'already_challenging' ? '（你已有一场待应战的挑战）' : '：' + escH(err)));
+  }
+}
 /* ---------- 组队（v1051） ---------- */
 // v1051 组队：5人小队（人和宠物共用位置），队长带移动，组队战斗
 async function teamRefresh(){
@@ -994,16 +1011,8 @@ setInterval(function(){
     }).catch(function(){});
   } catch(_){}
 }, 3000);
-  var r = await api('/api/pk/challenge', { method:'POST', body:{ target_account_id:targetId, arena:false, spar:true, take_attr:'str' } });
-  if (r.ok && r.json && r.json.ok){
-    M.challenging = r.json.challenge_id;
-    glog('sys', '🤝 已向对方发出切磋邀请，等待接受（60秒）。可在"在线约战"面板等结果。');
-    pkPollResult(r.json.challenge_id, 0);
-  } else {
-    var err = (r.json||{}).error || r.status;
-    glog('bad', '⚔️ 挑战失败' + (r.netErr ? '（网络不通）' : err === 'target_offline' ? '（对方已离线）' : err === 'already_challenging' ? '（你已有一场待应战的挑战）' : '：' + escH(err)));
-  }
-}
+window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
+window.pkChallenge = pkChallenge;
 async function pkPollResult(cid, n){
   // WS 推送为主，轮询兜底（最多约65秒）
   if (n > 13) return;

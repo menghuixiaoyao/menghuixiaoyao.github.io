@@ -3502,8 +3502,15 @@ window.advGatherRes = async function() {
   try {
     if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
     const dk = S.run.shared.dk || S.run.dk, gx = S.run.grid.px, gy = S.run.grid.py;
-    const resp = await MHXY.api('/api/roll/adv_gather', { method: 'POST', body: { dk, x: gx, y: gy } });
-    const j = resp && resp.json;
+    let resp = await MHXY.api('/api/roll/adv_gather', { method: 'POST', body: { dk, x: gx, y: gy } });
+    let j = resp && resp.json;
+    if (!resp.ok && j && j.error === 'not_there') {
+      // v1170 位置记录过期：补心跳后重试一次采集（与 claim/monkills 同一自愈口径）
+      try { advSharedHeartbeat(gx, gy); } catch (_) {}
+      await new Promise(res => setTimeout(res, 600));
+      resp = await MHXY.api('/api/roll/adv_gather', { method: 'POST', body: { dk, x: gx, y: gy } });
+      j = resp && resp.json;
+    }
     if (resp.ok && j && j.ok && j.disturbed) { // v1154 惊扰：资源未采到，先打怪
       log('bad', '😱 采集时惊扰了怪物，它扑了过来！');
       S.run.ev = C.advMonTileEv(S, S.run, j.disturbed);
@@ -3545,7 +3552,15 @@ window.advAttackMon = function(tier) { // v1154 主动攻击当前格指定档�
 async function advMonKillShared(mt) { // v1154 共享图击杀登记（服务端减一只）
   try {
     const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
-    await MHXY.api('/api/advmap/' + 'monkill' + '?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: mt.x, y: mt.y, tier: mt.tier } });
+    const _post = () => MHXY.api('/api/advmap/' + 'monkill' + '?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: mt.x, y: mt.y, tier: mt.tier } });
+    let r = await _post();
+    if (!(r && r.ok) && r && r.json && r.json.error === 'not_there' && S.run && S.run.grid) {
+      // v1170 DO 玩家记录过期/位置漂移时 monkill 报 not_there，旧版静默吞掉→打赢了怪也不消失（Ye 报）：补心跳后重试一次
+      try { advSharedHeartbeat(S.run.grid.px, S.run.grid.py); } catch (_) {}
+      await new Promise(res => setTimeout(res, 600));
+      r = await _post();
+    }
+    if (!(r && r.ok && r.json && r.json.ok)) { try { log('bad', '⚔️ 击杀未登记上（怪物还在）'); } catch (_) {} }
     await advSharedRefresh();
   } catch (_) {}
 }
