@@ -3259,7 +3259,7 @@ function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空
   } tiles.push(row); }
   const sx = shp.s[0], sy = shp.s[1];
   tiles[sy][sx] = { t: 'start', seen: 1 };
-  const bag = ['fight', 'fight', 'fight', 'fight', 'fight', 'fortune', 'trap', 'rest', 'rest', 'gchest']; // v1154 事件袋（与服务端一致）
+  const bag = ['fortune', 'trap', 'rest', 'rest', 'gchest']; // v1185 事件袋（与服务端一致）：战斗格取消，怪只在资源格刷
   for (let i = pos.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const tmp = pos[i]; pos[i] = pos[j]; pos[j] = tmp; }
   bag.forEach((t, i) => { const p = pos[i]; if (!p) return; tiles[p[1]][p[0]].t = t; });
   const _nowG = Date.now(); // v1154：其余格全是资源格（矿石/灵脉/草药丛，带存量与怪）
