@@ -991,6 +991,11 @@ function cityMoveThunder() {
             try { if (typeof toastLog === 'function') toastLog('sys', '🧘 闭关期间不能移动，先出关（化神以上不受此限）'); } catch(_){} try { showTip('🧘 闭关期间不能移动<br><small>先出关再走（化神以上不受此限）</small>'); } catch(_){}
             return;
           }
+          // v1182 死锁修复：冒险未脱离时点传送门格 = 回冒险续跑（sheetAdventure 见 S.run 自动续进 sheetRun），不算回主城活动；否则关面板/重登后无路回冒险、又不能移动
+          if (S.run && x === 5 && y === 3) {
+            if (typeof sheetAdventure === 'function') sheetAdventure();
+            return;
+          }
           if ((S.realm|0) < 5 && S.run) {
             try { if (typeof toastLog === 'function') toastLog('sys', '🗺️ 冒险未脱离，不能回主城（先撤退/走完冒险；化神以上不受此限）'); } catch(_){} try { showTip('🗺️ 冒险未脱离，不能回主城<br><small>先撤退或走完冒险（化神以上不受此限）</small>'); } catch(_){}
             return;
