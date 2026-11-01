@@ -2629,10 +2629,22 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     }
     else if (tileT === 'exit') { icon = '🚪'; cls = ' exit'; }
     else if (tileCleared) { icon = '<span style="opacity:0.35">💨</span>'; cls = ' cleared'; }
-    else if (tileT === 'herb' || tileT === 'ore' || tileT === 'vein') { // v1154 资源格：类型图标 + 等级徽（数量/怪站上去才看）
-      const _lv = (shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x] ? (shared.tiles[y][x].lv | 0) : (t.lv | 0)) || 1;
-      const _base = TICON[tileT];
-      icon = tileT === 'ore' ? _base : `<span style="position:relative;display:inline-block">${_base}<span style="position:absolute;right:-5px;bottom:-5px;background:${C.GRADE_COLORS[_lv - 1]};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${tileT === 'herb' ? ['地', '天', '仙'][_lv - 1] : ['小', '中', '巨'][_lv - 1]}</span></span>`;
+    else if (tileT === 'land' || tileT === 'herb' || tileT === 'ore' || tileT === 'vein') { // v1186 资源格：主槽图标 + 品级徽；多种资源并存加 ·N 徽（数量/怪站上去才看）
+      const _stx = shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x] ? shared.tiles[y][x] : null;
+      let _codes = [];
+      if (_stx && _stx.rs) _codes = Object.keys(_stx.rs).filter(c => (_stx.rs[c] | 0) > 0);
+      else if (t.rs) _codes = C.RES_CODES_L.filter(c => t.rs[c] && (t.rs[c].a | 0) > 0);
+      if (_codes.length) {
+        _codes.sort((a, b) => (C.resGradeOfL(b) - C.resGradeOfL(a)) || (((_stx && _stx.rs) ? _stx.rs[b] : t.rs[b].a | 0) - ((_stx && _stx.rs) ? _stx.rs[a] : t.rs[a].a | 0)));
+        const _pc = _codes[0], _plv = C.resGradeOfL(_pc), _pk = C.resKindOfL(_pc);
+        const _base = C.resIconL(_pc);
+        icon = _pk === 'ore' ? _base : `<span style="position:relative;display:inline-block">${_base}<span style="position:absolute;right:-5px;bottom:-5px;background:${C.GRADE_COLORS[_plv - 1]};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_pk === 'herb' ? ['地', '天', '仙'][_plv - 1] : ['小', '中', '巨'][_plv - 1]}</span></span>`;
+        if (_codes.length > 1) icon = `<span style="position:relative;display:inline-block">${icon}<span style="position:absolute;left:-6px;top:-6px;background:#333;color:#ffd94d;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">·${_codes.length}</span></span>`;
+      } else if (tileT === 'herb' || tileT === 'ore' || tileT === 'vein') { // 旧单资源格兼容
+        const _lv = (_stx ? (_stx.lv | 0) : (t.lv | 0)) || 1;
+        const _base = TICON[tileT];
+        icon = tileT === 'ore' ? _base : `<span style="position:relative;display:inline-block">${_base}<span style="position:absolute;right:-5px;bottom:-5px;background:${C.GRADE_COLORS[_lv - 1]};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${tileT === 'herb' ? ['地', '天', '仙'][_lv - 1] : ['小', '中', '巨'][_lv - 1]}</span></span>`;
+      } else icon = '⬜';
     }
     else if (t.seen || shared) { icon = TICON[tileT] || '⬜'; }
     // v1125 采集阵标记（共享图）
@@ -2664,12 +2676,25 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     const rk = mySt ? mySt.t : lt.t;
     const btns = [];
     let infoLine = '';
-    if (rk === 'herb' || rk === 'ore' || rk === 'vein') {
-      const lv = ((mySt ? mySt.lv : lt.lv) | 0) || 1, amt = (mySt ? mySt.amt : lt.amt) | 0, mons = (mySt ? mySt.mons : lt.mons) || { w: 0, m: 0, s: 0 };
-      const nm = rk === 'herb' ? `🌿 灵药丛·${['', '地品', '天品', '仙品'][lv]}` : rk === 'vein' ? `💎 灵脉·${['', '小型', '中型', '巨型'][lv]}` : '⛏️ 矿石'; // v1176 Ye 定：草药丛改名灵药丛
+    // v1186 并存：当前格按槽显示（每种资源各一份存量、各一个采集按钮）
+    const _slots = [];
+    if (mySt && mySt.rs) for (const c of C.RES_CODES_L) { const a = mySt.rs[c] | 0; if (a > 0) _slots.push([c, a]); }
+    else if (lt.rs) for (const c of C.RES_CODES_L) { const sl = lt.rs[c]; if (sl && (sl.a | 0) > 0) _slots.push([c, sl.a | 0]); }
+    const _isLand = lt.t === 'land' || (mySt && !!mySt.rs) || rk === 'herb' || rk === 'ore' || rk === 'vein';
+    if (_isLand) {
+      const mons = (mySt ? mySt.mons : lt.mons) || { w: 0, m: 0, s: 0 };
       const monsTxt = [['w', '弱'], ['m', '中'], ['s', '强']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n]) => `${n}×${mons[k]}`).join(' ');
-      infoLine = `<div class="hint" style="text-align:center">${nm} · 存量 ×${amt}${monsTxt ? ` · 怪：${monsTxt}` : ''}</div>`;
-      if (amt > 0) btns.push(`<button class="btn gold" data-advres2 style="flex:1">✋ 采集</button>`);
+      if (_slots.length) {
+        infoLine = `<div class="hint" style="text-align:center">${_slots.map(([c, a]) => `${C.resIconL(c)} ${C.resNameL(c)} ×${a}`).join('　')}${monsTxt ? `<br>怪：${monsTxt}` : ''}</div>`;
+        for (const [c] of _slots) btns.push(`<button class="btn gold" data-advres2="${c}" style="flex:1">✋ 采·${C.resNameL(c)}</button>`);
+      } else if ((mySt ? mySt.amt : lt.amt) | 0) { // 旧单资源格兼容（无 rs 时）
+        const lv = ((mySt ? mySt.lv : lt.lv) | 0) || 1, amt = (mySt ? mySt.amt : lt.amt) | 0;
+        const nm = rk === 'herb' ? `🌿 灵药丛·${['', '地品', '天品', '仙品'][lv]}` : rk === 'vein' ? `💎 灵脉·${['', '小型', '中型', '巨型'][lv]}` : '⛏️ 矿石';
+        infoLine = `<div class="hint" style="text-align:center">${nm} · 存量 ×${amt}${monsTxt ? ` · 怪：${monsTxt}` : ''}</div>`;
+        btns.push(`<button class="btn gold" data-advres2="" style="flex:1">✋ 采集</button>`);
+      } else {
+        infoLine = `<div class="hint" style="text-align:center">此地资源尚未刷出${monsTxt ? ` · 怪：${monsTxt}` : ''}</div>`;
+      }
       [['w', '弱'], ['m', '中'], ['s', '强']].forEach(([k, n]) => { if ((mons[k] | 0) > 0) btns.push(`<button class="btn" data-advatk="${k}" style="flex:1">⚔️ 攻·${n}</button>`); });
     }
     if (shared) {
@@ -2677,7 +2702,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       const arrHere = myArr && myArr.x === g.px && myArr.y === g.py;
       const arrOnTile = (shared.arrays || []).some(a => a.x === g.px && a.y === g.py);
       if (arrHere) { const _iv = myArr.inv || { mats: {}, ores: {}, lw: [], seeds: {} }; const _cnt = o => Object.values(o || {}).reduce((sv, v) => sv + (v | 0), 0); btns.push(`<button class="btn" data-advarr style="flex:1">🧭 ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myArr.tier | 0 || 1))]}采集阵（存货 ${_cnt(_iv.mats) + _cnt(_iv.ores) + (_iv.lw || []).length + _cnt(_iv.seeds)}）</button>`); }
-      else if (mySt && (rk === 'herb' || rk === 'ore' || rk === 'vein') && !arrOnTile && !myArr && ((S.formations && ((S.formations.f_gather | 0) + (S.formations.f_gather2 | 0) + (S.formations.f_gather3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplace style="flex:1">🧭 在此布采集阵</button>`);
+      else if (mySt && _isLand && !arrOnTile && !myArr && ((S.formations && ((S.formations.f_gather | 0) + (S.formations.f_gather2 | 0) + (S.formations.f_gather3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplace style="flex:1">🧭 在此布采集阵</button>`);
       if (myArr && !arrHere) btns.push(`<button class="btn" data-advarr style="flex:1">🧭 我的采集阵（${myArr.x},${myArr.y}）</button>`);
     }
     if (btns.length || infoLine) resRow = infoLine + (btns.length ? `<div class="row" style="display:flex;gap:8px;flex-wrap:wrap">${btns.join('')}</div>` : '');
@@ -7020,7 +7045,10 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
     if (S.run) sheetRun();
     return;
   }
-  if (pk.adv) { finishAdvBattle(); return; }
+  if (pk.adv) { // v1186 结算兜底：finishAdvBattle 抛错时不能把玩家永卡在战斗里，清 pk 回冒险面板并留痕
+    try { const _fp = finishAdvBattle(); if (_fp && _fp.catch) _fp.catch(e => { try { log('sys', '冒险结算异常:' + (e && e.message || e)); } catch(_) {} try { pk = null; } catch(_) {} try { window.pk = null; } catch(_) {} try { render(); } catch(_) {} try { if (S.run) sheetRun(); } catch(_) {} }); } catch(_e) {}
+    return;
+  }
   if (b.winner === b.A) { render(); sheetPkWin(); return; }
   finishPk();
 }
@@ -7183,7 +7211,7 @@ async function finishAdvBattle() {
   else if (r.win) {
     if (run.grid) { // v182 格子：终点 BOSS 打赢即通关，否则继续走格子（v184：同步格子事件状态；v185：守怪战利品）
       const g = run.grid, t = g.tiles[g.py][g.px];
-      if (run.ev.monTile) { const mt = run.ev.monTile; if (run.shared && run.shared.on) advMonKillShared(mt); else if (t.mons) t.mons[mt.tier] = Math.max(0, (t.mons[mt.tier] | 0) - 1); run.ev = null; out.lines.push('⚔️ 怪物已除'); }
+      if (run.ev.monTile) { const mt = run.ev.monTile; if (run.shared && run.shared.on) { try { await advMonKillShared(mt); } catch(_) {} } else if (t.mons) t.mons[mt.tier] = Math.max(0, (t.mons[mt.tier] | 0) - 1); run.ev = null; out.lines.push('⚔️ 怪物已除'); }
       else if (run.ev.exitBoss) { t.done = 1; t.ev = null; out.lines.push('击败守关者，抵达终点'); out.end = C.advEnd(S, 'done'); }
       else { if (run.ev.guardedFrom) out.lines.push('⚔️ 守怪已除；' + C.guardedLoot(S, run, run.ev.loot)); t.evDone = 1; t.ev = null; run.ev = null; }
     }
@@ -7357,7 +7385,7 @@ document.addEventListener('click', e => {
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
   else if (d.advc !== undefined) doAdvChoose(+d.advc);
   else if (d.advres !== undefined) { try { window.advGatherRes(); } catch(_) {} } // v1125 共享图手采资源
-  else if (d.advres2 !== undefined) { try { if (S.run && S.run.shared && S.run.shared.on) window.advGatherRes(); else window.advLocalGatherUI(); } catch(_) {} } // v1154 当前格采集（共享/本地）
+  else if (d.advres2 !== undefined) { try { const _code = d.advres2 || null; if (S.run && S.run.shared && S.run.shared.on) window.advGatherRes(_code); else window.advLocalGatherUI(_code); } catch(_) {} } // v1154 当前格采集（共享/本地）
   else if (d.advatk !== undefined) { try { window.advAttackMon(d.advatk); } catch(_) {} } // v1154 选档攻击怪物
   else if (d.advplace !== undefined) { try { window.advPlaceArray(); } catch(_) {} } // v1125 布采集阵
   else if (d.advarr !== undefined) { try { window.advArrayPanel(); } catch(_) {} } // v1125 采集阵面板
@@ -7414,7 +7442,7 @@ document.addEventListener('click', e => {
               _t.t = 'empty'; _t.seen = 1;
               try { const _rm2 = C.advResGrant(S, _run, _rkind, _t.rg || 1); if (_rm2) toastLog('good', _rm2); } catch(_) {}
             }
-          } else if (!_t.seen && _t.t !== 'empty' && _t.t !== 'start') {
+          } else if (!_t.seen && _t.t !== 'empty' && _t.t !== 'start' && _t.t !== 'land' && _t.t !== 'herb' && _t.t !== 'ore' && _t.t !== 'vein') { // v1186 资源格不触发事件
             _t.seen = 1; _run.evCount = (_run.evCount|0) + 1;
             if (_run.dungeon && _t.t === 'event') { // v1094 秘境事件格：只显示作者写的一句文本，不进系统事件库
               _run.ev = { type: 'dungeonText', text: _t.text || '这里留着前人的一句话。' };

@@ -3263,7 +3263,7 @@ function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空
   for (let i = pos.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const tmp = pos[i]; pos[i] = pos[j]; pos[j] = tmp; }
   bag.forEach((t, i) => { const p = pos[i]; if (!p) return; tiles[p[1]][p[0]].t = t; });
   const _nowG = Date.now(); // v1154：其余格全是资源格（矿石/灵脉/草药丛，带存量与怪）
-  pos.slice(bag.length).forEach(p => { Object.assign(tiles[p[1]][p[0]], advFreshResTileL(_nowG)); });
+  pos.slice(bag.length).forEach(p => { Object.assign(tiles[p[1]][p[0]], advFreshResTileL(_nowG, advQiL(dk))); });
   return { w: ADV_GW, h: ADV_GH, tiles, px: sx, py: sy, ex: ADV_GW - 1, ey: 0, moves: 0 };
 }
 function advTileEvent(S, run, type) { // 在格子上生成指定类型的事件（复用事件库）
@@ -3348,38 +3348,77 @@ function advResGrant(S, run, kind, grade) {
   if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
-// ===== v1154 资源格（本地图镜像，与服务端同规）=====
+// ===== v1186 资源并存（本地图镜像，与服务端同规）=====
+// 每格（land）同时可存 7 种资源 + 3 档怪 = 10 个独立刷新器，各有自己的时钟与概率；灵气按图等级倍率（主城/初级 1 为基准）。
+const RES_CODES_L = ['h1', 'h2', 'h3', 'o', 'v1', 'v2', 'v3'];
+const RES_IV_L = { h1: 60000, h2: 600000, h3: 1800000, o: 60000, v1: 60000, v2: 600000, v3: 1800000 };
+const RES_P_L = { h1: 0.315, h2: 0.09, h3: 0.045, o: 0.45, v1: 0.07, v2: 0.02, v3: 0.01 };
+const ADV_QI_L = { easy: 1, mid: 2, hard: 3, brutal: 4, hell: 5, abyss: 6, nightmare: 7, mijing: 8, wx_jin: 8, wx_mu: 8, wx_shui: 8, wx_huo: 8, wx_tu: 8 };
+function advQiL(dk) { return ADV_QI_L[dk] || 1; }
+function resKindOfL(c) { return c.charAt(0) === 'h' ? 'herb' : c.charAt(0) === 'o' ? 'ore' : 'vein'; }
+function resGradeOfL(c) { return c.length > 1 ? (parseInt(c.charAt(1), 10) || 1) : 1; }
+function resNameL(c) { if (c === 'o') return '矿石'; if (c.charAt(0) === 'h') return '灵药丛·' + ['地品', '天品', '仙品'][resGradeOfL(c) - 1]; return '灵脉·' + ['小型', '中型', '巨型'][resGradeOfL(c) - 1]; }
+function resIconL(c) { return c === 'o' ? '⛏️' : c.charAt(0) === 'h' ? '🌿' : '💎'; }
+function ensureSlotsL(t, now) {
+  if (!t.rs || typeof t.rs !== 'object') t.rs = {};
+  for (const c of RES_CODES_L) { const sl = t.rs[c]; if (!sl || typeof sl !== 'object') t.rs[c] = { a: 0, at: now }; else { if (!(sl.a >= 0)) sl.a = 0; if (!(sl.at > 0)) sl.at = now; } }
+  if (!t.mons || typeof t.mons !== 'object') t.mons = { w: 0, m: 0, s: 0 };
+  if (!t.mt || typeof t.mt !== 'object') t.mt = { w: now, m: now, s: now };
+  for (const k of ['w', 'm', 's']) if (!(t.mt[k] > 0)) t.mt[k] = now;
+}
+function domSlotL(t) { let best = null, ba = 0; if (t && t.rs) for (const c of RES_CODES_L) { const a = (t.rs[c] && t.rs[c].a) | 0; if (a > ba) { ba = a; best = c; } } return best; }
 function advTierKeyL() { if (R() < 0.6) return 'w'; return R() < 0.75 ? 'm' : 's'; } // 弱60/中30/强10（与服务端同规）
-function advFreshResTileL(now) {
-  const r = R(); const kind = r < 0.4 ? 'herb' : r < 0.8 ? 'ore' : 'vein';
-  const t = { t: kind, lv: kind === 'ore' ? 1 : rollResGradeL(), amt: 1 + Math.floor(R() * 3), mons: { w: 0, m: 0, s: 0 }, resAt: now, monAt: now };
-  if (R() < 0.3) t.mons[advTierKeyL()]++;
+function advFreshResTileL(now, qi) {
+  const t = { t: 'land', rs: {}, mons: { w: 0, m: 0, s: 0 }, mt: { w: now, m: now, s: now } };
+  ensureSlotsL(t, now);
+  const q = qi || 1;
+  for (const c of RES_CODES_L) if (R() < Math.min(1, RES_P_L[c] * q)) t.rs[c].a++;
+  for (const k of ['w', 'm', 's']) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (tot < 5 && R() < Math.min(1, 0.2 * q)) t.mons[k]++; }
   return t;
+}
+function advResSettleTileL(t, now, qi) {
+  ensureSlotsL(t, now);
+  const q = qi || 1;
+  for (const c of RES_CODES_L) {
+    const sl = t.rs[c], iv = RES_IV_L[c];
+    const units = Math.floor((now - sl.at) / iv);
+    if (units <= 0) continue;
+    if (units > 400) { sl.a = (sl.a | 0) + Math.round(units * Math.min(1, RES_P_L[c] * q)); sl.at = now; }
+    else { const p = Math.min(1, RES_P_L[c] * q); for (let i = 0; i < units; i++) if (R() < p) sl.a++; sl.at += units * iv; }
+  }
+  for (const k of ['w', 'm', 's']) {
+    const ticks = Math.floor((now - t.mt[k]) / 600000);
+    if (ticks <= 0) continue;
+    if (ticks > 400) { t.mt[k] = now; continue; }
+    const p = Math.min(1, 0.2 * q);
+    for (let i = 0; i < ticks; i++) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (tot >= 5) break; if (R() < p) t.mons[k]++; }
+    t.mt[k] += ticks * 600000;
+  }
 }
 function advResSettleGrid(run) {
   if (!run || !run.grid) return;
+  if (run.shared && run.shared.on) return; // 共享图以服务端结算为准，本地不重复长
   const now = Date.now();
+  const qi = advQiL(run.dk);
   for (const row of run.grid.tiles) for (const t of row) {
-    if (t.t !== 'herb' && t.t !== 'ore' && t.t !== 'vein') continue;
-    if (!t.mons) t.mons = { w: 0, m: 0, s: 0 };
-    if (!t.resAt) t.resAt = now;
-    if (!t.monAt) t.monAt = now;
-    const iv = t.t === 'ore' ? 60000 : [60000, 600000, 1800000][(t.lv | 0) - 1] || 60000;
-    const units = Math.floor((now - t.resAt) / iv);
-    if (units > 0) {
-      if ((t.amt | 0) <= 0) { const r = R(); const kind = r < 0.4 ? 'herb' : r < 0.8 ? 'ore' : 'vein'; t.t = kind; t.lv = kind === 'ore' ? 1 : rollResGradeL(); } // v1185 与服务端同规：采空回长重掷种类
-      t.amt = (t.amt | 0) + units; t.resAt += units * iv;
+    if (t.t === 'herb' || t.t === 'ore' || t.t === 'vein') { // 旧存档单资源格 → 并存槽迁移
+      const cc = t.t === 'ore' ? 'o' : (t.t === 'herb' ? 'h' : 'v') + ((t.lv | 0) || 1);
+      const amt = t.amt | 0, at = t.resAt || now, mons = t.mons, monAt = t.monAt || now;
+      t.t = 'land'; delete t.lv; delete t.amt; delete t.resAt; delete t.monAt;
+      ensureSlotsL(t, now); t.rs[cc] = { a: amt, at }; if (mons) t.mons = mons; t.mt = { w: monAt, m: monAt, s: monAt };
     }
-    let ticks = Math.floor((now - t.monAt) / 600000);
-    if (ticks > 0) { if (ticks > 200) t.monAt = now; else { for (let i = 0; i < ticks; i++) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (tot < 5 && R() < 0.2) t.mons[advTierKeyL()]++; } t.monAt += ticks * 600000; } }
+    if (t.t !== 'land') continue;
+    advResSettleTileL(t, now, qi);
   }
 }
-function advLocalGather(S, run) { // 本地图手采：门槛 → 惊扰(10%) → 扣 1 份发放
+function advLocalGather(S, run, code) { // 本地图手采（按槽）：门槛 → 惊扰(10%) → 扣 1 份发放
   const g = run.grid, t = g.tiles[g.py][g.px];
   advResSettleGrid(run);
-  if (!t || (t.t !== 'herb' && t.t !== 'ore' && t.t !== 'vein')) return { err: '这里没有可采的资源' };
-  if ((t.amt | 0) <= 0) return { err: '这格的资源还没长出来' };
-  const gate = toolGateL(S, t.t, t.lv || 1);
+  if (!t || t.t !== 'land') return { err: '这里没有可采的资源' };
+  const cc = RES_CODES_L.includes(code) ? code : domSlotL(t);
+  if (!cc || (t.rs[cc].a | 0) <= 0) return { err: '这种资源还没长出来' };
+  const kind = resKindOfL(cc), grade = resGradeOfL(cc);
+  const gate = toolGateL(S, kind, grade);
   if (gate.err) return { err: gate.err };
   const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0);
   if (tot > 0 && !(Number(S.stealthUntil || 0) > Date.now()) && R() < 0.10) { // v1162 隐身符：隐身中不惊扰
@@ -3387,8 +3426,8 @@ function advLocalGather(S, run) { // 本地图手采：门槛 → 惊扰(10%) �
     for (const k of ['w', 'm', 's']) { r -= (t.mons[k] | 0); if (r < 0) { tier = k; break; } }
     return { disturbed: tier };
   }
-  t.amt--;
-  return { msg: advResGrant(S, run, t.t, t.lv || 1) };
+  t.rs[cc].a--;
+  return { msg: advResGrant(S, run, kind, grade), code: cc };
 }
 function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：弱=属性×0.7；强=rank+1 且属性×1.3（rollRank 无下限钳制，弱档不降 rank）
   const mon = advMonster(S, run.dk, tier === 's' ? 1 : 0);
@@ -3396,7 +3435,7 @@ function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：弱=属�
   if (mult !== 1) ATTRS.forEach(k => mon.attrs[k] = Math.max(1, Math.round(mon.attrs[k] * mult)));
   return { type: 'fight', mon, text: tier === 'w' ? '一只弱怪' : tier === 's' ? '一只强怪' : '一只怪物', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, afkHourly }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动
@@ -3414,7 +3453,7 @@ function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件�
     run.ev = t.ev; return { moved: true, ev: run.ev };
   }
   if (t.ev && !t.evDone) { run.ev = t.ev; return { moved: true, ev: run.ev }; } // 回到未解决的事件格
-  if (!t.seen && t.t !== 'empty' && t.t !== 'start' && t.t !== 'herb' && t.t !== 'ore' && t.t !== 'vein' && t.t !== 'rherb' && t.t !== 'rore' && t.t !== 'rvein') { t.seen = 1; run.evCount = (run.evCount | 0) + 1; advTileEvent(S, run, t.t); t.ev = run.ev; return { moved: true, ev: run.ev }; } // v1154 资源格不触发事件（站在格上用按钮采集/攻击）
+  if (!t.seen && t.t !== 'empty' && t.t !== 'start' && t.t !== 'land' && t.t !== 'herb' && t.t !== 'ore' && t.t !== 'vein' && t.t !== 'rherb' && t.t !== 'rore' && t.t !== 'rvein') { t.seen = 1; run.evCount = (run.evCount | 0) + 1; advTileEvent(S, run, t.t); t.ev = run.ev; return { moved: true, ev: run.ev }; } // v1154 资源格不触发事件（站在格上用按钮采集/攻击）
   t.seen = 1; return { moved: true };
 }
 function advRetreat(S) { const run = S.run; if (!run || !run.grid) return null; return { lines: ['撤退'], end: advEnd(S, 'retreat') }; }
@@ -3442,6 +3481,8 @@ async function advSharedInit(S) {
       for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
         if (st.json.tiles[_y] && st.json.tiles[_y][_x]) {
           S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
+          if (st.json.tiles[_y][_x].rs) { const _rs = {}; for (const _c in st.json.tiles[_y][_x].rs) _rs[_c] = { a: st.json.tiles[_y][_x].rs[_c] | 0, at: Date.now() }; S.run.grid.tiles[_y][_x].rs = _rs; S.run.grid.tiles[_y][_x].t = 'land'; }
+          if (st.json.tiles[_y][_x].mons) S.run.grid.tiles[_y][_x].mons = st.json.tiles[_y][_x].mons;
         }
       }
     }
@@ -3473,7 +3514,9 @@ function advSharedPoll(S) {
         if (S.run.grid && S.run.grid.tiles) {
           for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
             if (st.json.tiles[_y] && st.json.tiles[_y][_x]) {
-              S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
+          S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
+          if (st.json.tiles[_y][_x].rs) { const _rs = {}; for (const _c in st.json.tiles[_y][_x].rs) _rs[_c] = { a: st.json.tiles[_y][_x].rs[_c] | 0, at: Date.now() }; S.run.grid.tiles[_y][_x].rs = _rs; S.run.grid.tiles[_y][_x].t = 'land'; }
+          if (st.json.tiles[_y][_x].mons) S.run.grid.tiles[_y][_x].mons = st.json.tiles[_y][_x].mons;
             }
           }
         }
@@ -3498,7 +3541,7 @@ async function advSharedRefresh() {
       S.run.shared.arrays = st.json.arrays || [];
       if (S.run.grid && S.run.grid.tiles) {
         for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
-          if (st.json.tiles[_y] && st.json.tiles[_y][_x]) S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
+          if (st.json.tiles[_y] && st.json.tiles[_y][_x]) { const _st2 = st.json.tiles[_y][_x]; S.run.grid.tiles[_y][_x].t = _st2.t; if (_st2.rs) { const _rs = {}; for (const _c in _st2.rs) _rs[_c] = { a: _st2.rs[_c] | 0, at: Date.now() }; S.run.grid.tiles[_y][_x].rs = _rs; S.run.grid.tiles[_y][_x].t = 'land'; } if (_st2.mons) S.run.grid.tiles[_y][_x].mons = _st2.mons; }
         }
       }
     }
@@ -3517,17 +3560,17 @@ function advApplyGains(j) { // 把服务端 gains 同步进本地存档（与 co
   if (typeof j.rev === 'number' && window.MHXY) MHXY.setBaseRev(j.rev);
   return got;
 }
-window.advGatherRes = async function() {
+window.advGatherRes = async function(code) {
   try {
     if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
     const dk = S.run.shared.dk || S.run.dk, gx = S.run.grid.px, gy = S.run.grid.py;
-    let resp = await MHXY.api('/api/roll/adv_gather', { method: 'POST', body: { dk, x: gx, y: gy } });
+    let resp = await MHXY.api('/api/roll/adv_gather', { method: 'POST', body: { dk, x: gx, y: gy, code: code || null } });
     let j = resp && resp.json;
     if (!resp.ok && j && j.error === 'not_there') {
       // v1170 位置记录过期：补心跳后重试一次采集（与 claim/monkills 同一自愈口径）
       try { advSharedHeartbeat(gx, gy); } catch (_) {}
       await new Promise(res => setTimeout(res, 600));
-      resp = await MHXY.api('/api/roll/adv_gather', { method: 'POST', body: { dk, x: gx, y: gy } });
+      resp = await MHXY.api('/api/roll/adv_gather', { method: 'POST', body: { dk, x: gx, y: gy, code: code || null } });
       j = resp && resp.json;
     }
     if (resp.ok && j && j.ok && j.disturbed) { // v1154 惊扰：资源未采到，先打怪
@@ -3539,7 +3582,7 @@ window.advGatherRes = async function() {
     if (resp.ok && j && j.ok) {
       const got = advApplyGains(j);
       if (j.which) { if (!S.tools) S.tools = { pick: null, hoe: null }; S.tools[j.which] = j.tool || null; } // v1128 器具状态以服务端为准
-      try { const _t = S.run.shared.tiles[gy] && S.run.shared.tiles[gy][gx]; if (_t) _t.amt = Math.max(0, (_t.amt | 0) - 1); } catch (_) {} // v1154 本地镜像存量 -1
+      try { const _t = S.run.shared.tiles[gy] && S.run.shared.tiles[gy][gx]; if (_t && j.rs) _t.rs = j.rs; else if (_t && _t.rs && j.code) { _t.rs = Object.assign({}, _t.rs); _t.rs[j.code] = Math.max(0, ((_t.rs[j.code] | 0) - 1)); if (!_t.rs[j.code]) delete _t.rs[j.code]; } } catch (_) {} // v1186 本地镜像按槽同步
       if (got.length) log('good', `✨ 采集${(j.crit | 0) > 1 ? `（<b class="y">💥暴击×${j.crit}</b>）` : ''}：${got.join('、')}${j.broke ? `；<span class="r">${j.which === 'hoe' ? '药锄' : '矿镐'}持久耗尽，碎了</span>` : ''}`);
       commit();
     } else {
@@ -3550,10 +3593,10 @@ window.advGatherRes = async function() {
   } catch (e) {}
   try { sheetRun(); } catch (_) {}
 };
-window.advLocalGatherUI = function() { // v1154 本地图当前格采集
+window.advLocalGatherUI = function(code) { // v1186 本地图当前格采集（按槽）
   try {
     if (!S.run || !S.run.grid) return;
-    const r = C.advLocalGather(S, S.run);
+    const r = C.advLocalGather(S, S.run, code);
     if (!r) return;
     if (r.err) log('bad', r.err);
     else if (r.disturbed) { log('bad', '😱 采集时惊扰了怪物，它扑了过来！'); S.run.ev = C.advMonTileEv(S, S.run, r.disturbed); }
@@ -4066,6 +4109,7 @@ Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainI
 G.Core = C;
 // v1091 跨块导出：块1裸调用的块0函数/表（全游审计 P0+P1：出关 afkExit/afkStart、寄售 consignName/consignStore、寄售列表 MEDS、灵宠突破 petEffLvMax/PET_BREAK_MAX；此前未导出致 ReferenceError）
 G.afkExit = afkExit; G.afkStart = afkStart; G.consignName = consignName; G.consignStore = consignStore; G.MEDS = MEDS; G.petEffLvMax = petEffLvMax; G.PET_BREAK_MAX = PET_BREAK_MAX;
+G.advMonKillShared = advMonKillShared; // v1186 修复：main 块 finishAdvBattle 裸调此函数，此前未导出 → 共享图守怪战结算抛 ReferenceError、pk 永卡（Ye 报：打赢怪卡住不结算）
 
 // ===== v1006 P1 三件套：定命星 / 本命飞剑 / 法宝规则词条 =====
 const DESTINY_STARS = [ {k:'ziwei',n:'紫微星',w:2,t:'命宫主星，气象自华'}, {k:'tanlang',n:'贪狼星',w:10,t:'桃花逢机，欲望生道'}, {k:'pojun',n:'破军星',w:10,t:'开疆破阵，先破后立'}, {k:'qisha',n:'七杀星',w:10,t:'杀伐果断，乱世称雄'}, {k:'tianji',n:'天机星',w:12,t:'机杼在胸，算无遗策'}, {k:'taiyang',n:'太阳星',w:12,t:'光华万丈，坦荡磊落'}, {k:'taiyin',n:'太阴星',w:12,t:'月华内敛，静水流深'}, {k:'jumen',n:'巨门星',w:10,t:'口纳乾坤，是非分明'}, {k:'fanxing',n:'凡星',w:22,t:'命星平平，大道靠走'} ];
