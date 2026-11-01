@@ -3366,7 +3366,10 @@ function advResSettleGrid(run) {
     if (!t.monAt) t.monAt = now;
     const iv = t.t === 'ore' ? 60000 : [60000, 600000, 1800000][(t.lv | 0) - 1] || 60000;
     const units = Math.floor((now - t.resAt) / iv);
-    if (units > 0) { t.amt = (t.amt | 0) + units; t.resAt += units * iv; }
+    if (units > 0) {
+      if ((t.amt | 0) <= 0) { const r = R(); const kind = r < 0.4 ? 'herb' : r < 0.8 ? 'ore' : 'vein'; t.t = kind; t.lv = kind === 'ore' ? 1 : rollResGradeL(); } // v1185 与服务端同规：采空回长重掷种类
+      t.amt = (t.amt | 0) + units; t.resAt += units * iv;
+    }
     let ticks = Math.floor((now - t.monAt) / 600000);
     if (ticks > 0) { if (ticks > 200) t.monAt = now; else { for (let i = 0; i < ticks; i++) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (tot < 5 && R() < 0.2) t.mons[advTierKeyL()]++; } t.monAt += ticks * 600000; } }
   }
