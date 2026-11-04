@@ -8,11 +8,13 @@ window.teamPanel = async function(){
     + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
   var _tryTeam = function(n){ // v1188 模块晚到就重试几次，别一打开就卡死在「组队模块加载中」
     if (typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} return; }
-    if (n >= 5) { var b = document.getElementById('mhxyTeamInfo'); if (b) b.innerHTML = '<div class="hint">组队模块加载中，请稍后重试</div>'; return; }
-    setTimeout(function(){ _tryTeam(n + 1); }, 800);
+    if (n >= 25) { var b = document.getElementById('mhxyTeamInfo'); if (b) b.innerHTML = '<div class="hint">组队模块加载中，请稍后重试</div>'; return; }
+    setTimeout(function(){ _tryTeam(n + 1); }, n < 5 ? 800 : 2000); // v1191 延长等待（约44秒）：慢加载/中段异常时别4秒就放弃（muse1dev 问题四）
   };
   _tryTeam(0);
 };
+// v1191 关键导出提前：teamRefresh/teamInvite/pkChallenge 是函数声明（文件加载即提升），原导出在文件尾，中段运行错误会让导出永远执行不到、组队面板卡死；提前到文件头紧跟 teamPanel，声明一就绪即可用
+try { window.teamRefresh = teamRefresh; window.teamInvite = teamInvite; window.pkChallenge = pkChallenge; } catch (_) {}
 // v1069 神识单按钮（Ye 定整合）：练气点=10秒探查，化神点=探查+开外放面板
 window.shenshiGo = function(){
   try {
