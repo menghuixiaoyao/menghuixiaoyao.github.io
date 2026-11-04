@@ -6784,8 +6784,28 @@ window.sectHomeRender = function(j) {
     else if ((j.xyCount | 0) >= 10) h += `<div class="row"><button class="btn gold full" data-xysect="1">🏯 开设宗门（仙缘 ${j.xyCount} 点）</button></div>`;
     else h += `<div class="hint">🏯 仙缘满 10 点可开设宗门（当前 ${j.xyCount | 0}/10）；加入宗门需宗门里的人邀请你（只能邀各自的绑定者）。</div>`;
     if (S.sect) h += `<div class="hint">旧的本地宗门「${esc(S.sect.name || '')}」已停用，现在是真人宗门了。</div>`;
+    h += `<div class="row"><input id="sectQ" type="text" placeholder="搜索宗门名" style="flex:1;background:#141428;border:1px solid #444;border-radius:6px;color:#eee;padding:6px 8px;font-size:13px"><button class="btn sm" onclick="window.sectListLoad(document.getElementById('sectQ').value)">🔍 搜索</button></div><div id="xySectList"><div class="hint">宗门列表加载中…</div></div>`;
   }
   el.innerHTML = h;
+  if (!j.sect && window.sectListLoad) window.sectListLoad('', true);
+};
+window.sectListLoad = function(q, force) {
+  const box = document.getElementById('xySectList'); if (!box) return;
+  const render = function(list) {
+    const kw = (q || '').trim();
+    const all = list || [];
+    const rows = kw ? all.filter(function(s) { return (s.name || '').indexOf(kw) >= 0; }) : all;
+    if (!all.length) { box.innerHTML = `<div class="hint">现在还没有宗门——仙缘满 10 点就能开第一个。</div>`; return; }
+    if (!rows.length) { box.innerHTML = `<div class="hint">没有找到这个名字的宗门。</div>`; return; }
+    box.innerHTML = `<h3>现有宗门</h3>` + rows.map(function(s) {
+      return `<div class="row"><div class="lab">🏯 ${esc(s.name)}<small>宗主 ${esc(s.masterName || '')} · 成员 ${s.members | 0}/${s.cap | 0} · 建设度 ${s.build | 0}</small></div></div>`;
+    }).join('');
+  };
+  if (!force && window._sectListCache) { render(window._sectListCache); return; }
+  sectApi('/api/sect/list').then(function(r) {
+    if (r.ok && r.json && r.json.ok) { window._sectListCache = r.json.list || []; render(window._sectListCache); }
+    else box.innerHTML = `<div class="hint">宗门列表没拉到，关掉面板重开再试。</div>`;
+  }).catch(function() { box.innerHTML = `<div class="hint">宗门列表没拉到，关掉面板重开再试。</div>`; });
 };
 window.sectCreate = function() {
   const nm = prompt('输入宗门名称（12 字内）：', (S.sect && S.sect.name) || '');
