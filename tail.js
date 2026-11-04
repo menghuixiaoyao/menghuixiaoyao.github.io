@@ -424,8 +424,19 @@ function panel(){
 }
 function val(id){ var el = null; try{ el = document.getElementById(id); }catch(_){} return el ? (el.value || '').trim() : ''; }
 
+// v1198 游客设备锚：本机持久随机串，登出不清；一键游客登录永远回到本机这个游客号
+function guestDid(){
+  var d = null;
+  try { d = localStorage.getItem('mhxy_guest_did'); } catch(_){}
+  if (!d){
+    try { d = (crypto.randomUUID ? crypto.randomUUID() : 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 14)); }
+    catch(_){ d = 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 8); }
+    try { localStorage.setItem('mhxy_guest_did', d); } catch(_){}
+  }
+  return d;
+}
 async function doGuest(){
-  var r = await api('/api/guest', { method:'POST', noAuth:true, body:{} });
+  var r = await api('/api/guest', { method:'POST', noAuth:true, body:{ did: guestDid() } });
   if (r.ok && r.json && r.json.ok){
     saveAuth(r.json);
     glog('good', '🌐 游客登录成功：<b class="y">' + escH(r.json.username) + '</b> #' + r.json.player_no);
@@ -1890,7 +1901,7 @@ function hideLoginGate(){
 function gateMsg(t){ var m = document.getElementById('gateMsg'); if (m) m.textContent = t; }
 async function gateDoGuest(){
   gateMsg('登录中…');
-  var r = await api('/api/guest', { method:'POST', noAuth:true, body:{} });
+  var r = await api('/api/guest', { method:'POST', noAuth:true, body:{ did: guestDid() } });
   if (r.ok && r.json && r.json.ok){ await gateAfterAuth(r.json); }
   else gateMsg('登录失败' + (r.netErr ? '（网络不通，连上网再试）' : '：' + ((r.json||{}).error || r.status)));
 }
