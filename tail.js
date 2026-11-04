@@ -382,7 +382,16 @@ function panel(){
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
   } else {
     var nm = escH(myName()), pno = escH(myPno());
-    var hasBk = false; try { hasBk = !!localStorage.getItem('mhxy_save_backup'); } catch(_){}
+    var stashEntries = [];
+    try {
+      var _ks = [];
+      for (var _ki = 0; _ki < localStorage.length; _ki++){ var _kk = localStorage.key(_ki); if (_kk === 'mhxy_save_backup' || (_kk && _kk.indexOf('mhxy_save_acct_') === 0)) _ks.push(_kk); }
+      _ks.sort();
+      for (var _kj = 0; _kj < _ks.length; _kj++){
+        var _sj2 = localStorage.getItem(_ks[_kj]); if (!_sj2) continue;
+        stashEntries.push({ key: _ks[_kj], label: stashLabel(_ks[_kj], _sj2) });
+      }
+    } catch(_){}
     html = '<h2>🌐 真人联机</h2>'
       + '<div class="hint">已登录：<b class="y">' + nm + '</b> #' + pno + (isGuest() ? '（游客）' : '') + '　云存档 rev ' + M.baseRev + '</div>'
       + '<div class="row"><button class="btn red full" data-mhxylogout>🚪 退出当前账号 · 切换账号（回登录界面输密码）</button></div>'
@@ -403,7 +412,8 @@ function panel(){
       + '<button class="btn full" data-mhxysync>☁️ 同步存档</button>'
       + '<button class="btn full" data-mhxydown>⬇️ 下载云档</button>'
       + '</div>'
-      + (hasBk ? '<div class="row"><button class="btn gold full" data-mhxyrestore>🗃️ 捞回被云档覆盖的本地存档</button></div>' : '')
+      + (stashEntries.length ? '<div style="color:#9a93b8;font-size:12px;margin:2px 0">🗃️ 本机还存着下面这些档 — 认出哪份是你的，点它换上（现在的档会与它互换，不会丢）：</div>' : '')
+      + stashEntries.map(function(en){ return '<div class="row"><button class="btn full" data-mhxyuse="' + en.key + '">🗃️ ' + escH(en.label) + '</button></div>'; }).join('')
       + '<div class="row" id="mhxyGmRow" style="display:none"><button class="btn gold full" data-mhxygm>🛠️ GM 管理</button></div>'
       + '<div class="row" id="mhxyXRow" style="display:flex;gap:6px;align-items:center">' + xRowHtml() + '</div>'
       + '<div class="row" id="mhxyXHideRow" style="display:flex;gap:6px;align-items:center">' + xHideRowHtml() + '</div>'
@@ -622,6 +632,7 @@ async function checkCloud(){
   // v1042 账号为准：登录后自动对齐该账号的云存档，不再弹窗、不需手动读档
   var r = await api('/api/save/meta');
   if (!r.ok || !r.json || !r.json.ok) return;
+  if (!r.json.exists && M.baseRev !== 0){ M.baseRev = 0; try { ls(revKey(), '0'); } catch(_){} } // v1200 化石 rev 清零：云端根本无档时本地残留的旧 rev 只会让每次同步都 409（今晚冲突刷屏的另一半根源）
   var _rescued = false;
   try { _rescued = !!ls(LK.aid) && (localStorage.getItem('mhxy_rescued_aid') || '') === ls(LK.aid); } catch(_){}
   if (_rescued){
@@ -689,6 +700,31 @@ async function downloadSave(quiet){
   } else {
     glog('bad', '🌐 下载失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
   }
+}
+// v1200 本机寄存档标签：角色名 + 金 + 灵气石，让玩家一眼认出哪份是哪份
+function stashLabel(key, sj){
+  var tag = key === 'mhxy_save_backup' ? '备份位' : '寄存位';
+  try {
+    var o = JSON.parse(sj);
+    var sp1 = (o.ores && o.ores.sp1 != null) ? o.ores.sp1 : '?';
+    return tag + '：' + (o.name || '无名') + ' · 金 ' + (o.gold != null ? o.gold : '?') + ' · 灵气石 ' + sp1;
+  } catch(_){ return tag + '：（读取失败）'; }
+}
+// v1200 换上任意一份本机寄存档（与现槽互换，可逆），并立标记以这份为准
+async function doUseStash(key){
+  var sj = null; try { sj = localStorage.getItem(key); } catch(_){}
+  if (!sj){ glog('bad', '🌐 这份寄存档读不到'); return; }
+  try { if (!confirm('换上这份存档？\n' + stashLabel(key, sj) + '\n当前的存档会存进这个位置与它互换，不会丢失。')) return; } catch(_){}
+  try {
+    var cur = localStorage.getItem(M.saveKey);
+    localStorage.setItem(M.saveKey, sj);
+    if (cur) localStorage.setItem(key, cur); else localStorage.removeItem(key);
+    localStorage.setItem('mhxy_sowner', ls(LK.name) || '');
+    localStorage.setItem('mhxy_sowner_aid', ls(LK.aid) || '');
+    localStorage.setItem('mhxy_rescued_aid', ls(LK.aid) || '');
+  } catch(_){ glog('bad', '🌐 本地写入失败'); return; }
+  glog('good', '🌐 已换上这份存档，正在重载…');
+  setTimeout(function(){ try { location.reload(); } catch(_){} }, 400);
 }
 // v1199 手动捞回：把「下载云档时被顶掉的本地档备份」换回存档槽（与现槽互换，可再换回），并立标记以这份为准
 async function doRestoreBackup(){
@@ -1759,6 +1795,7 @@ function onClick(d, t, e){
   if ('mhxysync' in d){ syncNow(true); return true; }
   if ('mhxydown' in d){ downloadSave(false).then(function(){ panel(); }); return true; }
   if ('mhxyrestore' in d){ doRestoreBackup(); return true; }
+  if (d.mhxyuse){ doUseStash(d.mhxyuse); return true; }
   if ('mhxygm' in d){ gmPanel(); return true; }
   if ('mhxydungeon' in d){ window.sheetDungeonList(); return true; }
   if ('mhxyencsub' in d){ window.sheetEncSubmit(); return true; }
