@@ -6,8 +6,12 @@ window.teamPanel = async function(){
     + '<div id="mhxyTeamOnline"><div class="hint">加载在线道友…</div></div>'
     + '<div class="row"><button class="btn full" data-mhxyteamrefresh>刷新</button></div>'
     + '<div class="row"><button class="btn full" data-close>关闭</button></div>');
-  if (typeof teamRefresh === 'function') teamRefresh();
-  else document.getElementById('mhxyTeamInfo').innerHTML = '<div class="hint">组队模块加载中，请稍后重试</div>';
+  var _tryTeam = function(n){ // v1188 模块晚到就重试几次，别一打开就卡死在「组队模块加载中」
+    if (typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} return; }
+    if (n >= 5) { var b = document.getElementById('mhxyTeamInfo'); if (b) b.innerHTML = '<div class="hint">组队模块加载中，请稍后重试</div>'; return; }
+    setTimeout(function(){ _tryTeam(n + 1); }, 800);
+  };
+  _tryTeam(0);
 };
 // v1069 神识单按钮（Ye 定整合）：练气点=10秒探查，化神点=探查+开外放面板
 window.shenshiGo = function(){
@@ -144,10 +148,16 @@ window.showPlayerDetail = function(accountId){
   } catch(e) {}
 };
 // v1076 从玩家详情发起组队邀请
-window.teamInvitePlayer = function(accountId){
+// v1187 人物卡没有建队入口：没队伍时先自动建队再邀请（旧版直接邀请被后端以 not in team 拒掉，只报数字 404）
+window.teamInvitePlayer = async function(accountId){
   try {
-    if (typeof window.teamInvite === 'function') window.teamInvite(accountId);
-    else if (typeof window.toastLog === 'function') window.toastLog('bad', '组队模块未加载');
+    if (typeof window.teamInvite !== 'function') { if (typeof window.toastLog === 'function') window.toastLog('bad', '组队模块未加载'); return; }
+    if (typeof window.teamRefresh === 'function') { try { await window.teamRefresh(); } catch(_){} }
+    if (!window._myTeam && typeof MHXY !== 'undefined' && MHXY.api) {
+      await MHXY.api('/api/world/team/create', { method:'POST', body:{} }).catch(function(){ return null; });
+      if (typeof window.teamRefresh === 'function') { try { await window.teamRefresh(); } catch(_){} }
+    }
+    window.teamInvite(accountId);
   } catch(e) {}
 };
 // v1077 从玩家详情发起 PK
@@ -597,6 +607,11 @@ async function ensurePresence(){
       if (r.json.scans && r.json.scans.length) { // v1171 神识扫描提示送达（服务端送达即清，只报一次）
         r.json.scans.forEach(function(sc){ var _sm = '👁️ ' + (sc.from || '有人') + ' 神识扫描了你'; if (typeof toastLog === 'function') toastLog('sys', _sm); else if (typeof glog === 'function') glog('sys', _sm); });
       }
+      if (r.json.teamNotices && r.json.teamNotices.length) { // v1188 组队变动通知送达（被踢/解散/入队/离队/队长变更，不再全程静默）
+        r.json.teamNotices.forEach(function(n){ if (typeof toastLog === 'function') toastLog('sys', n.text); else if (typeof glog === 'function') glog('sys', n.text); });
+        if (typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_) {} }
+      }
+      if (r.json.myTb && typeof window.tbNoteMyTb === 'function') { try { window.tbNoteMyTb(r.json.myTb); } catch(_) {} } // v1189 组队战重入：被拉入/断线重连后自动接入战斗面板
       var ps = (r.json.players || []).filter(function(p){ return p.online && p.accountId !== me && typeof p.x === 'number' && typeof p.y === 'number'; });
       var sig = ps.map(function(p){ return p.accountId + ':' + p.x + ',' + p.y; }).join('|');
       if (sig !== M._plSig) { M._plSig = sig; window._worldPlayers = ps; try { if (typeof renderWorldMap === 'function') renderWorldMap(); } catch(_) {} }
@@ -899,6 +914,7 @@ async function teamRefresh(){
   }
   var team = r.json.team || null;
   var invites = r.json.invites || [];
+  if (r.json.notices && r.json.notices.length) r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); // v1188 组队通知（与 /state 送达二选一，服务端取走即清）
   // v1051 存全局队伍状态
   window._myTeam = team;
   try { window._isTeamLeader = team ? (team.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
@@ -915,9 +931,28 @@ async function teamRefresh(){
         var kickBtn = (window._isTeamLeader && !m.isLeader) ? ' <button class="btn sm red" data-mhxyteamkick="' + escH(m.accountId) + '">踢出</button>' : '';
         return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(m.username) + '</b><span style="color:#666">[' + (m.playerNo || '?') + ']</span>' + isL + '</span>' + kickBtn + '</div>';
       }).join('');
+      var _meAid = ''; try { _meAid = myAid(); } catch(_){}
       h += (team.pets || []).map(function(p){
-        return '<div class="row"><span>🐾 ' + escH(p.name) + '<span style="color:#666">（' + escH(p.ownerId || '') + '的宠物）</span></span></div>';
+        var _owner = (team.members || []).find(function(m){ return m.accountId === p.ownerId; });
+        var _rm = (p.ownerId === _meAid) ? ' <button class="btn sm" data-mhxyteampetremove="' + escH(p.petKey) + '">撤下</button>' : '';
+        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1">🐾 ' + escH(p.name) + '<span style="color:#666">（' + escH(_owner ? _owner.username : '队友') + '的宠物）</span></span>' + _rm + '</div>';
       }).join('');
+      // v1188 宠物入队入口（Ye 定：人和宠物共用位置；后端计数与文案早已就绪，此前独缺面板按钮，出战宠物无从入队）
+      try {
+        var _inTeam = {}; (team.pets || []).forEach(function(p){ _inTeam[p.petKey] = 1; });
+        var _deployed = (window.Core && typeof window.Core.activePets === 'function' && typeof S !== 'undefined' && S) ? (window.Core.activePets(S) || []) : [];
+        _deployed.forEach(function(pt){
+          var _key = 'pet_' + pt.id;
+          if (_inTeam[_key]) return;
+          var _def = (window.Core.PETS && window.Core.PETS[pt.k]) || {};
+          var _nm = (_def.icon || '🐾') + (_def.name || '灵宠') + '#' + pt.id;
+          if ((team.slotsUsed || 0) < 5) {
+            h += '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1">🐾 ' + escH(_nm) + '<span style="color:#666"> 出战中</span></span> <button class="btn gold sm" data-mhxyteampetadd="' + _key + '" data-petname="' + escH(_nm) + '">带入队</button></div>';
+          } else {
+            h += '<div class="row"><span>🐾 ' + escH(_nm) + '<span style="color:#666"> 出战中（队伍已满，无法入队）</span></span></div>';
+          }
+        });
+      } catch(_){}
       if (window._isTeamLeader){
         h += '<div class="row"><button class="btn red full" data-mhxyteamdisband>解散队伍</button></div>';
       } else {
@@ -949,9 +984,11 @@ async function teamRefresh(){
       onlineBox.innerHTML = '<div class="hint">暂无其他道友在线</div>';
     } else {
       var canInvite = team && window._isTeamLeader && (team.slotsUsed || 0) < 5;
-      onlineBox.innerHTML = '<div class="hint">在线道友：</div>' + ps.slice(0, 30).map(function(p){
-        var btn = canInvite ? ' <button class="btn gold sm" data-mhxyteaminvite="' + escH(p.accountId) + '">邀请</button>' : '';
-        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(p.username) + '</b><span style="color:#666">[' + (p.playerNo || '?') + ']</span></span>' + btn + '</div>';
+      var _memberIds = {}; ((team && team.members) || []).forEach(function(m){ _memberIds[m.accountId] = 1; });
+      onlineBox.innerHTML = '<div class="hint">在线道友：</div>' + ps.slice(0, 100).map(function(p){
+        var _no = (p.player_no != null ? p.player_no : (p.playerNo != null ? p.playerNo : '?')); // v1188 后端字段是 player_no，旧版读 playerNo 恒为 ?，编号从不显示
+        var btn = _memberIds[p.accountId] ? ' <span class="hint" style="color:#7eff9e">已在队中</span>' : (canInvite ? ' <button class="btn gold sm" data-mhxyteaminvite="' + escH(p.accountId) + '">邀请</button>' : ''); // v1188 已入队不再挂邀请按钮；上限 30→100 防人多刷不到
+        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(p.username) + '</b><span style="color:#666">[' + _no + ']</span></span>' + btn + '</div>';
       }).join('');
     }
   }
@@ -959,37 +996,54 @@ async function teamRefresh(){
 async function teamCreate(){
   var r = await api('/api/world/team/create', { method:'POST', body:{} });
   if (r.ok && r.json && r.json.ok){ glog('good', '👥 队伍创建成功'); teamRefresh(); }
-  else glog('bad', '👥 创建队伍失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  else glog('bad', '👥 创建队伍失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
+}
+// v1187 后端失败原因在 err 字段（前端旧版只读 error，读不到就只剩状态码数字）
+function teamErrText(r){
+  var e = (r.json || {}).error || (r.json || {}).err || '';
+  var map = { 'not in team': '你还没有队伍', 'only leader can invite': '只有队长能邀请', 'bad target': '目标不对', 'target already in team': '对方已经有队伍了', 'team full': '队伍满了', 'already invited': '已经邀请过对方了', 'target not online': '对方在闭关状态', 'missing identity': '登录状态失效，请重新登录', 'already in team': '你已经在队伍里了', 'team not found': '队伍不存在（可能已解散）', 'no invite': '没有这份邀请（可能已过期）', 'only leader can kick': '只有队长能踢人', 'cannot kick self': '不能踢自己', 'not a member': '对方不在队伍里', 'only leader can disband': '只有队长能解散队伍', 'only leader can transfer': '只有队长能转让队长', 'pet already in team': '这只灵宠已在队中', 'pet not in team': '这只灵宠不在队中', 'bad pet_key': '灵宠不对' };
+  return map[e] || e || r.status;
 }
 async function teamInvite(targetId){
   var r = await api('/api/world/team/invite', { method:'POST', body:{ target_account_id: targetId } });
   if (r.ok && r.json && r.json.ok){ glog('good', '👥 邀请已发出'); }
-  else glog('bad', '👥 邀请失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  else glog('bad', '👥 邀请失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
 }
 async function teamAccept(teamId){
   var r = await api('/api/world/team/accept', { method:'POST', body:{ team_id: teamId } });
   if (r.ok && r.json && r.json.ok){ glog('good', '👥 已加入队伍'); teamRefresh(); }
-  else glog('bad', '👥 加入失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  else glog('bad', '👥 加入失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
 }
 async function teamDecline(teamId){
   var r = await api('/api/world/team/decline', { method:'POST', body:{ team_id: teamId } });
   if (r.ok && r.json && r.json.ok){ teamRefresh(); }
-  else glog('bad', '👥 操作失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  else glog('bad', '👥 操作失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
 }
 async function teamLeave(){
   var r = await api('/api/world/team/leave', { method:'POST', body:{} });
   if (r.ok && r.json && r.json.ok){ window._myTeam = null; window._isTeamLeader = false; glog('sys', '👥 已离开队伍'); teamRefresh(); }
-  else glog('bad', '👥 离开失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  else glog('bad', '👥 离开失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
 }
 async function teamDisband(){
   var r = await api('/api/world/team/disband', { method:'POST', body:{} });
   if (r.ok && r.json && r.json.ok){ window._myTeam = null; window._isTeamLeader = false; glog('sys', '👥 队伍已解散'); teamRefresh(); }
-  else glog('bad', '👥 解散失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  else glog('bad', '👥 解散失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
 }
 async function teamKick(targetId){
   var r = await api('/api/world/team/kick', { method:'POST', body:{ target_account_id: targetId } });
   if (r.ok && r.json && r.json.ok){ glog('sys', '👥 已踢出队员'); teamRefresh(); }
-  else glog('bad', '👥 踢出失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
+  else glog('bad', '👥 踢出失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
+}
+// v1188 宠物入队/撤下（Ye 定占位；后端 /team/pet/add|remove 早已就绪，此前没有前端入口）
+async function teamPetAdd(petKey, petName){
+  var r = await api('/api/world/team/pet/add', { method:'POST', body:{ pet_key: petKey, pet_name: petName } });
+  if (r.ok && r.json && r.json.ok){ glog('good', '🐾 灵宠已入队'); teamRefresh(); }
+  else glog('bad', '🐾 灵宠入队失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
+}
+async function teamPetRemove(petKey){
+  var r = await api('/api/world/team/pet/remove', { method:'POST', body:{ pet_key: petKey } });
+  if (r.ok && r.json && r.json.ok){ glog('sys', '🐾 灵宠已撤下'); teamRefresh(); }
+  else glog('bad', '🐾 撤下失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
 }
 // v1051 组队：队长移动后同步全队位置
 function teamLeaderMoveSync(x, y){
@@ -998,11 +1052,274 @@ function teamLeaderMoveSync(x, y){
     api('/api/world/team/move', { method:'POST', body:{ x:x, y:y } }).catch(function(){});
   } catch(_){}
 }
+// ===== v1189 联机组队战斗（服务端权威：/api/world/tb/*；本块只负责开战钩子/面板/轮询/结果应用）=====
+function tbErrText(err) {
+  return { not_in_team: '你不在队伍里', no_monster_here: '这格的怪已经被清掉了', already_in_battle: '你已在一场组队战斗中', member_in_battle: '有队友正在另一场战斗中', no_save: '读取存档失败，无法开战', bad_params: '开战参数不对', no_battle: '战斗已结束', battle_over: '战斗已结束', not_participant: '你不在这场战斗里', you_are_down: '你已倒下' }[err] || '联机战斗开启失败';
+}
+window.tbStartFromAdv = async function (q) {
+  var r = await api('/api/world/tb/start', { method: 'POST', body: q });
+  if (!r.ok || !r.json || !r.json.ok) {
+    if (typeof toastLog === 'function') toastLog('bad', '⚔️ ' + tbErrText(r.json && r.json.err));
+    return false;
+  }
+  window._tbBattle = r.json.battle;
+  window._tbAppliedFor = null;
+  tbOpenPanel();
+  return true;
+};
+window.tbNoteMyTb = function (mt) {
+  if (!mt || !mt.id) return;
+  if (window._tbBattle && window._tbBattle.id === mt.id) return;
+  if (window._tbAppliedFor === mt.id) return;
+  var inLocal = false;
+  try { inLocal = (typeof pk !== 'undefined' && !!pk) || !!window.pk; } catch (_) { inLocal = !!window.pk; }
+  if (inLocal) { window._tbPendingId = mt.id; return; } // 正在单人战斗：先不抢界面，战后自动接入
+  tbJoinPanel();
+};
+async function tbJoinPanel() {
+  var r = await api('/api/world/tb/state');
+  if (r.ok && r.json && r.json.battle) {
+    window._tbBattle = r.json.battle;
+    window._tbPendingId = null;
+    tbOpenPanel();
+    if (window._tbBattle.phase === 'over') tbApplyResult(window._tbBattle);
+  }
+}
+setInterval(function () { // 单人战斗结束后的组队战接入（3 秒探一次待接入标记）
+  try {
+    if (!window._tbPendingId) return;
+    var inLocal = false;
+    try { inLocal = (typeof pk !== 'undefined' && !!pk) || !!window.pk; } catch (_) { inLocal = !!window.pk; }
+    if (!inLocal && loggedIn()) tbJoinPanel();
+  } catch (_) {}
+}, 3000);
+function tbOpenPanel() {
+  var el = document.getElementById('tbPanel');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'tbPanel';
+    el.style.cssText = 'display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(94vw,430px);max-height:88vh;overflow-y:auto;background:#141a26;border:1px solid #35507a;border-radius:12px;padding:14px;z-index:9999;color:#dbe6f5;font-size:13px;box-shadow:0 8px 40px rgba(0,0,0,.6)';
+    el.addEventListener('click', function (ev) {
+      var t = ev.target.closest('[data-tb]');
+      if (!t) return;
+      var v = t.getAttribute('data-tb');
+      if (v === 'close') { tbClosePanel(); return; }
+      if (v === 'auto') { tbPostAuto(); return; }
+      tbPostAct(v);
+    });
+    document.body.appendChild(el);
+  }
+  el.style.display = 'block';
+  tbRender();
+  tbPollStart();
+}
+function tbClosePanel() {
+  var el = document.getElementById('tbPanel');
+  if (el) el.style.display = 'none';
+  tbPollStop();
+  if (window._tbDefeatEnd) { // 组队战战败：走正常冒险战败收尾（与单人 finishAdvBattle 同口径）
+    window._tbDefeatEnd = false;
+    try {
+      if (typeof S !== 'undefined' && S && S.run) {
+        var _end = C.advEnd(S, S.dead ? 'dead' : 'defeat');
+        if (_end && typeof showAdvEnd === 'function') showAdvEnd({ lines: [], end: _end });
+      }
+    } catch (_) {}
+  }
+}
+function tbPollStart() {
+  tbPollStop();
+  window._tbPoll = setInterval(tbPollOnce, 2000);
+  window._tbTick = setInterval(function () {
+    var b = window._tbBattle;
+    if (!b || b.phase === 'over') return;
+    var cd = document.getElementById('tbCd');
+    if (cd && b.deadline) cd.textContent = Math.max(0, Math.ceil((b.deadline - Date.now()) / 1000));
+    if (b.deadline && Date.now() > b.deadline + 1200 && !window._tbBusy) tbPollOnce(); // 到点立刻拉一次，不等 2 秒轮询
+  }, 500);
+}
+function tbPollStop() {
+  if (window._tbPoll) { clearInterval(window._tbPoll); window._tbPoll = null; }
+  if (window._tbTick) { clearInterval(window._tbTick); window._tbTick = null; }
+}
+async function tbPollOnce() {
+  if (!window._tbBattle) return;
+  var r = await api('/api/world/tb/state');
+  if (!r.ok || !r.json) return;
+  if (!r.json.battle) { window._tbBattle = null; tbClosePanel(); return; }
+  window._tbBattle = r.json.battle;
+  if (window._tbBattle.phase === 'over') { tbApplyResult(window._tbBattle); tbPollStop(); }
+  if (!window._tbBusy) tbRender();
+}
+async function tbPostAct(act) {
+  if (window._tbBusy) return;
+  window._tbBusy = true;
+  try {
+    var r = await api('/api/world/tb/act', { method: 'POST', body: { action: act } });
+    if (r.ok && r.json && r.json.battle) { window._tbBattle = r.json.battle; if (window._tbBattle.phase === 'over') { tbApplyResult(window._tbBattle); tbPollStop(); } }
+    else if (r.json && r.json.err && typeof toastLog === 'function') toastLog('bad', '⚔️ ' + tbErrText(r.json.err));
+  } catch (_) {}
+  window._tbBusy = false;
+  tbRender();
+}
+async function tbPostAuto() {
+  var b = window._tbBattle;
+  if (!b || !b.me) return;
+  var r = await api('/api/world/tb/auto', { method: 'POST', body: { on: !b.me.auto } });
+  if (r.ok && r.json && r.json.battle) { window._tbBattle = r.json.battle; tbRender(); }
+}
+function tbBar(v, max, color) {
+  var pct = max > 0 ? Math.max(0, Math.min(100, Math.round(v / max * 100))) : 0;
+  return '<div style="background:#232c3d;border-radius:4px;height:8px;overflow:hidden;flex:1"><div style="width:' + pct + '%;height:100%;background:' + color + '"></div></div>';
+}
+function tbRender() {
+  var el = document.getElementById('tbPanel');
+  var b = window._tbBattle;
+  if (!el || !b) return;
+  var myU = (b.units || []).find(function (u) { return u.isMe; }) || {};
+  var over = b.phase === 'over';
+  var rankName = '';
+  try { rankName = (typeof RANKS !== 'undefined' && RANKS[b.mon.rank]) ? RANKS[b.mon.rank].name : ''; } catch (_) {}
+  var h = '<div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px">⚔️ 联机组队战</b>'
+    + '<span style="color:var(--dim,#8fa3bf);font-size:12px">第 ' + b.round + ' 回合</span>'
+    + (over ? '<span style="color:#ffd76a">已结束</span>' : '<span style="color:#8fa3bf;font-size:12px">⏳ <span id="tbCd">' + (b.deadline ? Math.max(0, Math.ceil((b.deadline - Date.now()) / 1000)) : 30) + '</span> 秒</span>')
+    + '<button class="btn" data-tb="close" style="margin-left:auto;padding:2px 10px">✕</button></div>';
+  h += '<div style="margin-top:10px;padding:8px;background:#1a2233;border-radius:8px"><div style="display:flex;gap:6px;align-items:center"><b style="color:#ff9d7a">' + escH(b.mon.name) + '</b>' + (rankName ? '<span style="font-size:11px;color:#c9a959">【' + escH(rankName) + '】</span>' : '') + (b.mon.alive ? '' : '<span style="color:#7ee787">已击杀</span>') + '</div>'
+    + '<div style="display:flex;gap:6px;align-items:center;margin-top:4px">' + tbBar(b.mon.hp, b.mon.maxHp, '#e5534b') + '<span style="font-size:11px">' + b.mon.hp + '/' + b.mon.maxHp + '</span></div></div>';
+  h += '<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">';
+  (b.units || []).forEach(function (u) {
+    var badges = '';
+    if (u.isMe) badges += ' <span style="color:#7ec8ff">（你）</span>';
+    if (u.meditating) badges += ' <span style="color:#c9a959">🧘闭关托管</span>';
+    else if (u.hosted && !u.auto) badges += ' <span style="color:#8fa3bf">💤托管</span>';
+    if (u.auto) badges += ' <span style="color:#7ee787">🤖自动</span>';
+    if (!u.alive) badges += ' <span style="color:#e5534b">倒下</span>';
+    if (!over && u.alive && u.acted) badges += ' <span style="color:#8fa3bf">✔已出招</span>';
+    h += '<div style="padding:6px 8px;background:#1a2233;border-radius:8px"><div style="display:flex;gap:6px;align-items:center"><b>' + escH(u.username) + '</b>' + badges + '</div>'
+      + '<div style="display:flex;gap:6px;align-items:center;margin-top:3px">' + tbBar(u.hp, u.maxHp, '#3fb950') + '<span style="font-size:11px">' + u.hp + '/' + u.maxHp + '</span></div>'
+      + '<div style="display:flex;gap:6px;align-items:center;margin-top:2px">' + tbBar(u.mp, u.maxMp, '#58a6ff') + '<span style="font-size:11px">法力 ' + u.mp + '/' + u.maxMp + '</span></div>'
+      + (u.pets || []).map(function (p) { return '<div style="font-size:11px;color:#a8bdd6;margin-top:2px">🐾 ' + escH(p.name) + ' ' + Math.max(0, p.hp) + '/' + p.maxHp + (p.alive ? '' : '（倒下）') + '</div>'; }).join('')
+      + '</div>';
+  });
+  h += '</div>';
+  if (over && b.result) {
+    var r = b.result;
+    var parts = [];
+    if (r.winner === 'players') {
+      parts.push('🏆 胜利！金元 <b class="y">+' + (r.gold | 0) + '</b>');
+      var g = Object.keys(r.gains || {}).map(function (a) { return a + '+' + r.gains[a]; }).join(' ');
+      if (g) parts.push('属性 ' + g);
+      if (r.drops && r.drops.length) {
+        if (b.initiator === myU.accountId) { try { parts.push('掉落：' + r.drops.map(function (d) { return d.skip ? '装备（本地生成）' : lootLabel(d.st, d.k) + '×' + d.n; }).join('、')); } catch (_) { parts.push('掉落已入包'); } }
+        else parts.push('掉落归发起者');
+      }
+      if (r.sha) parts.push('👹 煞气 ×1');
+      if (r.wxFrag) parts.push('五行残物 ×1');
+    } else if (r.winner === 'monster') {
+      if (r.defeat && r.defeat.protected) parts.push('💀 战败：🛡️新人保护免除惩罚，经验 +' + (r.defeat.xp | 0));
+      else if (r.defeat) parts.push('💀 战败：金元 -' + (r.defeat.lostGold | 0) + '、体力清零、寿元 -1，经验 +' + (r.defeat.xp | 0));
+      else parts.push('💀 战败');
+    } else parts.push('同归于尽');
+    h += '<div style="margin-top:10px;padding:8px;background:#22331f;border-radius:8px">' + parts.join('<br>') + '</div>';
+  } else if (!over) {
+    if (!myU.alive) h += '<div style="margin-top:10px;color:#e5534b">你已倒下，等待战斗结束…</div>';
+    else if (b.me && b.me.hosted && !b.me.auto) h += '<div style="margin-top:10px;color:#c9a959">托管中（按你的战斗预设出招）</div>';
+    else if (b.me && b.me.acted) h += '<div style="margin-top:10px;color:#8fa3bf">已出招，等待队友…</div>';
+    else {
+      var skBtns = '';
+      try {
+        var mySkills = (typeof S !== 'undefined' && S && Array.isArray(S.skills)) ? S.skills : [];
+        mySkills.forEach(function (k) {
+          var sk = (typeof SKILLS !== 'undefined' && SKILLS[k]) ? SKILLS[k] : null;
+          if (!sk || sk.passive) return;
+          var dis = (myU.mp || 0) < sk.mp ? ' disabled' : '';
+          skBtns += '<button class="btn" data-tb="' + k + '"' + dis + '>' + escH(sk.name) + '<small> ' + sk.mp + '法力</small></button>';
+        });
+      } catch (_) {}
+      h += '<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">'
+        + '<button class="btn gold" data-tb="attack">⚔️ 普通攻击</button>'
+        + '<button class="btn" data-tb="defend">🛡️ 防御</button>'
+        + skBtns
+        + '<button class="btn' + (b.me && b.me.auto ? ' gold' : '') + '" data-tb="auto" style="grid-column:1/-1">🤖 自动 ' + (b.me && b.me.auto ? '开（按预设出招）' : '关') + '</button>'
+        + '</div>';
+    }
+  }
+  h += '<div id="tbLog" style="margin-top:10px;max-height:180px;overflow-y:auto;font-size:11px;line-height:1.7;color:#a8bdd6;border-top:1px solid #2a364d;padding-top:6px">'
+    + (b.log || []).map(function (l) { return '<div>' + escH(l) + '</div>'; }).join('') + '</div>';
+  el.innerHTML = h;
+  var lg = document.getElementById('tbLog');
+  if (lg) lg.scrollTop = lg.scrollHeight;
+}
+function tbApplyResult(b) { // 结算应用（只应用一次）：服务端已写 D1，这里镜像到本地存档并对齐 rev（与 adv_loot 同口径）
+  if (!b || !b.result || window._tbAppliedFor === b.id) return;
+  window._tbAppliedFor = b.id;
+  var r = b.result;
+  try {
+    if (typeof MHXY !== 'undefined' && MHXY.setBaseRev && r.rev) MHXY.setBaseRev(r.rev);
+    if (typeof S === 'undefined' || !S) return;
+    if (r.winner === 'players') {
+      S.gold = (S.gold | 0) + (r.gold | 0);
+      for (var a in (r.gains || {})) S.attrs[a] = (S.attrs[a] | 0) + r.gains[a];
+      (r.drops || []).forEach(function (d) {
+        if (d.skip) { // 装备走本地 roll（镜像 adv_loot 客户端口径）
+          try {
+            var tIdx = Object.keys(DIFFS).indexOf(b.dk);
+            var gr = rollGear(S, tIdx + ((b.mon.rank | 0) >= 3 ? 1 : 0));
+            if (gr) { if (S.gearBag.length < bagCap(S)) S.gearBag.push(gr); else S.gold += gearPrice(gr); }
+          } catch (_) {}
+        } else if (d.st === 'petEggs') S.petEggs = (S.petEggs | 0) + d.n;
+        else if (d.st === 'maiPages') S.maiPages = (S.maiPages | 0) + d.n;
+        else { S[d.st] = S[d.st] || {}; S[d.st][d.k] = (S[d.st][d.k] | 0) + d.n; }
+      });
+      if (r.sha) { S.inv = S.inv || {}; S.inv.sha = (S.inv.sha | 0) + 1; }
+      if (r.wxFrag) { S.wxFrag = S.wxFrag || {}; S.wxFrag[r.wxFrag] = (S.wxFrag[r.wxFrag] | 0) + 1; }
+      if (S.run && b.initiator === myAid()) { S.run.rew = S.run.rew || { wins: 0 }; S.run.rew.wins = (S.run.rew.wins | 0) + 1; }
+      if (typeof toastLog === 'function') toastLog('good', '🏆 组队战胜利，奖励已到账');
+    } else if (r.winner === 'monster' && r.defeat) {
+      var df = r.defeat;
+      if (df.protected) { S.protect = Math.max(0, (S.protect | 0) - 1); }
+      else {
+        for (var a2 in (df.lost || {})) { S.attrs[a2] = (S.attrs[a2] | 0) - df.lost[a2]; if (a2 === 'vit' && S.vitPeak) S.vitPeak = Math.max(0, S.vitPeak - df.lost[a2]); }
+        S.gold = Math.max(0, (S.gold | 0) - (df.lostGold | 0));
+        S.stamina = 0;
+        S.lifespan = Math.max(0, (S.lifespan | 0) - 1);
+        if (df.statusAdded) { S.status = S.status || {}; if (df.statusAdded === 'depress') S.status.depress = 12; else S.status[df.statusAdded] = true; }
+      }
+      S.xp = (S.xp | 0) + (df.xp | 0);
+      if (S.run) { S.run.defeat = true; window._tbDefeatEnd = true; }
+      if (typeof toastLog === 'function') toastLog('bad', '💀 组队战战败');
+    }
+    if (r.post) {
+      S.hpCur = r.post.hpCur;
+      if ((S.realm | 0) >= 1) S.mana = r.post.mana;
+    }
+    save();
+    if (typeof commit === 'function') commit();
+    if (typeof render === 'function') render();
+  } catch (_) {}
+}
+
 // v1051 组队：队员位置跟随轮询（3秒）——服务端已同步全队位置，队员拉取自己的更新本地
+// v1188 升级：旧版只有本页开过组队面板（_myTeam 已赋值）才跟随，进队后不打开面板就永远不同步（实测 60 秒不动、整页刷新才好）；
+// 改为先自举对账队伍状态（未查过立刻查、之后每 15 秒对一次），被移出队伍也会自己收敛并留一行日志，不再全程静默。
 setInterval(function(){
   try {
-    if (!window._myTeam || window._isTeamLeader) return;
     if (typeof loggedIn !== 'function' || !loggedIn()) return;
+    window._teamTick = (window._teamTick || 0) + 1;
+    if (typeof window._myTeam === 'undefined' || window._teamTick % 5 === 0) {
+      api('/api/world/team/state').then(function(r){
+        if (!r.ok || !r.json || !r.json.ok) return;
+        var had = window._myTeam || null;
+        var now = r.json.team || null;
+        var gotNotice = false;
+        if (r.json.notices && r.json.notices.length) { gotNotice = true; r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); }
+        window._myTeam = now;
+        try { window._isTeamLeader = now ? (now.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
+        if (had && !now && !gotNotice) { try { glog('sys', '👥 你已不在队伍中'); } catch(_){} }
+        if (document.getElementById('mhxyTeamInfo') && typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} }
+      }).catch(function(){});
+    }
+    if (!window._myTeam || window._isTeamLeader) return;
     api('/api/world/state').then(function(r){
       if (!r.ok || !r.json) return;
       var ps = r.json.players || [];
@@ -1015,6 +1332,7 @@ setInterval(function(){
             S.worldMap.px = sx; S.worldMap.py = sy;
             if (typeof save === 'function') save();
             if (typeof renderWorldMap === 'function') renderWorldMap();
+            try { glog('sys', '👥 队长带队移动，你已跟随'); } catch(_){}
           }
           break;
         }
@@ -1023,6 +1341,7 @@ setInterval(function(){
   } catch(_){}
 }, 3000);
 window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
+window.teamRefresh = teamRefresh; // v1187 导出：人物卡组队先刷新队伍状态，再决定要不要先建队
 window.pkChallenge = pkChallenge;
 window.pkAttack = pkAttack; // v1176 补导出攻击（外层 pkAttackPlayer 改调 window.*，v1171 只导出名字、调用方仍用裸名所以一直没通）
 async function pkPollResult(cid, n){
@@ -1422,6 +1741,8 @@ function onClick(d, t, e){
   if (d.mhxyteamaccept){ teamAccept(d.mhxyteamaccept); return true; }
   if (d.mhxyteamdecline){ teamDecline(d.mhxyteamdecline); return true; }
   if (d.mhxyteamkick){ teamKick(d.mhxyteamkick); return true; }
+  if (d.mhxyteampetadd){ teamPetAdd(d.mhxyteampetadd, d.petname || '灵宠'); return true; }
+  if (d.mhxyteampetremove){ teamPetRemove(d.mhxyteampetremove); return true; }
   if ('close' in d && M.chatOpen){ closeChatWs(); }
   return false;
 }

@@ -1918,7 +1918,7 @@ function renderCombat() {
   const tgtOpts = (b.B.pet && b.B.pet.hp > 0) ? `<div style="grid-column:1/-1;font-size:12px;color:var(--dim)">🎯 目标：<button class="act${pk.target === 'pet' ? '' : ' gold'}" data-target="foe" style="padding:4px 10px"><span class="t">${esc(b.B.name)}</span></button> <button class="act${pk.target === 'pet' ? ' gold' : ''}" data-target="pet" style="padding:4px 10px"><span class="t">🐾${esc(b.B.pet.name)}</span></button></div>` : '';
   const _aPets = (b.A.pets || []).filter(p => p.hp > 0 && !p.ko);
   const petOrderOpts = _aPets.length ? `<div style="grid-column:1/-1;font-size:10px;color:var(--dim)">🐾 灵宠指令（点选切换，不消耗回合）</div>` + _aPets.map((p, i) => { const _o = p._order || 'auto'; return `<div style="grid-column:1/-1;display:flex;gap:4px;align-items:center;font-size:11px;color:var(--dim)"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span>${[['auto','🤖自动'],['attack','⚔️攻击'],['defend','🛡️防御'],['magic','✨法术']].map(([v, t]) => `<button class="act${_o === v ? ' gold' : ''}" data-petorder="${i}:${v}" style="padding:4px 8px;flex:0 0 auto"><span class="t" style="font-size:12px">${t}</span></button>`).join('')}</div>`; }).join('') : '';
-  $('actions').innerHTML = `${tgtOpts}${burnOpts}${burstOpts}${petOrderOpts}<button class="act white" data-c="attack"><span class="t">普通攻击</span><span class="s">力量×1</span></button>${!isMortal ? `<button class="act" data-c="mana_attack"><span class="t">${(S.realm|0) >= 8 ? '⚡仙力攻击' : '💧法力攻击'}</span><span class="s">${(S.realm|0) >= 8 ? '1仙力=100万伤' : '1法力=10伤'}</span></button>` : ''}${(S.realm|0) >= 8 ? `<button class="act" data-c="xian_defend"><span class="t">🛡️仙力防御</span><span class="s">1仙力=100万防·1回合</span></button>` : ''}${!isMortal ? `<button class="act" data-c="fashu_defend"><span class="t">🔰法术防御</span><span class="s">${(S.realm|0) >= 8 ? '1仙力=100万法防' : '1法力=10法防'}·1回合</span></button>` : ''}${sk}<button class="act" data-c="defend"><span class="t">防御</span><span class="s">减伤</span></button>${['hp'].map(t => { const n = Object.keys(S.elixirs || {}).filter(k => k[0] === t[0] && k.startsWith(t)).reduce((a, k) => a + S.elixirs[k], 0); return n ? `<button class="act" data-c="pot:${t}"><span class="t">${C.POTIONS[t].name}</span><span class="s">×${n} · 用最好的</span></button>` : ''; }).join('')}
+  $('actions').innerHTML = `${tgtOpts}${burnOpts}${burstOpts}${petOrderOpts}<button class="act${pk.autoOn ? ' gold' : ''}" data-pkauto="1"><span class="t">🤖 自动 ${pk.autoOn ? '开' : '关'}</span><span class="s">按战斗预设循环</span></button><button class="act white" data-c="attack"><span class="t">普通攻击</span><span class="s">力量×1</span></button>${!isMortal ? `<button class="act" data-c="mana_attack"><span class="t">${(S.realm|0) >= 8 ? '⚡仙力攻击' : '💧法力攻击'}</span><span class="s">${(S.realm|0) >= 8 ? '1仙力=100万伤' : '1法力=10伤'}</span></button>` : ''}${(S.realm|0) >= 8 ? `<button class="act" data-c="xian_defend"><span class="t">🛡️仙力防御</span><span class="s">1仙力=100万防·1回合</span></button>` : ''}${!isMortal ? `<button class="act" data-c="fashu_defend"><span class="t">🔰法术防御</span><span class="s">${(S.realm|0) >= 8 ? '1仙力=100万法防' : '1法力=10法防'}·1回合</span></button>` : ''}${sk}<button class="act" data-c="defend"><span class="t">防御</span><span class="s">减伤</span></button>${['hp'].map(t => { const n = Object.keys(S.elixirs || {}).filter(k => k[0] === t[0] && k.startsWith(t)).reduce((a, k) => a + S.elixirs[k], 0); return n ? `<button class="act" data-c="pot:${t}"><span class="t">${C.POTIONS[t].name}</span><span class="s">×${n} · 用最好的</span></button>` : ''; }).join('')}
     <button class="act" data-battlebag style="grid-column:span 3;padding:6px"><span class="t">🎒 背包</span><span class="s">使用药水/疗伤药（消耗本回合）</span></button>
     <button class="act danger" data-c="surrender" style="grid-column:span 3;padding:6px"><span class="s">逃跑（视为落败）</span></button>`;
   const xi = $('xbInput');
@@ -1927,6 +1927,17 @@ function renderCombat() {
     if ((S.xianBurst|0) > 0 && xi.value !== String(S.xianBurst)) xi.value = S.xianBurst;
     xi.oninput = () => { let v = Math.floor(+xi.value || 0); v = Math.max(0, Math.min(v, Math.floor(S.mana))); S.xianBurst = v; save(); };
     xi.onchange = () => { renderCombat(); };
+  }
+  // v1189 战斗内自动开关：开着时按本人战斗预设循环自动出招（回合号取模）；手动点任意出招仍然优先（doPkAction 的 _acting 守卫）
+  if (pk.autoOn && !b.over && !pk._acting && !pk.zxPending) {
+    clearTimeout(pk._autoT);
+    pk._autoT = setTimeout(() => {
+      if (!pk || !pk.autoOn || !pk.battle || pk.battle.over || pk._acting) return;
+      let _act = 'attack';
+      const _plan = Array.isArray(S.battlePlan) ? S.battlePlan : null;
+      if (_plan) { const _p = _plan[(pk.battle.round) % 5]; if (_p === 'attack' || _p === 'defend') _act = _p; else if (_p && C.SKILLS[_p] && !C.SKILLS[_p].passive && pk.battle.A.skills.includes(_p) && pk.battle.A.mp >= C.SKILLS[_p].mp) _act = _p; }
+      doPkAction(_act);
+    }, 650);
   }
 }
 
@@ -2548,6 +2559,7 @@ function sheetAlchemy(warn) {
     `<div class="grid2"><button class="btn full" data-life="cook">← 生活技能</button><button class="btn full" data-close>关闭</button></div>`);
 }
 function sheetAdventure(page) {
+  if (pk && pk.adv && !pk.trib) { try { showTip('⚔️ 战斗中，先解决眼前的战斗'); } catch(_) {} try { if (typeof renderCombat === 'function') renderCombat(); else render(); } catch(_) {} return; } // v1188 战斗中不续开冒险面板（传送门/冒险入口同守卫，防残留战斗）
   if (S.run) return sheetRun();
   page = page || 1;
   const mjLeft = (C.MIJING_DAILY + ID_TIERS[idTier()].mj) - (S.mijingD === C.todayStr() ? (S.mijingN | 0) : 0);
@@ -2727,6 +2739,7 @@ function doAdvMove(dir) {
   if (r.resMsg) { try { toastLog('good', r.resMsg); } catch (_) {} } // v1125 资源格采集反馈
 }
 function doAdvRetreat() {
+  if (pk && pk.adv && !pk.trib) { try { showTip('⚔️ 战斗中无法撤退'); } catch(_) {} return; } // v1188 双保险：战斗中不许撤退（撤退会清 run，战斗变残留）
   const r = C.advRetreat(S); if (!r) return;
   showAdvEnd(r);
 }
@@ -2738,6 +2751,7 @@ function showAdvEnd(r) { // 冒险结算统一展示
   openSheet(`<h2>冒险结束</h2>${r.lines.length ? `<div class="hint">${r.lines.join('；')}</div>` : ''}<div class="scene">${sum}</div><div class="grid2"><button class="btn gold" data-a="adventure">再来一轮</button><button class="btn" data-close>关闭</button></div>`);
 }
 function doAdventure(dk) {
+  if (pk && pk.adv && !pk.trib) { try { showTip('⚔️ 战斗中，先解决眼前的战斗'); } catch(_) {} try { if (typeof renderCombat === 'function') renderCombat(); else render(); } catch(_) {} return; } // v1188 冒险战斗中不重开冒险面板（防撤退/走格把进行中的战斗变残留）
   if (S.run && !S.dead) { sheetRun(); return; } // 已在冒险中：直接继续
   const run = C.advStart(S, dk); if (!run) { if (S.dead) { closeSheet(); afterAct(); commit(); } return; }
   if (C.hasSt(S, 'poison') && !S.dead) { // 中毒：每次进冒险扣中毒时生命上限的10%
@@ -2758,6 +2772,13 @@ async function doAdvChoose(i) {
   const ev = S.run && S.run.ev;
   if (ev && ev.type === 'fight' && i === 0) { // 冒险战斗：进手动战斗界面再选燃血/燃法/仙力
     const run = S.run;
+    // v1189 联机组队战钩子：资源格怪（主动攻击/惊扰）+ 在队（≥2 人）+ 共享图 → 开服务端组队战，全队拉入；失败已在原地提示，不回落单人战
+    if (ev.monTile && run.shared && run.shared.on && window._myTeam && window._myTeam.members && window._myTeam.members.length > 1 && typeof window.tbStartFromAdv === 'function') {
+      const _mtb = ev.monTile;
+      const _okTb = await window.tbStartFromAdv({ dk: run.dk, x: _mtb.x, y: _mtb.y, tier: _mtb.tier });
+      if (_okTb) { run.ev = null; save(); closeSheet(); }
+      return;
+    }
     const _pkA = { battle: C.advBattleSetup(S, run), adv: true };
     try { window._pkSeq = Date.now(); } catch(_) {}
     _pkA._seq = window._pkSeq;
@@ -4337,13 +4358,27 @@ function sheetChat() {
 function sheetBattlePlan() {
   const acts = [['attack','⚔️攻击'],['defend','🛡️防御']];
   Object.keys(SKILLS).forEach(k => { if ((S.skills||[]).includes(k)) acts.push([k, SKILLS[k].name + `（${SKILLS[k].mp}法力）`]); });
-  let html = `<h2>⚔️ 战斗预设</h2><div class="hint">自动战斗前5回合按此出招，之后系统接管。点选每回合招式：</div>`;
+  let html = `<h2>⚔️ 战斗预设</h2><div class="hint">自动战斗全程按此预设循环出招（5 回合一循环）；联机组队战里你被托管时也按此出招。点选每回合招式：</div>`;
   for (let i = 0; i < 5; i++) {
     const cur = (S.battlePlan||[])[i] || 'attack';
     const curName = acts.find(a=>a[0]===cur)?.[1]||cur;
     html += `<div class="row"><div class="lab">第 ${i+1} 回合<small>当前：${curName}</small></div><div class="grid2">`;
     acts.forEach(([k,name]) => { html += `<button class="btn${k===cur?' gold':''}" data-bp="${i}:${k}">${name}</button>`; });
     html += `</div></div>`;
+  }
+  const _outIds = (Array.isArray(S.pet) ? S.pet : (S.pet != null ? [S.pet] : []));
+  const _petOrds = [['attack', '⚔️攻击'], ['magic', '✨法术'], ['defend', '🛡️防御'], ['auto', '🐾自动']];
+  for (const _pid of _outIds) {
+    const _sp = (S.pets || []).find(p => p && p.id === +_pid);
+    if (!_sp) continue;
+    const _plan = Array.isArray(_sp.battlePlan) && _sp.battlePlan.length === 5 ? _sp.battlePlan : ['auto', 'auto', 'auto', 'auto', 'auto'];
+    html += `<div class="hint" style="margin-top:12px">🐾 ${esc(_sp.name || (PETS[_sp.k] ? PETS[_sp.k].name : '灵宠'))} 的预设（随主人参战，同样循环）</div>`;
+    for (let i = 0; i < 5; i++) {
+      const _cur = _plan[i] || 'auto';
+      html += `<div class="row"><div class="lab">第 ${i + 1} 回合</div><div class="grid2">`;
+      _petOrds.forEach(([k, name]) => { html += `<button class="btn${k === _cur ? ' gold' : ''}" data-bppet="${_sp.id}:${i}:${k}">${name}</button>`; });
+      html += `</div></div>`;
+    }
   }
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
   openSheet(html);
@@ -7201,7 +7236,13 @@ function doPkActionGo(act) {
   doOne(0);
 }
 async function finishAdvBattle() {
-  const run = S.run, b = pk.battle;
+  const run = S.run, b = pk && pk.battle;
+  if (!run || !b || !run.ev || !run.ev.mon) { // v1188 残留战斗守卫：冒险已撤退/结束、run 已清时战斗作废——不结算、不报错、不卡死
+    try { log('sys', '⚔️ 这场战斗已随冒险结束而散去。'); } catch(_) {}
+    pk = null; try { window.pk = null; } catch(_) {}
+    try { render(); } catch(_) {}
+    return;
+  }
   const r = await C.advBattleSettle(S, run, b);
   const head = `⚔️ ${monCard(run.ev.mon)}`;
   log(r.win ? 'good' : 'bad', `${head}<br>${r.lines.join('；')}` + `<details><summary>战斗记录（${b.round} 回合）</summary>${b.lines.join('')}</details>`);
@@ -7611,7 +7652,8 @@ document.addEventListener('click', e => {
     save(); renderCombat();
   }
   else if (d.target) { if (pk) { pk.target = d.target; save(); renderCombat(); } }
-  else if (d.petorder !== undefined) { if (pk && pk.battle && pk.battle.A) { const _parts = String(d.petorder).split(':'), _pi = +_parts[0], _pv = _parts[1]; const _pets = pk.battle.A.pets || []; if (_pets[_pi]) { _pets[_pi]._order = _pv; save(); renderCombat(); toastLog('sys', `🐾${_pets[_pi].name}指令：${{auto:'🤖自动',attack:'⚔️攻击',defend:'🛡️防御',magic:'✨法术'}[_pv] || _pv}`); } } } 
+  else if (d.pkauto) { if (pk) { pk.autoOn = !pk.autoOn; if (!pk.autoOn && pk._autoT) clearTimeout(pk._autoT); renderCombat(); } }
+  else if (d.petorder !== undefined) { if (pk && pk.battle && pk.battle.A) { const _parts = String(d.petorder).split(':'), _pi = +_parts[0], _pv = _parts[1]; const _pets = pk.battle.A.pets || []; if (_pets[_pi]) { _pets[_pi]._order = _pv; _pets[_pi]._orderManual = 1; save(); renderCombat(); toastLog('sys', `🐾${_pets[_pi].name}指令：${{auto:'🤖自动',attack:'⚔️攻击',defend:'🛡️防御',magic:'✨法术'}[_pv] || _pv}`); } } } 
   else if (d.c === 'xian_defend') {
     const b = pk.battle;
     const _curXian = Math.floor(b.A.mp);
@@ -7803,6 +7845,7 @@ document.addEventListener('click', e => {
   else if (d.drink) doDrink(d.drink, +d.g, +d.n);
   else if (d.take) window.finishPk(d.take);
   else if (d.bp) { const [idx, act] = d.bp.split(':'); if (!Array.isArray(S.battlePlan)) S.battlePlan = ['attack','attack','attack','attack','attack']; S.battlePlan[+idx] = act; save(); sheetBattlePlan(); }
+  else if (d.bppet) { const [_pid2, _idx2, _ord2] = d.bppet.split(':'); const _sp2 = (S.pets || []).find(p => p && p.id === +_pid2); if (_sp2) { if (!Array.isArray(_sp2.battlePlan) || _sp2.battlePlan.length !== 5) _sp2.battlePlan = ['auto', 'auto', 'auto', 'auto', 'auto']; _sp2.battlePlan[+_idx2] = _ord2; save(); sheetBattlePlan(); } }
   else if ('close' in d) closeSheet();
   else if ('reset' in d) doReset();
   else if (t.id === 'menuBtn') sheetMenu();

@@ -629,6 +629,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   if (typeof szSyncMai === 'function') szSyncMai(S);
   S.maiShu = S.maiShu ? 1 : 0; S.maiShuXp = Math.max(0, Math.floor(+S.maiShuXp || 0));
   if (!Array.isArray(S.battlePlan) || S.battlePlan.length !== 5) S.battlePlan = ['attack','attack','attack','attack','attack'];
+  if (Array.isArray(S.pets)) for (const _pp of S.pets) { if (_pp && (!Array.isArray(_pp.battlePlan) || _pp.battlePlan.length !== 5)) _pp.battlePlan = ['auto','auto','auto','auto','auto']; if (_pp && Array.isArray(_pp.battlePlan)) _pp.battlePlan = _pp.battlePlan.map(o => ['attack','magic','defend','auto'].includes(o) ? o : 'auto'); }
   if (!S.beastPills || typeof S.beastPills !== 'object' || Array.isArray(S.beastPills)) S.beastPills = {}; for (const k in S.beastPills) if (!/^bp[123]$/.test(k) || !(S.beastPills[k] > 0)) delete S.beastPills[k]; else S.beastPills[k] = Math.floor(S.beastPills[k]); /* v11 灵兽丹 */
   S.v = 11; // v11 灵兽丹
   for (const k in d) if (S[k] === undefined) S[k] = d[k];
@@ -2792,7 +2793,19 @@ Battle.prototype.finishRound = function () {
   }
   this.lines.push(...L); return L;
 };
+// v1189 宠物战斗预设：每回合开始，按出战序把存档宠的 battlePlan[(回合-1)%5] 套到 fighter 宠的 _order；本场被手动改令的宠（_orderManual）跳过，手动优先
+function applyPetPlans(b, round) {
+  if (typeof S === 'undefined' || !b || !b.A || !Array.isArray(b.A.pets)) return;
+  const ids = (Array.isArray(S.pet) ? S.pet : (S.pet != null ? [S.pet] : []));
+  b.A.pets.forEach((pt, i) => {
+    if (!pt || pt._orderManual || pt.hp <= 0) return;
+    const sp = (S.pets || []).find(p => p && p.id === +ids[i]);
+    const plan = sp && Array.isArray(sp.battlePlan) && sp.battlePlan.length === 5 ? sp.battlePlan : null;
+    pt._order = plan ? (plan[(round - 1) % 5] || 'auto') : (pt._order || 'auto');
+  });
+}
 Battle.prototype.playRound = function (actA, actB) {
+  try { applyPetPlans(this, this.round + 1); } catch (_) {}
   const L0 = this.prepRound(actA, actB);
   if (!L0) return [];
   const L = [...L0];
@@ -2804,7 +2817,7 @@ Battle.prototype.playRound = function (actA, actB) {
   L.push(...this.finishRound());
   return L;
 };;
-Battle.prototype.auto = function () { const plan = (typeof S !== 'undefined' && Array.isArray(S.battlePlan)) ? S.battlePlan : null; let round = 0; while (!this.over) { round++; let actA = aiChoose(this.A, this.B); if (plan && round <= 5 && plan[round-1]) { const p = plan[round-1]; if (p === 'attack' || p === 'defend' || (SKILLS[p] && canUse(this.A, p))) actA = p; } this.playRound(actA, aiChoose(this.B, this.A)); } return this; };
+Battle.prototype.auto = function () { const plan = (typeof S !== 'undefined' && Array.isArray(S.battlePlan)) ? S.battlePlan : null; let round = 0; while (!this.over) { round++; let actA = aiChoose(this.A, this.B); if (plan && plan[(round - 1) % 5]) { const p = plan[(round - 1) % 5]; if (p === 'attack' || p === 'defend' || (SKILLS[p] && canUse(this.A, p))) actA = p; } this.playRound(actA, aiChoose(this.B, this.A)); } return this; };
 
 function distribute(tot, w, jitter) {
   const out = {}; ATTRS.forEach(k => out[k] = 1);
