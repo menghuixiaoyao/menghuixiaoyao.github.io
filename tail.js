@@ -618,6 +618,23 @@ async function checkCloud(){
     try { markDirty(); } catch(_){}
     return;
   }
+  // v1197 捞回补漏：若本账号还有旧版按用户名寄存的档没被认领（登录时槽位已归本号、换档分支没触发的情形），在此直接捞回成本号准档
+  var _legacyStash = null, _myNm = '';
+  try { _myNm = ls(LK.name) || ''; if (_myNm) _legacyStash = localStorage.getItem('mhxy_save_acct_name_' + _myNm); } catch(_){}
+  if (_legacyStash){
+    try {
+      var _curSlot = localStorage.getItem(M.saveKey); if (_curSlot) localStorage.setItem('mhxy_save_backup', _curSlot);
+      localStorage.setItem(M.saveKey, _legacyStash);
+      localStorage.removeItem('mhxy_save_acct_name_' + _myNm);
+      localStorage.setItem('mhxy_sowner', _myNm);
+      localStorage.setItem('mhxy_sowner_aid', ls(LK.aid) || '');
+    } catch(_){}
+    if (r.json.exists){ var _srv1 = r.json.rev | 0; M.baseRev = _srv1; try { ls(revKey(), String(_srv1)); } catch(_){} }
+    glog('good', '🌐 已捞回本机寄存的存档，将以这份为准同步云端');
+    try { markDirty(); } catch(_){}
+    setTimeout(function(){ try { location.reload(); } catch(_){} }, 400);
+    return;
+  }
   if (!r.json.exists) return;
   var srv = r.json.rev | 0;
   var mine = false;
