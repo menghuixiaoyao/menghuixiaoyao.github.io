@@ -1247,7 +1247,7 @@ function tbRender() {
     }
   }
   h += '<div id="tbLog" style="margin-top:10px;max-height:180px;overflow-y:auto;font-size:11px;line-height:1.7;color:#a8bdd6;border-top:1px solid #2a364d;padding-top:6px">'
-    + (b.log || []).map(function (l) { return '<div>' + escH(l) + '</div>'; }).join('') + '</div>';
+    + (b.log || []).map(function (l) { return '<div>' + escH(l && typeof l === 'object' ? (l.text || '') : l) + '</div>'; }).join('') + '</div>';
   el.innerHTML = h;
   var lg = document.getElementById('tbLog');
   if (lg) lg.scrollTop = lg.scrollHeight;
