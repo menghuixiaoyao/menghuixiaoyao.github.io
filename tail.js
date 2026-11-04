@@ -289,16 +289,60 @@ function onReplaced(){
 }
 function clearAuth(clearRev){
   [LK.tok, LK.name, LK.pno, LK.guest, LK.aid].forEach(function(k){ ls(k, null); });
-  if (clearRev !== false) ls(LK.rev, null);
+  if (clearRev !== false) ls(LK.rev, null); // v1193 只清历史全局 rev；各账号自己的 rev 键保留，方便重登对齐
   M.baseRev = 0; M.dirty = false;
   stopPresence(); closeChatWs(); closePkWs();
 }
+// v1193 号分离：云同步版本号按账号存（mhxy_rev_<account_id>），不再全号共用一个
+function revKey(){ var a = ls(LK.aid) || ''; return a ? LK.rev + '_' + a : LK.rev; }
+function loadBaseRev(){
+  var a = ls(LK.aid) || '';
+  if (!a) return parseInt(ls(LK.rev) || '0', 10) || 0;
+  return parseInt(ls(LK.rev + '_' + a) || '0', 10) || 0; // 历史全局 rev 的归属在 separateOnLogin 里先行裁定，这里只读本账号的键
+}
+// v1193 号分离：本地存档槽按账号隔离。切到别的账号时，现档寄存到主人名下，新账号载入自己的档（没有就清空等云档/新建）。返回 true 表示已换档、调用方应重载页面
+function separateOnLogin(newAid, newName){
+  if (!newAid) return false;
+  var slot = null; try { slot = localStorage.getItem(M.saveKey); } catch(_){}
+  var owA = ''; try { owA = localStorage.getItem('mhxy_sowner_aid') || ''; } catch(_){}
+  var owN = ''; try { owN = localStorage.getItem('mhxy_sowner') || ''; } catch(_){}
+  var _legacyRev = null; try { _legacyRev = ls(LK.rev); } catch(_){}
+  if (_legacyRev != null){
+    var _revOwnerAid = owA || ((owN && owN === newName) ? newAid : (!owA && !owN ? newAid : ''));
+    if (_revOwnerAid){ try { if (ls(LK.rev + '_' + _revOwnerAid) == null) ls(LK.rev + '_' + _revOwnerAid, _legacyRev); } catch(_){} }
+  }
+  if (!slot){
+    try { localStorage.setItem('mhxy_sowner', newName || ''); localStorage.setItem('mhxy_sowner_aid', newAid); } catch(_){}
+    return false;
+  }
+  if (!owA && !owN){
+    try { localStorage.setItem('mhxy_sowner', newName || ''); localStorage.setItem('mhxy_sowner_aid', newAid); } catch(_){}
+    return false;
+  }
+  var belongsOther = owA ? (owA !== newAid) : (owN !== newName);
+  if (!belongsOther && !owA && owN === newName){ try { localStorage.setItem('mhxy_sowner_aid', newAid); } catch(_){} }
+  if (!belongsOther) return false;
+  try { localStorage.setItem('mhxy_save_acct_' + (owA || ('name_' + owN)), slot); } catch(_){}
+  var mine = null; try { mine = localStorage.getItem('mhxy_save_acct_' + newAid); } catch(_){}
+  try {
+    if (mine) localStorage.setItem(M.saveKey, mine);
+    else localStorage.removeItem(M.saveKey);
+    localStorage.setItem('mhxy_sowner', newName || '');
+    localStorage.setItem('mhxy_sowner_aid', newAid);
+  } catch(_){}
+  return true;
+}
 function saveAuth(d){
+  var swapped = false;
+  try { swapped = separateOnLogin(d.account_id || '', d.username || ''); } catch(_){}
   ls(LK.tok, d.token); ls(LK.aid, d.account_id || '');
   ls(LK.name, d.username || ''); ls(LK.pno, String(d.player_no || ''));
   ls(LK.guest, d.guest ? '1' : '0');
-  if (!ls(LK.rev)) ls(LK.rev, '0');
-  M.baseRev = parseInt(ls(LK.rev) || '0', 10) || 0;
+  M.baseRev = loadBaseRev();
+  if (swapped){
+    glog('sys', '🌐 已按账号分开存档：这个账号将使用它自己的存档，正在重载…');
+    setTimeout(function(){ try { location.reload(); } catch(_){} }, 400);
+  }
 }
 
 var M = {
@@ -533,12 +577,17 @@ async function syncNow(manual){
   try{ sj = localStorage.getItem(M.saveKey); }catch(_){}
   if (!sj){ if (manual){ glog('bad', '🌐 本地还没有存档'); try{ panel(); }catch(_){} } return; }
   if (sj.length > 1000000){ if (manual){ glog('bad', '🌐 存档过大，跳过同步'); try{ panel(); }catch(_){} } return; }
+  var _owA = ''; try { _owA = localStorage.getItem('mhxy_sowner_aid') || ''; } catch(_){}
+  if (_owA && _owA !== (ls(LK.aid) || '')){
+    if (!M._owWarned){ M._owWarned = true; glog('bad', '🌐 本地存档属于另一个账号，已暂停同步（切回对应账号即可）'); }
+    return;
+  }
   M.syncing = true;
   try{
     var r = await api('/api/save', { method:'PUT', body:{ base_rev:M.baseRev, save_json:sj, client_ts:Date.now() } });
     if (r.ok && r.json && r.json.ok){
-      M.baseRev = r.json.rev; ls(LK.rev, String(M.baseRev));
-      try{ localStorage.setItem('mhxy_sowner', ls(LK.name) || ''); }catch(_){} // v1042 上传成功即绑定归属
+      M.baseRev = r.json.rev; ls(revKey(), String(M.baseRev));
+      try{ localStorage.setItem('mhxy_sowner', ls(LK.name) || ''); localStorage.setItem('mhxy_sowner_aid', ls(LK.aid) || ''); }catch(_){} // v1042 上传成功即绑定归属
       if (manual) glog('good', '🌐 存档已同步到云端（rev ' + M.baseRev + '）');
     } else if (r.status === 409){
       M.dirty = true; // 留着，下次手动处理
@@ -556,8 +605,8 @@ async function checkCloud(){
   if (!r.json.exists) return;
   var srv = r.json.rev | 0;
   var mine = false;
-  try{ var _nm = ls(LK.name) || ''; mine = !!_nm && (localStorage.getItem('mhxy_sowner') || '') === _nm; }catch(_){}
-  if (mine && srv <= M.baseRev){ if (srv < M.baseRev){ M.baseRev = srv; ls(LK.rev, String(srv)); } return; } // 本地就是本账号的档且不旧于云端
+  try{ var _aid2 = ls(LK.aid) || ''; var _soa = localStorage.getItem('mhxy_sowner_aid') || ''; if (_aid2 && _soa) mine = (_soa === _aid2); else { var _nm = ls(LK.name) || ''; mine = !!_nm && (localStorage.getItem('mhxy_sowner') || '') === _nm; } }catch(_){}
+  if (mine && srv <= M.baseRev){ if (srv < M.baseRev){ M.baseRev = srv; ls(revKey(), String(srv)); } return; } // 本地就是本账号的档且不旧于云端
   try{ var _sj = localStorage.getItem(M.saveKey); if (_sj) localStorage.setItem('mhxy_save_backup', _sj); }catch(_){} // 覆盖前备份本地档，可恢复
   await downloadSave(true);
 }
@@ -569,8 +618,8 @@ async function downloadSave(quiet){
       // 游戏内 S 非全局：写 localStorage 后重载页面，游戏启动时自然载入
       try{ localStorage.setItem(M.saveKey, r.json.save_json); }
       catch(_){ glog('bad', '🌐 本地写入失败'); return; }
-      M.baseRev = r.json.rev; ls(LK.rev, String(M.baseRev));
-      try{ localStorage.setItem('mhxy_sowner', ls(LK.name) || ''); }catch(_){} // v1042 标记本地档归属账号
+      M.baseRev = r.json.rev; ls(revKey(), String(M.baseRev));
+      try{ localStorage.setItem('mhxy_sowner', ls(LK.name) || ''); localStorage.setItem('mhxy_sowner_aid', ls(LK.aid) || ''); }catch(_){} // v1042 标记本地档归属账号
       M.dirty = false;
       glog('good', '🌐 已从云端下载存档（rev ' + M.baseRev + '），正在重载…');
       setTimeout(function(){ try{ location.reload(); }catch(_){} }, 800);
@@ -1753,7 +1802,10 @@ function onClick(d, t, e){
 function init(){
   // 已有 token → 恢复在线状态（静默，失败就当没登录）
   if (loggedIn()){
-    M.baseRev = parseInt(ls(LK.rev) || '0', 10) || 0;
+    var _healed = false;
+    try { _healed = separateOnLogin(ls(LK.aid) || '', ls(LK.name) || ''); } catch(_){}
+    if (_healed){ setTimeout(function(){ try { location.reload(); } catch(_){} }, 60); }
+    M.baseRev = loadBaseRev();
     ensurePresence().then(function(){ pkWsConnect(); });
     // 轻量自检：token 是否还有效
     api('/api/save/meta').then(function(r){
