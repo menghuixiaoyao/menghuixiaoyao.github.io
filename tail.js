@@ -373,10 +373,11 @@ function panel(){
       + '<div class="row"><button class="btn gold full" data-mhxyguest>一键游客登录</button></div>'
       + '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff">'
       + '<input id="mhxyP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
-      + '<div class="row"><input id="mhxyX" maxlength="16" placeholder="X 用户名（注册必填，如 @feyelo）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
+      + '<div id="mhxyRegFields" style="display:none">'
       + '<div class="row"><input id="mhxySqQ" maxlength="60" placeholder="密保问题（注册可选，如：我第一只灵宠的名字？）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="row"><input id="mhxySqA" maxlength="100" placeholder="密保答案（忘记密码时用）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
       + '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="color:#999;font-size:13px">生日</span><input id="mhxyBday" type="date" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div>'
+      + '</div>'
       + '<div class="grid2"><button class="btn full" data-mhxylogin>登录</button><button class="btn full" data-mhxyreg>注册</button></div>'
       + '<div class="row"><button class="btn full" data-mhxyrecover>忘记密码？用密保找回</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
@@ -470,11 +471,12 @@ async function doLogin(){
   }
 }
 async function doRegister(){
-  var u = val('mhxyU'), p = val('mhxyP'), x = val('mhxyX');
+  var _rf = document.getElementById('mhxyRegFields');
+  if (_rf && _rf.style.display === 'none'){ _rf.style.display = ''; var _rb = document.querySelector('[data-mhxyreg]'); if (_rb) _rb.textContent = '确认注册'; glog('good', '🌐 密保和生日是注册选填项，填好后再点「确认注册」（X 进游戏后在联机面板绑定）'); return; }
+  var u = val('mhxyU'), p = val('mhxyP');
   if (!u || !p){ glog('bad', '🌐 请填写用户名和密码'); return; }
-  if (!x){ glog('bad', '🌐 注册必须填写 X 用户名'); return; }
   var sqQ = val('mhxySqQ'), sqA = val('mhxySqA');
-  var body = { username:u, password:p, x_handle:x };
+  var body = { username:u, password:p };
   if (sqQ && sqA) { body.sq_q = sqQ; body.sq_a = sqA; }
   var bd2 = val('mhxyBday');
   if (bd2) body.birthday = bd2;
@@ -1937,6 +1939,7 @@ function init(){
 // v970 登录门禁
 function showLoginGate(){
   if (document.getElementById('loginGate')) return;
+  _gateRegMode = false;
   var g = document.createElement('div');
   g.id = 'loginGate';
   g.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0f0f1a;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -1949,10 +1952,11 @@ function showLoginGate(){
     + '<input id="gateU" maxlength="16" placeholder="用户名(3-16位)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0">'
     + '<input id="gateP" type="password" maxlength="128" placeholder="密码(≥6位)" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0">'
     + '</div>'
-    + '<input id="gateX" maxlength="16" placeholder="X 用户名（注册必填，如 @feyelo）" style="width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:8px;box-sizing:border-box">'
+    + '<div id="gateRegFields" style="display:none">'
     + '<select id="gateSqQ" style="width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:8px;box-sizing:border-box"><option value="">选择密保问题（注册必填，找回密码用）</option><option>我母亲的名字是？</option><option>我出生的城市是？</option><option>我的第一只宠物叫什么？</option><option>我最喜欢的一本书是？</option><option>我的小学叫什么名字？</option></select>'
     + '<input id="gateSqA" maxlength="100" placeholder="密保答案（注册必填）" style="width:100%;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:8px;box-sizing:border-box">'
     + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="color:#999;font-size:13px">生日</span><input id="gateBday" type="date" style="flex:1;padding:10px;border-radius:8px;border:1px solid #444;background:#1a1a2e;color:#fff;font-size:14px;min-width:0"></div>'
+    + '</div>'
     + '<div style="display:flex;gap:8px">'
     + '<button id="gateLogin" style="flex:1;padding:10px;border:1px solid #555;border-radius:8px;background:#222;color:#fff;font-size:14px;cursor:pointer">登录</button>'
     + '<button id="gateReg" style="flex:1;padding:10px;border:1px solid #555;border-radius:8px;background:#222;color:#fff;font-size:14px;cursor:pointer">注册</button>'
@@ -1961,8 +1965,17 @@ function showLoginGate(){
     + '</div>';
   document.body.appendChild(g);
   document.getElementById('gateGuest').onclick = gateDoGuest;
-  document.getElementById('gateLogin').onclick = gateDoLogin;
-  document.getElementById('gateReg').onclick = gateDoRegister;
+  document.getElementById('gateLogin').onclick = function(){ if (_gateRegMode){ gateSetRegMode(false); return; } gateDoLogin(); };
+  document.getElementById('gateReg').onclick = function(){ if (!_gateRegMode){ gateSetRegMode(true); return; } gateDoRegister(); };
+}
+// v1201（Ye 令）：门面只留账号+密码；密保/生日是注册项，点了「注册」才展开；X 不在门上收（进游戏在联机面板绑）
+var _gateRegMode = false;
+function gateSetRegMode(on){
+  _gateRegMode = !!on;
+  var f = document.getElementById('gateRegFields'); if (f) f.style.display = on ? '' : 'none';
+  var rb = document.getElementById('gateReg'); if (rb) rb.textContent = on ? '确认注册' : '注册';
+  var lb = document.getElementById('gateLogin'); if (lb) lb.textContent = on ? '返回登录' : '登录';
+  gateMsg('');
 }
 function hideLoginGate(){
   var g = document.getElementById('loginGate');
@@ -1987,14 +2000,12 @@ async function gateDoRegister(){
   var u = document.getElementById('gateU').value.trim(), p = document.getElementById('gateP').value;
   if (!u || !p){ gateMsg('请填写用户名和密码'); return; }
   if (p.length < 6){ gateMsg('密码至少6位'); return; }
-  var gx = document.getElementById('gateX').value.trim().replace(/^@/, '');
-  if (!gx){ gateMsg('注册必须填写 X 用户名'); return; }
   var gq = document.getElementById('gateSqQ').value, ga = document.getElementById('gateSqA').value.trim();
   if (!gq || !ga){ gateMsg('请选择密保问题并填写答案（找回密码用）'); return; }
   var gb = document.getElementById('gateBday').value;
   if (!gb){ gateMsg('请选择生日'); return; }
   gateMsg('注册中…');
-  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p, x_handle:gx, sq_q:gq, sq_a:ga, birthday:gb } });
+  var r = await api('/api/register', { method:'POST', noAuth:true, body:{ username:u, password:p, sq_q:gq, sq_a:ga, birthday:gb } });
   if (r.ok && r.json && r.json.ok){ await gateAfterAuth(r.json); }
   else {
     var ge = (r.json || {}).error || r.status;
