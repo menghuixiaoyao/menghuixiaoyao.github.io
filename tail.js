@@ -320,8 +320,16 @@ function separateOnLogin(newAid, newName){
   if (!belongsOther) return false;
   try { localStorage.setItem('mhxy_save_acct_' + (owA || ('name_' + owN)), slot); } catch(_){}
   var mine = null; try { mine = localStorage.getItem('mhxy_save_acct_' + newAid); } catch(_){}
+  var fromLegacyName = false;
+  if (!mine && newName){ try { mine = localStorage.getItem('mhxy_save_acct_name_' + newName); if (mine) fromLegacyName = true; } catch(_){} }
   try {
-    if (mine) localStorage.setItem(M.saveKey, mine);
+    if (mine){
+      localStorage.setItem(M.saveKey, mine);
+      if (fromLegacyName){
+        localStorage.removeItem('mhxy_save_acct_name_' + newName); // v1195 捞回：旧版按用户名寄存的档被认领后注销，并立标记让 checkCloud 以这份为准
+        try { localStorage.setItem('mhxy_rescued_aid', newAid); } catch(_){}
+      }
+    }
     else localStorage.removeItem(M.saveKey);
     localStorage.setItem('mhxy_sowner', newName || '');
     localStorage.setItem('mhxy_sowner_aid', newAid);
@@ -598,6 +606,15 @@ async function checkCloud(){
   // v1042 账号为准：登录后自动对齐该账号的云存档，不再弹窗、不需手动读档
   var r = await api('/api/save/meta');
   if (!r.ok || !r.json || !r.json.ok) return;
+  var _rescued = false;
+  try { _rescued = !!ls(LK.aid) && (localStorage.getItem('mhxy_rescued_aid') || '') === ls(LK.aid); } catch(_){}
+  if (_rescued){
+    try { localStorage.removeItem('mhxy_rescued_aid'); } catch(_){}
+    if (r.json.exists){ var _srv0 = r.json.rev | 0; if (_srv0 !== M.baseRev){ M.baseRev = _srv0; ls(revKey(), String(_srv0)); } }
+    glog('good', '🌐 已捞回本机寄存的存档，将以这份为准同步云端');
+    try { markDirty(); } catch(_){}
+    return;
+  }
   if (!r.json.exists) return;
   var srv = r.json.rev | 0;
   var mine = false;
