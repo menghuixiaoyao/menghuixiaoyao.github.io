@@ -382,6 +382,7 @@ function panel(){
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
   } else {
     var nm = escH(myName()), pno = escH(myPno());
+    var hasBk = false; try { hasBk = !!localStorage.getItem('mhxy_save_backup'); } catch(_){}
     html = '<h2>🌐 真人联机</h2>'
       + '<div class="hint">已登录：<b class="y">' + nm + '</b> #' + pno + (isGuest() ? '（游客）' : '') + '　云存档 rev ' + M.baseRev + '</div>'
       + '<div class="row"><button class="btn red full" data-mhxylogout>🚪 退出当前账号 · 切换账号（回登录界面输密码）</button></div>'
@@ -402,6 +403,7 @@ function panel(){
       + '<button class="btn full" data-mhxysync>☁️ 同步存档</button>'
       + '<button class="btn full" data-mhxydown>⬇️ 下载云档</button>'
       + '</div>'
+      + (hasBk ? '<div class="row"><button class="btn gold full" data-mhxyrestore>🗃️ 捞回被云档覆盖的本地存档</button></div>' : '')
       + '<div class="row" id="mhxyGmRow" style="display:none"><button class="btn gold full" data-mhxygm>🛠️ GM 管理</button></div>'
       + '<div class="row" id="mhxyXRow" style="display:flex;gap:6px;align-items:center">' + xRowHtml() + '</div>'
       + '<div class="row" id="mhxyXHideRow" style="display:flex;gap:6px;align-items:center">' + xHideRowHtml() + '</div>'
@@ -646,6 +648,20 @@ async function checkCloud(){
     setTimeout(function(){ try { location.reload(); } catch(_){} }, 400);
     return;
   }
+  var _bk = null; try { _bk = localStorage.getItem('mhxy_save_backup'); } catch(_){}
+  var _slotNow = null; try { _slotNow = localStorage.getItem(M.saveKey); } catch(_){}
+  if (_bk && !_slotNow && !r.json.exists){
+    try {
+      localStorage.setItem(M.saveKey, _bk);
+      localStorage.removeItem('mhxy_save_backup');
+      localStorage.setItem('mhxy_sowner', ls(LK.name) || '');
+      localStorage.setItem('mhxy_sowner_aid', ls(LK.aid) || '');
+    } catch(_){}
+    glog('good', '🌐 已恢复本机备份的存档，将以这份为准');
+    try { markDirty(); } catch(_){}
+    setTimeout(function(){ try { location.reload(); } catch(_){} }, 400);
+    return;
+  }
   if (!r.json.exists) return;
   var srv = r.json.rev | 0;
   var mine = false;
@@ -673,6 +689,22 @@ async function downloadSave(quiet){
   } else {
     glog('bad', '🌐 下载失败' + (r.netErr ? '（网络不通）' : '：' + escH((r.json||{}).error || r.status)));
   }
+}
+// v1199 手动捞回：把「下载云档时被顶掉的本地档备份」换回存档槽（与现槽互换，可再换回），并立标记以这份为准
+async function doRestoreBackup(){
+  var bk = null; try { bk = localStorage.getItem('mhxy_save_backup'); } catch(_){}
+  if (!bk){ glog('bad', '🌐 本机没有可捞回的备份存档'); try{ panel(); }catch(_){} return; }
+  try { if (!confirm('把之前被云档覆盖的本地存档捞回来？当前存档会与它互换（存进备份位，随时能再换回）。')) return; } catch(_){}
+  try {
+    var cur = localStorage.getItem(M.saveKey);
+    localStorage.setItem(M.saveKey, bk);
+    if (cur) localStorage.setItem('mhxy_save_backup', cur); else localStorage.removeItem('mhxy_save_backup');
+    localStorage.setItem('mhxy_sowner', ls(LK.name) || '');
+    localStorage.setItem('mhxy_sowner_aid', ls(LK.aid) || '');
+    localStorage.setItem('mhxy_rescued_aid', ls(LK.aid) || '');
+  } catch(_){ glog('bad', '🌐 本地写入失败'); return; }
+  glog('good', '🌐 已捞回本地存档，正在重载…');
+  setTimeout(function(){ try { location.reload(); } catch(_){} }, 400);
 }
 try{
   document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'hidden') syncNow(false); });
@@ -1726,6 +1758,7 @@ function onClick(d, t, e){
   if ('mhxylogout' in d){ doLogout(); return true; }
   if ('mhxysync' in d){ syncNow(true); return true; }
   if ('mhxydown' in d){ downloadSave(false).then(function(){ panel(); }); return true; }
+  if ('mhxyrestore' in d){ doRestoreBackup(); return true; }
   if ('mhxygm' in d){ gmPanel(); return true; }
   if ('mhxydungeon' in d){ window.sheetDungeonList(); return true; }
   if ('mhxyencsub' in d){ window.sheetEncSubmit(); return true; }
