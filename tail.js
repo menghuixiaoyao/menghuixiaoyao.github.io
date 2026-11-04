@@ -298,7 +298,7 @@ function revKey(){ var a = ls(LK.aid) || ''; return a ? LK.rev + '_' + a : LK.re
 function loadBaseRev(){
   var a = ls(LK.aid) || '';
   if (!a) return parseInt(ls(LK.rev) || '0', 10) || 0;
-  return parseInt(ls(LK.rev + '_' + a) || '0', 10) || 0; // 历史全局 rev 的归属在 separateOnLogin 里先行裁定，这里只读本账号的键
+  return parseInt(ls(LK.rev + '_' + a) || '0', 10) || 0; // 只读本账号的键；历史共用 rev 不认领，登录后由 checkCloud 按云端对齐
 }
 // v1193 号分离：本地存档槽按账号隔离。切到别的账号时，现档寄存到主人名下，新账号载入自己的档（没有就清空等云档/新建）。返回 true 表示已换档、调用方应重载页面
 function separateOnLogin(newAid, newName){
@@ -306,11 +306,7 @@ function separateOnLogin(newAid, newName){
   var slot = null; try { slot = localStorage.getItem(M.saveKey); } catch(_){}
   var owA = ''; try { owA = localStorage.getItem('mhxy_sowner_aid') || ''; } catch(_){}
   var owN = ''; try { owN = localStorage.getItem('mhxy_sowner') || ''; } catch(_){}
-  var _legacyRev = null; try { _legacyRev = ls(LK.rev); } catch(_){}
-  if (_legacyRev != null){
-    var _revOwnerAid = owA || ((owN && owN === newName) ? newAid : (!owA && !owN ? newAid : ''));
-    if (_revOwnerAid){ try { if (ls(LK.rev + '_' + _revOwnerAid) == null) ls(LK.rev + '_' + _revOwnerAid, _legacyRev); } catch(_){} }
-  }
+  // v1194：历史共用 rev 不再猜归属（猜错会让无云档的号顶着别人的 rev 永远建不了档）。各账号 rev 一律从 0 起，登录时由 checkCloud 按云端对齐——云端为准（Ye 2026-11-03 令：大号保留云端那份）
   if (!slot){
     try { localStorage.setItem('mhxy_sowner', newName || ''); localStorage.setItem('mhxy_sowner_aid', newAid); } catch(_){}
     return false;
