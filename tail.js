@@ -384,6 +384,7 @@ function panel(){
     var nm = escH(myName()), pno = escH(myPno());
     html = '<h2>🌐 真人联机</h2>'
       + '<div class="hint">已登录：<b class="y">' + nm + '</b> #' + pno + (isGuest() ? '（游客）' : '') + '　云存档 rev ' + M.baseRev + '</div>'
+      + '<div class="row"><button class="btn red full" data-mhxylogout>🚪 退出当前账号 · 切换账号（回登录界面输密码）</button></div>'
       + '<div class="grid2">'
       + '<button class="btn full" data-mhxychat>💬 真人聊天</button>'
       + '<button class="btn full" data-mhxypk>⚔️ 在线约战</button>'
@@ -408,7 +409,7 @@ function panel(){
       + (isGuest()
         ? '<div class="row" style="display:flex;gap:6px"><input id="mhxyU" maxlength="16" placeholder="新用户名" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxyP" type="password" maxlength="128" placeholder="设密码" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row" style="display:flex;gap:6px"><input id="mhxySqQ" maxlength="60" placeholder="密保问题（可选）" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"><input id="mhxySqA" maxlength="100" placeholder="密保答案" style="flex:1;padding:8px;border-radius:6px;border:1px solid #555;background:#222;color:#fff"></div><div class="row"><button class="btn gold full" data-mhxyupgrade>转为正式账号</button></div>'
         : '')
-      + '<div class="row"><button class="btn red full" data-mhxylogout>登出（回单机）</button></div>'
+      + '<div class="row"><button class="btn red full" data-mhxylogout>🚪 退出当前账号 · 切换账号（回登录界面输密码）</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
   }
   try{ openSheet(html); }catch(_){}
@@ -506,10 +507,12 @@ async function doUpgrade(){
   }
 }
 async function doLogout(){
+  try { if (!confirm('退出当前账号？退出后回到登录界面，可以用其他账号的用户名密码登录。')) return; } catch(_){}
+  try { M.dirty = true; await syncNow(false); } catch(_){} // v1196 切换账号前先把本号进度同步上云，回来不丢
   try{ await api('/api/logout', { method:'POST' }); }catch(_){}
   try{ await api('/api/world/logout', { method:'POST' }); }catch(_){}
   clearAuth(false);
-  glog('sys', '🌐 已登出。');
+  glog('sys', '🌐 已退出当前账号，请在登录界面输入用户名密码登录另一个账号。');
   showLoginGate(); // v970 登出后弹门禁，不再回单机
 }
 // v1165 百世书服务端登记同步：拉服务端登记表对齐本地 reg 标记，并补登本地未登记的前世记录
@@ -1915,7 +1918,7 @@ async function gateAfterAuth(d){
 window.MHXY = {
   panel: panel, markDirty: markDirty, onClick: onClick,
   loggedIn: loggedIn, syncNow: syncNow, init: init, api: api, myName: myName,
-  setBaseRev: function(r){ M.baseRev = r; try{ ls(LK.rev, String(r)); }catch(_){} } // v960 交易后更新同步基线
+  setBaseRev: function(r){ M.baseRev = r; try{ ls(revKey(), String(r)); }catch(_){} } // v960 交易后更新同步基线（v1196：写本账号的 rev 键）
 };
 
 try{ init(); }catch(_){}
