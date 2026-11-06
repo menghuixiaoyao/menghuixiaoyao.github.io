@@ -2695,7 +2695,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     const _isLand = lt.t === 'land' || (mySt && !!mySt.rs) || rk === 'herb' || rk === 'ore' || rk === 'vein';
     if (_isLand) {
       const mons = (mySt ? mySt.mons : lt.mons) || { w: 0, m: 0, s: 0 };
-      const monsTxt = [['w', '弱'], ['m', '中'], ['s', '强']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n]) => `${n}×${mons[k]}`).join(' ');
+      const monsTxt = [['w', '普通', '#e8e8e8'], ['m', '精英', '#5aa2ff'], ['s', '王', '#ff5a5a']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n, col]) => `<span style="color:${col}">${n}</span>×${mons[k]}`).join(' ');
       if (_slots.length) {
         infoLine = `<div class="hint" style="text-align:center">${_slots.map(([c, a]) => `${C.resIconL(c)} ${C.resNameL(c)} ×${a}`).join('　')}${monsTxt ? `<br>怪：${monsTxt}` : ''}</div>`;
         for (const [c] of _slots) btns.push(`<button class="btn gold" data-advres2="${c}" style="flex:1">✋ 采·${C.resNameL(c)}</button>`);
@@ -2707,7 +2707,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       } else {
         infoLine = `<div class="hint" style="text-align:center">此地资源尚未刷出${monsTxt ? ` · 怪：${monsTxt}` : ''}</div>`;
       }
-      [['w', '弱'], ['m', '中'], ['s', '强']].forEach(([k, n]) => { if ((mons[k] | 0) > 0) btns.push(`<button class="btn" data-advatk="${k}" style="flex:1">⚔️ 攻·${n}</button>`); });
+      [['w', '普通', '#e8e8e8'], ['m', '精英', '#5aa2ff'], ['s', '王', '#ff5a5a']].forEach(([k, n, col]) => { if ((mons[k] | 0) > 0) btns.push(`<button class="btn" data-advatk="${k}" style="flex:1">⚔️ 攻·<span style="color:${col}">${n}</span></button>`); });
     }
     if (shared) {
       const myArr = (shared.arrays || []).find(a => a.mine);
@@ -2775,7 +2775,7 @@ async function doAdvChoose(i) {
     // v1189 联机组队战钩子：资源格怪（主动攻击/惊扰）+ 在队（≥2 人）+ 共享图 → 开服务端组队战，全队拉入；失败已在原地提示，不回落单人战
     if (ev.monTile && run.shared && run.shared.on && window._myTeam && window._myTeam.members && window._myTeam.members.length > 1 && typeof window.tbStartFromAdv === 'function') {
       const _mtb = ev.monTile;
-      const _okTb = await window.tbStartFromAdv({ dk: run.dk, x: _mtb.x, y: _mtb.y, tier: _mtb.tier });
+      const _okTb = await window.tbStartFromAdv({ dk: run.dk, x: _mtb.x, y: _mtb.y, tier: _mtb.tier, monName: ev.mon ? ev.mon.name : null, monRank: ev.mon ? ev.mon.rank : null });
       if (_okTb) { run.ev = null; save(); closeSheet(); }
       return;
     }
@@ -7445,8 +7445,8 @@ document.addEventListener('click', e => {
   else if (d.adv) { petSay('battle', 0.3); doAdventure(d.adv); }
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
   else if (d.advc !== undefined) doAdvChoose(+d.advc);
-  else if (d.advres !== undefined) { try { window.advGatherRes(); } catch(_) {} } // v1125 共享图手采资源
-  else if (d.advres2 !== undefined) { try { const _code = d.advres2 || null; if (S.run && S.run.shared && S.run.shared.on) window.advGatherRes(_code); else window.advLocalGatherUI(_code); } catch(_) {} } // v1154 当前格采集（共享/本地）
+  else if (d.advres !== undefined) { try { if (typeof window.gatherProgWrap === 'function') window.gatherProgWrap('采集中……', function(){ window.advGatherRes(); }); else window.advGatherRes(); } catch(_) {} } // v1125 共享图手采资源；v1202 补进度条
+  else if (d.advres2 !== undefined) { try { const _code = d.advres2 || null; const _gtxt = !_code ? '采集中……' : _code === 'o' ? '挖矿中……' : _code.charAt(0) === 'h' ? '采草药中……' : '开采中……'; const _gfn = function(){ if (S.run && S.run.shared && S.run.shared.on) window.advGatherRes(_code); else window.advLocalGatherUI(_code); }; if (typeof window.gatherProgWrap === 'function') window.gatherProgWrap(_gtxt, _gfn); else _gfn(); } catch(_) {} } // v1154 当前格采集（共享/本地）；v1202 补进度条（按资源分文案）
   else if (d.advatk !== undefined) { try { window.advAttackMon(d.advatk); } catch(_) {} } // v1154 选档攻击怪物
   else if (d.advplace !== undefined) { try { window.advPlaceArray(); } catch(_) {} } // v1125 布采集阵
   else if (d.advarr !== undefined) { try { window.advArrayPanel(); } catch(_) {} } // v1125 采集阵面板

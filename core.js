@@ -2913,7 +2913,8 @@ function advMonster(S, dk, bump) {
   ATTRS.forEach(k => m.attrs[k] = Math.max(1, Math.round(m.attrs[k] * R_.mult * K.ADV_MON_MULT)));
   m.skills = []; // 冒险怪物不带技能
   const dwx = (DIFFS[dk] || {}).wx; if (dwx) m.wx = dwx; // 五行怪：带对应属性
-  m.name = m.name.replace(/^[^·]*·/, ''); m.rank = rk; m.lv = Math.max(1, Math.floor((total(m.attrs) - 25) / 5) + 1); return m;
+  const _pre = (DIFFS[dk] || {}).pre || ''; if (_pre && m.name.startsWith(_pre)) m.name = m.name.slice(_pre.length); // v1202 定向剥难度前缀（旧正则在无前缀难度会把「狐妖·媚儿」误剥成「媚儿」）
+  m.rank = rk; m.lv = Math.max(1, Math.floor((total(m.attrs) - 25) / 5) + 1); return m;
 }
 // 事件池：t = 场景文字（可为函数）；ch = 选项 { l 文字, a 检定属性, cost 金元, need 物品, f(X, ok) 结果 }
 const ADV_EVENTS = {
@@ -3386,7 +3387,7 @@ function advFreshResTileL(now, qi) {
   ensureSlotsL(t, now);
   const q = qi || 1;
   for (const c of RES_CODES_L) if (R() < Math.min(1, RES_P_L[c] * q)) t.rs[c].a++;
-  for (const k of ['w', 'm', 's']) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (tot < 5 && R() < Math.min(1, 0.2 * q)) t.mons[k]++; }
+  for (const k of ['w', 'm', 's']) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); const _mp = k === 's' ? 0.01 : Math.min(1, 0.2 * q); if (tot < 5 && R() < _mp) t.mons[k]++; }
   return t;
 }
 function advResSettleTileL(t, now, qi) {
@@ -3399,13 +3400,35 @@ function advResSettleTileL(t, now, qi) {
     if (units > 400) { sl.a = (sl.a | 0) + Math.round(units * Math.min(1, RES_P_L[c] * q)); sl.at = now; }
     else { const p = Math.min(1, RES_P_L[c] * q); for (let i = 0; i < units; i++) if (R() < p) sl.a++; sl.at += units * iv; }
   }
-  for (const k of ['w', 'm', 's']) {
-    const ticks = Math.floor((now - t.mt[k]) / 600000);
-    if (ticks <= 0) continue;
-    if (ticks > 400) { t.mt[k] = now; continue; }
-    const p = Math.min(1, 0.2 * q);
-    for (let i = 0; i < ticks; i++) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (tot >= 5) break; if (R() < p) t.mons[k]++; }
-    t.mt[k] += ticks * 600000;
+  // v1202 与服务端同规：三档共用时间轴逐 tick 结算（起始档轮换，谁也不许先填满饿死别档）；王档 1% 平值、不乘灵气；长闲置按各档占比分配名额
+  const _pend = {}; let _maxTicks = 0;
+  for (const k of ['w', 'm', 's']) { _pend[k] = Math.max(0, Math.floor((now - t.mt[k]) / 600000)); if (_pend[k] > _maxTicks) _maxTicks = _pend[k]; }
+  if (_maxTicks > 0) {
+    const _mp = k => k === 's' ? 0.01 : Math.min(1, 0.2 * q);
+    if (_maxTicks > 400) {
+      const _room = Math.max(0, 5 - ((t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0)));
+      const _adds = {};
+      for (const k of ['w', 'm', 's']) _adds[k] = Math.round(_pend[k] * _mp(k));
+      const _sum = _adds.w + _adds.m + _adds.s;
+      if (_sum > _room && _sum > 0) {
+        const _ks = ['w', 'm', 's'];
+        const _exact = _ks.map(k => (_adds[k] / _sum) * _room);
+        const _base = _exact.map(v => Math.floor(v));
+        let _left = _room - _base.reduce((a, b) => a + b, 0);
+        const _frac = _exact.map((v, i) => [v - _base[i], i]).sort((a, b) => b[0] - a[0]);
+        for (let i = 0; i < _left; i++) _base[_frac[i][1]]++;
+        _ks.forEach((k, i) => { t.mons[k] = (t.mons[k] | 0) + _base[i]; });
+      } else {
+        for (const k of ['w', 'm', 's']) t.mons[k] = (t.mons[k] | 0) + _adds[k];
+      }
+    } else {
+      for (let i = 0; i < _maxTicks; i++) {
+        const _rot = i % 3;
+        const _seq = ['w', 'm', 's'].slice(_rot).concat(['w', 'm', 's'].slice(0, _rot));
+        for (const k of _seq) { const _tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (i < _pend[k] && _tot < 5 && R() < _mp(k)) t.mons[k]++; }
+      }
+    }
+    for (const k of ['w', 'm', 's']) t.mt[k] += _pend[k] * 600000;
   }
 }
 function advResSettleGrid(run) {
@@ -3442,11 +3465,11 @@ function advLocalGather(S, run, code) { // 本地图手采（按槽）：门槛 
   t.rs[cc].a--;
   return { msg: advResGrant(S, run, kind, grade), code: cc };
 }
-function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：弱=属性×0.7；强=rank+1 且属性×1.3（rollRank 无下限钳制，弱档不降 rank）
+function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：普通=属性×0.7；王=rank+1 且属性×1.3（rollRank 无下限钳制，普通档不降 rank）
   const mon = advMonster(S, run.dk, tier === 's' ? 1 : 0);
   const mult = tier === 'w' ? 0.7 : tier === 's' ? 1.3 : 1;
   if (mult !== 1) ATTRS.forEach(k => mon.attrs[k] = Math.max(1, Math.round(mon.attrs[k] * mult)));
-  return { type: 'fight', mon, text: tier === 'w' ? '一只弱怪' : tier === 's' ? '一只强怪' : '一只怪物', monTile: { tier, x: run.grid.px, y: run.grid.py } };
+  return { type: 'fight', mon, text: tier === 'w' ? '一只普通怪' : tier === 's' ? '一只王怪' : '一只精英怪', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
 Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
