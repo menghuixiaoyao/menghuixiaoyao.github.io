@@ -2277,9 +2277,8 @@ async function stoneGambleStart() {
         try { if (typeof log === 'function') log('info', `🪨 消耗 3灵气石+1000金元，剩余 🪨${S.ores.sp1|0} · 金元${S.gold|0}`); } catch(_) {}
         try { const _so = $('stoneOwn'); if (_so) _so.innerHTML = `🪨灵气石 <b>${S.ores.sp1|0}</b> · 金元 <b>${S.gold|0}</b>`; } catch(_) {}
         try { if (typeof thunderGatherJudge === 'function') thunderGatherJudge(); } catch(_) {}
-        S._stonePicks = j.picks;
-        const names = { sp1: ['🪨','灵气石'], sp3: ['🌗','中品灵石'], sp4: ['💎','上品灵石'], sp5: ['💠','极品灵石'] };
-        const btns = j.picks.map((k, i) => `<button class="btn gold" data-stone-pick="${i}" style="flex:1;padding:20px 4px;font-size:14px">🪨<br>原石${i+1}<br><small>点我切开</small></button>`).join('');
+        S._stonePicks = null; // SECFIX H3：picks 只存服务端 D1、永不下发（防明牌）；按钮与石头一一对应、内容由服务端 pick 揭晓
+        const btns = [0, 1, 2].map((i) => `<button class="btn gold" data-stone-pick="${i}" style="flex:1;padding:20px 4px;font-size:14px">🪨<br>原石${i+1}<br><small>点我切开</small></button>`).join('');
         const el = $('stoneResult');
         if (el) el.innerHTML = `<div class="hint">三块原石已出，选一块切开：</div><div style="display:flex;gap:6px">${btns}</div>`;
         save(); render();
