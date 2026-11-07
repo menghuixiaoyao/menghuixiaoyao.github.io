@@ -2609,6 +2609,9 @@ function doWxSynth(k, kind) {
 }
 const rewTxt = rw => { const it = Object.keys(rw.items).map(key => { const [st, k] = key.split(':'); return `${C.itemLabel(st, k)}×${rw.items[key]}`; }); const xpLbl = C.resLbl(S); return [rw.pts ? `属性 <span class="g">${Object.keys(rw.gains).map(a => AN[a] + '+' + rw.gains[a]).join(' ')}</span>` : '', rw.gold ? `金元 <span class="y">+${rw.gold}</span>` : '', rw.xp ? `${xpLbl} <span class="g">+${rw.xp}</span>` : '', it.length ? `物品 <span class="y">${it.join(' ')}</span>` : ''].filter(Boolean).join('，') || '无'; };
 function monCard(m, tail) { const r = C.RANKS[m.rank]; return `<span class="${r.cls}">【${r.name}】${m.name}</span>（Lv.${m.lv}）${tail || ''}${m.skills.length ? ' <span class="pu">' + m.skills.map(k => SKILLS[k].name).join('·') + '</span>' : ''}<br><small style="color:var(--dim)">${ATTRS.map(k => AN[k] + C.fmtN(m.attrs[k])).join(' ')} · 你：${ATTRS.map(k => AN[k] + C.fmtN(C.fightAttrs(S, true)[k])).join(' ')}</small>`; }
+// v1203 资源槽紧凑彩签（Ye 令：7 个槽缩小、每槽一色）：[颜色, 短名]，草药绿系由浅入深、灵脉蓝→紫→金升贵
+const SLOT_CHIP_STYLE = { h1: ['#9ccc3c', '地品'], h2: ['#2fbf71', '天品'], h3: ['#19bfa5', '仙品'], o: ['#f0a13c', '矿石'], v1: ['#57c7ff', '小型'], v2: ['#c07ff0', '中型'], v3: ['#ffc93d', '巨型'] };
+function slotChip(c, a) { const _ss = SLOT_CHIP_STYLE[c] || ['#cccccc', C.resNameL(c)]; return `<span style="color:${_ss[0]};font-size:11px;white-space:nowrap">${C.resIconL(c)}${_ss[1]}×${a}</span>`; }
 function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 + 事件面板
   const run = S.run; if (!run || !run.grid) return;
   const d = DIFFS[run.dk], g = run.grid, ev = run.ev, chs = ev ? (ev.type === 'dungeonText' ? [] : C.advChoices(S)) : [];
@@ -2697,7 +2700,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       const mons = (mySt ? mySt.mons : lt.mons) || { w: 0, m: 0, s: 0 };
       const monsTxt = [['w', '普通', '#e8e8e8'], ['m', '精英', '#5aa2ff'], ['s', '王', '#ff5a5a']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n, col]) => `<span style="color:${col}">${n}</span>×${mons[k]}`).join(' ');
       if (_slots.length) {
-        infoLine = `<div class="hint" style="text-align:center">${_slots.map(([c, a]) => `${C.resIconL(c)} ${C.resNameL(c)} ×${a}`).join('　')}${monsTxt ? `<br>怪：${monsTxt}` : ''}</div>`;
+        infoLine = `<div class="hint" style="text-align:center">${_slots.map(([c, a]) => slotChip(c, a)).join(' ')}${monsTxt ? `<br>怪：${monsTxt}` : ''}</div>`;
         for (const [c] of _slots) btns.push(`<button class="btn gold" data-advres2="${c}" style="flex:1">✋ 采·${C.resNameL(c)}</button>`);
       } else if ((mySt ? mySt.amt : lt.amt) | 0) { // 旧单资源格兼容（无 rs 时）
         const lv = ((mySt ? mySt.lv : lt.lv) | 0) || 1, amt = (mySt ? mySt.amt : lt.amt) | 0;
