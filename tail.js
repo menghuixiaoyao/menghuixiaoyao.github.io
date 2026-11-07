@@ -1426,11 +1426,17 @@ function tbApplyResult(b) { // 结算应用（只应用一次）：服务端已�
       S.gold = (S.gold | 0) + (r.gold | 0);
       for (var a in (r.gains || {})) S.attrs[a] = (S.attrs[a] | 0) + r.gains[a];
       (r.drops || []).forEach(function (d) {
-        if (d.skip) { // 装备走本地 roll（镜像 adv_loot 客户端口径）
+        if (d.st === 'gear' && d.gear) { // B2（v1212）：组队战装备改服务端掷，本地只赋 id 入包
+          try {
+            var gr = { id: ++S.gearSeq, k: d.gear.k, q: d.gear.q, v: d.gear.v, set: d.gear.set }; if (d.gear.rule) gr.rule = d.gear.rule;
+            if (gr.q >= 5 && typeof announce === 'function') announce(S, '📢 全服通告：恭喜道友喜提【<span class="gq5">传说</span>】<span class="gq5">' + gearItemName(gr.k, gr.set) + '</span>！');
+            if (S.gearBag.length < bagCap(S)) S.gearBag.push(gr); else S.gold += gearPrice(gr);
+          } catch (_) {}
+        } else if (d.skip) { // 兼容旧服务端响应：装备走本地 roll（镜像 adv_loot 客户端口径）
           try {
             var tIdx = Object.keys(DIFFS).indexOf(b.dk);
-            var gr = rollGear(S, tIdx + ((b.mon.rank | 0) >= 3 ? 1 : 0));
-            if (gr) { if (S.gearBag.length < bagCap(S)) S.gearBag.push(gr); else S.gold += gearPrice(gr); }
+            var gr2 = rollGear(S, tIdx + ((b.mon.rank | 0) >= 3 ? 1 : 0));
+            if (gr2) { if (S.gearBag.length < bagCap(S)) S.gearBag.push(gr2); else S.gold += gearPrice(gr2); }
           } catch (_) {}
         } else if (d.st === 'petEggs') S.petEggs = (S.petEggs | 0) + d.n;
         else if (d.st === 'maiPages') S.maiPages = (S.maiPages | 0) + d.n;

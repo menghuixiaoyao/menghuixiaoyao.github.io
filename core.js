@@ -455,21 +455,8 @@ function normalize(S) {
   if (!S.redPackets || typeof S.redPackets !== 'object') S.redPackets = {};
   if (S.bindNum === null || S.bindNum === undefined) S.bindNum = 0; // v263 永久编号
   if (!S.xianyuan) S.xianyuan = {m:0,f:0}; // v263 仙缘
-  // v1125 灵脉矿区删除迁移：只处理布在矿区(4,3)的旧采集阵——库存一次性转入背包（草药按新规转 5 种属性草，矿石按旧口径灵气石，灵脉/肉/蛋按旧口径），该阵拆除；田药园/养殖园的阵保留不动
-  if (Array.isArray(S.arrays) && S.arrays.some(_a => _a && _a.x === 4 && _a.y === 3)) {
-    const _hk5 = ['h_str', 'h_agi', 'h_def', 'h_vit', 'h_int'];
-    const _keep = [];
-    for (const _a of S.arrays) {
-      if (!(_a && _a.x === 4 && _a.y === 3)) { _keep.push(_a); continue; }
-      const _st = (_a && _a.storage) || {};
-      if ((_st.h|0) > 0) { S.mats = S.mats || {}; for (let _i = 0; _i < (_st.h|0); _i++) { const _k = _hk5[Math.floor(Math.random() * 5)]; S.mats[_k] = (S.mats[_k]|0) + 1; } }
-      if ((_st.o|0) > 0) { S.ores = S.ores || {}; S.ores.sp1 = (S.ores.sp1|0) + (_st.o|0); }
-      if ((_st.v|0) > 0) { if (!Array.isArray(S.veins) || S.veins.length < 3) S.veins = [0, 0, 0]; const _vt = Math.min(2, Math.max(0, _st.vt|0)); S.veins[_vt] = (S.veins[_vt]|0) + (_st.v|0); }
-      if ((_st.m|0) > 0) { S.food = S.food || {}; S.food.rabbit = (S.food.rabbit|0) + (_st.m|0); }
-      if ((_st.e|0) > 0) { S.petEggs = (S.petEggs|0) + (_st.e|0); }
-    }
-    S.arrays = _keep;
-  }
+  // v1212 主城老采集阵整体下线：S.arrays 残留字段安全清理（存量结算由服务端按 D1 云档走系统邮件返还，本地不再转换，防与邮件双重结算）
+  if ('arrays' in S) delete S.arrays;
   // v1209 灵石合成版老字段并入 sp 家族（Ye 定：合成改走 sp 系列）：xps→sp2 下品、zps→sp3 中品、sps→sp4 上品、jps→sp5 极品，1:1 并入后删老字段
   try {
     S.ores = S.ores || {};
@@ -504,7 +491,6 @@ function normalize(S) {
   S.formations.f_gather = Math.max(0, Math.floor(+S.formations.f_gather || 0));
   S.formations.f_gather2 = Math.max(0, Math.floor(+S.formations.f_gather2 || 0));
   S.formations.f_gather3 = Math.max(0, Math.floor(+S.formations.f_gather3 || 0));
-  if (Array.isArray(S.arrays)) for (const _a of S.arrays) { if (_a && (!(_a.tier >= 1 && _a.tier <= 3))) _a.tier = 1; }
   if (!Array.isArray(S.binders)) S.binders = [];
   if (!Array.isArray(S.mail)) S.mail = [];
   if (S.spouse === undefined) S.spouse = null; // v264 配偶
@@ -3656,7 +3642,8 @@ window.advAttackMon = function(tier) { // v1154 主动攻击当前格指定档�
 async function advMonKillShared(mt) { // v1154 共享图击杀登记（服务端减一只）
   try {
     const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
-    const _post = () => MHXY.api('/api/advmap/' + 'monkill' + '?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: mt.x, y: mt.y, tier: mt.tier } });
+    const _rank = Number.isInteger(mt.rank) ? mt.rank : (S.run.ev && S.run.ev.monTile && S.run.ev.monTile.x === mt.x && S.run.ev.monTile.y === mt.y && S.run.ev.mon && Number.isInteger(S.run.ev.mon.rank) ? S.run.ev.mon.rank : undefined);
+    const _post = () => MHXY.api('/api/advmap/' + 'monkill' + '?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: mt.x, y: mt.y, tier: mt.tier, rank: _rank } });
     let r = await _post();
     if (!(r && r.ok) && r && r.json && r.json.error === 'not_there' && S.run && S.run.grid) {
       // v1170 DO 玩家记录过期/位置漂移时 monkill 报 not_there，旧版静默吞掉→打赢了怪也不消失（Ye 报）：补心跳后重试一次
@@ -3665,6 +3652,8 @@ async function advMonKillShared(mt) { // v1154 共享图击杀登记（服务端
       r = await _post();
     }
     if (!(r && r.ok && r.json && r.json.ok)) { try { log('bad', '⚔️ 击杀未登记上（怪物还在）'); } catch (_) {} }
+    // H6（v1212）：击杀凭证入队，供紧接着的 X.loot 凭凭证领奖
+    if (r && r.ok && r.json && r.json.voucher && S.run) { S.run._lv = S.run._lv || []; S.run._lv.push({ id: r.json.voucher.id, cap: r.json.voucher.rolls_cap | 0, bonus: r.json.voucher.bonus | 0, dk }); }
     await advSharedRefresh();
   } catch (_) {}
 }
@@ -3811,11 +3800,38 @@ function advCtx(S, run, lines) { // 事件结果工具
         // v967 服务端版（在线才走）
         if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) {
           try {
-            const r = await MHXY.api('/api/roll/adv_loot', 'POST', { rolls, cats, bonus: bonus||0, tier: t, dk: run.dk });
+            // H6（v1212）击杀凭证：资源格怪的击杀登记原在结算之后，这里前置登记拿凭证（_mkReg 防与旧登记点重复减怪）
+            if (run.shared && run.shared.on && run.ev && run.ev.monTile && !run.ev._mkReg) {
+              run.ev._mkReg = 1;
+              try { await advMonKillShared({ x: run.ev.monTile.x, y: run.ev.monTile.y, tier: run.ev.monTile.tier, rank: run.ev.mon.rank }); } catch (_) {}
+            }
+            // 组装凭证：先用击杀凭证队列，不足再向 DO 申领当前格的事件/BOSS 凭证（wx 图服务端不受理掉落，维持本地回落）
+            let vouchers = null, vcap = 0;
+            if (!String(run.dk).startsWith('wx_')) {
+              vouchers = [];
+              const _q = (run._lv || []).filter(v => v.dk === run.dk);
+              while (_q.length && vcap < rolls) { const v = _q.shift(); vouchers.push(v.id); vcap += v.cap | 0; }
+              run._lv = (run._lv || []).filter(v => v.dk !== run.dk).concat(_q);
+              if (vcap < rolls && run.shared && run.shared.on && run.grid) {
+                try {
+                  const pr = await MHXY.api('/api/advmap/lootpermit?dk=' + encodeURIComponent(run.dk), { method: 'POST', body: { bonus: bonus ? 1 : 0, rank: (run.ev && run.ev.mon && Number.isInteger(run.ev.mon.rank)) ? run.ev.mon.rank : undefined } });
+                  if (pr.ok && pr.json && pr.json.ok && pr.json.voucher) { vouchers.push(pr.json.voucher.id); vcap += pr.json.voucher.rolls_cap | 0; }
+                } catch (_) {}
+              }
+              if (!vouchers.length || vcap < rolls) vouchers = null;
+            }
+            if (vouchers) {
+            const r = await MHXY.api('/api/roll/adv_loot', 'POST', { rolls, cats, vouchers, dk: run.dk });
             if (r.ok && r.json && r.json.ok) {
               if (typeof MHXY.setBaseRev === 'function' && r.json.rev) MHXY.setBaseRev(r.json.rev);
               for (const d of (r.json.drops || [])) {
-                if (d.skip) { // gear 走本地
+                if (d.st === 'gear' && d.gear) { // B2（v1212）：掉落装备改服务端掷，本地只赋 id 入包
+                  const gr = { id: ++S.gearSeq, k: d.gear.k, q: d.gear.q, v: d.gear.v, set: d.gear.set }; if (d.gear.rule) gr.rule = d.gear.rule;
+                  if (gr.q >= 5) announce(S, `📢 全服通告：恭喜道友喜提【<span class="gq5">传说</span>】<span class="gq5">${gearItemName(gr.k, gr.set)}</span>！`);
+                  const key = `${gr.k}|${gr.set}|${gr.q}`;
+                  if (S.gearBag.length < bagCap(S)) { S.gearBag.push(gr); rw.items['gear:' + key] = (rw.items['gear:' + key] || 0) + 1; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span>`); }
+                  else { const price = gearPrice(gr); S.gold += price; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span><small>（包满自动卖+${price}金）</small>`); }
+                } else if (d.skip) { // 兼容旧服务端响应
                   const gr = rollGear(S, t + (bonus || 0)); const key = `${gr.k}|${gr.set}|${gr.q}`;
                   if (S.gearBag.length < bagCap(S)) { S.gearBag.push(gr); rw.items['gear:' + key] = (rw.items['gear:' + key] || 0) + 1; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span>`); }
                   else { const price = gearPrice(gr); S.gold += price; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span><small>（包满自动卖+${price}金）</small>`); }
@@ -3827,6 +3843,7 @@ function advCtx(S, run, lines) { // 事件结果工具
               }
               commit();
               return `获得 <span class="y">${got.join(' ')}</span>`;
+            }
             }
           } catch(e) {}
         }
@@ -3917,7 +3934,7 @@ async function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.t
     const f = await advFight(S, run); out.battle = f.battle; out.lines.push(...f.lines);
     if (run.defeat || S.dead) { out.end = advEnd(S, 'defeat'); return out; }
     if (f.win) {
-      if (run.shared && run.shared.on) run.monKillPending = { x: mt.x, y: mt.y, tier: mt.tier };
+      if (run.shared && run.shared.on) { if (!run.ev._mkReg) run.monKillPending = { x: mt.x, y: mt.y, tier: mt.tier, rank: run.ev.mon.rank }; } // v1212：结算内已前置登记时不再排队（防重复减怪）
       else if (run.grid) { const gt = run.grid.tiles[mt.y][mt.x]; if (gt && gt.mons) gt.mons[mt.tier] = Math.max(0, (gt.mons[mt.tier] | 0) - 1); }
       run.ev = null;
     }

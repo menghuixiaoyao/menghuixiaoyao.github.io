@@ -404,257 +404,7 @@ function renderWorldMap() {
     try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 1 ? '' : 'none'; try { window._myRealm = (S.realm|0) || 0; } catch(_) {} } catch(_) {} // v1072 神识单按钮：练气显示；同步全局境界（Ye 定整合）
     try { refreshMainMailBtn(); } catch(_) {}
 // v536 保留地(4,3)资源点：草药+矿石定时刷新
-// v899 采集阵自动采集系统
-// S.arrays: [{id, map:'world', x, y, fuelUntil, storage:{h,o,v,m,e}, guarded, lastTick}]
-function arrayTick(S) {
-  try {
-    if (!S.arrays || !S.arrays.length) return;
-    const now = Date.now();
-    S.arrays.forEach(a => {
-      if (!(a.lastTick > 0) || a.lastTick > now + 60000) { a.lastTick = now; try { log('sys', `🧭 采集阵(${a.x},${a.y})时间戳异常，已重置计时`); } catch(_) {} } // v954 自愈：lastTick损坏(NaN/缺失)或未来时间则重置，否则静默跳过永不采集
-      if (!a.fuelUntil || a.fuelUntil <= now) {
-        // v918 燃料耗尽自动消耗背包上品灵石续1小时
-        if (((S.ores || {}).sp4|0) > 0) {
-          S.ores.sp4--;
-          a.fuelUntil = Math.max(now, Number(a.fuelUntil)||0) + 3600000; // v922 时间戳不用|0防溢出
-          if (!a.lastTick) a.lastTick = now;
-          try { log('good', `💎 采集阵(${a.x},${a.y})自动消耗上品灵石×1续燃料`); } catch(_) {}
-        } else return; // 没燃料也没灵石，停止
-      }
-      if (!a.lastTick) a.lastTick = now;
-      const secs = Math.floor((now - a.lastTick) / 1000);
-      if (secs < 10) return; // v923 10秒1次（手动2-5秒的一半速度）
-      const times = Math.floor(secs / 10);
-      a.lastTick += times * 10 * 1000;
-      a.storage = a.storage || {};
-      // 从格子资源转移到阵存储（只转存在的）
-      for (let i = 0; i < times; i++) {
-        if (a.map === 'world' && a.x === 3 && a.y === 2) {
-          // 田药园：草药
-          try { herbTick(S); if ((S.herbGarden.h|0) > 0) { S.herbGarden.h--; a.storage.h = (a.storage.h|0) + 1; } } catch(_) {}
-        } else if (a.map === 'world' && a.x === 4 && a.y === 3) {
-          // 灵脉矿区：随机采集草药/矿石/灵脉其一
-          try {
-            reserveTick(S); const rn = S.reserveNode;
-            const _pool = [];
-            if ((rn.h|0) > 0) _pool.push('h');
-            if ((rn.o|0) > 0) _pool.push('o');
-            if ((rn.v|0) > 0) _pool.push('v');
-            if (_pool.length) {
-              const _p = _pool[Math.floor(Math.random()*_pool.length)]; // v924 随机
-              if (_p === 'h') { rn.h--; a.storage.h = (a.storage.h|0) + 1; }
-              else if (_p === 'o') { rn.o--; a.storage.o = (a.storage.o|0) + 1; }
-              else { if (!Array.isArray(rn.vs)) rn.vs = [rn.v|0, 0, 0]; const _avt = (rn.vs[2]|0) > 0 ? 2 : (rn.vs[1]|0) > 0 ? 1 : 0; if ((rn.vs[_avt]|0) > 0) rn.vs[_avt]--; rn.v = Math.max(0, (rn.v|0) - 1); a.storage.v = (a.storage.v|0) + 1; a.storage.vt = _avt; } // v1007 按档扣
-            }
-          } catch(_) {}
-        } else if (a.map === 'world' && a.x === 2 && a.y === 0) {
-          // 养殖园：肉/蛋
-          try { if (typeof ranchTick === 'function') ranchTick(S); const rc = S.ranch || {};
-            if ((rc.m|0) > 0) { rc.m--; a.storage.m = (a.storage.m|0) + 1; }
-            else if ((rc.e|0) > 0) { rc.e--; a.storage.e = (a.storage.e|0) + 1; }
-          } catch(_) {}
-        }
-      }
-    });
-    // NPC随机破坏（每小时2%每阵）：对战判定
-    if (false) { // v1108 NPC 偷袭已取消（Ye 令 2026-10-27）：不再有 NPC 破阵
-      S._lastRaid = now;
-      const toRemove = [];
-      S.arrays.forEach(a => {
-        if (Math.random() < 0.02) {
-          // 阵战力：500+玩家等级*10；神识战力：玩家总属性（坐阵时）
-          let arrPow = 500 + (S.level|0) * 10;
-          let defPow = arrPow;
-          let defName = '采集阵';
-          if (a.guarded) {
-            defPow += (a.guardPow|0) || 1000; // 守卫人的属性
-            defName = '神识+采集阵';
-          }
-          // NPC战力：随机，随玩家境界浮动
-          const npcPow = Math.floor((800 + Math.random() * 700) * (1 + (S.realm|0) * 0.1));
-          const atkName = (typeof CHAT_NAMES !== 'undefined' && CHAT_NAMES.length ? CHAT_NAMES[Math.floor(Math.random()*CHAT_NAMES.length)] : '神秘人'); // v921 攻击者名字
-          // v929 气息隐匿：NPC神识需超过玩家气息才能发现采集阵
-          const npcSS = Math.floor(Math.random() * 200); // NPC神识0-200随机
-          if (npcSS <= Math.floor((S.qixi|0)/2)) { return; } // v950 阵气息=本人/2
-          if (npcPow > defPow) {
-            // 攻破：2/3被抢，1/3损失
-            const stolen = {};
-            Object.keys(a.storage || {}).forEach(k => {
-              if (k === 'vt') return;
-              const total = a.storage[k]|0;
-              const s = Math.floor(total * 2 / 3);
-              if (s > 0) stolen[k] = s;
-            });
-            // v923 燃料灵石也按2/3被抢、1/3损毁
-            const _fuelStones = a.fuelUntil > Date.now() ? Math.floor((a.fuelUntil - Date.now()) / 3600000) : 0;
-            if (_fuelStones > 0) {
-              const _s = Math.floor(_fuelStones * 2 / 3);
-              if (_s > 0) stolen['sp4'] = _s;
-            }
-            toRemove.push(a);
-            try { log('bad', `🧭 采集阵(${a.x},${a.y})被【${atkName}】攻破！${defName}战败${Object.keys(stolen).length ? '，被抢走 ' + Object.entries(stolen).map(([k,v]) => ({h:'草药',o:'矿石',v:'灵脉',m:'肉',e:'蛋',sp4:'上品灵石'}[k]||k) + '×' + v).join('、') + '（1/3损毁）' : '，阵内空空如也'}`); } catch(_) {}
-            try { // v900 书信提醒
-              S.mail = S.mail || [];
-              const _dt = new Date();
-              const _tstr = `${_dt.getMonth()+1}月${_dt.getDate()}日 ${_dt.getHours()}:${String(_dt.getMinutes()).padStart(2,'0')}`;
-              S.mail.push({ from: '阵灵', text: `【${_tstr}】你的采集阵在残陨之剑(${a.x},${a.y})被【${atkName}】攻破！${defName}战败${Object.keys(stolen).length ? '，被抢走' + Object.entries(stolen).map(([k,v]) => ({h:'草药',o:'矿石',v:'灵脉',m:'肉',e:'蛋',sp4:'上品灵石'}[k]||k) + '×' + v).join('、') : ''}（1/3物资损毁）`, time: Date.now(), claimed: false });
-              if (S.mail.length > 50) S.mail = S.mail.slice(-50);
-            } catch(_) {}
-          } else {
-            try { log('good', `🛡️ 采集阵(${a.x},${a.y})击退【${atkName}】！${defName}守住了`); } catch(_) {}
-            try { // v900 书信提醒
-              S.mail = S.mail || [];
-              const _dt2 = new Date();
-              const _tstr2 = `${_dt2.getMonth()+1}月${_dt2.getDate()}日 ${_dt2.getHours()}:${String(_dt2.getMinutes()).padStart(2,'0')}`;
-              S.mail.push({ from: '阵灵', text: `【${_tstr2}】你的采集阵在残陨之剑(${a.x},${a.y})遭到【${atkName}】攻击，${defName}将其击退，阵完好无损`, time: Date.now(), claimed: false });
-              if (S.mail.length > 50) S.mail = S.mail.slice(-50);
-            } catch(_) {}
-          }
-        }
-      });
-      toRemove.forEach(a => { const _i = S.arrays.indexOf(a); if (_i >= 0) S.arrays.splice(_i, 1); });
-    }
-  } catch(e) {}
-}
-// v954 后台tick后保存：必须放在本script块内才能取到S/arrayTick/save（v953误写在core块，跨块取不到故从未生效）
-if (!window._arrayWatchdog) { window._arrayWatchdog = setInterval(() => { try { if (typeof S !== 'undefined' && S && typeof arrayTick === 'function') { arrayTick(S); if (typeof save === 'function') save(); } } catch(_) {} }, 5000); }
-// v899 采集阵UI
-window.placeArray = function(x, y) {
-  try {
-    S.formations = S.formations || {};
-    const _tier = (S.formations.f_gather | 0) > 0 ? 1 : (S.formations.f_gather2 | 0) > 0 ? 2 : (S.formations.f_gather3 | 0) > 0 ? 3 : 0; // v1128 优先用最低档
-    if (!_tier) { log('bad', '没有采集阵（阵法台合成）'); return; }
-    S.arrays = S.arrays || [];
-    if (S.arrays.some(a => a.map === 'world' && a.x === x && a.y === y)) { log('bad', '该格已有采集阵（一人一格一个）'); return; } // v920 一人一格一个
-    S.formations[_tier === 1 ? 'f_gather' : _tier === 2 ? 'f_gather2' : 'f_gather3']--;
-    S.arrays.push({ id: Date.now(), map: 'world', x, y, tier: _tier, fuelUntil: 0, storage: {}, guarded: false, lastTick: Date.now() });
-    log('good', `🧭 ${['', '小型', '中型', '大型'][_tier]}采集阵已布于(${x},${y})，放入上品灵石启动（1颗=1小时）`);
-    commit(); renderWorldMap();
-  } catch(e) {}
-};
-window.arrayPanel = function(id) {
-  try {
-    try { if (typeof arrayTick === 'function') { arrayTick(S); if (typeof save === 'function') save(); } } catch(_) {} // v954 开面板先结算一次，iOS挂起定时器时也能补采
-    const a = (S.arrays || []).find(v => v.id === id);
-    if (!a) return;
-    const now = Date.now();
-    const fuelH = a.fuelUntil > now ? ((a.fuelUntil - now) / 3600000).toFixed(1) : '0';
-    const fuelStones = a.fuelUntil > now ? Math.round((a.fuelUntil - now) / 3600000) : 0; // v922 四舍五入对齐显示
-    const st = a.storage || {};
-    const _nm = {h:'🌿草药',o:'⛏️矿石',v:'💧灵脉',m:'🍖兽肉',e:'🥚兽蛋'};
-    const _ents = Object.entries(st).filter(([k,v]) => k !== 'vt' && v > 0);
-    if (fuelStones > 0) _ents.unshift(['sp4', fuelStones]); // v922 灵石进库存显示
-    _nm['sp4'] = '💎上品灵石';
-    const items = _ents.length ? `<div class="grid2" style="grid-template-columns:repeat(3,1fr);gap:4px;margin:6px 0">` + _ents.map(([k,v]) => `<div class="row" style="padding:6px;text-align:center"><div class="lab">${_nm[k]||k}<br><b class="y">×${v}</b></div></div>`).join('') + `</div>` : '<div class="empty">空</div>'; // v915 背包式
-    const stoneCount = ((S.ores || {}).sp4|0); // v915 key修正
-    openSheet(`<h2>🧭 采集阵 (${a.x},${a.y})#${String(a.id).slice(-3)}</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b>小时 · ${a.guarded ? '🛡️ 神识坐阵中' : '无守卫'}<br>你的上品灵石：${stoneCount}颗<br>阵内灵石：<b class="y">${fuelStones}</b>颗（燃料${fuelH}小时）</div><h3>🎒 阵内库存（人人可看）</h3>${items}<div class="grid2"><button class="btn gold" onclick="window.fuelArray(${id})">💎 加灵石</button><button class="btn" onclick="window.withdrawFuel(${id})">💎 取灵石</button><button class="btn" onclick="window.collectArray(${id})">📦 收取</button><button class="btn" onclick="window.toggleGuard(${id})">${a.guarded ? '🔓 撤回神识' : '🛡️ 神识坐阵'}</button><button class="btn danger" onclick="window.destroyArray(${id})">💥 拆除</button></div><button class="btn full" onclick="closeSheet()">关闭</button>`);
-  } catch(e) {}
-};
-window.fuelArray = function(id) {
-  try {
-    const a = (S.arrays || []).find(v => v.id === id);
-    if (!a) return;
-    if (((S.ores || {}).sp4|0) <= 0) { log('bad', '没有上品灵石'); return; }
-    S.ores.sp4--; // v914 上品灵石key修正
-    const now = Date.now();
-    a.fuelUntil = Math.max(now, Number(a.fuelUntil)||0) + 3600000; // v922 时间戳不用|0防溢出
-    if (!a.lastTick) a.lastTick = now;
-    log('good', `💎 采集阵(${a.x},${a.y})燃料+1小时`);
-    commit(); window.arrayPanel(id);
-  } catch(e) {}
-};
-window.withdrawFuel = function(id) { // v917 取出灵石
-  try {
-    const a = (S.arrays || []).find(v => v.id === id);
-    if (!a) return;
-    const now = Date.now();
-    const remain = (Number(a.fuelUntil)||0) - now; // v922
-    if (remain < 3600000) { log('bad', '燃料不足1小时，无法取出'); return; }
-    a.fuelUntil -= 3600000;
-    S.ores = S.ores || {}; S.ores.sp4 = (S.ores.sp4|0) + 1;
-    log('good', `💎 取出上品灵石×1（剩余燃料${((a.fuelUntil-now)/3600000).toFixed(1)}小时）`);
-    commit(); window.arrayPanel(id);
-  } catch(e) {}
-};
-window.collectArray = async function(id) {
-  // v966 彻底版：登录在线时走服务端（服务端按正确语义实现，修本地 bug）
-  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
-    try {
-      const resp = await MHXY.api('/api/roll/array_collect', {method:'POST', body:{id}});
-      const j = resp && resp.json;
-      if (resp.ok && j && j.ok) {
-        const got = [];
-        for (const gg of (j.gains||[])) {
-          if (!S[gg.st]) { S[gg.st] = gg.st === 'veins' ? [0,0,0] : {}; }
-          if (Array.isArray(S[gg.st])) { const _vi = Math.min(2, Math.max(0, gg.k|0)); S[gg.st][_vi] = (S[gg.st][_vi]|0) + (gg.n|0); got.push(`${['小型灵脉', '中型灵脉', '巨型灵脉'][_vi]}×${gg.n}`); } // v1039 灵脉按灵脉入账，不折灵石
-          else { S[gg.st][gg.k] = (S[gg.st][gg.k]|0) + gg.n; got.push(`${gg.k}×${gg.n}`); }
-        }
-        // 本地阵 storage 清零（与服务端一致）
-        try { const a = (S.arrays||[]).find(v => v.id === id); if (a && a.storage) { a.storage.h = 0; a.storage.o = 0; a.storage.v = 0; a.storage.m = 0; a.storage.e = 0; } } catch(_){}
-        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        if (got.length) log('good', `📦 从采集阵收取：${got.join('、')}`);
-        else log('sys', '阵内空空如也');
-        commit(); window.arrayPanel(id);
-        return;
-      }
-      if (!resp.netErr) { if ((j||{}).error === 'no_array') log('sys', '阵不存在'); return; }
-    } catch(e) { /* 回落本地 */ }
-  }
-  try {
-    const a = (S.arrays || []).find(v => v.id === id);
-    if (!a || !a.storage) return;
-    const st = a.storage;
- // v1038 自愈旧污染：草药/蛋被误存为数字时先转回正道
-    if (typeof S.herbs === 'number' && S.herbs > 0) S.herbs = { lq1: S.herbs|0 };
-    if (typeof S.eggs === 'number' && S.eggs > 0) { S.petEggs = (S.petEggs|0) + (S.eggs|0); S.eggs = {}; }
-    let got = [];
-    if ((st.h|0) > 0) { if (!S.herbs || typeof S.herbs !== 'object') S.herbs = {}; for (let _hi = 0; _hi < (st.h|0); _hi++) { const _hk = ['lq1', 'lq2', 'lq3'][(window._mineTier ? window._mineTier() : 0)] || 'lq1'; S.herbs[_hk] = (S.herbs[_hk]|0) + 1; } got.push('草药×' + st.h); st.h = 0; } // v1038 草药逐株入字典（矿区档位掷骰）
-    if ((st.o|0) > 0) { S.ores = S.ores || {}; S.ores.sp1 = (S.ores.sp1|0) + st.o; got.push('矿石×' + st.o); st.o = 0; }
-    if ((st.v|0) > 0) { if (!Array.isArray(S.veins) || S.veins.length < 3) S.veins = [0, 0, 0]; const _vt2 = Math.min(2, Math.max(0, st.vt|0)); S.veins[_vt2] = (S.veins[_vt2]|0) + (st.v|0); got.push('灵脉×' + st.v); st.v = 0; } // v1038 灵脉入 S.veins
-    if ((st.m|0) > 0) { S.food = S.food || {}; S.food.rabbit = (S.food.rabbit|0) + (st.m|0); got.push('肉×' + st.m); st.m = 0; } // v1038 肉入 food.rabbit（与迁移口径一致）
-    if ((st.e|0) > 0) { S.petEggs = (S.petEggs|0) + (st.e|0); got.push('蛋×' + st.e); st.e = 0; } // v1038 蛋入 petEggs 计数，不动 eggs 字典
-    if (got.length) log('good', `📦 从采集阵收取：${got.join('、')}`);
-    else log('sys', '阵内空空如也');
-    commit(); window.arrayPanel(id);
-  } catch(e) {}
-};
-window.toggleGuard = function(id) {
-  try {
-    const a = (S.arrays || []).find(v => v.id === id);
-    if (!a) return;
-    if ((S.realm|0) < 5) { log('bad', '需要化神以上'); return; }
-    a.guarded = !a.guarded;
-    if (a.guarded) {
-      // 存守卫人属性（以后别人帮忙看时用别人的）
-      try { a.guardPow = (typeof C !== 'undefined' && C.total) ? C.total(S.attrs) : 1000; a.guardName = '你'; } catch(_) { a.guardPow = 1000; }
-    } else { a.guardPow = 0; }
-    log('good', a.guarded ? `🛡️ 神识坐阵(${a.x},${a.y})，破坏需对战神识+采集阵` : `🔓 已撤回神识`);
-    commit(); window.arrayPanel(id);
-  } catch(e) {}
-};
-window.destroyArray = function(id) {
-  try {
-    const idx = (S.arrays || []).findIndex(v => v.id === id);
-    if (idx < 0) return;
-    const a = S.arrays[idx];
-    if (!confirm(`确定拆除(${a.x},${a.y})的采集阵？库存将自动收取。`)) return;
-    // 自动收取库存
-    const st = a.storage || {};
- // v1038 自愈旧污染：草药/蛋被误存为数字时先转回正道
-    if (typeof S.herbs === 'number' && S.herbs > 0) S.herbs = { lq1: S.herbs|0 };
-    if (typeof S.eggs === 'number' && S.eggs > 0) { S.petEggs = (S.petEggs|0) + (S.eggs|0); S.eggs = {}; }
-
-    if ((st.h|0) > 0) { if (!S.herbs || typeof S.herbs !== 'object') S.herbs = {}; for (let _hi = 0; _hi < (st.h|0); _hi++) { const _hk = ['lq1', 'lq2', 'lq3'][(window._mineTier ? window._mineTier() : 0)] || 'lq1'; S.herbs[_hk] = (S.herbs[_hk]|0) + 1; } } // v1038 草药逐株入字典
-    if ((st.o|0) > 0) { S.ores = S.ores || {}; S.ores.sp1 = (S.ores.sp1|0) + st.o; }
-    if ((st.v|0) > 0) { if (!Array.isArray(S.veins) || S.veins.length < 3) S.veins = [0, 0, 0]; const _vt3 = Math.min(2, Math.max(0, st.vt|0)); S.veins[_vt3] = (S.veins[_vt3]|0) + (st.v|0); } // v1038 灵脉入 S.veins
-    if ((st.m|0) > 0) { S.food = S.food || {}; S.food.rabbit = (S.food.rabbit|0) + (st.m|0); } // v1038 肉入 food.rabbit
-    if ((st.e|0) > 0) S.petEggs = (S.petEggs|0) + (st.e|0); // v1038 蛋入 petEggs 计数
-    S.arrays.splice(idx, 1);
-    S.formations = S.formations || {}; const _rt = Math.min(3, Math.max(1, a.tier | 0 || 1)); S.formations[_rt === 1 ? 'f_gather' : _rt === 2 ? 'f_gather2' : 'f_gather3'] = (S.formations[_rt === 1 ? 'f_gather' : _rt === 2 ? 'f_gather2' : 'f_gather3'] | 0) + 1; // v1128 拆阵按档退回
-    log('good', `💥 采集阵已拆除，库存已收取，${['', '小型', '中型', '大型'][_rt]}采集阵已退回`);
-    commit(); closeSheet(); renderWorldMap();
-  } catch(e) {}
-};
+// v1212 主城老采集阵已整体下线（采集阵统一为冒险图新体系 array2；老阵存量已走系统邮件结算返还）
 function reserveTick(S) { // 草药/矿石每分钟+1 上限99；灵脉按大小刷新：小型1分钟/中型10分钟/巨型30分钟一条（v1007）
   const now = Date.now();
   if (!S.reserveNode) S.reserveNode = { h: 0, o: 0, v: 0, vt: 0, t: now };
@@ -1055,19 +805,19 @@ window.openReserveSheet = function() {
     reserveTick(S); const rn = S.reserveNode;
     const _vn = ['小型灵脉','中型灵脉','巨型灵脉'];
     const vtxt = (rn.v|0) > 0 ? '灵脉×' + rn.v : '无';
-    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&((S.formations.f_gather|0)+(S.formations.f_gather2|0)+(S.formations.f_gather3|0))>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? '<button class="btn gold full" onclick="window.placeArray(4,3)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===4&&a.y===3) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===4&&a.y===3).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openHerbSheet = function() {
   try {
     herbTick(S); const hg = S.herbGarden;
-    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button>${(S.formations&&((S.formations.f_gather|0)+(S.formations.f_gather2|0)+(S.formations.f_gather3|0))>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? '<button class="btn gold full" onclick="window.placeArray(3,2)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===3&&a.y===2) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===3&&a.y===2).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openRanchSheet = function() {
   try {
     ranchTick(S); const r = S.ranch;
-    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button>${(S.formations&&((S.formations.f_gather|0)+(S.formations.f_gather2|0)+(S.formations.f_gather3|0))>0) && !(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? '<button class="btn gold full" onclick="window.placeArray(2,0)">🧭 放置采集阵<br><small>上品灵石驱动自动采集（神识可坐阵守卫）</small></button>' : ''}${(S.arrays||[]).some(a=>a.map==='world'&&a.x===2&&a.y===0) ? `<button class="btn full" onclick="window.arrayPanel(${(S.arrays||[]).find(a=>a.map==='world'&&a.x===2&&a.y===0).id})">🧭 管理采集阵</button>` : ''}<button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义）
@@ -1183,12 +933,6 @@ function npcPos(S) {
           const _wm = S.worldMap || { px: 2, py: 3 };
           const _d = Math.max(Math.abs(x - _wm.px), Math.abs(y - _wm.py));
           if (_d >= 1 && _d <= 3) _cellIcon = `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${icon}<span style="position:absolute;bottom:-2px;right:-2px;font-size:10px" title="化神分身可收取">👤</span></div>`;
-        }
-      } catch(_) {}
-      try { // v899 采集阵显示（主城阵只剩田药园/养殖园）
-        const _arr = (S.arrays || []).find(a => a.map === 'world' && a.x === x && a.y === y);
-        if (_arr && !isP) {
-          _cellIcon = `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${_cellIcon}<span style="position:absolute;top:-2px;right:-2px;font-size:10px" title="采集阵${_arr.guarded ? '(神识守卫)' : ''}">🧭</span></div>`;
         }
       } catch(_) {}
       try {
@@ -6740,12 +6484,15 @@ async function doMailClaimServer(sid){
     if (g.stamina) S.stamina = (S.stamina | 0) + g.stamina;
     if (g.gold) S.gold = (S.gold | 0) + g.gold; // SECFIX 批2：金元附件（拍卖退款等）须同步本地，否则下次上传会把已领金冲掉
     if (g.items) { S.inv = S.inv || {}; Object.keys(g.items).forEach(k => { S.inv[k] = (S.inv[k] | 0) + g.items[k]; }); }
+    // 停点清零（v1212）：多库附件 gains 须同步本地（老阵下线结算等），否则下次上传会把已领物资冲掉（同 gold 口径）
+    if (Array.isArray(g.gains)) for (const gg of g.gains) { if (!gg || !gg.st || !gg.k) continue; if (!S[gg.st] || typeof S[gg.st] !== 'object') S[gg.st] = {}; S[gg.st][gg.k] = (S[gg.st][gg.k] | 0) + (gg.n | 0); }
     const m = (S.mail || []).find(x => x.sid === sid);
     if (m) m.claimed = true;
     const parts = [];
     if (g.stamina) parts.push(g.stamina + '体力');
     if (g.gold) parts.push(g.gold + '金元');
     if (g.items) Object.keys(g.items).forEach(k => parts.push(k + '×' + g.items[k]));
+    if (Array.isArray(g.gains)) for (const gg of g.gains) parts.push(gg.k + '×' + gg.n);
     toastLog('good', '📬 奖励已领取' + (parts.length ? '：' + parts.join('、') : ''));
     try { if (typeof M !== 'undefined' && M && r.json.rev) { M.baseRev = r.json.rev; try { localStorage.setItem('mhxy_rev', String(r.json.rev)); } catch (_) {} } } catch (_) {}
     commit();
@@ -7285,7 +7032,7 @@ async function finishAdvBattle() {
   else if (r.win) {
     if (run.grid) { // v182 格子：终点 BOSS 打赢即通关，否则继续走格子（v184：同步格子事件状态；v185：守怪战利品）
       const g = run.grid, t = g.tiles[g.py][g.px];
-      if (run.ev.monTile) { const mt = run.ev.monTile; if (run.shared && run.shared.on) { try { await advMonKillShared(mt); } catch(_) {} } else if (t.mons) t.mons[mt.tier] = Math.max(0, (t.mons[mt.tier] | 0) - 1); run.ev = null; out.lines.push('⚔️ 怪物已除'); }
+      if (run.ev.monTile) { const mt = run.ev.monTile; if (run.shared && run.shared.on) { if (!run.ev._mkReg) { try { await advMonKillShared({ x: mt.x, y: mt.y, tier: mt.tier, rank: run.ev.mon.rank }); } catch(_) {} } } else if (t.mons) t.mons[mt.tier] = Math.max(0, (t.mons[mt.tier] | 0) - 1); run.ev = null; out.lines.push('⚔️ 怪物已除'); }
       else if (run.ev.exitBoss) { t.done = 1; t.ev = null; out.lines.push('击败守关者，抵达终点'); out.end = C.advEnd(S, 'done'); }
       else { if (run.ev.guardedFrom) out.lines.push('⚔️ 守怪已除；' + C.guardedLoot(S, run, run.ev.loot)); t.evDone = 1; t.ev = null; run.ev = null; }
     }
@@ -7335,7 +7082,7 @@ function doReset() {
   localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); window.S = S; closeSheet(); $('log').innerHTML = ''; welcome(); commit();
 }
 
-function commit() { if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} } if (typeof S === 'undefined' || !S) return; try { if (typeof arrayTick === 'function') arrayTick(S); } catch(_) {} // v899 采集阵tick
+function commit() { if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} } if (typeof S === 'undefined' || !S) return; 
   try { obsWatch(); } catch(_) {} // v1015 观礼瞭望
 /* v1055 Ye 定：残页不再自动使用（原 v441 已去除） */ if ((S.maiVLuo|0) >= 10 && typeof C.synthVMai === 'function') { let _sn = 0; while ((S.maiVLuo|0) >= 10 && C.synthVMai(S)) _sn++; if (_sn > 0) log('good', `🌀 虚络满10自动合成 <b class="g">虚脉 +${_sn}</b>（当前 ${C.maiMult(S)} 倍）`); } save(); try { if (typeof checkAchievements === 'function') checkAchievements(); } catch(e) {} render(); } // v441 脉络残页满10自动使用；v442 虚络满10自动合成虚脉
 
