@@ -2609,8 +2609,8 @@ function doWxSynth(k, kind) {
 }
 const rewTxt = rw => { const it = Object.keys(rw.items).map(key => { const [st, k] = key.split(':'); return `${C.itemLabel(st, k)}×${rw.items[key]}`; }); const xpLbl = C.resLbl(S); return [rw.pts ? `属性 <span class="g">${Object.keys(rw.gains).map(a => AN[a] + '+' + rw.gains[a]).join(' ')}</span>` : '', rw.gold ? `金元 <span class="y">+${rw.gold}</span>` : '', rw.xp ? `${xpLbl} <span class="g">+${rw.xp}</span>` : '', it.length ? `物品 <span class="y">${it.join(' ')}</span>` : ''].filter(Boolean).join('，') || '无'; };
 function monCard(m, tail) { const r = C.RANKS[m.rank]; return `<span class="${r.cls}">【${r.name}】${m.name}</span>（Lv.${m.lv}）${tail || ''}${m.skills.length ? ' <span class="pu">' + m.skills.map(k => SKILLS[k].name).join('·') + '</span>' : ''}<br><small style="color:var(--dim)">${ATTRS.map(k => AN[k] + C.fmtN(m.attrs[k])).join(' ')} · 你：${ATTRS.map(k => AN[k] + C.fmtN(C.fightAttrs(S, true)[k])).join(' ')}</small>`; }
-// v1203 资源槽紧凑彩签（Ye 令：7 个槽缩小、每槽一色）：[颜色, 短名]，草药绿系由浅入深、灵脉蓝→紫→金升贵
-const SLOT_CHIP_STYLE = { h1: ['#9ccc3c', '地品'], h2: ['#2fbf71', '天品'], h3: ['#19bfa5', '仙品'], o: ['#f0a13c', '矿石'], v1: ['#57c7ff', '小型'], v2: ['#c07ff0', '中型'], v3: ['#ffc93d', '巨型'] };
+// v1203 资源槽紧凑彩签（Ye 令：7 个槽缩小、每槽一色）；v1204 颜色从 Ye 2026-11-06 亲定：草药 地绿/天蓝/仙紫、灵脉 小绿/中蓝/巨紫（两家同序 绿→蓝→紫），矿石银灰：[颜色, 短名]
+const SLOT_CHIP_STYLE = { h1: ['#3ecf6f', '地品'], h2: ['#4d9dff', '天品'], h3: ['#b45cff', '仙品'], o: ['#b0bcc8', '矿石'], v1: ['#3ecf6f', '小型'], v2: ['#4d9dff', '中型'], v3: ['#b45cff', '巨型'] };
 function slotChip(c, a) { const _ss = SLOT_CHIP_STYLE[c] || ['#cccccc', C.resNameL(c)]; return `<span style="color:${_ss[0]};font-size:11px;white-space:nowrap">${C.resIconL(c)}${_ss[1]}×${a}</span>`; }
 function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 + 事件面板
   const run = S.run; if (!run || !run.grid) return;
