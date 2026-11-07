@@ -470,6 +470,12 @@ function normalize(S) {
     }
     S.arrays = _keep;
   }
+  // v1209 灵石合成版老字段并入 sp 家族（Ye 定：合成改走 sp 系列）：xps→sp2 下品、zps→sp3 中品、sps→sp4 上品、jps→sp5 极品，1:1 并入后删老字段
+  try {
+    S.ores = S.ores || {};
+    const _lgMap = [['xps', 'sp2'], ['zps', 'sp3'], ['sps', 'sp4'], ['jps', 'sp5']];
+    for (const _lg of _lgMap) { if (S.ores[_lg[0]]) { S.ores[_lg[1]] = (S.ores[_lg[1]] | 0) + (S.ores[_lg[0]] | 0); delete S.ores[_lg[0]]; } }
+  } catch (e) {}
   // v1128 器具/灵物/灵物种子/阵棋/采集阵分档
   if (!S.tools || typeof S.tools !== 'object') S.tools = { pick: null, hoe: null };
   for (const _tk of ['pick', 'hoe']) {
@@ -2435,21 +2441,21 @@ function useMaiPages(S, n, seatIdx) { // v993：残页喂神藏气旋（每张+1
   return { n: used, lvUp, filled };
 }
 function synthVMai(S) { szSyncMai(S); return 0; } // v993：虚脉由神藏全开座数派生，不再手动合成
-function synthXPS(S) { // v95：10灵气石合成1下品灵石
+function synthXPS(S) { // v1209：10灵气石合成1下品灵石（直接走 sp 家族，Ye 定版 10/100/100/100）
   if ((S.ores.sp1|0) < 10) return 0;
-  S.ores.sp1 -= 10; S.ores.xps = (S.ores.xps | 0) + 1; return 1;
+  S.ores.sp1 -= 10; S.ores.sp2 = (S.ores.sp2 | 0) + 1; return 1;
 }
-function synthZPS(S) { // v96：10下品灵石合成1中品灵石
-  if ((S.ores.xps|0) < 10) return 0;
-  S.ores.xps -= 10; S.ores.zps = (S.ores.zps | 0) + 1; return 1;
+function synthZPS(S) { // v1209：100下品灵石合成1中品灵石
+  if ((S.ores.sp2|0) < 100) return 0;
+  S.ores.sp2 -= 100; S.ores.sp3 = (S.ores.sp3 | 0) + 1; return 1;
 }
-function synthSPS(S) { // v96：100中品灵石合成1上品灵石
-  if ((S.ores.zps|0) < 100) return 0;
-  S.ores.zps -= 100; S.ores.sps = (S.ores.sps | 0) + 1; return 1;
+function synthSPS(S) { // v1209：100中品灵石合成1上品灵石
+  if ((S.ores.sp3|0) < 100) return 0;
+  S.ores.sp3 -= 100; S.ores.sp4 = (S.ores.sp4 | 0) + 1; return 1;
 }
-function synthJPS(S) { // v96：1000上品灵石合成1极品灵石
-  if ((S.ores.sps|0) < 1000) return 0;
-  S.ores.sps -= 1000; S.ores.jps = (S.ores.jps | 0) + 1; return 1;
+function synthJPS(S) { // v1209：100上品灵石合成1极品灵石
+  if ((S.ores.sp4|0) < 100) return 0;
+  S.ores.sp4 -= 100; S.ores.sp5 = (S.ores.sp5 | 0) + 1; return 1;
 }
 
 /* ---------- 战斗 ---------- */
@@ -3697,26 +3703,34 @@ window.advArrayPanel = function() {
     const a = (S.run.shared.arrays || []).find(v => v.mine);
     if (!a) { advTip('这张图上没有你的采集阵'); return; }
     const fuelH = a.fuel_ms ? (a.fuel_ms / 3600000).toFixed(1) : '0';
-    const stoneCount = (S.ores && S.ores.sp4) | 0;
+    const _ftier = Math.min(3, Math.max(1, a.tier | 0 || 1));
+    const _fkey = ['sp3', 'sp4', 'sp5'][_ftier - 1];
+    const _fname = ['🌗中品灵石', '💎上品灵石', '💠极品灵石'][_ftier - 1];
+    const stoneCount = (S.ores && S.ores[_fkey]) | 0;
     const inv = a.inv || { mats: {}, ores: {}, xy: 0, lw: [], seeds: {} };
     const _sum = o => Object.values(o || {}).reduce((s, v) => s + (v | 0), 0);
     const invTxt = `材料 ×${_sum(inv.mats) + _sum(inv.ores)} · 灵物 ×${(inv.lw || []).length} · 种子 ×${_sum(inv.seeds)}${(inv.xy | 0) > 0 ? ` · 仙玉 ×${inv.xy}` : ''}`;
     const tierNm = ['', '小型', '中型', '大型'][Math.min(3, Math.max(1, a.tier | 0 || 1))];
-    openSheet(`<h2>🧭 <span style="color:${C.GRADE_COLORS[(a.tier | 0 || 1) - 1]}">${tierNm}采集阵</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的上品灵石：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：${invTxt}<br>阵只收草药与灵脉（按阵档），矿石留格上等手挖；阵收取无暴击。</div><div class="grid2"><button class="btn gold" data-a2fuel>💎 加灵石</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>💥 拆除</button><button class="btn" data-a2back>返回地图</button></div>`);
+    openSheet(`<h2>🧭 <span style="color:${C.GRADE_COLORS[(a.tier | 0 || 1) - 1]}">${tierNm}采集阵</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的${_fname}：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：${invTxt}<br>阵只收草药与灵脉（按阵档），矿石留格上等手挖；阵收取无暴击。</div><div class="grid2"><button class="btn gold" data-a2fuel>${['🌗', '💎', '💠'][_ftier - 1]} 加灵石</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>💥 拆除</button><button class="btn" data-a2back>返回地图</button></div>`);
   } catch (e) {}
 };
 window.advArrayFuel = async function() {
   try {
     const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
+    const _a = S.run.shared && (S.run.shared.arrays || []).find(v => v.mine);
+    const _tier = _a ? Math.min(3, Math.max(1, _a.tier | 0 || 1)) : 2;
+    const _fk = ['sp3', 'sp4', 'sp5'][_tier - 1];
+    const _fn = ['中品灵石', '上品灵石', '极品灵石'][_tier - 1];
+    const _fi = ['🌗', '💎', '💠'][_tier - 1];
     const resp = await MHXY.api('/api/array2/fuel', { method: 'POST', body: { dk } });
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
-      S.ores = S.ores || {}; S.ores.sp4 = Math.max(0, (S.ores.sp4 | 0) - 1);
+      S.ores = S.ores || {}; S.ores[_fk] = Math.max(0, (S.ores[_fk] | 0) - 1);
       if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-      log('good', '💎 采集阵燃料 +1 小时');
+      log('good', `${_fi} 采集阵燃料 +1 小时`);
       commit();
     } else {
-      advTip((j || {}).error === 'no_sp4' ? '没有上品灵石' : (j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : (j || {}).error === 'fuel_full' ? '燃料已满（上限 72 小时）' : '加灵石失败');
+      advTip((j || {}).error === 'no_' + _fk ? `没有${_fn}` : (j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : (j || {}).error === 'fuel_full' ? '燃料已满（上限 72 小时）' : '加灵石失败');
     }
   } catch (e) {}
   await advSharedRefresh();
