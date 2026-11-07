@@ -6738,11 +6738,13 @@ async function doMailClaimServer(sid){
   if (r.ok && r.json && r.json.ok) {
     const g = r.json.granted || {};
     if (g.stamina) S.stamina = (S.stamina | 0) + g.stamina;
+    if (g.gold) S.gold = (S.gold | 0) + g.gold; // SECFIX 批2：金元附件（拍卖退款等）须同步本地，否则下次上传会把已领金冲掉
     if (g.items) { S.inv = S.inv || {}; Object.keys(g.items).forEach(k => { S.inv[k] = (S.inv[k] | 0) + g.items[k]; }); }
     const m = (S.mail || []).find(x => x.sid === sid);
     if (m) m.claimed = true;
     const parts = [];
     if (g.stamina) parts.push(g.stamina + '体力');
+    if (g.gold) parts.push(g.gold + '金元');
     if (g.items) Object.keys(g.items).forEach(k => parts.push(k + '×' + g.items[k]));
     toastLog('good', '📬 奖励已领取' + (parts.length ? '：' + parts.join('、') : ''));
     try { if (typeof M !== 'undefined' && M && r.json.rev) { M.baseRev = r.json.rev; try { localStorage.setItem('mhxy_rev', String(r.json.rev)); } catch (_) {} } } catch (_) {}
