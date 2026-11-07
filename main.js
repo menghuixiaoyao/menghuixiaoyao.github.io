@@ -2840,9 +2840,9 @@ function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓
 }
 window.craftZhenqi = function (g) { // v1128 做阵棋：材料直扣（无失败），需阵法生活技能
   try {
-    if (lifeLocked('formation')) { log('bad', '需要「阵法」生活技能（轮回后参悟）'); return; }
+    if (lifeLocked('formation')) { showTip('需要「阵法」生活技能（轮回后参悟）'); return; }
     const z = ZQ_DEFS.find(v => v.g === g); if (!z) return;
-    for (const [st, ik, n] of z.need) if (((S[st] || {})[ik] | 0) < n) { log('bad', `材料不足：${st === 'prey' ? PREY[ik].name : ORES[ik].name} 需 ${n}`); return; }
+    for (const [st, ik, n] of z.need) if (((S[st] || {})[ik] | 0) < n) { showTip(`材料不足：${st === 'prey' ? PREY[ik].name : ORES[ik].name} 需 ${n}`); return; }
     for (const [st, ik, n] of z.need) { S[st][ik] -= n; if (S[st][ik] <= 0) delete S[st][ik]; }
     if (!S.zhenqi) S.zhenqi = { 1: 0, 2: 0, 3: 0 };
     S.zhenqi[g] = (S.zhenqi[g] | 0) + 1;
@@ -2853,7 +2853,7 @@ window.craftZhenqi = function (g) { // v1128 做阵棋：材料直扣（无失�
 window.synthZhenqi = function (g) { // v1128 阵棋合成采集阵
   try {
     const z = ZQ_DEFS.find(v => v.g === g); if (!z) return;
-    if (!S.zhenqi || (S.zhenqi[g] | 0) < z.synth) { log('bad', `阵棋不足（需 ${z.synth}）`); return; }
+    if (!S.zhenqi || (S.zhenqi[g] | 0) < z.synth) { showTip(`阵棋不足（需 ${z.synth}）`); return; }
     S.zhenqi[g] -= z.synth;
     S.formations = S.formations || {};
     S.formations[z.fkey] = (S.formations[z.fkey] | 0) + 1;

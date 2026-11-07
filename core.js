@@ -3674,6 +3674,7 @@ window.advPlaceArray = async function() {
     await window.advPlaceArrayTier(owned[0] || 1);
   } catch (e) {}
 };
+function advTip(html) { if (window.showTip) window.showTip(html); else log('sys', html); } // v1208 阵链提示走中央大提示（面板会盖住日志）
 window.advPlaceArrayTier = async function(tier) {
   try {
     if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
@@ -3684,7 +3685,7 @@ window.advPlaceArrayTier = async function(tier) {
       log('good', `🧭 采集阵已布于(${gx},${gy})，加灵石后自动采集这格刷新的资源`);
     } else {
       const _e = (j || {}).error;
-      log('bad', _e === 'no_formation' ? '没有采集阵（阵法台用阵棋合成）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' || _e === 'not_resource_tile' ? '只能布在资源格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
+      advTip(_e === 'no_formation' ? '没有采集阵（阵法台用阵棋合成）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' || _e === 'not_resource_tile' ? '只能布在资源格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
     }
   } catch (e) {}
   await advSharedRefresh();
@@ -3694,7 +3695,7 @@ window.advArrayPanel = function() {
   try {
     if (!S.run || !S.run.shared) return;
     const a = (S.run.shared.arrays || []).find(v => v.mine);
-    if (!a) { log('bad', '这张图上没有你的采集阵'); return; }
+    if (!a) { advTip('这张图上没有你的采集阵'); return; }
     const fuelH = a.fuel_ms ? (a.fuel_ms / 3600000).toFixed(1) : '0';
     const stoneCount = (S.ores && S.ores.sp4) | 0;
     const inv = a.inv || { mats: {}, ores: {}, xy: 0, lw: [], seeds: {} };
@@ -3715,7 +3716,7 @@ window.advArrayFuel = async function() {
       log('good', '💎 采集阵燃料 +1 小时');
       commit();
     } else {
-      log('bad', (j || {}).error === 'no_sp4' ? '没有上品灵石' : (j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : '加灵石失败');
+      advTip((j || {}).error === 'no_sp4' ? '没有上品灵石' : (j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : (j || {}).error === 'fuel_full' ? '燃料已满（上限 72 小时）' : '加灵石失败');
     }
   } catch (e) {}
   await advSharedRefresh();
@@ -3729,12 +3730,12 @@ window.advArrayTake = async function(remove) {
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
       const got = advApplyGains(j);
-      if (got.length) log('good', `📦 从采集阵收取：${got.join('、')}`);
-      else log('sys', '阵内空空如也');
-      if (remove) log('good', '💥 采集阵已拆除，库存已收取');
+      if (got.length) advTip(`📦 从采集阵收取：${got.join('、')}`);
+      else advTip('阵内空空如也');
+      if (remove) advTip('💥 采集阵已拆除，库存已收取');
       commit();
     } else {
-      log('bad', (j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : '收取失败');
+      advTip((j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : '收取失败');
     }
   } catch (e) {}
   await advSharedRefresh();
