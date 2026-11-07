@@ -1053,6 +1053,9 @@ window.goBackCaveChoice = function() { // v800 功能区回洞府/仙府选择�
     if ((S.realm|0) < 4 && _dg > 0 && _xg <= 0) { log('bad', '洞府需<b class="r">元婴</b>境界才能进入'); return; }
     if ((S.realm|0) < 8 && _xg > 0 && _dg <= 0) { log('bad', '仙府需<b class="r">仙人</b>境界才能进入'); return; }
     if (_dg > 0 && _xg > 0) {
+      const _canD = (S.realm|0) >= 4, _canX = (S.realm|0) >= 8; // v1206 双格选择页补境界校验（原先此分支无校验，低境界有格即可进）
+      if (!_canD && !_canX) { log('bad', '洞府需<b class="r">元婴</b>境界才能进入'); return; }
+      if (_canD && !_canX) { goBackCave('dongfu'); return; }
       if (typeof openSheet === 'function') openSheet(`<h2>🏠 回洞府</h2><div class="hint">你开辟了洞府和仙府，要回哪个？</div><div class="grid2"><button class="btn gold" onclick="goBackCave('dongfu')">🏠 回洞府<br><small>${_dg} 格·灵气 ${_dg*2}</small></button><button class="btn gold" onclick="goBackCave('xianfu')">🏯 回仙府<br><small>${_xg} 格·灵气 ${_xg*5}</small></button></div><div class="row"><button class="btn full" onclick="closeSheet()">关闭</button></div>`);
       return;
     }
@@ -1065,6 +1068,7 @@ window.goBackCave = function(which) { // v799 回洞府/仙府；v801 直接传�
     const grids = isDong ? (S.dongfuGrids|0) : (S.xianfuGrids|0);
     const energy = isDong ? (S.dongfuEnergy|0) : (S.xianfuEnergy|0);
     if (grids <= 0) { log('bad', '你还没有开辟' + (isDong ? '洞府' : '仙府')); return; }
+    if ((S.realm|0) < (isDong ? 4 : 8)) { showTip(isDong ? '洞府需<b class="r">元婴</b>境界才能进入' : '仙府需<b class="r">仙人</b>境界才能进入'); return; } // v1206 传送本体补境界校验（防绕过选择页直调）
     S.inCave = which;
     try { if (typeof commit === 'function') commit(); } catch(_) {}
     renderCaveMap();
