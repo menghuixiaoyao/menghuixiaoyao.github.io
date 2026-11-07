@@ -3867,9 +3867,9 @@ window.toolUp = function (which, from) {
     const t = S.tools && S.tools[which]; if (!t || t.tier >= 2) return;
     const ores = S.ores || (S.ores = {});
     const need = t.tier === 0 ? { iron: 500, copper: 300, silver: 150, gold: 50 } : { iron: 5000, copper: 3000, silver: 1500, gold: 500 };
-    for (const k in need) if ((ores[k] | 0) < need[k]) { toastLog('sys', `⚠️ ${ORES[k].name}不足（需 ${need[k]}）`); return; }
-    if (t.tier === 0) { if ((ores.sp5 | 0) < 1) { toastLog('sys', '⚠️ 需要极品灵石×1'); return; } }
-    else if ((S.xianyu | 0) < 1) { toastLog('sys', '⚠️ 需要仙玉×1'); return; }
+    for (const k in need) if ((ores[k] | 0) < need[k]) { showTip(`⚠️ ${ORES[k].name}不足（需 ${need[k]}）`); return; }
+    if (t.tier === 0) { if ((ores.sp5 | 0) < 1) { showTip('⚠️ 需要极品灵石×1'); return; } }
+    else if ((S.xianyu | 0) < 1) { showTip('⚠️ 需要仙玉×1'); return; }
     for (const k in need) ores[k] -= need[k];
     if (t.tier === 0) ores.sp5 -= 1; else S.xianyu -= 1;
     t.tier += 1; t.max = t.dur; // 升档带上限：新档上限 = 升档时当前持久，满持久开局
@@ -3882,10 +3882,10 @@ window.toolFix = function (which, from) {
     const t = S.tools && S.tools[which]; if (!t || t.dur >= t.max) return;
     const ores = S.ores || (S.ores = {});
     if (t.tier === 0) {
-      if (which === 'pick') { if ((ores.iron | 0) < 5) { toastLog('sys', '⚠️ 修复需铁矿×5'); return; } ores.iron -= 5; }
-      else { if ((ores.gold | 0) < 1) { toastLog('sys', '⚠️ 修复需金矿×1'); return; } ores.gold -= 1; }
-    } else if (t.tier === 1) { if ((ores.sp5 | 0) < 1) { toastLog('sys', '⚠️ 修复需极品灵石×1'); return; } ores.sp5 -= 1; }
-    else { if ((S.xianyu | 0) < 1) { toastLog('sys', '⚠️ 修复需仙玉×1'); return; } S.xianyu -= 1; }
+      if (which === 'pick') { if ((ores.iron | 0) < 5) { showTip('⚠️ 修复需铁矿×5'); return; } ores.iron -= 5; }
+      else { if ((ores.gold | 0) < 1) { showTip('⚠️ 修复需金矿×1'); return; } ores.gold -= 1; }
+    } else if (t.tier === 1) { if ((ores.sp5 | 0) < 1) { showTip('⚠️ 修复需极品灵石×1'); return; } ores.sp5 -= 1; }
+    else { if ((S.xianyu | 0) < 1) { showTip('⚠️ 修复需仙玉×1'); return; } S.xianyu -= 1; }
     t.dur = t.max;
     log('good', `🔧 ${C.TOOL_NAMES[which][t.tier]} 修复完成，持久 ${t.dur}/${t.max}`);
     commit(); toolBack(from);
@@ -3894,7 +3894,7 @@ window.toolFix = function (which, from) {
 window.toolFuqUse = function (which, from) {
   try {
     const t = S.tools && S.tools[which]; if (!t || t.tier !== 0) return;
-    if (!S.inv || (S.inv.fuq | 0) < 1) { toastLog('sys', '⚠️ 没有强化符（商会有售）'); return; }
+    if (!S.inv || (S.inv.fuq | 0) < 1) { showTip('⚠️ 没有强化符（商会有售）'); return; }
     S.inv.fuq -= 1; t.max += 100; t.dur += 100;
     log('good', `🎫 ${C.TOOL_NAMES[which][0]} 强化完成：持久 ${t.dur}/${t.max}`);
     commit(); toolBack(from);
