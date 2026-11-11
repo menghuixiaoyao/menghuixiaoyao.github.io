@@ -1643,7 +1643,11 @@ function doAfkChoose(type) {
     const _luo = C.maiLuo(S);
     const _lgT = window.LG ? `\\n🌟灵根${window.LG.name(S)}：闭关收益 ${window.LG.afkTxt(S)}` : '';
     const _isXian = (S.realm|0) >= 8, _gainTxt = _isXian ? '仙力' : '法力';
-    const isVein = confirm(`🧘 选择闭关地点：\\n\\n🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）（闭关每秒 +${_luo}）${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每秒+${2 + _luo}${_gainTxt}，入关1小时后会被真人PK匹配）\\n取消 = 🏔️ 洞府闭关（安全，每秒+${1 + _luo}${_gainTxt}）`);
+    const _unit = _isXian ? '小时' : '分钟';
+    const _base = _isXian ? (1 + C.maiMai(S) + C.szBigCount(S)) : (1 + _luo);
+    const _baseV = _isXian ? (2 + C.maiMai(S) + C.szBigCount(S)) : (2 + _luo);
+    const _bonusTxt = _isXian ? `🌀脉 ${C.maiMai(S)} 条 · 大气旋 ${C.szBigCount(S)} 个` : `🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）`;
+    const isVein = confirm(`🧘 选择闭关地点：\\n\\n${_bonusTxt}${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每${_unit}+${_baseV}${_gainTxt}，入关1小时后会被真人PK匹配）\\n取消 = 🏔️ 洞府闭关（安全，每${_unit}+${_base}${_gainTxt}）`);
     type = isVein ? 'vein' : 'cave';
   }
   // 开关：如果已在该闭关中则出关，否则进入（切换时先结算）
@@ -1700,14 +1704,13 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     const nqBonus = hi >= 0 ? GEAR_SETS.heal.ningqi[hi] : 0, nqAgain = hi >= 0 ? GEAR_SETS.heal.ningqiAgain[hi] : 0;
     const nqRate = Math.min(0.95, (0.30 + nqBonus) * qiFactor());
     for (let i = _done; i < hours; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } // v116 凝气成功引气入体+1；v626 跳过已结算
-  } else { // 洞府/灵脉：按秒累积法力；防御套隐藏属性加法力；灵脉每分钟1%被系统匹配PK
-    const secs = Math.floor((Date.now() - S.afk.start + dbgMs) / 1000);
+  } else { // v1214 Ye 定：洞府/灵脉闭关改按分钟（法力）/小时（仙力）结算，不满1小时按分钟折算；洞府灵气不再加成；灵脉每分钟1%被系统匹配PK
+    const mins = Math.floor((Date.now() - S.afk.start + dbgMs) / 60000);
     const dc = (C.setCounts(S).def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1;
     const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
     const _lgAfk = 1 + lingGenAfkMult(S); // v867 灵根闭关加成：天灵根快，五灵根慢
-    for (let i = 0; i < secs; i++) {
-      gain += ((isVein ? 2 : 1) + C.maiLuo(S) + ((S.realm|0) >= 8 ? (S.xianfuEnergy|0) : (S.dongfuEnergy|0))) * (1 + afkMult) * _lgAfk; // v89：每条络+1；v1059 Ye 定：开脉术经验不加闭关（只升级、给实脉）；v799 洞府灵气加成；v957 洞府灵气加法力、仙府灵气加仙力，按境界分开算
-    }
+    if ((S.realm|0) >= 8) gain = mins * ((isVein ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) / 60 * (1 + afkMult) * _lgAfk; // 仙人以上：仙力按小时，洞府 1+脉+大气旋，灵脉 2+脉+大气旋
+    else gain = mins * ((isVein ? 2 : 1) + C.maiLuo(S)) * (1 + afkMult) * _lgAfk; // 仙人以下：法力按分钟，洞府 1+络，灵脉 2+络
     if (isVein) { // v202 灵脉闭关：每小时判定凝气（练气以上突破需10缕凝气）；治愈套加成与凡人凝气一致
       const hours = Math.floor((Date.now() - S.afk.start + dbgMs) / 3600000);
       const hc = ((C.setCounts(S).heal || 0)), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1;
