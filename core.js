@@ -423,7 +423,7 @@ const RACES = { // v1088 九族 + 天赋（种族独立选择，不跟头像走�
 G.RACES = RACES; // v1089 跨块导出：块1 种族页/人物卡/分发直接读 RACES（v1088 漏导出致种族页 ReferenceError）
 function newState() {
   const attrs = {}; ATTRS.forEach(k => attrs[k] = K.START_ATTR);
-  const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
+  const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, afkCarryMins: 0, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
     stats: { adv: 0, advWin: 0, pk: 0, pkWin: 0, brew: 0, brewOk: 0, checkins: 0 }, log: [], hpCur: null, curseN: 0,
     wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null,
     tools: { pick: null, hoe: null }, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋
@@ -611,6 +611,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   }
   S.maiVLuo = Math.max(0, Math.floor(+S.maiVLuo || 0)); S.maiRLuo = Math.max(0, Math.floor(+S.maiRLuo || 0));
   S.maiVMai = Math.max(0, Math.floor(+S.maiVMai || 0)); S.maiRMai = Math.max(0, Math.floor(+S.maiRMai || 0));
+  S.afkCarryMins = Math.min(59, Math.max(0, Math.floor(+S.afkCarryMins || 0))); // v1215 仙力零头分钟（0-59），跨闭关结转
   if (!Array.isArray(S.shenzang) || S.shenzang.length !== 13) { // v993 神藏迁移：按旧星图亮数折算各座进度
     const _sz = new Array(13).fill(0); let _pool = Math.max(0, Math.min(361, Math.round(((S.realm|0) * 10 + ((S.level|0) - 1)) * 361 / 129)));
     const _cnt = [9, 9, 11, 14, 19, 20, 21, 23, 27, 44, 45, 67, 52];
@@ -1636,7 +1637,7 @@ function loyalUp(p, chance, lo, hi) { if (R() < chance) { const g = ri(lo, hi); 
 const staGain = (S, n) => n;
 let poisonAcc = 0; // 中毒期间消耗体力损失的生命（UI 读取后清零）
 // —— 挂机修炼：体力耗尽时二选一，直接累积法力（凡人累积经验）——
-function afkStart(S, type) { S.afk = { type, start: Date.now() }; }
+function afkStart(S, type) { const _carry = Math.min(59, Math.max(0, Math.floor(+S.afkCarryMins || 0))); const _now = Date.now(); S.afk = { type, start: _now, banked: _now - _carry * 60000 }; }
 function doAfkChoose(type) {
   // 如果type没指定，弹窗让用户选
   if (!type) {
@@ -1646,16 +1647,16 @@ function doAfkChoose(type) {
     const _unit = _isXian ? '小时' : '分钟';
     const _base = _isXian ? (1 + C.maiMai(S) + C.szBigCount(S)) : (1 + _luo);
     const _baseV = _isXian ? (2 + C.maiMai(S) + C.szBigCount(S)) : (2 + _luo);
-    const _bonusTxt = _isXian ? `🌀脉 ${C.maiMai(S)} 条 · 大气旋 ${C.szBigCount(S)} 个` : `🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）`;
+    const _bonusTxt = _isXian ? `🌀脉 ${C.maiMai(S)} 条 · 大气旋 ${C.szBigCount(S)} 个${(S.afkCarryMins|0) > 0 ? ` · 已存零头 ${S.afkCarryMins|0} 分钟` : ''}` : `🌀络 ${_luo} 条（虚${S.maiVLuo|0}/实${S.maiRLuo|0}）`;
     const isVein = confirm(`🧘 选择闭关地点：\\n\\n${_bonusTxt}${_lgT}\\n\\n确定 = ⛰️ 灵脉闭关（每${_unit}+${_baseV}${_gainTxt}，入关1小时后会被真人PK匹配）\\n取消 = 🏔️ 洞府闭关（安全，每${_unit}+${_base}${_gainTxt}）`);
     type = isVein ? 'vein' : 'cave';
   }
   // 开关：如果已在该闭关中则出关，否则进入（切换时先结算）
   if (S.afk && S.afk.type === type) {
-    let gain = 0;
+    let gain = 0; const _carry0 = S.afkCarryMins | 0;
     try { gain = afkExit(S, 'manual'); } catch(e) {}
     S.afk = null;
-    try { const lbl = C.resLbl(S); log('good', gain > 0 ? `🛌 出关，获得 <span class="g">${lbl} +${gain}</span>` : `🛌 出关（无收益）`); } catch(e) {}
+    try { const lbl = C.resLbl(S); log('good', gain > 0 ? `🛌 出关，获得 <span class="g">${lbl} +${gain}</span>` : ((S.realm|0) >= 8 && (S.afkCarryMins|0) > _carry0 ? `🛌 出关，仙力零头已累计 <span class="g">${S.afkCarryMins|0} 分钟</span>（满60入账）` : `🛌 出关（无收益）`)); } catch(e) {}
     afterAct();
   } else {
     if (S.afk) { try { afkExit(S, 'switch'); } catch(e) {} S.afk = null; }
@@ -1688,15 +1689,56 @@ function afkHourly(S) { // v626 凝气每小时自动结算
   S.afk.hr = hrs;
   if (g > 0) { g = Math.floor(g * qiFactor()); S.xp += g; log('good', `🌀 凝气每小时结算：经验 <span class="g">+${g}</span>${yq>0?`，引气入体 <span class="g">+${yq}</span>`:''}`); commit(); }
 }
+function afkTick(S) { // v1215 定期入账：闭关中每满1分钟（法力/习武）/每满60分钟（仙力）入账一次；游标 banked 推进，零头留存；凝气走 afkHourly 不在这里算
+  if (!S.afk) return 0;
+  const type = S.afk.type;
+  if (type === 'ningqi') return 0;
+  const dbgMs = (S.afk && S.afk.dbgAdd) || 0;
+  const nowEff = Date.now() + dbgMs;
+  const banked = (S.afk.banked && S.afk.banked <= nowEff) ? S.afk.banked : S.afk.start;
+  const secs = Math.max(0, Math.floor((nowEff - banked) / 1000));
+  const isVein = type === 'vein';
+  let gain = 0, bankedSecs = 0;
+  if (type === 'wushu') {
+    const mins = Math.floor(secs / 60);
+    if (mins <= 0) return 0;
+    const w2x = ((C.setCounts(S).fatal || 0) >= 2) ? 2 : 1;
+    gain = mins * w2x; bankedSecs = mins * 60;
+  } else if ((S.realm|0) >= 8) {
+    const hours = Math.floor(secs / 3600);
+    if (hours <= 0) { S.afkCarryMins = Math.floor(secs / 60); return 0; }
+    const dc = (C.setCounts(S).def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1;
+    const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
+    gain = hours * ((isVein ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) * (1 + afkMult) * (1 + lingGenAfkMult(S));
+    bankedSecs = hours * 3600;
+    S.afkCarryMins = Math.floor((secs - bankedSecs) / 60);
+  } else {
+    const mins = Math.floor(secs / 60);
+    if (mins <= 0) return 0;
+    const dc = (C.setCounts(S).def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1;
+    const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
+    gain = mins * ((isVein ? 2 : 1) + C.maiLuo(S)) * (1 + afkMult) * (1 + lingGenAfkMult(S));
+    bankedSecs = mins * 60;
+  }
+  S.afk.banked = banked + bankedSecs * 1000;
+  if (gain > 0) gain = Math.floor(gain * qiFactor());
+  try { if (typeof isXVerified === 'function' && isXVerified() && gain > 0) gain = Math.floor(gain * 1.1); } catch(_) {}
+  if (gain > 0) { if (C.useFali(S)) S.mana = Math.min(C.manaCapEff(S), S.mana + gain); else S.xp += gain; }
+  return gain;
+}
 function afkExit(S, reason) { window._afkShown = false; // 出关结算
   if (!S.afk) return 0;
   const type = S.afk.type, isMana = C.useFali(S), isVein = type === 'vein';
   let gain = 0;
   const dbgMs = (S.afk && S.afk.dbgAdd) || 0; // 测试追加时长
+  const _nowEff = Date.now() + dbgMs;
+  const _cursor = (S.afk.banked && S.afk.banked <= _nowEff) ? S.afk.banked : S.afk.start;
+  let _exitBanked = { mins: 0, hours: 0, carry: 0 };
   if (type === 'wushu') { // 凡人习武：每分钟+1经验；力量套（致命）隐藏属性翻倍
-    const mins = Math.floor((Date.now() - S.afk.start + dbgMs) / 60000);
+    const mins = Math.floor((_nowEff - _cursor) / 60000);
     const w2x = ((C.setCounts(S).fatal || 0) >= 2) ? 2 : 1;
     gain = mins * 1 * w2x;
+    _exitBanked = { mins, hours: 0, carry: S.afkCarryMins | 0 };
   } else if (type === 'ningqi') { // 凡人凝气：每小时判定1次，基础30%成功得150经验；治愈套隐藏：成功率提升+再判定
     const hours = Math.floor((Date.now() - S.afk.start + dbgMs) / 3600000);
     const _done = S.afk.hr || 0; // v626 已每小时结算的不重复
@@ -1704,13 +1746,15 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     const nqBonus = hi >= 0 ? GEAR_SETS.heal.ningqi[hi] : 0, nqAgain = hi >= 0 ? GEAR_SETS.heal.ningqiAgain[hi] : 0;
     const nqRate = Math.min(0.95, (0.30 + nqBonus) * qiFactor());
     for (let i = _done; i < hours; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } // v116 凝气成功引气入体+1；v626 跳过已结算
-  } else { // v1214 Ye 定：洞府/灵脉闭关改按分钟（法力）/小时（仙力）结算，不满1小时按分钟折算；洞府灵气不再加成；灵脉每分钟1%被系统匹配PK
-    const mins = Math.floor((Date.now() - S.afk.start + dbgMs) / 60000);
+    _exitBanked = { mins: 0, hours, carry: S.afkCarryMins | 0 };
+  } else { // v1215 Ye 定：定期入账——法力按整分钟、仙力按整小时，游标 banked 起算（已入账的不重算）；零头分钟写回 afkCarryMins，下次继续凑；洞府灵气不再加成；灵脉每分钟1%被系统匹配PK
+    const _secs = Math.max(0, Math.floor((_nowEff - _cursor) / 1000));
+    const _mins = Math.floor(_secs / 60);
     const dc = (C.setCounts(S).def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1;
     const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
     const _lgAfk = 1 + lingGenAfkMult(S); // v867 灵根闭关加成：天灵根快，五灵根慢
-    if ((S.realm|0) >= 8) gain = mins * ((isVein ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) / 60 * (1 + afkMult) * _lgAfk; // 仙人以上：仙力按小时，洞府 1+脉+大气旋，灵脉 2+脉+大气旋
-    else gain = mins * ((isVein ? 2 : 1) + C.maiLuo(S)) * (1 + afkMult) * _lgAfk; // 仙人以下：法力按分钟，洞府 1+络，灵脉 2+络
+    if ((S.realm|0) >= 8) { const _hours = Math.floor(_secs / 3600); gain = _hours * ((isVein ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) * (1 + afkMult) * _lgAfk; S.afkCarryMins = Math.floor((_secs - _hours * 3600) / 60); _exitBanked = { mins: _mins, hours: _hours, carry: S.afkCarryMins }; } // 仙人以上：仙力按整小时，洞府 1+脉+大气旋，灵脉 2+脉+大气旋
+    else { gain = _mins * ((isVein ? 2 : 1) + C.maiLuo(S)) * (1 + afkMult) * _lgAfk; _exitBanked = { mins: _mins, hours: 0, carry: S.afkCarryMins | 0 }; } // 仙人以下：法力按整分钟，洞府 1+络，灵脉 2+络
     if (isVein) { // v202 灵脉闭关：每小时判定凝气（练气以上突破需10缕凝气）；治愈套加成与凡人凝气一致
       const hours = Math.floor((Date.now() - S.afk.start + dbgMs) / 3600000);
       const hc = ((C.setCounts(S).heal || 0)), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1;
@@ -1722,6 +1766,7 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     }
   }
   const afkSecs = Math.floor((Date.now() - S.afk.start + dbgMs) / 1000);
+  window._afkExitBanked = _exitBanked;
   S.afk = null;
   if (type === 'vein') qiAdd(Math.floor(afkSecs / 3600) * 0.3, S); // v999 灵脉闭关养气
   if (afkSecs > 0) { S.stats = S.stats || {}; S.stats.afkSecs = (S.stats.afkSecs || 0) + afkSecs; S.stats.afkSecsTotal = (S.stats.afkSecsTotal || 0) + afkSecs; } // 本世闭关（轮回清零）+ 历世累计（不清零）
@@ -1803,7 +1848,7 @@ function eatFood(S, kind, k, n, petId) { // 吃肉/蛋：恢复饱食度（肉�
   store[k] -= n; if (!store[k]) delete store[k];
   const res = { n, hunger: it.hunger * n, sta: 0, pet, loyal: 0, cured: false };
   if (pet) { pet.hunger = Math.min(100, pet.hunger + res.hunger); for (let i = 0; i < n; i++) res.loyal += loyalUp(pet, K.FEED_LOYAL_P, 2, 4); if (hasSt(S, 'depress') && R() < K.DEPRESS_PET_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
-  else { S.hunger = Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 进食出关（不足1分钟，无收益）。`); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
+  else { S.hunger = Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 8) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
   return res;
 }
 function useMed(S, k) { const m = MEDS[k]; if (!m || !(S.meds[k] > 0)) return { ok: false, why: 'none' }; if (m.cure === 'curse') { if (!((S.curseN|0) > 0)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; S.curseN = (S.curseN|0) - 1; return { ok: true, cure: 'curse' }; } if (!hasSt(S, m.cure)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); return { ok: true, cure: m.cure }; }
@@ -1994,7 +2039,7 @@ function craft(S, skill, key, opt) { // 烹饪 / 锻造 / 炼金：1 活力；�
 function eatDish(S, key, n) { // 吃菜：饱食 + 体力（死亡中不回体力）；精良/极品附带增益（覆盖旧增益）
   const d = dishOf(key); if (!d) return null; n = Math.min(n || 1, S.dishes[key] || 0); if (n <= 0) return null;
   S.dishes[key] -= n; if (!S.dishes[key]) delete S.dishes[key];
-  S.hunger = Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 进食出关（不足1分钟，无收益）。`); }
+  S.hunger = Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 8) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
   let buff = null; if (d.q >= 2) { buff = d.buff === 'luck' ? { k: 'luck', v: K.BUFF_LUCK[d.q], left: K.BUFF_ACTS, src: d.name } : { k: d.buff, v: K.BUFF_ATTR[d.q], left: K.BUFF_FIGHTS, src: d.name }; S.buff = buff; }
   return { n, hunger: d.hunger * n, sta, buff, d };
 }
@@ -3466,7 +3511,7 @@ function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：普通=�
   if (mult !== 1) ATTRS.forEach(k => mon.attrs[k] = Math.max(1, Math.round(mon.attrs[k] * mult)));
   return { type: 'fight', mon, text: tier === 'w' ? '一只普通怪' : tier === 's' ? '一只王怪' : '一只精英怪', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动

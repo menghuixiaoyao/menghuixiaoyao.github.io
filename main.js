@@ -253,7 +253,7 @@ window.renderCaveMap = function() { // v817 全屏洞府地图；v819 可在洞�
       + ((S.realm|0) >= 5 ? `<div class="hint" style="text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">👤 <b class="pu">化神分身</b><img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;border:2px solid #4dd" onerror="this.style.display='none'"> · 分身正在外放神识</div>` : '')
       + ((S.realm|0) >= 6 ? `<div class="hint" style="text-align:center">🙏 <b class="y">功德金身</b> · 功德 ${(S.merit|0)}（减伤 ${Math.min(30, Math.floor((S.merit|0) / 10))}%${(S.merit|0) >= 100 ? ' · 突破+5%' : ''}）</div>` : '')
       + `<div style="display:grid;grid-template-columns:repeat(${_size},1fr);gap:8px;margin:12px 0;max-width:400px;margin-left:auto;margin-right:auto">${_cells}</div>`
-      + `<div class="row"><div class="lab">闭关收益</div><div>${(S.realm|0) >= 8 ? `每小时仙力 +${1 + C.maiMai(S) + C.szBigCount(S)}` : `每分钟法力 +${1 + C.maiLuo(S)}`}</div></div>`
+      + `<div class="row"><div class="lab">闭关收益</div><div>${(S.realm|0) >= 8 ? `每小时仙力 +${1 + C.maiMai(S) + C.szBigCount(S)}${(S.afkCarryMins|0) > 0 ? `（已存零头 ${S.afkCarryMins|0} 分钟）` : ''}` : `每分钟法力 +${1 + C.maiLuo(S)}`}</div></div>`
       + `<div class="empty">🌱 灵植种植、🐟 养鱼即将开放……</div>`
       + `<button class="btn gold full" onclick="leaveCave()" style="margin-top:12px">🚪 离开${name}（传回收仙界）</button>`
       + `</div>`;
@@ -1067,7 +1067,7 @@ function cityMoveThunder() {
                 const _xR = 1 + C.maiMai(S) + C.szBigCount(S);
                 const _cd = _im ? '每分钟+1经验，安全' : (_ix ? `每小时+${_xR}仙力，参悟法则，安全无风险` : `每分钟+${1 + C.maiLuo(S)}法力，安全无风险`);
                 const _vd = _im ? '每小时凝气判定，攒引气入体' : (_ix ? `每小时+${_xR + 1}仙力，参悟法则，入关1小时后会被真人PK匹配` : `每分钟+${2 + C.maiLuo(S)}法力，可凝气🌀，入关1小时后会被真人PK匹配`);
-                if (typeof openSheet === 'function') openSheet(`<h2>⛰️ 闭关</h2><div class="grid2"><button class="btn" onclick="window._afkFromMap('${_ct}','${_cn}')">${_cn}<br><small>${_cd}</small></button><button class="btn" onclick="window._afkFromMap('${_vt}','${_vn}')">${_vn}<br><small>${_vd}</small></button></div>`);
+                if (typeof openSheet === 'function') openSheet(`<h2>⛰️ 闭关</h2><div class="grid2"><button class="btn" onclick="window._afkFromMap('${_ct}','${_cn}')">${_cn}<br><small>${_cd}</small></button><button class="btn" onclick="window._afkFromMap('${_vt}','${_vn}')">${_vn}<br><small>${_vd}</small></button></div>${_ix && (S.afkCarryMins|0) > 0 ? `<div class="hint">🧘 已存仙力零头 ${S.afkCarryMins|0} 分钟，入关继续凑满60分钟入账。</div>` : ''}`);
                 return;
               }
               if (typeof sheetTrain === 'function') sheetTrain();
@@ -1234,7 +1234,7 @@ function cityMoveThunder() {
               const _xR = 1 + C.maiMai(S) + C.szBigCount(S);
               const _caveD = _isMortal ? '每分钟+1经验，安全' : (_isXian ? `每小时+${_xR}仙力，参悟法则，安全无风险` : `每分钟+${1 + C.maiLuo(S)}法力，安全无风险`);
               const _veinD = _isMortal ? '每小时凝气判定，攒引气入体' : (_isXian ? `每小时+${_xR + 1}仙力，参悟法则，入关1小时后会被真人PK匹配` : `每分钟+${2 + C.maiLuo(S)}法力，可凝气🌀，入关1小时后会被真人PK匹配`);
-              if (typeof openSheet === 'function') openSheet(`<h2>⛰️ 闭关</h2><div class="grid2"><button class="btn" onclick="window._afkFromMap('${_caveT}','${_caveN}')">${_caveN}<br><small>${_caveD}</small></button><button class="btn" onclick="window._afkFromMap('${_veinT}','${_veinN}')">${_veinN}<br><small>${_veinD}</small></button></div><div class="hint" style="margin-top:8px">🌫️ 天地灵气 <b class="y">${C.qiTierName(C.qiNow())}</b>（${Math.round(C.qiNow())}/100）· 闭关收益 ×${C.qiFactor().toFixed(2)}。灵气全服同享：衰则末法、盛则潮汐。往灵脉投灵石可聚灵——</div><div class="grid2" style="grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px"><button class="btn" data-juling="sp1:1">聚灵·灵气石×1<br><small>持有 ${S.ores.sp1|0} · +1</small></button><button class="btn" data-juling="sp1:10">聚灵·灵气石×10<br><small>+10</small></button><button class="btn" data-juling="sp2:1">聚灵·下品×1<br><small>持有 ${S.ores.sp2|0} · +4</small></button><button class="btn" data-juling="sp2:10">聚灵·下品×10<br><small>+40</small></button></div>`);
+              if (typeof openSheet === 'function') openSheet(`<h2>⛰️ 闭关</h2><div class="grid2"><button class="btn" onclick="window._afkFromMap('${_caveT}','${_caveN}')">${_caveN}<br><small>${_caveD}</small></button><button class="btn" onclick="window._afkFromMap('${_veinT}','${_veinN}')">${_veinN}<br><small>${_veinD}</small></button></div>${_isXian && (S.afkCarryMins|0) > 0 ? `<div class="hint">🧘 已存仙力零头 ${S.afkCarryMins|0} 分钟，入关继续凑满60分钟入账。</div>` : ''}<div class="hint" style="margin-top:8px">🌫️ 天地灵气 <b class="y">${C.qiTierName(C.qiNow())}</b>（${Math.round(C.qiNow())}/100）· 闭关收益 ×${C.qiFactor().toFixed(2)}。灵气全服同享：衰则末法、盛则潮汐。往灵脉投灵石可聚灵——</div><div class="grid2" style="grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px"><button class="btn" data-juling="sp1:1">聚灵·灵气石×1<br><small>持有 ${S.ores.sp1|0} · +1</small></button><button class="btn" data-juling="sp1:10">聚灵·灵气石×10<br><small>+10</small></button><button class="btn" data-juling="sp2:1">聚灵·下品×1<br><small>持有 ${S.ores.sp2|0} · +4</small></button><button class="btn" data-juling="sp2:10">聚灵·下品×10<br><small>+40</small></button></div>`);
               return;
             }
             if (typeof isStall2 !== 'undefined' && isStall2 && typeof sheetStall === 'function') { sheetStall(wx, wy); return; }
@@ -1431,6 +1431,7 @@ function render() {
     }
   } catch(_e) {}
 try { if (typeof C !== 'undefined' && typeof C.afkHourly === 'function' && typeof S !== 'undefined' && S) C.afkHourly(S); } catch(_) {} // v1161 经 C 调 afkHourly（原裸引用解析不到，凝气每小时结算一直被跳过；出关全算不丢收益，但关内引气入体不涨）
+try { if (typeof C !== 'undefined' && typeof C.afkTick === 'function' && typeof S !== 'undefined' && S) { const _tg = C.afkTick(S); if (_tg > 0) window.__afkLocalTotal = (window.__afkLocalTotal | 0) + _tg; } } catch(_) {} // v1215 定期入账本地端（服务端 tick 对账）
   if (typeof S === 'undefined' || !S) { try { load(); } catch(_) {} }
   if (typeof S === 'undefined' || !S) return;
   try { renderWorldMap(); } catch (_) {}
@@ -1504,7 +1505,7 @@ try { if (typeof C !== 'undefined' && typeof C.afkHourly === 'function' && typeo
     const _dbgMs = (S.afk && S.afk.dbgAdd) || 0;
     if (afkType === 'wushu') { const mins = Math.floor((Date.now() - S.afk.start + _dbgMs) / 60000); const _w2x = ((C.setCounts(S).fatal || 0) >= 2) ? 2 : 1; gainDesc = `已 ${mins} 分钟，已累积 <span class="g">经验 +${mins * _w2x}</span>${_w2x > 1 ? '（力量套隐藏翻倍）' : ''}`; }
     else if (afkType === 'ningqi') { const hrs = Math.floor((Date.now() - S.afk.start + _dbgMs) / 3600000); const _hc = ((C.setCounts(S).heal || 0)), _hi = _hc >= 2 ? Math.min(5, _hc) - 2 : -1, _nb = _hi >= 0 ? C.GEAR_SETS.heal.ningqi[_hi] : 0, _ag = _hi >= 0 ? C.GEAR_SETS.heal.ningqiAgain[_hi] : 0, _rt = Math.round(Math.min(0.95, 0.30 + _nb) * 100); gainDesc = `已 ${hrs} 小时（每小时${_rt}%得150经验${_nb > 0 ? '，含治愈套隐藏加成' : ''}${_ag > 0 ? `，${Math.round(_ag * 100)}%双倍` : ''}）`; }
-    else { const mins = Math.floor((Date.now() - S.afk.start + _dbgMs) / 60000); const _b = (S.realm|0) >= 8 ? ((afkType === 'vein' ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) / 60 : ((afkType === 'vein' ? 2 : 1) + C.maiLuo(S)); const gain = Math.floor(mins * _b); gainDesc = `已 ${mins} 分钟，已累积 <span class="g">${C.resLbl(S)} +${gain}</span>`; }
+    else { const mins = Math.floor((Date.now() - S.afk.start + _dbgMs) / 60000); if ((S.realm|0) >= 8) { const _banked = (S.afk.banked && S.afk.banked <= Date.now() + _dbgMs) ? S.afk.banked : S.afk.start; const _pend = Math.floor((Date.now() - _banked + _dbgMs) / 60000); const _hr = (afkType === 'vein' ? 2 : 1) + C.maiMai(S) + C.szBigCount(S); gainDesc = `已 ${mins} 分钟，累计 ${_pend} 分钟（满60入账仙力 +${_hr}）`; } else { const _b = (afkType === 'vein' ? 2 : 1) + C.maiLuo(S); gainDesc = `已 ${mins} 分钟，每分钟 +${_b}${C.resLbl(S)}（已按分钟入账）`; } }
     ab.innerHTML = `${typeIcon} <b>${typeName}中</b>（${gainDesc}）<br><small style="color:var(--dim)">下次签到或吃东西恢复体力时自动出关结算${afkType === 'vein' ? ' · 灵脉闭关入关1小时后会被真人PK匹配（输赢照常结算、不打断闭关）' : ''} · 闭关中只能用商会/背包/生活</small>`;
   } else ab.style.display = 'none';
   const rb = $('realmBanner'); // 大圆满：突破/轮回
@@ -5186,9 +5187,9 @@ async function srvProg(path, body) {
   return null;
 }
 // v1155 闭关/突破登记：挂在 save/commit 之后统一侦测（入关盖服务端时间戳、出关按服务端时长对账、突破进境登记）
-window.__afkSrv = false; window.__afkLocalGain = null; window.__srvAfkMark = null;
+window.__afkSrv = false; window.__afkLocalGain = null; window.__srvAfkMark = null; window.__afkLocalTotal = 0; window.__afkTickAt = 0;
 window.__srvRealmSeen = null; window.__srvAttrSnap = null; window.__pendingBt = null;
-try { const _afkExit0 = afkExit; if (typeof _afkExit0 === 'function') afkExit = function (S2, reason) { const g = _afkExit0(S2, reason); window.__afkLocalGain = g; return g; }; } catch (e) {}
+try { const _afkExit0 = afkExit; if (typeof _afkExit0 === 'function') afkExit = function (S2, reason) { const g = _afkExit0(S2, reason); window.__afkLocalGain = (window.__afkLocalTotal | 0) + g; window.__afkLocalTotal = 0; return g; }; } catch (e) {}
 function progAfterSave() {
   try {
     if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn() || typeof S === 'undefined' || !S) return;
@@ -5212,8 +5213,30 @@ function progAfterSave() {
     window.__srvAttrSnap = Object.assign({}, S.attrs || {});
     if (S.afk && S.afk.start) {
       if (window.__srvAfkMark !== S.afk.start) {
-        window.__srvAfkMark = S.afk.start;
-        MHXY.api('/api/progress/afk_begin', { method: 'POST', body: { type: S.afk.type } }).then(function (resp) { if (resp && resp.ok && resp.json && resp.json.ok) { window.__afkSrv = true; if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); } }).catch(function () {});
+        const _wasSrv = window.__afkSrv, _oldGain = window.__afkLocalGain;
+        window.__srvAfkMark = S.afk.start; window.__afkLocalTotal = 0;
+        const _doBegin = function () {
+          MHXY.api('/api/progress/afk_begin', { method: 'POST', body: { type: S.afk.type, carry: S.afkCarryMins | 0 } }).then(function (resp) { if (resp && resp.ok && resp.json && resp.json.ok) { window.__afkSrv = true; if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); } }).catch(function () {});
+        };
+        if (_wasSrv && typeof _oldGain === 'number') { // v1215 切换闭关：先结上一轮（服务端游标为止），再开新轮，避免旧轮尾巴丢失
+          window.__afkLocalGain = null; window.__afkSrv = false;
+          MHXY.api('/api/progress/afk_settle', { method: 'POST', body: { qi: (typeof C !== 'undefined' && C.qiNow) ? C.qiNow() : 50 } }).then(function (resp) {
+            if (resp && resp.ok && resp.json && resp.json.ok) { const j = resp.json; if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev); if (typeof j.carry === 'number') S.afkCarryMins = Math.max(0, Math.min(59, Math.floor(j.carry))); if (typeof j.bankedTotal === 'number') { const diff = (j.bankedTotal | 0) - _oldGain; if (diff !== 0) { if (j.isMana) S.mana = Math.max(0, (S.mana || 0) + diff); else S.xp = Math.max(0, (S.xp || 0) + diff); try { save(); } catch (e3) {} } } }
+            _doBegin();
+          }).catch(function () { _doBegin(); });
+        } else _doBegin();
+      }
+      if (window.__afkSrv && (!window.__afkTickAt || Date.now() - window.__afkTickAt > 45000)) { // v1215 定期入账：服务端游标结算已满单位，累计值对账（丢响应重发不重算）
+        window.__afkTickAt = Date.now();
+        const _tickStart = S.afk.start;
+        MHXY.api('/api/progress/afk_tick', { method: 'POST', body: { qi: (typeof C !== 'undefined' && C.qiNow) ? C.qiNow() : 50 } }).then(function (resp) {
+          if (resp && resp.ok && resp.json && resp.json.ok) {
+            if (!S.afk || S.afk.start !== _tickStart) return; // v1215 迟到响应：会话已换/已出关，本次累计由出关结算统一对账，不再单补
+            const j = resp.json; if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+            if (typeof j.carry === 'number') S.afkCarryMins = Math.max(0, Math.min(59, Math.floor(j.carry)));
+            if (typeof j.bankedTotal === 'number') { const diff = (j.bankedTotal | 0) - (window.__afkLocalTotal | 0); window.__afkLocalTotal = j.bankedTotal | 0; if (diff !== 0) { if (j.isMana) S.mana = Math.max(0, (S.mana || 0) + diff); else S.xp = Math.max(0, (S.xp || 0) + diff); try { save(); } catch (e2) {} } }
+          } else if (resp && resp.json && resp.json.error === 'no_afk') { if (S.afk && S.afk.start === _tickStart) window.__afkSrv = false; } // v1215 会话已失：本轮改本地结算不重建（防重复入账），下次入关重新建会话
+        }).catch(function () {});
       }
     } else if (window.__srvAfkMark) {
       window.__srvAfkMark = null;
@@ -5223,7 +5246,8 @@ function progAfterSave() {
         MHXY.api('/api/progress/afk_settle', { method: 'POST', body: { qi: (typeof C !== 'undefined' && C.qiNow) ? C.qiNow() : 50 } }).then(function (resp) {
           if (resp && resp.ok && resp.json && resp.json.ok) {
             const j = resp.json; if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-            if (typeof localGain === 'number') { const diff = (j.gain | 0) - localGain; if (diff !== 0) { if (j.isMana) S.mana = Math.max(0, (S.mana || 0) + diff); else S.xp = Math.max(0, (S.xp || 0) + diff); try { save(); } catch (e) {} } }
+            if (typeof j.carry === 'number') S.afkCarryMins = Math.max(0, Math.min(59, Math.floor(j.carry)));
+            if (typeof localGain === 'number' && typeof j.bankedTotal === 'number') { const diff = (j.bankedTotal | 0) - localGain; if (diff !== 0) { if (j.isMana) S.mana = Math.max(0, (S.mana || 0) + diff); else S.xp = Math.max(0, (S.xp || 0) + diff); try { save(); } catch (e) {} } }
           }
         }).catch(function () {});
       }
