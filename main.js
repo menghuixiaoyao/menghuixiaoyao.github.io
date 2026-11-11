@@ -2359,7 +2359,7 @@ function doWxSynth(k, kind) {
 const rewTxt = rw => { const it = Object.keys(rw.items).map(key => { const [st, k] = key.split(':'); return `${C.itemLabel(st, k)}×${rw.items[key]}`; }); const xpLbl = C.resLbl(S); return [rw.pts ? `属性 <span class="g">${Object.keys(rw.gains).map(a => AN[a] + '+' + rw.gains[a]).join(' ')}</span>` : '', rw.gold ? `金元 <span class="y">+${rw.gold}</span>` : '', rw.xp ? `${xpLbl} <span class="g">+${rw.xp}</span>` : '', it.length ? `物品 <span class="y">${it.join(' ')}</span>` : ''].filter(Boolean).join('，') || '无'; };
 function monCard(m, tail) { const r = C.RANKS[m.rank]; return `<span class="${r.cls}">【${r.name}】${m.name}</span>（Lv.${m.lv}）${tail || ''}${m.skills.length ? ' <span class="pu">' + m.skills.map(k => SKILLS[k].name).join('·') + '</span>' : ''}<br><small style="color:var(--dim)">${ATTRS.map(k => AN[k] + C.fmtN(m.attrs[k])).join(' ')} · 你：${ATTRS.map(k => AN[k] + C.fmtN(C.fightAttrs(S, true)[k])).join(' ')}</small>`; }
 // v1203 资源槽紧凑彩签（Ye 令：7 个槽缩小、每槽一色）；v1204 颜色从 Ye 2026-11-06 亲定：草药 地绿/天蓝/仙紫、灵脉 小绿/中蓝/巨紫（两家同序 绿→蓝→紫），矿石银灰：[颜色, 短名]
-const SLOT_CHIP_STYLE = { h1: ['#3ecf6f', '地品'], h2: ['#4d9dff', '天品'], h3: ['#b45cff', '仙品'], o: ['#b0bcc8', '矿石'], v1: ['#3ecf6f', '小型'], v2: ['#4d9dff', '中型'], v3: ['#b45cff', '巨型'] };
+const SLOT_CHIP_STYLE = { h1: ['#3ecf6f', '地品'], h2: ['#4d9dff', '天品'], h3: ['#b45cff', '仙品'], o: ['#ffffff', '矿石'], v1: ['#3ecf6f', '小型'], v2: ['#4d9dff', '中型'], v3: ['#b45cff', '巨型'] }; // v1213 矿石改白色（Ye 定）
 function slotChip(c, a) { const _ss = SLOT_CHIP_STYLE[c] || ['#cccccc', C.resNameL(c)]; return `<span style="color:${_ss[0]};font-size:11px;white-space:nowrap">${C.resIconL(c)}${_ss[1]}×${a}</span>`; }
 function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 + 事件面板
   const run = S.run; if (!run || !run.grid) return;
@@ -2450,12 +2450,12 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       const monsTxt = [['w', '普通', '#e8e8e8'], ['m', '精英', '#5aa2ff'], ['s', '王', '#ff5a5a']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n, col]) => `<span style="color:${col}">${n}</span>×${mons[k]}`).join(' ');
       if (_slots.length) {
         infoLine = `<div class="hint" style="text-align:center">${_slots.map(([c, a]) => slotChip(c, a)).join(' ')}${monsTxt ? `<br>怪：${monsTxt}` : ''}</div>`;
-        for (const [c] of _slots) btns.push(`<button class="btn gold" data-advres2="${c}" style="flex:1">✋ 采·${C.resNameL(c)}</button>`);
+        for (const [c] of _slots) btns.push(`<button class="btn" data-advres2="${c}" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">✋ <span style="color:${(SLOT_CHIP_STYLE[c] || ['#ffffff'])[0]};font-weight:600">采·${C.resNameL(c)}</span></button>`); // v1213 采集按钮改小+按定版色（矿石白，Ye 定）
       } else if ((mySt ? mySt.amt : lt.amt) | 0) { // 旧单资源格兼容（无 rs 时）
         const lv = ((mySt ? mySt.lv : lt.lv) | 0) || 1, amt = (mySt ? mySt.amt : lt.amt) | 0;
         const nm = rk === 'herb' ? `🌿 灵药丛·${['', '地品', '天品', '仙品'][lv]}` : rk === 'vein' ? `💎 灵脉·${['', '小型', '中型', '巨型'][lv]}` : '⛏️ 矿石';
         infoLine = `<div class="hint" style="text-align:center">${nm} · 存量 ×${amt}${monsTxt ? ` · 怪：${monsTxt}` : ''}</div>`;
-        btns.push(`<button class="btn gold" data-advres2="" style="flex:1">✋ 采集</button>`);
+        btns.push(`<button class="btn" data-advres2="" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">✋ <span style="color:${rk === 'ore' ? '#ffffff' : (SLOT_CHIP_STYLE[(rk === 'herb' ? 'h' : 'v') + lv] || ['#ffffff'])[0]};font-weight:600">采集</span></button>`); // v1213 同上
       } else {
         infoLine = `<div class="hint" style="text-align:center">此地资源尚未刷出${monsTxt ? ` · 怪：${monsTxt}` : ''}</div>`;
       }
