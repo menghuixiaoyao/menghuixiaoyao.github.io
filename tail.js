@@ -140,6 +140,8 @@ window.showPlayerDetail = function(accountId){
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn" style="flex:1" onclick="window.xyRequestPlayer(\'' + _aid + '\')">💞 仙缘</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
+      + '<button class="btn gold" style="flex:1" onclick="window.ptTradePlayer(\'' + _aid + '\')">🤝 交易</button></div>'
+      + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn" style="flex:1" onclick="(function(){var _lp=window._lastPlayerPos||{x:0,y:0};window.showPlayersAt(_lp.x,_lp.y);})()">‹ 返回</button></div>'
       + '<div class="row"><button class="btn full" data-close>关闭</button></div>';
     if (typeof openSheet === 'function') openSheet(html);
@@ -797,7 +799,7 @@ async function onlinePlayers(){
 
 /* ---------- 真人聊天 ---------- */
 function chatDispName(m){ if (!m) return '?'; if (m.rname) return m.rname; if (m.roleName) return m.roleName; try { var ps = window._worldPlayers || []; for (var i = 0; i < ps.length; i++){ var p = ps[i]; if (p && p.player_no != null && m.playerNo != null && String(p.player_no) === String(m.playerNo) && p.username) return p.username; } } catch(_) {} return m.username || m.n || '?'; } // v1010 道号优先
-function chatName(m){ var _hid = m.xHidden || m.x_hide; var xh = (m.xHandle && !_hid) ? '<span style="color:#1d9bf0">@' + escH(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : ((_hid && m.xVerified) ? '<span style="color:#1d9bf0">✓</span> ' : ''); return xh + escH(chatDispName(m)) + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; } // v1010 隐藏时只显 ✓
+function chatName(m){ var _hid = m.xHidden || m.x_hide; var xh = (m.xHandle && !_hid) ? '<span style="color:#1d9bf0">@' + escH(m.xHandle) + '</span>' + (m.xVerified ? '<span style="color:#1d9bf0">✓</span>' : '') + ' ' : ((_hid && m.xVerified) ? '<span style="color:#1d9bf0">✓</span> ' : ''); var _nm = escH(chatDispName(m)) + '<span style="color:#666">[' + (m.playerNo || '?') + ']</span>'; if (m.accountId && m.accountId !== myAid()) return xh + '<span data-ptname="' + escH(m.accountId) + '" data-ptnm="' + escH(chatDispName(m)) + '" style="cursor:pointer;text-decoration:underline">' + _nm + '</span>'; return xh + _nm; } // v1010 隐藏时只显 ✓；v1221 名字可点发起交易
 function chatMsgHtml(m){
   var extra = '';
   var mt = /【观礼#([0-9a-z]+)\|([^|]*)\|([^|]*)\|([^】]*)】/.exec(m.text || '');
@@ -2032,7 +2034,7 @@ async function gateAfterAuth(d){
 
 window.MHXY = {
   panel: panel, markDirty: markDirty, onClick: onClick,
-  loggedIn: loggedIn, syncNow: syncNow, init: init, api: api, myName: myName,
+  loggedIn: loggedIn, syncNow: syncNow, init: init, api: api, myName: myName, myAid: myAid, downloadSave: downloadSave,
   setBaseRev: function(r){ M.baseRev = r; try{ ls(revKey(), String(r)); }catch(_){} } // v960 交易后更新同步基线（v1196：写本账号的 rev 键）
 };
 
