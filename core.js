@@ -376,14 +376,55 @@ const monTotal = (pt, diff) => (K.MON_BASE + (pt - K.MON_BASE) * K.MON_SCALE) * 
 const MON_SKILLS = ['smash', 'fireball', 'shield', 'heal', 'vamp'];
 // 权重顺序：敏捷 力量 防御 生命 智力
 const MONSTERS = [
-  { n: '山野饿狼', st: 'bleed', w: [3, 2, 1, 1.5, .3] }, { n: '赤眼野猪', st: 'bleed', w: [1, 2.5, 2, 2.5, .2] },
-  { n: '青鳞蛇妖', st: 'poison', w: [3, 1.5, 1, 1, 1.5] }, { n: '石甲傀儡', w: [.5, 2, 3.5, 2.5, .2] },
-  { n: '幽冥鬼火', w: [2, .8, .5, 1, 3.5] }, { n: '黑风山贼', w: [1.5, 2.5, 1.5, 1.5, .5] },
-  { n: '千年树妖', w: [.5, 1.5, 2.5, 3, 1.5] }, { n: '血翼蝙蝠', st: 'bleed', w: [3.5, 1.5, .5, 1, .8] },
-  { n: '骷髅剑士', w: [1.5, 2.5, 2, 1, .5] }, { n: '狐妖·媚儿', w: [2.5, 1, 1, 1.2, 3] },
-  { n: '铁背苍熊', st: 'bleed', w: [.8, 3, 2, 3, .2] }, { n: '炼尸道人', st: 'poison', w: [1, 1.5, 1.5, 1.5, 3] },
-  { n: '雷霆鹰隼', st: 'bleed', w: [3, 2, .8, 1, 1.5] }, { n: '寒潭水鬼', w: [1.5, 1.5, 1.5, 2, 2] }
+  { n: '山野饿狼', k: 'beast', st: 'bleed', w: [3, 2, 1, 1.5, .3] }, { n: '赤眼野猪', k: 'beast', st: 'bleed', w: [1, 2.5, 2, 2.5, .2] },
+  { n: '铁背苍熊', k: 'beast', st: 'bleed', w: [.8, 3, 2, 3, .2] }, { n: '雷霆鹰隼', k: 'beast', st: 'bleed', w: [3, 2, .8, 1, 1.5] },
+  { n: '血翼蝙蝠', k: 'beast', st: 'bleed', w: [3.5, 1.5, .5, 1, .8] }, { n: '幽谷青虎', k: 'beast', st: 'bleed', w: [2, 3, 1.5, 2, .3] },
+  { n: '裂地蛮牛', k: 'beast', st: 'bleed', w: [.8, 3, 2.5, 3, .2] }, { n: '疾风银狼', k: 'beast', st: 'bleed', w: [3.5, 2, 1, 1.2, .5] },
+  { n: '青鳞蛇妖', k: 'yao', st: 'poison', w: [3, 1.5, 1, 1, 1.5] }, { n: '千年树妖', k: 'yao', w: [.5, 1.5, 2.5, 3, 1.5] },
+  { n: '狐妖·媚儿', k: 'yao', w: [2.5, 1, 1, 1.2, 3] }, { n: '紫藤花妖', k: 'yao', st: 'poison', w: [1, 1, 1.5, 2, 2.5] },
+  { n: '碧眼蟾妖', k: 'yao', st: 'poison', w: [1, 1.5, 2, 2, 2] }, { n: '幻月狸妖', k: 'yao', w: [3, 1.5, 1, 1, 2] },
+  { n: '桃花妖', k: 'yao', w: [2, 1, 1, 1.5, 3] }, { n: '岩隙石怪', k: 'guai', w: [.5, 2, 3.5, 2.5, .2] },
+  { n: '腐沼泥怪', k: 'guai', st: 'poison', w: [1, 1.5, 2, 3, 1] }, { n: '啸风沙怪', k: 'guai', w: [3, 1.5, 1, 1, 1] },
+  { n: '独眼山怪', k: 'guai', st: 'bleed', w: [1, 3, 2, 2.5, .3] }, { n: '噬金鼠怪', k: 'guai', w: [3.5, 1, .5, 1, 1] },
+  { n: '烈焰魔犬', k: 'mo', st: 'bleed', w: [2.5, 2.5, 1, 1.5, .8] }, { n: '噬魂魔蝠', k: 'mo', w: [3.5, 1.5, .5, 1, 1.5] },
+  { n: '血池魔婴', k: 'mo', st: 'poison', w: [2, 1, 1, 1, 3] }, { n: '暗影魔蛛', k: 'mo', st: 'poison', w: [3, 1.5, 1, 1, 2] },
+  { n: '焚天魔猿', k: 'mo', st: 'bleed', w: [1.5, 3, 1.5, 2.5, .5] }, { n: '嗜血魔蝶', k: 'mo', st: 'poison', w: [3.5, 1, .5, .8, 1.5] },
+  { n: '幽冥鬼火', k: 'gui', w: [2, .8, .5, 1, 3.5] }, { n: '寒潭水鬼', k: 'gui', w: [1.5, 1.5, 1.5, 2, 2] },
+  { n: '吊颈怨鬼', k: 'gui', w: [2, 1, 1, 1.5, 3] }, { n: '无头厉鬼', k: 'gui', st: 'bleed', w: [1.5, 2.5, 1.5, 1.5, .8] },
+  { n: '青灯鬼童', k: 'gui', w: [2, 1, .8, 1, 3.5] }, { n: '迷雾游魂', k: 'gui', w: [2.5, 1, .8, 1, 3] },
+  { n: '骷髅剑士', k: 'shi', w: [1.5, 2.5, 2, 1, .5] }, { n: '铁甲僵尸', k: 'shi', st: 'bleed', w: [.8, 2.5, 3, 2.5, .2] },
+  { n: '腐毒尸王', k: 'shi', st: 'poison', w: [1, 2, 2, 3, 1.5] }, { n: '白骨刀客', k: 'shi', st: 'bleed', w: [2, 2.5, 1.5, 1, .8] },
+  { n: '石甲傀儡', k: 'kui', w: [.5, 2, 3.5, 2.5, .2] }, { n: '青铜武傀', k: 'kui', w: [1, 2.5, 3, 2, .3] },
+  { n: '玄铁机关兽', k: 'kui', w: [1.5, 2.5, 2.5, 2, .5] }, { n: '断线木偶', k: 'kui', w: [2.5, 1.5, 1, 1, 2] },
+  { n: '灵芝小精', k: 'jing', w: [2, 1, 1, 2, 2.5] }, { n: '矿心石精', k: 'jing', w: [.8, 1.5, 3, 2.5, 1] },
+  { n: '古灯灯精', k: 'jing', w: [2, 1, .8, 1, 3.5] }, { n: '黑风山贼', k: 'xie', w: [1.5, 2.5, 1.5, 1.5, .5] },
+  { n: '炼尸道人', k: 'xie', st: 'poison', w: [1, 1.5, 1.5, 1.5, 3] }, { n: '血煞散修', k: 'xie', st: 'bleed', w: [2, 2.5, 1.5, 1.5, 1.5] },
+  { n: '梦魇噬魂灵', k: 'xiong', w: [2, 1.5, 1, 1.5, 3.5] }, { n: '虚空裂隙灵', k: 'xiong', w: [2.5, 1.5, 1, 1, 3] }
 ];
+const MON_KINDS = { beast: '獸', yao: '妖', guai: '怪', mo: '魔物', gui: '鬼', shi: '屍', kui: '傀儡', jing: '精怪', xie: '邪修', xiong: '凶靈' };
+const MON_KIND_W = {
+  easy: { beast: 45, guai: 30, yao: 8, jing: 7, xie: 5, gui: 2, kui: 2, shi: 1, mo: 0, xiong: 0 },
+  mid: { beast: 30, yao: 30, jing: 15, guai: 10, gui: 5, xie: 4, kui: 3, shi: 2, mo: 1, xiong: 0 },
+  hard: { yao: 30, gui: 20, kui: 20, beast: 8, guai: 7, jing: 5, shi: 5, xie: 3, mo: 2, xiong: 0 },
+  brutal: { guai: 25, shi: 25, xie: 20, mo: 10, gui: 8, yao: 5, beast: 3, kui: 2, jing: 1, xiong: 1 },
+  hell: { mo: 40, gui: 30, xiong: 8, shi: 8, xie: 6, yao: 3, guai: 2, beast: 1, kui: 1, jing: 1 },
+  abyss: { mo: 35, xiong: 25, shi: 15, gui: 12, xie: 5, yao: 3, guai: 2, kui: 2, beast: 1, jing: 0 },
+  nightmare: { mo: 30, yao: 25, xiong: 25, gui: 10, shi: 4, xie: 2, guai: 2, beast: 1, kui: 1, jing: 0 },
+  mijing: { beast: 10, yao: 10, guai: 10, mo: 10, gui: 10, shi: 10, kui: 10, jing: 10, xie: 10, xiong: 10 },
+  wx_jin: { kui: 40, beast: 25, guai: 15, mo: 5, gui: 5, shi: 5, yao: 2, xie: 2, jing: 1, xiong: 0 },
+  wx_mu: { yao: 35, jing: 30, beast: 15, guai: 8, gui: 4, mo: 2, shi: 2, xie: 2, kui: 1, xiong: 1 },
+  wx_shui: { gui: 35, yao: 30, beast: 10, guai: 8, jing: 6, shi: 4, mo: 3, xie: 2, kui: 1, xiong: 1 },
+  wx_huo: { mo: 40, gui: 20, yao: 10, beast: 8, xiong: 8, shi: 5, xie: 4, guai: 3, kui: 1, jing: 1 },
+  wx_tu: { kui: 35, guai: 30, beast: 15, shi: 8, gui: 4, jing: 3, yao: 2, xie: 2, mo: 1, xiong: 0 }
+};
+function monKindOf(m) {
+  if (!m) return 'guai';
+  if (m.kind && MON_KINDS[m.kind]) return m.kind;
+  if (m.k && MON_KINDS[m.k]) return m.k;
+  const hit = MONSTERS.find(x => x.n === m.name || (m.name && m.name.endsWith(x.n)));
+  return hit ? hit.k : 'guai';
+}
+function monKindName(m) { return MON_KINDS[monKindOf(m)] || '怪'; }
 const STYLES = [
   { n: '剑修', w: [2, 3, 1, 1.5, 1], prefer: 'str' }, { n: '体修', w: [1, 2, 2.5, 3, .5], prefer: 'vit' },
   { n: '法修', w: [1.2, 1, 1, 1.5, 3.2], prefer: 'int' }, { n: '游侠', w: [3.2, 2, 1, 1.2, 1], prefer: 'agi' },
@@ -392,7 +433,7 @@ const STYLES = [
 const SURN = '李王张刘陈杨赵黄周吴徐孙胡朱高林何郭马罗梁宋郑谢韩唐冯于董萧程曹袁邓许傅沈曾彭吕苏卢蒋蔡贾丁魏薛叶阎余潘杜戴夏钟汪田任姜范方石姚谭廖邹熊金陆郝孔白崔康毛邱秦江史顾侯邵孟龙万段雷钱汤尹黎易常武乔贺赖龚文慕容上官欧阳司马独孤南宫'.match(/慕容|上官|欧阳|司马|独孤|南宫|./g);
 const GIVEN = '逍遥 无忌 青云 长风 若雪 清霜 天行 惊鸿 子墨 寒烟 浩然 紫萱 星河 残阳 问天 凌霄 映雪 孤鸿 听澜 念慈 破军 沧海 飞羽 明月 夜白 灵犀 霜华 墨尘 云舒 不凡 一刀 秋水'.split(' ');
 
-const C = { STARTER_MATS, STARTER_GOLD, K, ATTRS, AN, GRADES, SKILLS, MATS, ORES, PREY, FARM, LU, MEATS, EGGS, PETS, PET_TALENT, MEDS, STATUS, GATHER, DIFFS, MONSTERS, STYLES, rng: Math.random, now: () => Date.now() };
+const C = { STARTER_MATS, STARTER_GOLD, K, ATTRS, AN, GRADES, SKILLS, MATS, ORES, PREY, FARM, LU, MEATS, EGGS, PETS, PET_TALENT, MEDS, STATUS, GATHER, DIFFS, MONSTERS, MON_KINDS, MON_KIND_W, monKindOf, monKindName, STYLES, rng: Math.random, now: () => Date.now() };
 var R = () => C.rng(); window.R = R; // v234 改var；v265 显式挂window防iOS跨块访问失败
 var _personCache = {}; window._personCache = _personCache; // 人名→信息卡缓存（聊天/PK/记录点击查看），放第一个script块供pkStart访问
 const rnd = (a, b) => a + (b - a) * R();
@@ -2871,7 +2912,12 @@ function distribute(tot, w, jitter) {
   return out;
 }
 function genMonster(S, dk) {
-  const diff = DIFFS[dk] || DIFFS.easy, m = pick(MONSTERS);
+  const diff = DIFFS[dk] || DIFFS.easy;
+  const kw = MON_KIND_W[dk] || MON_KIND_W.easy;
+  const kinds = Object.keys(MON_KINDS).filter(k => (kw[k] | 0) > 0);
+  const kk = kinds.length ? wpick(kinds, k => kw[k]) : 'guai';
+  const pool = MONSTERS.filter(m => m.k === kk);
+  const m = pool.length ? pick(pool) : pick(MONSTERS);
   const pt = total(S.attrs);
   const tot = Math.max(dk === 'easy' ? 4 : 8, Math.max(monTotal(pt, diff), dk === 'easy' ? 0 : monTotal(diff.recTot, diff)) * rnd(0.9, 1.1)); // 总属性低于建议值时，怪物按建议值强度生成
   const attrs = {};
@@ -2879,7 +2925,7 @@ function genMonster(S, dk) {
   ATTRS.forEach((k, i) => { attrs[k] = Math.max(1, Math.round(tot * _ws[i] / _wSum)); });
   const lv = Math.max(1, Math.floor((total(attrs) - 25) / 5) + 1);
   const skills = []; // 冒险怪物不带技能
-  return { name: diff.pre + m.n, diff: dk, dname: diff.name, attrs, lv, skills, st: m.st || null };
+  return { name: diff.pre + m.n, kind: m.k, kindName: MON_KINDS[m.k] || '怪', diff: dk, dname: diff.name, attrs, lv, skills, st: m.st || null };
 }
 function genOpponent(S) {
   const st = pick(STYLES);
@@ -3509,7 +3555,8 @@ function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：普通=�
   const mon = advMonster(S, run.dk, tier === 's' ? 1 : 0);
   const mult = tier === 'w' ? 0.7 : tier === 's' ? 1.3 : 1;
   if (mult !== 1) ATTRS.forEach(k => mon.attrs[k] = Math.max(1, Math.round(mon.attrs[k] * mult)));
-  return { type: 'fight', mon, text: tier === 'w' ? '一只普通怪' : tier === 's' ? '一只王怪' : '一只精英怪', monTile: { tier, x: run.grid.px, y: run.grid.py } };
+  // v1217 战前不露名：档数文案去掉，种类+档色由 monKindCard 显示
+  return { type: 'fight', mon, text: '', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
 Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
