@@ -2911,11 +2911,14 @@ function distribute(tot, w, jitter) {
   while (left-- > 0) out[ATTRS[wpick(idx, i => ww[i])]]++;
   return out;
 }
-function genMonster(S, dk) {
-  const diff = DIFFS[dk] || DIFFS.easy;
+function pickMonKind(dk) { // v1218 按图权重抽种类（v1217 逻辑抽出，供格子怪定身份复用）
   const kw = MON_KIND_W[dk] || MON_KIND_W.easy;
   const kinds = Object.keys(MON_KINDS).filter(k => (kw[k] | 0) > 0);
-  const kk = kinds.length ? wpick(kinds, k => kw[k]) : 'guai';
+  return kinds.length ? wpick(kinds, k => kw[k]) : 'guai';
+}
+function genMonster(S, dk, forceKind) {
+  const diff = DIFFS[dk] || DIFFS.easy;
+  const kk = (forceKind && MON_KINDS[forceKind] && MONSTERS.some(m => m.k === forceKind)) ? forceKind : pickMonKind(dk);
   const pool = MONSTERS.filter(m => m.k === kk);
   const m = pool.length ? pick(pool) : pick(MONSTERS);
   const pt = total(S.attrs);
@@ -2994,8 +2997,8 @@ function advCheckP(S, dk, attr) { const a = fightAttrs(S, false)[attr]; return c
 function fleeP(S, mon) { return clamp(0.2 + 0.4 * fightAttrs(S, false).agi / Math.max(1, mon.attrs.agi), 0.1, 0.9); } // 敏捷相同 60%
 const itemLabel0 = (st, k) => st === 'skillPages' ? SKILLS[k].name + '技能残页' : (({ mats: MATS, ores: ORES, pages: PAGES, meds: MEDS, food: MEATS })[st] || {})[k] ? ({ mats: MATS, ores: ORES, pages: PAGES, meds: MEDS, food: MEATS })[st][k].name : k;
 function rollRank(dk, bump) { let r = wpick([0, 1, 2, 3, 4], i => RANK_W[dk][i]); return Math.min(4, r + (bump || 0)); }
-function advMonster(S, dk, bump) {
-  const rk = rollRank(dk, bump), R_ = RANKS[rk], m = genMonster(S, dk);
+function advMonster(S, dk, bump, forceKind) {
+  const rk = rollRank(dk, bump), R_ = RANKS[rk], m = genMonster(S, dk, forceKind);
   ATTRS.forEach(k => m.attrs[k] = Math.max(1, Math.round(m.attrs[k] * R_.mult * K.ADV_MON_MULT)));
   m.skills = []; // 冒险怪物不带技能
   const dwx = (DIFFS[dk] || {}).wx; if (dwx) m.wx = dwx; // 五行怪：带对应属性
@@ -3363,7 +3366,7 @@ function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空
   for (let i = pos.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const tmp = pos[i]; pos[i] = pos[j]; pos[j] = tmp; }
   bag.forEach((t, i) => { const p = pos[i]; if (!p) return; tiles[p[1]][p[0]].t = t; });
   const _nowG = Date.now(); // v1154：其余格全是资源格（矿石/灵脉/草药丛，带存量与怪）
-  pos.slice(bag.length).forEach(p => { Object.assign(tiles[p[1]][p[0]], advFreshResTileL(_nowG, advQiL(dk))); });
+  pos.slice(bag.length).forEach(p => { Object.assign(tiles[p[1]][p[0]], advFreshResTileL(_nowG, advQiL(dk), dk)); });
   return { w: ADV_GW, h: ADV_GH, tiles, px: sx, py: sy, ex: ADV_GW - 1, ey: 0, moves: 0 };
 }
 function advTileEvent(S, run, type) { // 在格子上生成指定类型的事件（复用事件库）
@@ -3466,18 +3469,44 @@ function ensureSlotsL(t, now) {
   if (!t.mt || typeof t.mt !== 'object') t.mt = { w: now, m: now, s: now };
   for (const k of ['w', 'm', 's']) if (!(t.mt[k] > 0)) t.mt[k] = now;
 }
+function ensureMonListL(t, dk) { // v1218 本地图格子怪定身份：monList 与三档计数对齐，老格子按档补种类，种类只定一次、不重掷
+  if (!t.mons || typeof t.mons !== 'object') t.mons = { w: 0, m: 0, s: 0 };
+  if (!Array.isArray(t.monList)) t.monList = [];
+  const want = { w: t.mons.w | 0, m: t.mons.m | 0, s: t.mons.s | 0 };
+  const kept = [], have = { w: 0, m: 0, s: 0 };
+  for (const e of t.monList) { if (e && (e.t === 'w' || e.t === 'm' || e.t === 's') && MON_KINDS[e.k] && have[e.t] < want[e.t]) { kept.push({ t: e.t, k: e.k }); have[e.t]++; } }
+  for (const k of ['w', 'm', 's']) while (have[k] < want[k]) { kept.push({ t: k, k: pickMonKind(dk) }); have[k]++; }
+  t.monList = kept.slice(0, 5);
+  t.mons = { w: 0, m: 0, s: 0 }; for (const e of t.monList) t.mons[e.t]++;
+}
+function advTileKillL(t, tier, kind, dk) { // v1218 本地图击杀：优先扣（档+种类）一致的一只，否则扣该档第一只
+  if (!t) return;
+  ensureMonListL(t, dk);
+  const list = t.monList;
+  let idx = -1;
+  if (kind && MON_KINDS[kind]) idx = list.findIndex(e => e && e.t === tier && e.k === kind);
+  if (idx < 0) idx = list.findIndex(e => e && e.t === tier);
+  if (idx >= 0) list.splice(idx, 1);
+  t.mons = { w: 0, m: 0, s: 0 }; for (const e of list) t.mons[e.t]++;
+}
+const MON_TIER_COL_L = { w: '#e8e8e8', m: '#5aa2ff', s: '#ff5a5a' };
+function advMonChipsL(list) { // v1218 格子怪行：只写种类小签（⚔️+种类，颜色按档），不写档名、不写数量
+  if (!Array.isArray(list)) return '';
+  return list.filter(e => e && MON_TIER_COL_L[e.t] && MON_KINDS[e.k]).map(e => `<span style="color:${MON_TIER_COL_L[e.t]}">⚔️${MON_KINDS[e.k]}</span>`).join(' ');
+}
 function domSlotL(t) { let best = null, ba = 0; if (t && t.rs) for (const c of RES_CODES_L) { const a = (t.rs[c] && t.rs[c].a) | 0; if (a > ba) { ba = a; best = c; } } return best; }
 function advTierKeyL() { if (R() < 0.6) return 'w'; return R() < 0.75 ? 'm' : 's'; } // 弱60/中30/强10（与服务端同规）
-function advFreshResTileL(now, qi) {
-  const t = { t: 'land', rs: {}, mons: { w: 0, m: 0, s: 0 }, mt: { w: now, m: now, s: now } };
+function advFreshResTileL(now, qi, dk) {
+  const t = { t: 'land', rs: {}, mons: { w: 0, m: 0, s: 0 }, monList: [], mt: { w: now, m: now, s: now } };
   ensureSlotsL(t, now);
   const q = qi || 1;
   for (const c of RES_CODES_L) if (R() < Math.min(1, RES_P_L[c] * q)) t.rs[c].a++;
-  for (const k of ['w', 'm', 's']) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); const _mp = k === 's' ? 0.01 : Math.min(1, 0.2 * q); if (tot < 5 && R() < _mp) t.mons[k]++; }
+  for (const k of ['w', 'm', 's']) { const tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); const _mp = k === 's' ? 0.01 : Math.min(1, 0.2 * q); if (tot < 5 && R() < _mp) { t.mons[k]++; t.monList.push({ t: k, k: pickMonKind(dk) }); } }
   return t;
 }
-function advResSettleTileL(t, now, qi) {
+function advResSettleTileL(t, now, qi, dk) {
   ensureSlotsL(t, now);
+  ensureMonListL(t, dk);
   const q = qi || 1;
   for (const c of RES_CODES_L) {
     const sl = t.rs[c], iv = RES_IV_L[c];
@@ -3493,6 +3522,7 @@ function advResSettleTileL(t, now, qi) {
     const _mp = k => k === 's' ? 0.01 : Math.min(1, 0.2 * q);
     if (_maxTicks > 400) {
       const _room = Math.max(0, 5 - ((t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0)));
+      const _before = { w: t.mons.w | 0, m: t.mons.m | 0, s: t.mons.s | 0 };
       const _adds = {};
       for (const k of ['w', 'm', 's']) _adds[k] = Math.round(_pend[k] * _mp(k));
       const _sum = _adds.w + _adds.m + _adds.s;
@@ -3507,11 +3537,12 @@ function advResSettleTileL(t, now, qi) {
       } else {
         for (const k of ['w', 'm', 's']) t.mons[k] = (t.mons[k] | 0) + _adds[k];
       }
+      for (const k of ['w', 'm', 's']) { const _n = (t.mons[k] | 0) - _before[k]; for (let j = 0; j < _n; j++) t.monList.push({ t: k, k: pickMonKind(dk) }); }
     } else {
       for (let i = 0; i < _maxTicks; i++) {
         const _rot = i % 3;
         const _seq = ['w', 'm', 's'].slice(_rot).concat(['w', 'm', 's'].slice(0, _rot));
-        for (const k of _seq) { const _tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (i < _pend[k] && _tot < 5 && R() < _mp(k)) t.mons[k]++; }
+        for (const k of _seq) { const _tot = (t.mons.w | 0) + (t.mons.m | 0) + (t.mons.s | 0); if (i < _pend[k] && _tot < 5 && R() < _mp(k)) { t.mons[k]++; t.monList.push({ t: k, k: pickMonKind(dk) }); } }
       }
     }
     for (const k of ['w', 'm', 's']) t.mt[k] += _pend[k] * 600000;
@@ -3530,7 +3561,7 @@ function advResSettleGrid(run) {
       ensureSlotsL(t, now); t.rs[cc] = { a: amt, at }; if (mons) t.mons = mons; t.mt = { w: monAt, m: monAt, s: monAt };
     }
     if (t.t !== 'land') continue;
-    advResSettleTileL(t, now, qi);
+    advResSettleTileL(t, now, qi, run.dk);
   }
 }
 function advLocalGather(S, run, code) { // 本地图手采（按槽）：门槛 → 惊扰(10%) → 扣 1 份发放
@@ -3551,14 +3582,23 @@ function advLocalGather(S, run, code) { // 本地图手采（按槽）：门槛 
   t.rs[cc].a--;
   return { msg: advResGrant(S, run, kind, grade), code: cc };
 }
-function advMonTileEv(S, run, tier) { // 资源格怪物战斗事件：普通=属性×0.7；王=rank+1 且属性×1.3（rollRank 无下限钳制，普通档不降 rank）
-  const mon = advMonster(S, run.dk, tier === 's' ? 1 : 0);
+function advMonTileEv(S, run, tier, forceKind) { // 资源格怪物战斗事件：普通=属性×0.7；王=rank+1 且属性×1.3（rollRank 无下限钳制，普通档不降 rank）；v1218 打的是格子里定好身份的那只（种类取自 monList 该档第一只，惊扰时取服务端报的种类）
+  let _kind = (forceKind && MON_KINDS[forceKind]) ? forceKind : null;
+  if (!_kind && run && run.grid) {
+    const g = run.grid;
+    const sh = run.shared && run.shared.on ? run.shared : null;
+    const st = sh && sh.tiles && sh.tiles[g.py] ? sh.tiles[g.py][g.px] : null;
+    const list = (st && Array.isArray(st.monList)) ? st.monList : null;
+    if (list) { const e = list.find(e => e && e.t === tier && MON_KINDS[e.k]); if (e) _kind = e.k; }
+    if (!_kind) { const lt = g.tiles[g.py] && g.tiles[g.py][g.px]; if (lt && (lt.t === 'land' || lt.mons)) { ensureMonListL(lt, run.dk); const e = lt.monList.find(e => e && e.t === tier && MON_KINDS[e.k]); if (e) _kind = e.k; } }
+  }
+  const mon = advMonster(S, run.dk, tier === 's' ? 1 : 0, _kind);
   const mult = tier === 'w' ? 0.7 : tier === 's' ? 1.3 : 1;
   if (mult !== 1) ATTRS.forEach(k => mon.attrs[k] = Math.max(1, Math.round(mon.attrs[k] * mult)));
   // v1217 战前不露名：档数文案去掉，种类+档色由 monKindCard 显示
   return { type: 'fight', mon, text: '', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动
@@ -3698,7 +3738,7 @@ window.advGatherRes = async function(code) {
     }
     if (resp.ok && j && j.ok && j.disturbed) { // v1154 惊扰：资源未采到，先打怪
       log('bad', '😱 采集时惊扰了怪物，它扑了过来！');
-      S.run.ev = C.advMonTileEv(S, S.run, j.disturbed);
+      S.run.ev = C.advMonTileEv(S, S.run, j.disturbed, j.monKind);
       try { sheetRun(); } catch (_) {}
       return;
     }
@@ -3738,7 +3778,7 @@ async function advMonKillShared(mt) { // v1154 共享图击杀登记（服务端
   try {
     const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
     const _rank = Number.isInteger(mt.rank) ? mt.rank : (S.run.ev && S.run.ev.monTile && S.run.ev.monTile.x === mt.x && S.run.ev.monTile.y === mt.y && S.run.ev.mon && Number.isInteger(S.run.ev.mon.rank) ? S.run.ev.mon.rank : undefined);
-    const _post = () => MHXY.api('/api/advmap/' + 'monkill' + '?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: mt.x, y: mt.y, tier: mt.tier, rank: _rank } });
+    const _post = () => MHXY.api('/api/advmap/' + 'monkill' + '?dk=' + encodeURIComponent(dk), { method: 'POST', body: { x: mt.x, y: mt.y, tier: mt.tier, rank: _rank, kind: mt.kind || undefined } });
     let r = await _post();
     if (!(r && r.ok) && r && r.json && r.json.error === 'not_there' && S.run && S.run.grid) {
       // v1170 DO 玩家记录过期/位置漂移时 monkill 报 not_there，旧版静默吞掉→打赢了怪也不消失（Ye 报）：补心跳后重试一次
@@ -3898,7 +3938,7 @@ function advCtx(S, run, lines) { // 事件结果工具
             // H6（v1212）击杀凭证：资源格怪的击杀登记原在结算之后，这里前置登记拿凭证（_mkReg 防与旧登记点重复减怪）
             if (run.shared && run.shared.on && run.ev && run.ev.monTile && !run.ev._mkReg) {
               run.ev._mkReg = 1;
-              try { await advMonKillShared({ x: run.ev.monTile.x, y: run.ev.monTile.y, tier: run.ev.monTile.tier, rank: run.ev.mon.rank }); } catch (_) {}
+              try { await advMonKillShared({ x: run.ev.monTile.x, y: run.ev.monTile.y, tier: run.ev.monTile.tier, rank: run.ev.mon.rank, kind: run.ev.mon.kind }); } catch (_) {}
             }
             // 组装凭证：先用击杀凭证队列，不足再向 DO 申领当前格的事件/BOSS 凭证（wx 图服务端不受理掉落，维持本地回落）
             let vouchers = null, vcap = 0;
@@ -4029,8 +4069,8 @@ async function advChoose(S, i) { try { if ((S.level|0) >= C.REALM_MAX_LV && !S.t
     const f = await advFight(S, run); out.battle = f.battle; out.lines.push(...f.lines);
     if (run.defeat || S.dead) { out.end = advEnd(S, 'defeat'); return out; }
     if (f.win) {
-      if (run.shared && run.shared.on) { if (!run.ev._mkReg) run.monKillPending = { x: mt.x, y: mt.y, tier: mt.tier, rank: run.ev.mon.rank }; } // v1212：结算内已前置登记时不再排队（防重复减怪）
-      else if (run.grid) { const gt = run.grid.tiles[mt.y][mt.x]; if (gt && gt.mons) gt.mons[mt.tier] = Math.max(0, (gt.mons[mt.tier] | 0) - 1); }
+      if (run.shared && run.shared.on) { if (!run.ev._mkReg) run.monKillPending = { x: mt.x, y: mt.y, tier: mt.tier, rank: run.ev.mon.rank, kind: run.ev.mon.kind }; } // v1212：结算内已前置登记时不再排队（防重复减怪）
+      else if (run.grid) { const gt = run.grid.tiles[mt.y][mt.x]; if (gt) advTileKillL(gt, mt.tier, run.ev.mon.kind, run.dk); }
       run.ev = null;
     }
     run.last = out.lines; return out;
