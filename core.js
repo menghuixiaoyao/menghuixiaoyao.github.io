@@ -3490,9 +3490,9 @@ function advTileKillL(t, tier, kind, dk) { // v1218 本地图击杀：优先扣�
   t.mons = { w: 0, m: 0, s: 0 }; for (const e of list) t.mons[e.t]++;
 }
 const MON_TIER_COL_L = { w: '#e8e8e8', m: '#5aa2ff', s: '#ff5a5a' };
-function advMonChipsL(list) { // v1218 格子怪行：只写种类小签（⚔️+种类，颜色按档），不写档名、不写数量
+function advMonChipsL(list) { // v1218 格子怪行：只写种类小签（⚔️+种类，颜色按档），不写档名、不写数量；v1219 小签可点：data-monatk 带档+种类，点小签打那只
   if (!Array.isArray(list)) return '';
-  return list.filter(e => e && MON_TIER_COL_L[e.t] && MON_KINDS[e.k]).map(e => `<span style="color:${MON_TIER_COL_L[e.t]}">⚔️${MON_KINDS[e.k]}</span>`).join(' ');
+  return list.filter(e => e && MON_TIER_COL_L[e.t] && MON_KINDS[e.k]).map(e => `<span data-monatk="${e.t}:${e.k}" style="color:${MON_TIER_COL_L[e.t]};cursor:pointer">⚔️${MON_KINDS[e.k]}</span>`).join(' ');
 }
 function domSlotL(t) { let best = null, ba = 0; if (t && t.rs) for (const c of RES_CODES_L) { const a = (t.rs[c] && t.rs[c].a) | 0; if (a > ba) { ba = a; best = c; } } return best; }
 function advTierKeyL() { if (R() < 0.6) return 'w'; return R() < 0.75 ? 'm' : 's'; } // 弱60/中30/强10（与服务端同规）
@@ -3767,10 +3767,10 @@ window.advLocalGatherUI = function(code) { // v1186 本地图当前格采集（�
     afterAct(); commit(); sheetRun();
   } catch (e) {}
 };
-window.advAttackMon = function(tier) { // v1154 主动攻击当前格指定档位的怪
+window.advAttackMon = function(tier, forceKind) { // v1154 主动攻击当前格指定档位的怪；v1219 第二参可选：点种类小签打指定那只
   try {
     if (!S.run || !S.run.grid || S.run.ev) return;
-    S.run.ev = C.advMonTileEv(S, S.run, tier);
+    S.run.ev = C.advMonTileEv(S, S.run, tier, forceKind);
     sheetRun();
   } catch (e) {}
 };
