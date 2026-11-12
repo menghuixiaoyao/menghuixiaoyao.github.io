@@ -3352,6 +3352,8 @@ const ADV_MAP_SHAPES = { // v1151 异形地图（与服务端 advmap.js 同图�
   nightmare: { s: [2, 5], r: ['XX..XX', 'X....X', '..XX..', '..XX..', 'X....X', 'XXS..X'] },
   mijing: { s: [1, 5], r: ['X....X', 'X....X', 'XX.XXX', '.....X', '......', '.S...X'] }
 };
+const ADV_HI_Y = 6; // v1220 高地行：y=6，6 块高地（与服务端 advmap.js HI_Y 同规）
+function hiGateFor(x) { return x < 3 ? 'shukuchi' : 'danuoyi'; } // v1220 高地技能门：前 3 块缩地、后 3 块大挪移（与服务端同规）
 function advShapeFor(dk) { return ADV_MAP_SHAPES[dk] || ADV_MAP_SHAPES.easy; }
 function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空格不可站；事件格撒在可行走格上
   const shp = advShapeFor(dk || 'easy');
@@ -3367,7 +3369,12 @@ function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空
   bag.forEach((t, i) => { const p = pos[i]; if (!p) return; tiles[p[1]][p[0]].t = t; });
   const _nowG = Date.now(); // v1154：其余格全是资源格（矿石/灵脉/草药丛，带存量与怪）
   pos.slice(bag.length).forEach(p => { Object.assign(tiles[p[1]][p[0]], advFreshResTileL(_nowG, advQiL(dk), dk)); });
-  return { w: ADV_GW, h: ADV_GH, tiles, px: sx, py: sy, ex: ADV_GW - 1, ey: 0, moves: 0 };
+  if (ADV_MAP_SHAPES[dk || 'easy']) { // v1220 高地：8 张冒险图各加 6 块（y=6 行），与主图不相连、内容与普通 land 格同规；五行图（wx_*）不加
+    const _hiRow = [];
+    for (let x = 0; x < ADV_GW; x++) { const _ht = advFreshResTileL(_nowG, advQiL(dk), dk); _ht.gate = hiGateFor(x); _hiRow.push(_ht); }
+    tiles.push(_hiRow);
+  }
+  return { w: ADV_GW, h: tiles.length, tiles, px: sx, py: sy, ex: ADV_GW - 1, ey: 0, moves: 0 };
 }
 function advTileEvent(S, run, type) { // 在格子上生成指定类型的事件（复用事件库）
   if (type === 'fight') { const m = advMonster(S, run.dk, 0); run.ev = { type: 'fight', mon: m, text: null, boss: false }; return; }
@@ -3598,7 +3605,7 @@ function advMonTileEv(S, run, tier, forceKind) { // 资源格怪物战斗事件�
   // v1217 战前不露名：档数文案去掉，种类+档色由 monKindCard 显示
   return { type: 'fight', mon, text: '', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL, hiGateFor }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）；v1220 高地门判定导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动
@@ -3608,6 +3615,7 @@ function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件�
   const nx = g.px + d[0], ny = g.py + d[1];
   if (nx < 0 || ny < 0 || nx >= g.w || ny >= g.h) return { err: 'edge' };
   if (g.tiles[ny][nx].t === 'void') return { err: 'void' }; // v1151 虚空格不可站
+  if ((g.tiles[g.py][g.px] && g.tiles[g.py][g.px].gate) || g.tiles[ny][nx].gate) return { err: 'highland' }; // v1220 方向移动不许踏入/踏出高地：高地只许点格挪移（走技能门判定）
   g.px = nx; g.py = ny; g.moves++;
   const t = g.tiles[ny][nx];
   run.ev = null;
@@ -3622,6 +3630,23 @@ function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件�
 function advRetreat(S) { const run = S.run; if (!run || !run.grid) return null; return { lines: ['撤退'], end: advEnd(S, 'retreat') }; }
 // ======== v971 全服共享冒险地图 ========
 // 共享地图：固定布局，tile 状态全服共享，先到先得。未登录时走本地随机地图。
+function advSyncSharedTileTypes(S, stTiles) { // v1220 共享 tile 同步（含高地行）：本地缺行时补占位行，gate 随 tile 同步
+  if (!S.run || !S.run.grid || !S.run.grid.tiles || !stTiles) return;
+  const g = S.run.grid;
+  for (let _y = 0; _y < stTiles.length; _y++) {
+    if (!g.tiles[_y]) { g.tiles[_y] = []; for (let _x = 0; _x < ADV_GW; _x++) g.tiles[_y].push({ t: 'empty', seen: 0 }); g.h = g.tiles.length; }
+    for (let _x = 0; _x < 6; _x++) {
+      const _st = stTiles[_y] && stTiles[_y][_x];
+      if (!_st) continue;
+      const _lt = g.tiles[_y][_x];
+      if (!_lt) continue;
+      _lt.t = _st.t;
+      if (_st.rs) { const _rs = {}; for (const _c in _st.rs) _rs[_c] = { a: _st.rs[_c] | 0, at: Date.now() }; _lt.rs = _rs; _lt.t = 'land'; }
+      if (_st.mons) _lt.mons = _st.mons;
+      if (_st.gate !== undefined) _lt.gate = _st.gate || null;
+    }
+  }
+}
 async function advSharedInit(S) {
   if (!MHXY.loggedIn || !MHXY.loggedIn()) return false;
   const dk = (S.run && S.run.dk) || 'easy';
@@ -3632,7 +3657,7 @@ async function advSharedInit(S) {
     if (!st.ok || !st.json || !st.json.ok) return false;
     S.run.shared = {
       dk: dk,
-      tiles: st.json.tiles,           // 6x6 [{t, state, respawn_in, res}]
+      tiles: st.json.tiles,           // 主图 6x6 + 高地行（v1220）[{t, state, respawn_in, res}]
       players: st.json.players || [], // 其他玩家 [{username, player_no, x, y}]
       arrays: st.json.arrays || [],   // v1125 采集阵 [{x, y, username, mine, fueled, h?, o?, fuel_ms?}]
       on: true
@@ -3640,15 +3665,7 @@ async function advSharedInit(S) {
     // 同步本地位置到服务端位置
     if (S.run.grid && st.json.my_pos) { S.run.grid.px = st.json.my_pos.x; S.run.grid.py = st.json.my_pos.y; }
     // v971 共享模式：本地 tile 类型以服务端为准（事件触发用）
-    if (S.run.grid && S.run.grid.tiles) {
-      for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
-        if (st.json.tiles[_y] && st.json.tiles[_y][_x]) {
-          S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
-          if (st.json.tiles[_y][_x].rs) { const _rs = {}; for (const _c in st.json.tiles[_y][_x].rs) _rs[_c] = { a: st.json.tiles[_y][_x].rs[_c] | 0, at: Date.now() }; S.run.grid.tiles[_y][_x].rs = _rs; S.run.grid.tiles[_y][_x].t = 'land'; }
-          if (st.json.tiles[_y][_x].mons) S.run.grid.tiles[_y][_x].mons = st.json.tiles[_y][_x].mons;
-        }
-      }
-    }
+    advSyncSharedTileTypes(S, st.json.tiles);
     advSharedPoll(S);
     return true;
   } catch (_) { return false; }
@@ -3674,15 +3691,7 @@ function advSharedPoll(S) {
         S.run.shared.players = st.json.players || [];
         S.run.shared.arrays = st.json.arrays || []; // v1125 采集阵同步
         // v971 轮询时也同步 tile 类型
-        if (S.run.grid && S.run.grid.tiles) {
-          for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
-            if (st.json.tiles[_y] && st.json.tiles[_y][_x]) {
-          S.run.grid.tiles[_y][_x].t = st.json.tiles[_y][_x].t;
-          if (st.json.tiles[_y][_x].rs) { const _rs = {}; for (const _c in st.json.tiles[_y][_x].rs) _rs[_c] = { a: st.json.tiles[_y][_x].rs[_c] | 0, at: Date.now() }; S.run.grid.tiles[_y][_x].rs = _rs; S.run.grid.tiles[_y][_x].t = 'land'; }
-          if (st.json.tiles[_y][_x].mons) S.run.grid.tiles[_y][_x].mons = st.json.tiles[_y][_x].mons;
-            }
-          }
-        }
+        advSyncSharedTileTypes(S, st.json.tiles);
         try { if (S.run.grid) advSharedHeartbeat(S.run.grid.px, S.run.grid.py); } catch (_) {} // v1168 轮询顺带心跳保活 DO 玩家记录（5 分钟 TTL），防站太久记录过期、战斗格 claim not_there
         // 如果冒险面板开着，刷新显示
         if (typeof sheetRun === 'function' && S.run && S.run.grid) {
@@ -3702,11 +3711,7 @@ async function advSharedRefresh() {
       S.run.shared.tiles = st.json.tiles;
       S.run.shared.players = st.json.players || [];
       S.run.shared.arrays = st.json.arrays || [];
-      if (S.run.grid && S.run.grid.tiles) {
-        for (let _y = 0; _y < 6; _y++) for (let _x = 0; _x < 6; _x++) {
-          if (st.json.tiles[_y] && st.json.tiles[_y][_x]) { const _st2 = st.json.tiles[_y][_x]; S.run.grid.tiles[_y][_x].t = _st2.t; if (_st2.rs) { const _rs = {}; for (const _c in _st2.rs) _rs[_c] = { a: _st2.rs[_c] | 0, at: Date.now() }; S.run.grid.tiles[_y][_x].rs = _rs; S.run.grid.tiles[_y][_x].t = 'land'; } if (_st2.mons) S.run.grid.tiles[_y][_x].mons = _st2.mons; }
-        }
-      }
+      advSyncSharedTileTypes(S, st.json.tiles);
     }
   } catch (_) {}
 }

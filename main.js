@@ -601,7 +601,7 @@ window.advAutoSlots = function() { // v1216 当前格可采槽（与信息条同
     const g = run.grid;
     const shared = run.shared && run.shared.on ? run.shared : null;
     const mySt = shared && shared.tiles && shared.tiles[g.py] ? shared.tiles[g.py][g.px] : null;
-    const lt = g.tiles[g.py][g.px];
+    const lt = (g.tiles[g.py] && g.tiles[g.py][g.px]) || { t: 'empty' }; // v1220 行缺失守卫（旧 6 行图遇新状态不崩）
     const slots = [];
     if (mySt && mySt.rs) { for (const c of C.RES_CODES_L) { const a = mySt.rs[c] | 0; if (a > 0) slots.push([c, a]); } }
     else if (lt.rs) { for (const c of C.RES_CODES_L) { const sl = lt.rs[c]; if (sl && (sl.a | 0) > 0) slots.push([c, sl.a | 0]); } }
@@ -2467,17 +2467,24 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     shared.players.forEach(function(p) { const _k = p.x + ',' + p.y; (otherAt[_k] = otherAt[_k] || []).push(p); }); // v1007 同格多人全记
   }
   let cells = '';
+  let hiCells = '';
   const _coHere = otherAt[g.px + ',' + g.py];
   const _coLine = (_coHere && _coHere.length) ? `<div class="hint">🧑 同格道友：${_coHere.map(function(p) { return String(p.username || ''); }).join('、')}</div>` : '';
-  for (let y = 0; y < g.h; y++) for (let x = 0; x < g.w; x++) {
-    const t = g.tiles[y][x], isP = x === g.px && y === g.py;
+  let _hiRowIdx = -1; // v1220 高地行：本地格或共享格带 gate 的那一行（无则 -1，旧图/秘境/五行图不受影响）
+  for (let _ry = 0; _ry < g.tiles.length; _ry++) { const _row = g.tiles[_ry]; if (_row && _row.some(function(_t) { return _t && _t.gate; })) { _hiRowIdx = _ry; break; } }
+  if (_hiRowIdx < 0 && shared && shared.tiles) for (let _ry = 0; _ry < shared.tiles.length; _ry++) { const _row = shared.tiles[_ry]; if (_row && _row.some(function(_t) { return _t && _t.gate; })) { _hiRowIdx = _ry; break; } }
+  const _myLt = g.tiles[g.py] && g.tiles[g.py][g.px];
+  const _mySt = shared && shared.tiles && shared.tiles[g.py] ? shared.tiles[g.py][g.px] : null;
+  const _myGate = (_mySt && _mySt.gate) || (_myLt && _myLt.gate) || (g.py === _hiRowIdx && _hiRowIdx >= 0 ? C.hiGateFor(g.px) : null);
+  const _cellHtml = function(x, y) { // v1220 单元格渲染抽成闭包：主图与高地行共用
+    const t = (g.tiles[y] && g.tiles[y][x]) || { t: 'empty', seen: 0 }, isP = x === g.px && y === g.py;
     // v971 共享模式：tile 类型取服务端，本地 grid 只记位置
     let tileT = t.t, tileCleared = false, tileRespawn = 0, tileRes = null;
     if (shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x]) {
       const st = shared.tiles[y][x];
       tileT = st.t; tileCleared = st.state === 'cleared'; tileRespawn = st.respawn_in | 0; tileRes = st.res || null; // v1125 资源
     }
-    if (tileT === 'void' && !isP) { cells += '<div class="acell" style="background:transparent;border:none;box-shadow:none;cursor:default"></div>'; continue; } // v1151 虚空格：透明，露出地图形状
+    if (tileT === 'void' && !isP) { return '<div class="acell" style="background:transparent;border:none;box-shadow:none;cursor:default"></div>'; } // v1151 虚空格：透明，露出地图形状
     let icon = '❓', cls = '';
     if (isP) { icon = `<img src="${avatarUrl()}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;display:block">`; cls = ' me'; const _co = otherAt[x + ',' + y]; if (_co && _co.length) icon += `<span style="position:absolute;right:0;bottom:0;background:rgba(0,0,0,.68);color:#ffd94d;font-size:8px;line-height:1.3;padding:0 3px;border-radius:4px">🧑×${_co.length}</span>`; }
     else if (otherAt[x + ',' + y]) {
@@ -2511,6 +2518,14 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       if (isP) icon += `<span style="position:absolute;left:0;bottom:0;font-size:10px">🧭</span>`;
       else icon = `<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center">${icon}<span style="position:absolute;top:-2px;right:-2px;font-size:10px">🧭</span></div>`;
     }
+    const _stGate = shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x] ? shared.tiles[y][x].gate : null; // v1220 目标格技能门
+    const _tgtGate = _stGate || t.gate || (y === _hiRowIdx && _hiRowIdx >= 0 ? C.hiGateFor(x) : null);
+    if (_tgtGate) { // v1220 高地技能角标（1 字）：缩地蓝「缩」/大挪移紫「移」
+      const _gb = _tgtGate === 'danuoyi' ? '移' : '缩';
+      const _gbc = _tgtGate === 'danuoyi' ? '#b45cff' : '#4d9dff';
+      if (isP) icon += `<span style="position:absolute;left:0;top:0;background:${_gbc};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_gb}</span>`;
+      else icon = `<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center">${icon}<span style="position:absolute;left:-2px;bottom:-2px;background:${_gbc};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_gb}</span></div>`;
+    }
     const _dist = Math.abs(x - g.px) + Math.abs(y - g.py);
     const _cheb = Math.max(Math.abs(x - g.px), Math.abs(y - g.py)); // v764 斜走用切比雪夫距离
     const _hasSk = S.skills && S.skills.includes('shukuchi');
@@ -2520,8 +2535,12 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     // v767 无技能只能正交1格；有缩地/大挪移才能斜走
     const _isOrth = (x === g.px || y === g.py);
     const _adj = !isP && ((_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag));
-    cells += isP ? `<button class="acell${cls}" data-advself="1" style="position:relative">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`); // v768 点自己看状态
-  }
+    const _teleport = !isP && (!!_myGate || !!_tgtGate); // v1220 挪移路径：站在高地上点任意格、或点高地格，都走挪移（技能门在点击分支判定）
+    return isP ? `<button class="acell${cls}" data-advself="1" style="position:relative">${icon}</button>` : (_teleport ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}" data-advtp="1">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`)); // v768 点自己看状态
+  };
+  for (let y = 0; y < g.h; y++) { if (y === _hiRowIdx) continue; for (let x = 0; x < g.w; x++) cells += _cellHtml(x, y); }
+  if (_hiRowIdx >= 0) { for (let x = 0; x < g.w; x++) hiCells += _cellHtml(x, _hiRowIdx); }
+  const hiSec = hiCells ? `<div style="text-align:center;font-size:11px;color:var(--dim);margin:6px 0 0">⛰️高地</div><div class="agrid" style="margin-top:2px">${hiCells}</div>` : '';
   const scene = ev
     ? (ev.type === 'dungeonText' ? escDg(ev.text) : ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monKindCard(ev.mon, ev.monTile ? ev.monTile.tier : null, '挡住去路')}`
       : ev.type === 'guarded' ? `🛡️ ${ev.text}——${monKindCard(ev.mon, null, '正守着' + (ev.loot === 'herb' ? '🌿灵草' : '🎁宝箱'))}`
@@ -2531,7 +2550,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   let resRow = '';
   if (!ev) {
     const mySt = shared && shared.tiles && shared.tiles[g.py] ? shared.tiles[g.py][g.px] : null;
-    const lt = g.tiles[g.py][g.px];
+    const lt = (g.tiles[g.py] && g.tiles[g.py][g.px]) || { t: 'empty' }; // v1220 行缺失守卫（旧 6 行图遇新状态不崩）
     const rk = mySt ? mySt.t : lt.t;
     const btns = [];
     let infoLine = '';
@@ -2572,7 +2591,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   const _recentHtml = (() => { try { const _lg = (Array.isArray(S.log) ? S.log.slice(-3) : []).filter(e => e && e.h); if (!_lg.length) return ''; return `<div class="empty" style="text-align:left;padding:8px 2px">📜 近况${_lg.map(e => `<div style="font-size:11px;color:var(--dim)"><span style="color:#666">${e.t || ''}</span> ${e.h}</div>`).join('')}</div>`; } catch(_) { return ''; } })();
   openSheet(`<h2>${run.dungeon ? '🏰 ' + escDg(run.dungeon.title) + ' <small style="font-size:12px;color:var(--dim)">作者：' + escDg(run.dungeon.by) + '</small>' : '🗺️ ' + d.name + '冒险'} <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
     (out && out.lines && out.lines.length ? `<div class="hint">${out.lines.join('；')}${out.battle ? `<details><summary>战斗记录（${out.battle.round} 回合）</summary>${out.battle.lines.join('')}</details>` : ''}</div>` : '') +
-    `<div class="agrid">${cells}</div>${_coLine}` +
+    hiSec + `<div class="agrid">${cells}</div>${_coLine}` +
     `<div class="scene">${scene}</div>` +
     resRow +
     (ev && ev.type === 'dungeonText' ? `<div class="grid2"><button class="btn gold full" data-dungeontext>继续前行</button></div>` : ev ? `<div class="grid2">${chs.map((c, i) => `<button class="btn ${c.retreat ? '' : i === 0 ? 'gold' : ''}" data-advc="${i}" ${c.dis ? 'disabled' : ''} style="line-height:1.3">${c.l}${c.hint ? `<br><small>${c.hint}</small>` : ''}</button>`).join('')}</div><div class="hint" style="text-align:center">也可直接走开，事件留在格子上，回来再处理</div>` : '') +
@@ -7355,12 +7374,24 @@ document.addEventListener('click', e => {
       if (S.forceReinc) { try { showTip(S.forceReincWhy === 'life' ? '⌛ 寿元耗尽，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>' : '☠️ 你已身死，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>'); } catch (_) {} return; } // v1178 冒险点格移动同锁
       // v971 共享地图：奖励格先 claim，成功才移动
       const _shared = _run.shared && _run.shared.on ? _run.shared : null;
+      const _teleport = d.advtp !== undefined; // v1220 挪移（高地↔主图）：绕过相邻判定，计一次普通移动
+      const _tgtLt = _gr.tiles[_gy] && _gr.tiles[_gy][_gx];
+      const _tgtSt = _shared && _shared.tiles && _shared.tiles[_gy] && _shared.tiles[_gy][_gx];
+      const _hiRow6 = _gr.tiles[6] && _gr.tiles[6].some(function(_t) { return _t && _t.gate; });
+      const _tgtGate = (_tgtSt && _tgtSt.gate) || (_tgtLt && _tgtLt.gate) || (_hiRow6 && _gy === 6 ? C.hiGateFor(_gx) : null);
+      if (_tgtGate) { // v1220 高地技能门（本地判定；服务端心跳/移动再验一次）
+        const _hasSkG = S.skills && S.skills.includes('shukuchi');
+        const _hasDnyG = S.skills && S.skills.includes('danuoyi');
+        const _passG = _tgtGate === 'danuoyi' ? _hasDnyG : (_hasSkG || _hasDnyG);
+        if (!_passG) { try { showTip(_tgtGate === 'danuoyi' ? '⛰️ 这块高地需要学会「大挪移」才能上去' : '⛰️ 这块高地需要学会「缩地」才能上去'); } catch (_) {} return; }
+      }
       const _doMove = function() {
         window._advMoveCd = Date.now();
         const _tt = _gr.tiles[_gy] && _gr.tiles[_gy][_gx];
         if (_tt && _tt.t === 'void') return; // v1151 虚空格不可站
         const _stt = _shared && _shared.tiles && _shared.tiles[_gy] && _shared.tiles[_gy][_gx];
         if (_stt && _stt.t === 'void') return;
+        if (!_tt) return; // v1220 本地无此格（旧 6 行存档图）不移动
         const _dx = _gx - _gr.px, _dy = _gy - _gr.py;
         const _cheb = Math.max(Math.abs(_dx), Math.abs(_dy));
         const _dist = Math.abs(_dx) + Math.abs(_dy);
@@ -7369,7 +7400,7 @@ document.addEventListener('click', e => {
         const _maxDist = _hasDny ? 3 : (_hasSk ? 2 : 1);
         const _maxDiag = _hasDny ? 2 : (_hasSk ? 1 : 0);
         const _isOrth = (_dx === 0 || _dy === 0);
-        const _canMove = (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag);
+        const _canMove = (_teleport && _dist >= 1) || (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag);
         if (_canMove) {
           // v766 直接跳到目标格，只触发落点事件
           _gr.px = _gx; _gr.py = _gy; _gr.moves++;
@@ -7490,7 +7521,7 @@ document.addEventListener('click', e => {
         _nx = Math.floor(Math.random() * _gr.w);
         _ny = Math.floor(Math.random() * _gr.h);
         _tries++;
-      } while ((_nx === _gr.px && _ny === _gr.py) && _tries < 50);
+      } while (((_nx === _gr.px && _ny === _gr.py) || (_gr.tiles[_ny] && _gr.tiles[_ny][_nx] && _gr.tiles[_ny][_nx].gate)) && _tries < 50); // v1220 传送卷不落高地（绕开技能门）
       _gr.px = _nx; _gr.py = _ny; _gr.moves++;
       try { if (typeof log === 'function') log('info', `📜 使用随机传送卷，传送到 (${_nx},${_ny})`); } catch(_) {}
       // 触发落点事件（复用advMove的事件逻辑）
