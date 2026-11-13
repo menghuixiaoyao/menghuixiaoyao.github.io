@@ -1096,7 +1096,9 @@ async function teamRefresh(){
       h += (team.members || []).map(function(m){
         var isL = m.isLeader ? ' <b class="y">队长</b>' : '';
         var kickBtn = (window._isTeamLeader && !m.isLeader) ? ' <button class="btn sm red" data-mhxyteamkick="' + escH(m.accountId) + '">踢出</button>' : '';
-        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(m.username) + '</b><span style="color:#666">[' + (m.playerNo || '?') + ']</span>' + isL + '</span>' + kickBtn + '</div>';
+        var _meAid0 = ''; try { _meAid0 = myAid(); } catch(_){}
+        var breedBtn = (m.accountId && m.accountId !== _meAid0) ? ' <button class="btn sm" data-mhxybreed="' + escH(m.accountId) + '" data-mhxybreednm="' + escH(m.username || '') + '">繁殖</button>' : '';
+        return '<div class="row" style="display:flex;align-items:center;gap:8px"><span style="flex:1"><b style="color:#7ec8ff">' + escH(m.username) + '</b><span style="color:#666">[' + (m.playerNo || '?') + ']</span>' + isL + '</span>' + kickBtn + breedBtn + '</div>';
       }).join('');
       var _meAid = ''; try { _meAid = myAid(); } catch(_){}
       h += (team.pets || []).map(function(p){
@@ -1916,6 +1918,7 @@ function onClick(d, t, e){
   if (d.mhxyteamaccept){ teamAccept(d.mhxyteamaccept); return true; }
   if (d.mhxyteamdecline){ teamDecline(d.mhxyteamdecline); return true; }
   if (d.mhxyteamkick){ teamKick(d.mhxyteamkick); return true; }
+  if (d.mhxybreed){ if (typeof window.sheetBreedOffer === 'function') window.sheetBreedOffer(d.mhxybreed, d.mhxybreednm || ''); return true; } // v1223 组队繁殖邀请
   if (d.mhxyteampetadd){ teamPetAdd(d.mhxyteampetadd, d.petname || '灵宠'); return true; }
   if (d.mhxyteampetremove){ teamPetRemove(d.mhxyteampetremove); return true; }
   if ('close' in d && M.chatOpen){ closeChatWs(); }

@@ -636,7 +636,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   S.bc = []; // 旧通告队列不保留
   S.pets.forEach(p => { if (p && p.k === 'bird') p.k = 'zhuque'; if (p && p.k === 'qilin') p.k = 'qinglong'; }); // 旧宠改名：赤焰雀→朱雀，雷麟→青龙
   S.pets = S.pets.filter(p => p && PETS[p.k] && p.attrs);
-  S.pets.forEach(p => { ATTRS.forEach(a => p.attrs[a] = Math.max(1, Math.floor(+p.attrs[a] || 1))); p.q = (p.q >= 0 && p.q < PQLT.length) ? Math.floor(p.q) : 0; p.skills = Array.isArray(p.skills) ? p.skills.filter(sk => GEAR_SETS[sk]) : []; p.lv = Math.max(1, Math.floor(+p.lv || 1)); p.xp = Math.max(0, Math.floor(+p.xp || 0)); p.pts = Math.max(0, Math.floor(+p.pts || 0)); p.hunger = typeof p.hunger === 'number' && isFinite(p.hunger) ? clamp(p.hunger, 0, 100) : 100; p.loyal = typeof p.loyal === 'number' && isFinite(p.loyal) ? clamp(Math.round(p.loyal), 0, 100) : K.PET_LOYAL_START; p.life = typeof p.life === 'number' && isFinite(p.life) ? clamp(Math.floor(p.life), 1, K.PET_LIFE_MAX) : K.PET_LIFE_MAX; /* v9 寿命：老宠补满 */ p.talent = !!p.talent; /* v10 天赋神通：老宠默认未领悟 */ if (!p.peq || typeof p.peq !== 'object') p.peq = {}; for (const sl in SLOTS) if (p.peq[sl] && (!okPetGear(p.peq[sl]) || PET_GEAR[p.peq[sl].k].slot !== sl)) delete p.peq[sl]; if (!(p.id > 0)) p.id = ++S.petSeq; S.petSeq = Math.max(S.petSeq, p.id); });
+  S.pets.forEach(p => { ATTRS.forEach(a => p.attrs[a] = Math.max(1, Math.floor(+p.attrs[a] || 1))); p.q = (p.q >= 0 && p.q < PQLT.length) ? Math.floor(p.q) : 0; p.skills = Array.isArray(p.skills) ? p.skills.filter(sk => GEAR_SETS[sk]) : []; p.lv = Math.max(1, Math.floor(+p.lv || 1)); p.xp = Math.max(0, Math.floor(+p.xp || 0)); p.pts = Math.max(0, Math.floor(+p.pts || 0)); p.hunger = typeof p.hunger === 'number' && isFinite(p.hunger) ? clamp(p.hunger, 0, 100) : 100; p.loyal = typeof p.loyal === 'number' && isFinite(p.loyal) ? clamp(Math.round(p.loyal), 0, 100) : K.PET_LOYAL_START; p.life = typeof p.life === 'number' && isFinite(p.life) ? clamp(Math.floor(p.life), 1, K.PET_LIFE_MAX) : K.PET_LIFE_MAX; /* v9 寿命：老宠补满 */ p.talent = !!p.talent; /* v10 天赋神通：老宠默认未领悟 */ if (!p.peq || typeof p.peq !== 'object') p.peq = {}; for (const sl in SLOTS) if (p.peq[sl] && (!okPetGear(p.peq[sl]) || PET_GEAR[p.peq[sl].k].slot !== sl)) delete p.peq[sl]; if (!(p.id > 0)) p.id = ++S.petSeq; S.petSeq = Math.max(S.petSeq, p.id); if (p.sex !== 'm' && p.sex !== 'f') p.sex = R() < 0.5 ? 'm' : 'f'; p.bred = !!p.bred; });
   if (!Array.isArray(S.pet)) S.pet = S.pet != null ? [S.pet] : []; S.pet = S.pet.filter(id => S.pets.some(p => p.id === id)).slice(0, 4); if (!S.pet.length && S.pets.length) S.pet = [S.pets[0].id];
   S.hunger = typeof S.hunger === 'number' && isFinite(S.hunger) ? clamp(S.hunger, 0, 100) : 100; // v7：饥饿 / 状态 / 疗伤药
   const st0 = S.status && typeof S.status === 'object' ? S.status : {}, nn = x => Math.max(0, +x || 0);
@@ -1982,7 +1982,7 @@ function tierProbs(items, v) { // 五品概率，属性越高一品越少、高�
 function rollTier(items, v) { const pr = tierProbs(items, v); return wpick(Object.keys(pr), k => pr[k]); }
 const spiritProbs = S => tierProbs(spTiers(), S.attrs.str), luProbs = S => tierProbs(LU, S.attrs.def);
 // 灵宠：孵化 / 出战 / 战斗属性加成
-function rollPet(S, k) { return { id: S ? ++S.petSeq : 0, k, q: wpick([0, 1, 2, 3, 4, 5, 6, 7], i => PQLT[i].w), lv: 1, xp: 0, pts: 0, hunger: 100, loyal: K.PET_LOYAL_START, life: K.PET_LIFE_MAX, talent: false, skills: [], attrs: { agi: 1, str: 1, def: 1, vit: 1, int: 1 } }; } // 初始五项全 1；品质独立随机
+function rollPet(S, k) { return { id: S ? ++S.petSeq : 0, k, q: wpick([0, 1, 2, 3, 4, 5, 6, 7], i => PQLT[i].w), lv: 1, xp: 0, pts: 0, hunger: 100, loyal: K.PET_LOYAL_START, life: K.PET_LIFE_MAX, talent: false, skills: [], attrs: { agi: 1, str: 1, def: 1, vit: 1, int: 1 }, sex: R() < 0.5 ? 'm' : 'f', bred: false }; } // 初始五项全 1；品质独立随机；v1223 性别随机 + 未生育
 function hatchPet(S) {
   if (!(S.petEggs > 0) || S.level < K.HATCH_LV) return null;
   S.petEggs--; const hw = hatchWeights(S), k = wpick(Object.keys(PETS), x => hw[x]), dup = S.pets.some(p => p.k === k);
@@ -1990,6 +1990,56 @@ function hatchPet(S) {
   if (pet.q >= 5) { const Q = petQ(pet); announce(S, `📢 全服通告：【<span style="color:${Q.color}">${Q.name}·${PETS[k].name}</span>】出世，恭喜道友！`); }
   return { pet, k, dup, auto };
 }
+// v1223 灵兽繁殖（Ye 定）：分公母、同种一公一母、每只终身一次、80% 成功、无蛋直得幼崽、
+// 品级上限为父母最低品（上限 30% / 降 1 品 45% / 降 2 品 25%，普通封底）、多胞胎（1 只 49% / 2 只 20% /
+// 3 只 15% / 4 只 10% / 5 只 5% / 6 只 1%，每只独立掷品级与性别）、成功后父母与幼崽忠诚度清零、
+// 失败只耗机会。服务端 breed.js 同规则镜像。
+const BREED_RULES = { SUCCESS: 0.8, LITTER_P: [0.49, 0.20, 0.15, 0.10, 0.05, 0.01], GRADE_P: [0.30, 0.45, 0.25] };
+function breedCheck(S, idA, idB) {
+  const a = (S.pets || []).find(p => p.id === +idA), b = (S.pets || []).find(p => p.id === +idB);
+  if (!a || !b) return 'no_pet';
+  if (a.id === b.id) return 'same_pet';
+  if (a.sex !== 'm' && a.sex !== 'f') a.sex = R() < 0.5 ? 'm' : 'f';
+  if (b.sex !== 'm' && b.sex !== 'f') b.sex = R() < 0.5 ? 'm' : 'f';
+  if (a.k !== b.k) return 'diff_kind';
+  if (a.sex === b.sex) return 'same_sex';
+  if (a.bred || b.bred) return 'already_bred';
+  return null;
+}
+function breedRollBaby(capQ, rng) {
+  const r = rng();
+  const drop = r < BREED_RULES.GRADE_P[0] ? 0 : r < BREED_RULES.GRADE_P[0] + BREED_RULES.GRADE_P[1] ? 1 : 2;
+  return { q: Math.max(0, capQ - drop), sex: rng() < 0.5 ? 'm' : 'f' };
+}
+function breedRoll(petA, petB, rng) {
+  const r = rng || R;
+  const success = r() < BREED_RULES.SUCCESS;
+  if (!success) return { success: false, babies: [] };
+  const capQ = Math.min(petA.q | 0, petB.q | 0);
+  const lr = r();
+  let n = BREED_RULES.LITTER_P.length, acc = 0;
+  for (let i = 0; i < BREED_RULES.LITTER_P.length; i++) { acc += BREED_RULES.LITTER_P[i]; if (lr < acc) { n = i + 1; break; } }
+  const babies = [];
+  for (let i = 0; i < n; i++) babies.push(breedRollBaby(capQ, r));
+  return { success: true, babies };
+}
+function breedLocal(S, idA, idB, rng) {
+  const err = breedCheck(S, idA, idB);
+  if (err) return { err };
+  const a = S.pets.find(p => p.id === +idA), b = S.pets.find(p => p.id === +idB);
+  const roll = breedRoll(a, b, rng);
+  a.bred = true; b.bred = true;
+  const babies = [];
+  if (roll.success) {
+    a.loyal = 0; b.loyal = 0;
+    for (const bb of roll.babies) {
+      const pet = { id: ++S.petSeq, k: a.k, q: bb.q, lv: 1, xp: 0, pts: 0, hunger: 100, loyal: 0, life: K.PET_LIFE_MAX, talent: false, skills: [], attrs: { agi: 1, str: 1, def: 1, vit: 1, int: 1 }, sex: bb.sex, bred: false };
+      S.pets.push(pet); babies.push(pet);
+    }
+  }
+  return { success: roll.success, babies, parents: [a.id, b.id] };
+}
+Object.assign(C, { BREED_RULES, breedCheck, breedRoll, breedLocal });
 const activePets = S => { const ids = (Array.isArray(S.pet) ? S.pet : (S.pet != null ? [S.pet] : [])).map(x => +x); return ids.map(id => (S.pets || []).find(p => p.id === id)).filter(Boolean).slice(0, 4); };
 const activePet = S => activePets(S)[0] || null;
 function setPet(S, id) { id = +id; if (!S.pets.some(p => p.id === id)) return false; let arr = (Array.isArray(S.pet) ? S.pet : (S.pet != null ? [S.pet] : [])).map(x => +x); const i = arr.indexOf(id); if (i >= 0) arr.splice(i, 1); else { if (arr.length >= 4) return false; arr.push(id); } S.pet = arr; return true; }
