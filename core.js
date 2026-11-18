@@ -72,7 +72,6 @@ const K = {
   MINE_MORE_BASE: 0.15, MINE_MORE_PER_STR: 0.003, MINE_MORE_MAX: 0.45, // 暴击后每多 1 块的概率 = 15% + 力量×0.3%（上限 45%），最多 5 块
   MEAT_BASE: 0.02, MEAT_PER_AGI: 0.0001, MEAT_MAX: 0.04, // 打猎每次 2% + 敏捷×0.01%（上限 4%）额外带回 1 块肉（不受暴击影响），品种与本次（首只）猎物相同
   TIER_SHIFT_PER: 0.0005, TIER_SHIFT_MAX: 0.05, // 灵石（力量）/凝露（防御）品阶：一品概率 -属性×0.05%（上限 -5%），按 40/30/20/10% 分给二~五品
-  PREMIUM_BASE: 0.02, PREMIUM_PER_DEF: 0.0001, PREMIUM_MAX: 0.04, // 种植每次 2% + 防御×0.01%（上限 4%）额外收获 1 瓶凝露（品阶另掷）
   PET_EGG_CHANCE: 0.01, // 掏兽蛋每次固定 1% 额外掏到灵宠蛋
   // —— 饥饿 / 气运 ——
   HUNGER_ACT: 2, HUNGER_FIGHT: 5,   // 玩家饱食度：修炼/炼药每点体力 -2，冒险/PK 每次 -5
@@ -164,7 +163,10 @@ const ORES = {
   sp2: { name: '下品灵石', p: 0.25, xp: 50,  alc: 0.10, extra: true },
   sp3: { name: '中品灵石', p: 0.15, xp: 120, alc: 0.15, extra: true },
   sp4: { name: '上品灵石', p: 0.08, xp: 300, alc: 0.25, extra: true },
-  sp5: { name: '极品灵石', p: 0.02, lvl: 1,  alc: 0.40, extra: true }
+  sp5: { name: '极品灵石', p: 0.02, lvl: 1,  alc: 0.40, extra: true },
+  // v1224 精炼矿：提炼 100:1 得；不参与挖矿掷骰（extra），不可出售（无 price），不可服用/不可入灵石掷骰（refined），五行：玄铁水/赤铜火/秘银土/庚金金
+  xuatie: { name: '玄铁', ele: '水', extra: true, refined: true }, chitong: { name: '赤铜', ele: '火', extra: true, refined: true },
+  miyin: { name: '秘银', ele: '土', extra: true, refined: true }, gengjin: { name: '庚金', ele: '金', extra: true, refined: true }
 };
 const PREY = {
   rabbit: { name: '野兔皮', p: 0.50, price: 3 },
@@ -301,7 +303,12 @@ const REFINES = { // 炼金配方：主料 + 1 张普通残页（配方/丹方�
   r_gold1: { name: '点铁成金', lv: 1, need: [['ores', 'iron', 5], ['pages', 'pg1', 1]], out: ['ores', 'gold'] },
   r_gold2: { name: '铜化金',   lv: 2, need: [['ores', 'copper', 3], ['pages', 'pg1', 1]], out: ['ores', 'gold'] },
   p_hp: { name: '生命药水', lv: 1, need: [['mats', 'h_vit', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'hp' }, // 品质决定回复量
-  p_mp: { name: '法力药水', lv: 1, need: [['mats', 'h_int', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'mp' }
+  p_mp: { name: '法力药水', lv: 1, need: [['mats', 'h_int', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'mp' },
+  // v1224 提炼：100 基础矿 → 1 精炼矿，必成，不用残页；走独立 smelt 分支（不进通用 craft 成功率/双倍逻辑）
+  smelt_iron: { name: '提炼玄铁', lv: 1, need: [['ores', 'iron', 100]], out: ['ores', 'xuatie'], smelt: 'iron' },
+  smelt_copper: { name: '提炼赤铜', lv: 1, need: [['ores', 'copper', 100]], out: ['ores', 'chitong'], smelt: 'copper' },
+  smelt_silver: { name: '提炼秘银', lv: 1, need: [['ores', 'silver', 100]], out: ['ores', 'miyin'], smelt: 'silver' },
+  smelt_gold: { name: '提炼庚金', lv: 1, need: [['ores', 'gold', 100]], out: ['ores', 'gengjin'], smelt: 'gold' }
 };
 const POTIONS = { hp: { name: '生命药水', icon: '❤️', res: '生命' }, mp: { name: '法力药水', icon: '💧', res: '法力' } };
 const POT_PCT = [0, 0.30, 0.40, 0.50]; // 普通 / 精良 / 极品：回复 30% / 40% / 50% 上限
@@ -326,6 +333,7 @@ const MATS = {
   h_def: { name: '防御草', price: 5, basic: 'def' }, h_vit: { name: '生命草', price: 5, basic: 'vit' },
   h_int: { name: '智力草', price: 5, basic: 'int' },
   lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（元婴以上元神照料才生长）', seed: 1 }, // v887；v890 洞府元婴限定
+  qingteng: { name: '青藤', ele: '木' }, lingmu: { name: '灵木', ele: '木' }, yimu: { name: '乙木', ele: '木' }, // v1224 五行木材：不可出售（无 price），主城共享池/野外木掷出
   cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 }, // v890 改回元婴限定
   xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 8 }
 };
@@ -467,7 +475,7 @@ function newState() {
   const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, usd: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, afkCarryMins: 0, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
     stats: { adv: 0, advWin: 0, pk: 0, pkWin: 0, brew: 0, brewOk: 0, checkins: 0 }, log: [], hpCur: null, curseN: 0,
     wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null,
-    tools: { pick: null, hoe: null }, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋
+    tools: { pick: [], hoe: [], active: { pick: null, hoe: null } }, toolSeq: 0, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋；v1224 器具多把数组
   S.mana = manaMax(S); grantStarter(S); return S;
 }
 function normalize(S) {
@@ -504,18 +512,8 @@ function normalize(S) {
     const _lgMap = [['xps', 'sp2'], ['zps', 'sp3'], ['sps', 'sp4'], ['jps', 'sp5']];
     for (const _lg of _lgMap) { if (S.ores[_lg[0]]) { S.ores[_lg[1]] = (S.ores[_lg[1]] | 0) + (S.ores[_lg[0]] | 0); delete S.ores[_lg[0]]; } }
   } catch (e) {}
-  // v1128 器具/灵物/灵物种子/阵棋/采集阵分档
-  if (!S.tools || typeof S.tools !== 'object') S.tools = { pick: null, hoe: null };
-  for (const _tk of ['pick', 'hoe']) {
-    const _t = S.tools[_tk];
-    if (!_t || typeof _t !== 'object' || !(_t.dur > 0)) { S.tools[_tk] = null; continue; }
-    _t.tier = Math.max(0, Math.min(2, Math.floor(+_t.tier || 0)));
-    _t.max = Math.max(1, Math.floor(+_t.max || 100));
-    _t.dur = Math.max(0, Math.min(_t.max, Math.floor(+_t.dur || 0)));
-    _t.lvl = Math.max(0, Math.floor(+_t.lvl || 0));
-    _t.uses = Math.max(0, Math.floor(+_t.uses || 0));
-    if (_t.dur <= 0) S.tools[_tk] = null;
-  }
+  // v1128 器具/灵物/灵物种子/阵棋/采集阵分档；v1224 器具多把：旧单对象迁移为数组（toolsNormalizeL）
+  toolsNormalizeL(S);
   if (!Array.isArray(S.lingwu)) S.lingwu = [];
   S.lingwu = S.lingwu.filter(_w => _w && _w.g >= 1 && _w.g <= 3 && _w.y >= 1).map(_w => ({ g: Math.floor(_w.g), y: Math.floor(_w.y), e: _w.e && (LW_ELES.indexOf(_w.e) >= 0 || ROOT_BASE[_w.e]) ? _w.e : rollLwEleL() })); // v1129 存量灵物随机补五行
   if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = {};
@@ -715,7 +713,7 @@ function consignPrice(kind, key) { if (kind === 'xianyu') return 5000; if (kind 
 function consignName(kind, key) { if (kind === 'xianyu') return '仙玉'; if (kind === 'petegg') return '灵宠蛋'; if (kind === 'inv' && key === 'sha') return '👹 煞气'; if (kind === 'inv' && key === 'mai') return '🌀 开脉丹';
   if (kind === 'inv' && key === 'detox') return '🍃 化无丹'; // v999
   if (kind === 'inv' && key.indexOf('mut_') === 0) { const md = MUT_PILLS[key.slice(4)]; if (md) return '🌀 ' + md.name; }
-  if (kind === 'inv') { const pm = key.match(/^(str|agi|def|vit|int)_([1-5])$/); if (pm) return GRADES[pm[2]] + AN[pm[1]] + '丹'; } const it = kind === 'ore' ? ORES[key] : kind === 'mat' ? (MATS[key] || LU[key]) : kind === 'med' ? MEDS[key] : kind === 'egg' ? (typeof EGGS !== 'undefined' ? EGGS[key] : null) : POTIONS[key]; return (it && it.name) || key; }
+  if (kind === 'inv') { const rn = repairNameL(key); if (rn) return rn; const pm = key.match(/^(str|agi|def|vit|int)_([1-5])$/); if (pm) return GRADES[pm[2]] + AN[pm[1]] + '丹'; } const it = kind === 'ore' ? ORES[key] : kind === 'mat' ? (MATS[key] || LU[key]) : kind === 'med' ? MEDS[key] : kind === 'egg' ? (typeof EGGS !== 'undefined' ? EGGS[key] : null) : POTIONS[key]; return (it && it.name) || key; }
 function consignStore(S, kind) { if (kind === 'xianyu') return { get xianyu() { return S.xianyu || 0; }, set xianyu(v) { S.xianyu = Math.max(0, Math.floor(v)); } }; if (kind === 'petegg') return { get petEgg() { return S.petEggs || 0; }, set petEgg(v) { S.petEggs = Math.max(0, Math.floor(v)); } }; if (kind === 'inv') { if (!S.inv) S.inv = {}; return S.inv; } if (kind === 'egg') { if (!S.eggs) S.eggs = {}; return S.eggs; } return kind === 'ore' ? S.ores : kind === 'mat' ? S.mats : kind === 'med' ? S.meds : S.elixirs; }
 // v960 寄售行转线上：本地 consignList/consignCancel 已删除，上架/下架走 /api/market/*
 // v960 寄售行转线上：NPC 购买（consignTick）已删除
@@ -1520,7 +1518,7 @@ function smashSpirit(S, n) {
   return { n, got };
 }
 function useSpirit(S, k, n) {
-  const it = ORES[k]; if (!it || !it.extra) return null;
+  const it = ORES[k]; if (!it || !it.extra || it.refined) return null; // v1224 精炼矿不可服用
   n = Math.min(n || 1, S.ores[k] || 0); if (n <= 0) return null;
   S.ores[k] -= n; if (!S.ores[k]) delete S.ores[k];
   if (it.lvl) return { n, xp: 0, ups: levelUp(S, it.lvl * n) };
@@ -1940,7 +1938,7 @@ function gather(S, kind, n) { // 返回每次的物品列表，如 [['iron'], ['
       S.hpCur = Math.max(0, hpCur - pl); poisonAcc += pl;
       if (S.hpCur <= 0) { C.die(S, 'poison'); out.died = true; break; } } if (S.dead) { out.died = true; break; } S.attrs[g.attr] += 1; hungerDown(S, K.HUNGER_ACT, 1);
     if (kind === 'hunt' && R() < meatChance(S)) { const m = got[0]; if (m && gainItem(S, 'food', m, 1) > 0) { got.meat = m; (out.meat = out.meat || {})[m] = (out.meat[m] || 0) + 1; } }
-    if (kind === 'farm' && R() < premiumChance(S)) { const m = rollTier(LU, S.attrs.def * luck(S)); if (gainItem(S, g.store, m, 1) > 0) { got.premium = m; (out.premium = out.premium || {})[m] = (out.premium[m] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } // v433 额外掉落同样受背包上限限制
+    if (kind === 'farm') { const sp = sharedPoolRollL(null); if (sp) { if (sp.type === 'dew') { const m = rollTier(LU, S.attrs.def * luck(S)); if (gainItem(S, g.store, m, 1) > 0) { got.premium = m; (out.premium = out.premium || {})[m] = (out.premium[m] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } else if (sp.type === 'wood') { if (gainItem(S, g.store, sp.key, 1) > 0) { got.premium = sp.key; (out.premium = out.premium || {})[sp.key] = (out.premium[sp.key] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } else { S.inv = S.inv || {}; S.inv[sp.key] = (S.inv[sp.key] | 0) + 1; got.premium = sp.key; (out.premium = out.premium || {})[sp.key] = (out.premium[sp.key] || 0) + 1; } } } // v1224 共享池：1% 平值一掷，凝露/木材/修复灵物三组平分（取代旧 premiumChance 凝露独占）
     if (kind === 'egg' && R() < K.PET_EGG_CHANCE * luck(S) + (S.race === 'yao' ? 0.05 : 0)) { S.petEggs++; got.petEgg = 1; out.petEgg = (out.petEgg || 0) + 1; } // v1088 妖族灵觉：掏到灵宠蛋概率 +5%
     if (kind === 'mine' && R() < spiritChance(S)) { const sp = rollTier(spTiers(), S.attrs.str * luck(S)); if (gainItem(S, g.store, sp, 1) > 0) { got.spirit = sp; (out.spirit = out.spirit || {})[sp] = (out.spirit[sp] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } // v433 额外掉落同样受背包上限限制
     if (kind === 'read' && R() < skillPageChance(S)) { const sk = pick(Object.keys(SKILLS)); if (gainItem(S, 'skillPages', sk, 1) > 0) { got.skillPage = sk; (out.skillPage = out.skillPage || {})[sk] = (out.skillPage[sk] || 0) + 1; } else got.lost = (got.lost || 0) + 1; } // v433 额外掉落同样受背包上限限制
@@ -1974,7 +1972,7 @@ function sellSkillBook(S, sk) {
   if (!(S.skillBooks[sk] > 0)) return { ok: false }; if (!--S.skillBooks[sk]) delete S.skillBooks[sk];
   const g = skillBookPrice(sk); S.gold += g; return { ok: true, gold: g };
 }
-const spTiers = () => { const o = {}; Object.keys(ORES).filter(k => ORES[k].extra).forEach(k => o[k] = ORES[k]); return o; };
+const spTiers = () => { const o = {}; Object.keys(ORES).filter(k => ORES[k].extra && !ORES[k].refined).forEach(k => o[k] = ORES[k]); return o; };
 function tierProbs(items, v) { // 五品概率，属性越高一品越少、高品越多
   const ks = Object.keys(items), b = Math.min(K.TIER_SHIFT_MAX, v * K.TIER_SHIFT_PER), share = [-1, 0.4, 0.3, 0.2, 0.1], out = {};
   ks.forEach((k, i) => out[k] = items[k].p + b * share[i]); return out;
@@ -2071,7 +2069,6 @@ function battleAttrs(S) { // 冒险：出战灵宠的小额被动加成（不改
   for (const k in p.bonus) a[k] = Math.round(a[k] * (1 + p.bonus[k])); return a;
 }
 const petBonusTxt = k => { const b = PETS[k].bonus, ks = Object.keys(b); return ks.length === ATTRS.length ? '全属性 +' + pct(b[ks[0]]) : ks.map(a => AN[a] + ' +' + pct(b[a])).join(' '); };
-function premiumChance(S) { return Math.min(K.PREMIUM_MAX, K.PREMIUM_BASE + S.attrs.def * K.PREMIUM_PER_DEF) * luck(S); }
 function spiritChance(S) { return Math.min(K.SPIRIT_MAX, K.SPIRIT_BASE + S.attrs.str * K.SPIRIT_PER_STR) * luck(S); }
 function meatChance(S) { return Math.min(K.MEAT_MAX, K.MEAT_BASE + S.attrs.agi * K.MEAT_PER_AGI) * luck(S); }
 function meatPerHunt(S) { const pr = gatherProbs(S, 'hunt'); return meatChance(S) * Object.keys(pr).reduce((a, k) => a + pr[k] * MEATS[k].sta, 0); } // 每次打猎期望回复体力
@@ -3348,7 +3345,23 @@ function rollGear(S, t) { // 任意套装 / 部位 / 矿石 / 5 档品质；难�
 }
 function lootRoll(S, t, dk) { LOOT = LOOT || lootTable(); const pool = LOOT.filter(x => !x.mj || dk === 'mijing'); const e = wpick(pool, x => lootW(x, t)); return e; }
 const itemLabel = (st, k) => lootLabel(st, k);
-const lootLabel = (st, k) => st === 'xianyu' ? '仙玉' : st === 'veins' ? (['💎小型灵脉', '💎中型灵脉', '💎巨型灵脉'][+k] || '💎灵脉') : st === 'maiPages' ? '🌀脉络残页' : st === 'wxFrag' ? wxFragName(k) : st === 'gear' ? (([gk, set, q]) => `${GQNAME[+q]}·${gearItemName(gk, set)}`)(k.split('|')) : st === 'petEggs' ? '灵宠蛋' : st === 'expBooks' ? EXP_BOOKS[k].name : st === 'skillBooks' ? SKILLS[k].name + '技能书' : st === 'elixirs' ? (potOf(k) ? QNAME[potOf(k).q] + potOf(k).name : k) : st === 'inv' ? (k === 'mai' ? '🌀开脉丹' : k === 'chestN' ? '🎀精致盲盒' : k === 'chestB' ? '🎲盲盒' : k === 'chestR' ? '🎁稀有宝箱' : k === 'chestA' ? '💎高级宝箱' : (([a, g]) => `${GRADES[+g]}${AN[a]}丹`)(k.split('_'))) : st === 'dishes' ? (dishOf(k) ? QNAME[dishOf(k).q] + dishOf(k).name : k) : st === 'zx' ? (DISHES[k] ? DISHES[k].name : k) : st === 'prey' ? PREY[k].name : st === 'eggs' ? EGGS[k].name : itemLabel0(st, k);
+const REPAIR_CHAIN = '胎气基丹婴神乘劫余散合尊'; // v1224 修复灵物名链：修胎/修气/…/修尊灵物（Ye 定全带「灵物」二字）
+function repairNameL(k) { const m = /^repair(\d+)$/.exec(k || ''); if (!m) return null; const ch = REPAIR_CHAIN[+m[1]]; return ch ? '修' + ch + '灵物' : null; }
+function invLabelL(k) { // v1224 inv 显示名：修复灵物/化无丹/煞气/强化符/变异丹/属性丹，未知键回落原 key（旧版无条件 split 会把 repair 键显示成 undefinedundefined丹）
+  if (k === 'mai') return '🌀开脉丹';
+  if (k === 'chestN') return '🎀精致盲盒';
+  if (k === 'chestB') return '🎲盲盒';
+  if (k === 'chestR') return '🎁稀有宝箱';
+  if (k === 'chestA') return '💎高级宝箱';
+  const rn = repairNameL(k); if (rn) return rn;
+  if (k === 'detox') return '🍃化无丹';
+  if (k === 'sha') return '👹煞气';
+  if (k === 'fuq') return '🎫强化符';
+  const mu = /^mut_(.+)$/.exec(k); if (mu && MUT_PILLS[mu[1]]) return '🌀' + MUT_PILLS[mu[1]].name;
+  const m = /^(str|agi|def|vit|int)_([1-5])$/.exec(k); if (m) return GRADES[+m[2]] + AN[m[1]] + '丹';
+  return k;
+}
+const lootLabel = (st, k) => st === 'xianyu' ? '仙玉' : st === 'veins' ? (['💎小型灵脉', '💎中型灵脉', '💎巨型灵脉'][+k] || '💎灵脉') : st === 'maiPages' ? '🌀脉络残页' : st === 'wxFrag' ? wxFragName(k) : st === 'gear' ? (([gk, set, q]) => `${GQNAME[+q]}·${gearItemName(gk, set)}`)(k.split('|')) : st === 'petEggs' ? '灵宠蛋' : st === 'expBooks' ? EXP_BOOKS[k].name : st === 'skillBooks' ? SKILLS[k].name + '技能书' : st === 'elixirs' ? (potOf(k) ? QNAME[potOf(k).q] + potOf(k).name : k) : st === 'inv' ? invLabelL(k) : st === 'dishes' ? (dishOf(k) ? QNAME[dishOf(k).q] + dishOf(k).name : k) : st === 'zx' ? (DISHES[k] ? DISHES[k].name : k) : st === 'prey' ? PREY[k].name : st === 'eggs' ? EGGS[k].name : itemLabel0(st, k);
 // —— 批量生成的简短事件（场景 × 对象 × 选项）——
 const G_PLACES = ['山道上', '竹林里', '古渡口', '荒村里', '瀑布下', '断桥边', '集市角落', '古井旁', '松林中', '雪岭上', '沙丘间', '桃林里'];
 const G_NPCS = [ // 名称 / 帮忙检定属性 / 帮忙文字
@@ -3467,6 +3480,94 @@ const GRADE_COLORS = ['#6db3ff', '#ff7eb6', '#ff9f43']; // 资源等级色（地
 function toolNeedL(lvl) { return 10 * (lvl + 1); }
 function toolCritMultL(tool) { if (!tool) return 1; const p = Math.min(1, (tool.lvl | 0) * 0.001); return Math.random() < p ? 1 + Math.floor(Math.random() * 10) : 1; }
 function toolUseL(tool) { tool.dur = (tool.dur | 0) - 1; tool.uses = (tool.uses | 0) + 1; while (tool.uses >= toolNeedL(tool.lvl | 0)) { tool.uses -= toolNeedL(tool.lvl | 0); tool.lvl = (tool.lvl | 0) + 1; } return tool.dur <= 0; }
+// ---- v1224 多把器具（与服务端 lw.js toolsNormalize/activeTool/takeTool/addTool 同规）----
+function toolsNormalizeL(S) {
+  let t = S.tools;
+  if (!t || typeof t !== 'object') t = {};
+  S.toolSeq = Math.max(0, S.toolSeq | 0);
+  const out = { pick: [], hoe: [], active: { pick: null, hoe: null } };
+  for (const which of ['pick', 'hoe']) {
+    let arr = t[which];
+    if (arr && !Array.isArray(arr)) arr = [arr]; // 旧单对象存档迁移
+    if (!Array.isArray(arr)) arr = [];
+    const seen = new Set();
+    for (const o of arr) {
+      if (!o || typeof o !== 'object') continue;
+      const tool = { tier: Math.max(0, Math.min(2, o.tier | 0)), dur: o.dur | 0, max: Math.max(1, o.max | 0), lvl: Math.max(0, o.lvl | 0), uses: Math.max(0, o.uses | 0) };
+      if (tool.dur <= 0) continue;
+      tool.dur = Math.min(tool.dur, tool.max);
+      if (o.id != null && Number.isFinite(+o.id) && +o.id > 0 && !seen.has(+o.id)) tool.id = +o.id;
+      else tool.id = ++S.toolSeq;
+      if (tool.id > S.toolSeq) S.toolSeq = tool.id;
+      seen.add(tool.id);
+      out[which].push(tool);
+    }
+  }
+  const act = (t.active && typeof t.active === 'object') ? t.active : {};
+  for (const which of ['pick', 'hoe']) {
+    const aid = act[which];
+    out.active[which] = (aid != null && out[which].some(x => x.id === +aid)) ? +aid : null;
+  }
+  S.tools = out;
+  return out;
+}
+function activeToolL(S, which) { // 正在用的那把：手动指定且仍在 → 用它；否则档最高、同档持久最多
+  const tools = toolsNormalizeL(S);
+  const arr = tools[which];
+  if (!arr.length) return null;
+  const aid = tools.active[which];
+  if (aid != null) { const t = arr.find(x => x.id === aid); if (t) return t; }
+  let best = arr[0];
+  for (const t of arr) if (t.tier > best.tier || (t.tier === best.tier && t.dur > best.dur)) best = t;
+  return best;
+}
+function takeToolL(S, which, id) {
+  const tools = toolsNormalizeL(S);
+  const arr = tools[which];
+  const i = arr.findIndex(x => x.id === +id);
+  if (i < 0) return null;
+  const t = arr.splice(i, 1)[0];
+  if (tools.active[which] === +id) tools.active[which] = null;
+  return t;
+}
+function addToolL(S, which, tool, keepId) {
+  const tools = toolsNormalizeL(S);
+  const t = { tier: Math.max(0, Math.min(2, tool.tier | 0)), dur: Math.max(1, Math.min(tool.dur | 0, Math.max(1, tool.max | 0))), max: Math.max(1, tool.max | 0), lvl: Math.max(0, tool.lvl | 0), uses: Math.max(0, tool.uses | 0) };
+  if (keepId && tool.id != null && +tool.id > 0 && !tools[which].some(x => x.id === +tool.id)) { t.id = +tool.id; if (t.id > S.toolSeq) S.toolSeq = t.id; }
+  else t.id = ++S.toolSeq;
+  tools[which].push(t);
+  return t;
+}
+// ---- v1224 共享池/野外木掷（与服务端 lw.js sharedPoolRoll/wildWoodRoll 同规）----
+const WOOD_KEYS_L = ['qingteng', 'lingmu', 'yimu'];
+const WOOD_BY_GRADE_L = { 1: 'qingteng', 2: 'lingmu', 3: 'yimu' };
+const REPAIR_POOL_L = Array.from({ length: 11 }, (_, i) => 'repair' + i); // 修胎..修合灵物；修尊灵物不入池
+function sharedPoolRollL(grade) { // 主城 1% 平值一掷，三组平分；grade=null（种植）木材随机
+  if (Math.random() >= 0.01) return null;
+  const x = Math.random();
+  if (x < 1 / 3) return { type: 'dew' };
+  if (x < 2 / 3) return { type: 'wood', key: grade ? WOOD_BY_GRADE_L[grade] : WOOD_KEYS_L[(Math.random() * 3) | 0] };
+  return { type: 'repair', key: REPAIR_POOL_L[(Math.random() * REPAIR_POOL_L.length) | 0] };
+}
+function wildWoodRollL(grade) { // 野外 0.1% 平值，只出对应品级木材
+  if (Math.random() >= 0.001) return null;
+  return WOOD_BY_GRADE_L[grade] || null;
+}
+// ---- v1224 提炼（本地镜像；在线走 /api/roll/smelt）：100:1，必成，不用残页，耗活力/法力 ----
+function smeltL(S, key) {
+  const rc = REFINES[key];
+  if (!rc || !rc.smelt) return null;
+  const e = lifeCost(S); if (e) return { err: e };
+  if (!(S.life && S.life.refine)) return { err: 'noskill' };
+  if (lifeOf(S, 'refine').lv < rc.lv) return { err: 'lv' };
+  if (!haveNeed(S, rc.need)) return { err: 'mat' };
+  payLife(S); hungerDown(S, K.HUNGER_ACT, 1);
+  rc.need.forEach(([st, k, n]) => takeItem(S, st, k, n));
+  const [st, k] = rc.out;
+  S[st][k] = (S[st][k] || 0) + 1; // 产出直接入账不走背包上限（净 -99，仿 craft 直加，避免超上限存档吞产出）
+  const xp = K.LIFE_XP_OK, lvUp = gainLifeXp(S, 'refine', xp);
+  return { ok: true, skill: 'refine', key, n: 1, xp, lvUp };
+}
 const LW_EPOCH_L = Date.UTC(2026, 9, 30, 0, 0, 0); // 灵物年份阶梯起点（与服务端一致）
 function lwYearCapL(now) { const n = Math.floor(((now || Date.now()) - LW_EPOCH_L) / (182.5 * 24 * 3600 * 1000)); if (n <= 0) return 10000; if (n === 1) return 100000; return Math.min(10000000, 1000000 * (n - 1)); }
 function rollLwYearsL() { return 1 + Math.floor(Math.random() * lwYearCapL()); }
@@ -3475,7 +3576,7 @@ function veinStoneL(grade) { if (grade >= 3) { const x = Math.random(); return x
 function rollResGradeL() { const r = Math.random(); return r < 0.7 ? 1 : r < 0.9 ? 2 : 3; }
 function toolGateL(S, kind, grade) { // 采集门槛：草药用药锄、矿石/灵脉用矿镐；矿石任意档，草药/灵脉需器具档 ≥ 资源等级
   const which = kind === 'herb' ? 'hoe' : 'pick';
-  const tool = S.tools && S.tools[which];
+  const tool = activeToolL(S, which); // v1224 多把：取正在用的那把
   if (!tool) return { err: which === 'hoe' ? '没有药锄，采不了草药（商店有售）' : '没有矿镐，采不了（商店有售）', which };
   if (kind !== 'ore' && (tool.tier | 0) + 1 < (grade || 1)) return { err: (which === 'hoe' ? '药锄' : '矿镐') + '档位不足', which };
   return { tool, which };
@@ -3485,7 +3586,7 @@ function advResGrant(S, run, kind, grade) {
   const X = advCtx(S, run);
   grade = grade || 1;
   const which = kind === 'herb' ? 'hoe' : 'pick';
-  const tool = S.tools && S.tools[which];
+  const tool = activeToolL(S, which); // v1224 多把：取正在用的那把
   const crit = toolCritMultL(tool);
   const parts = [];
   if (crit > 1) parts.push(`<b class="y">💥 暴击×${crit}</b>`);
@@ -3497,6 +3598,7 @@ function advResGrant(S, run, kind, grade) {
     for (const it of b.lw) { if (!Array.isArray(S.lingwu)) S.lingwu = []; S.lingwu.push(it); parts.push(`获得 <span class="y">${LW_GRADE_NAMES[it.g - 1]}·${it.e}（${it.y} 年）</span>`); }
     for (let g = 1; g <= 3; g++) { if (b.seeds[g] > 0) { if (!S.lwseeds || typeof S.lwseeds !== 'object') S.lwseeds = { 1: 0, 2: 0, 3: 0 }; S.lwseeds[g] = (S.lwseeds[g] | 0) + b.seeds[g]; parts.push(`获得 <span class="y">${LW_SEED_NAMES[g - 1]}×${b.seeds[g]}</span>`); } }
     for (let g = 1; g <= 3; g++) { if (b.dew[g] > 0) parts.push(X.item('mats', 'dw' + g, b.dew[g])); }
+    const wk = wildWoodRollL(grade); if (wk) parts.push(X.item('mats', wk, 1)); // v1224 野外木掷：0.1% 出对应品级木材
   } else if (kind === 'ore') {
     const cnt = {};
     for (let i = 0; i < crit; i++) { const k = advResOreKey(); cnt[k] = (cnt[k] || 0) + 1; }
@@ -3506,7 +3608,7 @@ function advResGrant(S, run, kind, grade) {
     if (k === 'xy') { S.xianyu = (S.xianyu | 0) + crit; if (run && run.rew) run.rew.items['xianyu:xianyu'] = (run.rew.items['xianyu:xianyu'] || 0) + crit; parts.push(`获得 <span class="y">仙玉×${crit}</span>`); }
     else parts.push(X.item('ores', k, crit));
   }
-  if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { S.tools[which] = null; parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
+  if (tool) { const _tn = TOOL_NAMES[which][tool.tier | 0]; if (toolUseL(tool)) { takeToolL(S, which, tool.id); parts.push(`<span class="r">${_tn}持久耗尽，碎了</span>`); } }
   return parts.join('；');
 }
 // ===== v1186 资源并存（本地图镜像，与服务端同规）=====
@@ -3656,7 +3758,7 @@ function advMonTileEv(S, run, tier, forceKind) { // 资源格怪物战斗事件�
   // v1217 战前不露名：档数文案去掉，种类+档色由 monKindCard 显示
   return { type: 'fight', mon, text: '', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL, hiGateFor }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）；v1220 高地门判定导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, toolsNormalizeL, activeToolL, takeToolL, addToolL, sharedPoolRollL, wildWoodRollL, smeltL, WOOD_KEYS_L, WOOD_BY_GRADE_L, REPAIR_POOL_L, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL, hiGateFor }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）；v1220 高地门判定导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动
@@ -3800,7 +3902,7 @@ window.advGatherRes = async function(code) {
     }
     if (resp.ok && j && j.ok) {
       const got = advApplyGains(j);
-      if (j.which) { if (!S.tools) S.tools = { pick: null, hoe: null }; S.tools[j.which] = j.tool || null; } // v1128 器具状态以服务端为准
+      if (j.which) { if (j.tools && typeof j.tools === 'object') { S.tools = j.tools; } else { const _t = toolsNormalizeL(S); _t[j.which] = j.tool ? [j.tool] : []; S.tools = _t; } toolsNormalizeL(S); } // v1128 器具状态以服务端为准；v1224 数组同步（旧服务端单对象回落）
       try { const _t = S.run.shared.tiles[gy] && S.run.shared.tiles[gy][gx]; if (_t && j.rs) _t.rs = j.rs; else if (_t && _t.rs && j.code) { _t.rs = Object.assign({}, _t.rs); _t.rs[j.code] = Math.max(0, ((_t.rs[j.code] | 0) - 1)); if (!_t.rs[j.code]) delete _t.rs[j.code]; } } catch (_) {} // v1186 本地镜像按槽同步
       if (got.length) log('good', `✨ 采集${(j.crit | 0) > 1 ? `（<b class="y">💥暴击×${j.crit}</b>）` : ''}：${got.join('、')}${j.broke ? `；<span class="r">${j.which === 'hoe' ? '药锄' : '矿镐'}持久耗尽，碎了</span>` : ''}`);
       commit();
@@ -4362,7 +4464,7 @@ function pkSettle(S, pk, chosen) {
 try { (typeof window !== 'undefined' ? window : globalThis).pkSettle = pkSettle; } catch(_) {} // v727 顶层导出pkSettle给script#2用
 
 // v960：本地寄售函数（consignList/consignCancel/consignBuy/consignTick/genMarket）已删除，转线上
-Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, SZ_SEATS, SZ_MER_ORDER, szProg, szSetProg, szVMaiCount, szVMaiPress, szDanCap, szBigCount, maiRMaiEff, szOpenCount, szSmallCount, szFirstDanOpen, szSyncMai, szSeatLitNames, szDan, szLitCnt, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advResGrant, advNewEvent, lootTable, lootRoll, lootLabel, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, premiumChance, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
+Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, SZ_SEATS, SZ_MER_ORDER, szProg, szSetProg, szVMaiCount, szVMaiPress, szDanCap, szBigCount, maiRMaiEff, szOpenCount, szSmallCount, szFirstDanOpen, szSyncMai, szSeatLitNames, szDan, szLitCnt, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advResGrant, advNewEvent, lootTable, lootRoll, lootLabel, repairNameL, invLabelL, REPAIR_CHAIN, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
   alcRate, potCountProbs, gradeProbs, brew, brewDetox, brewAntidote, DANWAN, brewDan, useDanwan, useMutPill, useDetoxPill, toxFactor, toxTier, MUT_PILLS, qiNow, qiFactor, qiTierName, qiAdd, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
   genMonster, genOpponent, adventure, advBattleSetup, advBattleSettle, advEnd, advMove, advRetreat, sneakP, guardedLoot, pkStart, pkSurrender, pkSettle, applyZhenxiu, applyBtSuccess, applyFailState }); // v688 导出突破函数
 G.Core = C;
