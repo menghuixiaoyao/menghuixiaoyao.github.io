@@ -475,7 +475,7 @@ function newState() {
   const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, usd: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, afkCarryMins: 0, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
     stats: { adv: 0, advWin: 0, pk: 0, pkWin: 0, brew: 0, brewOk: 0, checkins: 0 }, log: [], hpCur: null, curseN: 0,
     wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null,
-    tools: { pick: [], hoe: [], active: { pick: null, hoe: null } }, toolSeq: 0, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋；v1224 器具多把数组
+    tools: { pick: [], hoe: [], active: { pick: null, hoe: null } }, toolSeq: 0, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 }, flagDef: { 1: 0, 2: 0, 3: 0 }, flagVeil: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋；v1224 器具多把数组；v1226 阵旗/遮天旗
   S.mana = manaMax(S); grantStarter(S); return S;
 }
 function normalize(S) {
@@ -526,10 +526,20 @@ function normalize(S) {
   S.syd = S.syd.filter(_p => _p && _p.val >= 1 && _p.e).map(_p => ({ e: String(_p.e), val: Math.floor(_p.val) }));
   if (!S.zhenqi || typeof S.zhenqi !== 'object') S.zhenqi = { 1: 0, 2: 0, 3: 0 };
   for (const _g of [1, 2, 3]) S.zhenqi[_g] = Math.max(0, Math.floor(+S.zhenqi[_g] || 0));
+  if (!S.flagDef || typeof S.flagDef !== 'object') S.flagDef = { 1: 0, 2: 0, 3: 0 }; // v1226 阵旗
+  for (const _g of [1, 2, 3]) S.flagDef[_g] = Math.max(0, Math.floor(+S.flagDef[_g] || 0));
+  if (!S.flagVeil || typeof S.flagVeil !== 'object') S.flagVeil = { 1: 0, 2: 0, 3: 0 }; // v1226 遮天旗
+  for (const _g of [1, 2, 3]) S.flagVeil[_g] = Math.max(0, Math.floor(+S.flagVeil[_g] || 0));
   if (!S.formations || typeof S.formations !== 'object') S.formations = {};
   S.formations.f_gather = Math.max(0, Math.floor(+S.formations.f_gather || 0));
   S.formations.f_gather2 = Math.max(0, Math.floor(+S.formations.f_gather2 || 0));
   S.formations.f_gather3 = Math.max(0, Math.floor(+S.formations.f_gather3 || 0));
+  S.formations.f_def = Math.max(0, Math.floor(+S.formations.f_def || 0)); // v1226 防御阵
+  S.formations.f_def2 = Math.max(0, Math.floor(+S.formations.f_def2 || 0));
+  S.formations.f_def3 = Math.max(0, Math.floor(+S.formations.f_def3 || 0));
+  S.formations.f_veil = Math.max(0, Math.floor(+S.formations.f_veil || 0)); // v1226 遮天阵
+  S.formations.f_veil2 = Math.max(0, Math.floor(+S.formations.f_veil2 || 0));
+  S.formations.f_veil3 = Math.max(0, Math.floor(+S.formations.f_veil3 || 0));
   if (!Array.isArray(S.binders)) S.binders = [];
   if (!Array.isArray(S.mail)) S.mail = [];
   if (S.spouse === undefined) S.spouse = null; // v264 配偶
@@ -3758,7 +3768,27 @@ function advMonTileEv(S, run, tier, forceKind) { // 资源格怪物战斗事件�
   // v1217 战前不露名：档数文案去掉，种类+档色由 monKindCard 显示
   return { type: 'fight', mon, text: '', monTile: { tier, x: run.grid.px, y: run.grid.py } };
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, toolsNormalizeL, activeToolL, takeToolL, addToolL, sharedPoolRollL, wildWoodRollL, smeltL, WOOD_KEYS_L, WOOD_BY_GRADE_L, REPAIR_POOL_L, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL, hiGateFor }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）；v1220 高地门判定导出
+// ======== v1226 防御阵/遮天阵/破阵（客户端镜像，与服务端 lw.js 同规） ========
+const DEFARRAY_POWER_L = { 1: 1000, 2: 10000, 3: 100000 };
+const DEFARRAY_AURA_L = { collect: { 1: 50, 2: 100, 3: 200 }, def: { 1: 20, 2: 40, 3: 60 }, veil: { 1: 100, 2: 200, 3: 400 } };
+const DEFARRAY_FUEL_L = { 1: 'sp2', 2: 'sp3', 3: 'sp4' };
+const DEFARRAY_MULT_L = { 1: 2, 2: 3, 3: 4 };
+const DEFARRAY_SYNTH_L = { 1: 64, 2: 128, 3: 256 };
+const DEFARRAY_GUARD_PETS_L = { 1: 0, 2: 1, 3: 3 };
+function defarrayThresholdL(ownAura, veil) {
+  if (!veil) return ownAura | 0;
+  const base = DEFARRAY_AURA_L.veil[veil.tier] || 100;
+  const mult = DEFARRAY_MULT_L[veil.tier] || 2;
+  return base + (veil.ownerOnTile ? (veil.ownerQixi | 0) * mult : 0);
+}
+function defarrayBreakLootL(tier) { return Math.floor((DEFARRAY_SYNTH_L[tier] || 64) / 5); }
+function defarrayKindNameL(kind) { return kind === 'def' ? '防御阵' : kind === 'veil' ? '遮天阵' : '采集阵'; }
+function defarrayTierNameL(tier) { return ['', '小型', '中型', '大型'][tier] || '小型'; }
+function defarrayCanBreakL(kind, ownerArrays) { // 顺序预检：破采集/遮天前，同主同格燃料有效的防御阵必须先破
+  if (kind === 'def') return true;
+  return !(ownerArrays || []).some(a => a.kind === 'def' && a.fueled);
+}
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, toolsNormalizeL, activeToolL, takeToolL, addToolL, sharedPoolRollL, wildWoodRollL, smeltL, WOOD_KEYS_L, WOOD_BY_GRADE_L, REPAIR_POOL_L, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL, hiGateFor, DEFARRAY_POWER_L, DEFARRAY_AURA_L, DEFARRAY_FUEL_L, DEFARRAY_MULT_L, DEFARRAY_SYNTH_L, DEFARRAY_GUARD_PETS_L, defarrayThresholdL, defarrayBreakLootL, defarrayKindNameL, defarrayTierNameL, defarrayCanBreakL }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）；v1220 高地门判定导出；v1226 防御阵/遮天阵导出
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动
@@ -3865,6 +3895,7 @@ async function advSharedRefresh() {
       S.run.shared.players = st.json.players || [];
       S.run.shared.arrays = st.json.arrays || [];
       advSyncSharedTileTypes(S, st.json.tiles);
+      if ((st.json.returns | 0) > 0 && !advClaimingReturns) window.advClaimReturns(); // v1226 待取回宠物自动认领
     }
   } catch (_) {}
 }
@@ -3982,7 +4013,7 @@ window.advPlaceArrayTier = async function(tier) {
 window.advArrayPanel = function() {
   try {
     if (!S.run || !S.run.shared) return;
-    const a = (S.run.shared.arrays || []).find(v => v.mine);
+    const a = (S.run.shared.arrays || []).find(v => v.mine && v.kind === 'collect');
     if (!a) { advTip('这张图上没有你的采集阵'); return; }
     const fuelH = a.fuel_ms ? (a.fuel_ms / 3600000).toFixed(1) : '0';
     const _ftier = Math.min(3, Math.max(1, a.tier | 0 || 1));
@@ -3999,7 +4030,7 @@ window.advArrayPanel = function() {
 window.advArrayFuel = async function() {
   try {
     const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
-    const _a = S.run.shared && (S.run.shared.arrays || []).find(v => v.mine);
+    const _a = S.run.shared && (S.run.shared.arrays || []).find(v => v.mine && v.kind === 'collect');
     const _tier = _a ? Math.min(3, Math.max(1, _a.tier | 0 || 1)) : 2;
     const _fk = ['sp3', 'sp4', 'sp5'][_tier - 1];
     const _fn = ['中品灵石', '上品灵石', '极品灵石'][_tier - 1];
@@ -4026,9 +4057,15 @@ window.advArrayTake = async function(remove) {
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
       const got = advApplyGains(j);
+      if (j.refund) { // v1226 回收全退：阵棋 + 剩余燃料灵石
+        const rf = j.refund;
+        S.zhenqi = S.zhenqi || { 1: 0, 2: 0, 3: 0 };
+        S.zhenqi[rf.tier] = (S.zhenqi[rf.tier] | 0) + (rf.zhenqi | 0);
+        if ((rf.fuel | 0) > 0) { S.ores = S.ores || {}; S.ores[rf.fuelKey] = (S.ores[rf.fuelKey] | 0) + (rf.fuel | 0); }
+      }
       if (got.length) advTip(`📦 从采集阵收取：${got.join('、')}`);
       else advTip('阵内空空如也');
-      if (remove) advTip('💥 采集阵已拆除，库存已收取');
+      if (remove) advTip(`💥 采集阵已拆除，库存已收取${j.refund ? `，退阵棋×${j.refund.zhenqi}${(j.refund.fuel | 0) > 0 ? `、退${lootLabel('ores', j.refund.fuelKey)}×${j.refund.fuel}` : ''}` : ''}`);
       commit();
     } else {
       advTip((j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : '收取失败');
@@ -4036,6 +4073,245 @@ window.advArrayTake = async function(remove) {
   } catch (e) {}
   await advSharedRefresh();
   if (remove) { try { sheetRun(); } catch (_) {} } else window.advArrayPanel();
+};
+// ======== v1226 防御阵/遮天阵/破阵 ========
+let advClaimingReturns = false;
+window.advClaimReturns = async function() {
+  try {
+    if (advClaimingReturns || !S.run || !S.run.shared || !S.run.shared.on) return;
+    advClaimingReturns = true;
+    const dk = S.run.shared.dk || S.run.dk;
+    const resp = await MHXY.api('/api/defarray/claim_returns', { method: 'POST', body: { dk } });
+    const j = resp && resp.json;
+    if (resp.ok && j && j.ok && (j.pets || []).length) {
+      const _have = new Set((S.pets || []).map(p => p && p.id));
+      for (const _p of j.pets) { if (_p && _p.id != null && !_have.has(_p.id)) { S.pets.push(_p); _have.add(_p.id); if ((_p.id | 0) > (S.petSeq | 0)) S.petSeq = _p.id | 0; } }
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      log('good', `🐾 阵灵寄回了 ${(j.pets || []).length} 只灵宠（已回灵宠栏）`);
+      commit();
+      try { sheetRun(); } catch (_) {}
+    }
+  } catch (_) {}
+  advClaimingReturns = false;
+};
+window.advPlaceDefArray = async function(kind) {
+  try {
+    if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
+    const fm = S.formations || {};
+    const fkey = t => kind === 'def' ? (t === 1 ? 'f_def' : t === 2 ? 'f_def2' : 'f_def3') : (t === 1 ? 'f_veil' : t === 2 ? 'f_veil2' : 'f_veil3');
+    const owned = [1, 2, 3].filter(t => (fm[fkey(t)] | 0) > 0);
+    const nm = kind === 'def' ? '防御阵' : '遮天阵';
+    const ic = kind === 'def' ? '🛡️' : '🌫️';
+    if (owned.length > 1) {
+      openSheet(`<h2>${ic} 选择${nm}档位</h2><div class="hint">${kind === 'def' ? '防御阵战力固定（小1000/中10000/大100000），须先破它才能拆同格其他阵；可驻守神识与灵宠。' : '遮天阵遮掩同格你名下的阵，神识看不破就看不见也打不了。'}</div>` + owned.map(t => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[t - 1]}">${['', '小型', '中型', '大型'][t]}${nm}</b><small>拥有 ${(fm[fkey(t)] | 0)}</small></div><button class="btn gold" onclick="window.advPlaceDefArrayTier('${kind}',${t})">布此阵</button></div>`).join('') + `<button class="btn full" data-a2back>返回地图</button>`);
+      return;
+    }
+    await window.advPlaceDefArrayTier(kind, owned[0] || 1);
+  } catch (e) {}
+};
+window.advPlaceDefArrayTier = async function(kind, tier) {
+  try {
+    if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
+    const dk = S.run.shared.dk || S.run.dk, gx = S.run.grid.px, gy = S.run.grid.py;
+    const nm = kind === 'def' ? '防御阵' : '遮天阵';
+    const resp = await MHXY.api('/api/defarray/place', { method: 'POST', body: { dk, kind, x: gx, y: gy, tier } });
+    const j = resp && resp.json;
+    if (resp.ok && j && j.ok) {
+      log('good', `${kind === 'def' ? '🛡️' : '🌫️'} ${nm}已布于(${gx},${gy})，加灵石后生效`);
+    } else {
+      const _e = (j || {}).error;
+      advTip(_e === 'no_formation' ? `没有${nm}（阵法台用${kind === 'def' ? '阵旗' : '遮天旗'}合成）` : _e === 'array_limit' ? `${nm}已布满（不超过持有数）` : _e === 'already_in_map' ? '这张图已布过此阵' : _e === 'not_resource_tile' ? '只能布在资源格上' : '布阵失败');
+    }
+  } catch (e) {}
+  await advSharedRefresh();
+  try { sheetRun(); } catch (_) {}
+};
+window.advDefArrayPanel = function(kind) {
+  try {
+    if (!S.run || !S.run.shared) return;
+    const a = (S.run.shared.arrays || []).find(v => v.mine && v.kind === kind);
+    if (!a) { advTip('这张图上没有你的' + (kind === 'def' ? '防御阵' : '遮天阵')); return; }
+    const tier = Math.min(3, Math.max(1, a.tier | 0 || 1));
+    const fuelH = a.fuel_ms ? (a.fuel_ms / 3600000).toFixed(1) : '0';
+    const fkey = C.DEFARRAY_FUEL_L[tier];
+    const fname = ['🌒下品灵石', '🌗中品灵石', '💎上品灵石'][tier - 1];
+    const stoneCount = (S.ores && S.ores[fkey]) | 0;
+    const tierNm = ['', '小型', '中型', '大型'][tier];
+    const nm = kind === 'def' ? '防御阵' : '遮天阵';
+    const ic = kind === 'def' ? '🛡️' : '🌫️';
+    let extra = '';
+    if (kind === 'def') {
+      const g = a.guard || null;
+      const cap = C.DEFARRAY_GUARD_PETS_L[tier] || 0;
+      const gtxt = g ? `${g.shenshi ? '神识' : '无神识'} · 灵宠 ${((g.pets || []).length)} 只` : '未驻守';
+      extra = `<br>战力：<b class="y">${C.DEFARRAY_POWER_L[tier]}</b>（固定）<br>驻守：${gtxt}（容量：神识 + ${cap} 只灵宠）<br>驻守的神识与灵宠只守防御阵这一场，阵破自动寄回。`;
+    } else {
+      const myQixi = S.qixi | 0;
+      const onTile = S.run.grid && S.run.grid.px === a.x && S.run.grid.py === a.y;
+      const th = C.defarrayThresholdL(C.DEFARRAY_AURA_L.veil[tier], { tier, ownerQixi: myQixi, ownerOnTile: !!onTile });
+      extra = `<br>当前看破阈值：<b class="y">${th}</b>（神识须大于此数才能看破）${onTile ? `，你在格上（你的气息 ${myQixi} ×${C.DEFARRAY_MULT_L[tier]}）` : '，你不在格上（仅遮天气息）'}<br>遮天阵遮掩同格你名下的全部阵。`;
+    }
+    openSheet(`<h2>${ic} <span style="color:${C.GRADE_COLORS[tier - 1]}">${tierNm}${nm}</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（休眠中：不生效，加灵石恢复）'}<br>你的${fname}：${stoneCount} 颗（1 颗 = 1 小时）${extra}</div><div class="grid2"><button class="btn gold" data-defarrfuel="${kind}">${['🌒', '🌗', '💎'][tier - 1]} 加灵石</button>${kind === 'def' ? '<button class="btn" data-defguard>👁️ 设驻守</button>' : ''}<button class="btn danger" data-defarrremove="${kind}">💥 拆除</button><button class="btn" data-a2back>返回地图</button></div>`);
+  } catch (e) {}
+};
+window.advDefArrayFuel = async function(kind) {
+  try {
+    const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
+    const _a = S.run.shared && (S.run.shared.arrays || []).find(v => v.mine && v.kind === kind);
+    const _tier = _a ? Math.min(3, Math.max(1, _a.tier | 0 || 1)) : 1;
+    const _fk = C.DEFARRAY_FUEL_L[_tier];
+    const _fn = ['下品灵石', '中品灵石', '上品灵石'][_tier - 1];
+    const _fi = ['🌒', '🌗', '💎'][_tier - 1];
+    const resp = await MHXY.api('/api/defarray/fuel', { method: 'POST', body: { dk, kind } });
+    const j = resp && resp.json;
+    if (resp.ok && j && j.ok) {
+      S.ores = S.ores || {}; S.ores[_fk] = Math.max(0, (S.ores[_fk] | 0) - 1);
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      log('good', `${_fi} ${kind === 'def' ? '防御阵' : '遮天阵'}燃料 +1 小时`);
+      commit();
+    } else {
+      advTip((j || {}).error === 'no_' + _fk ? `没有${_fn}` : (j || {}).error === 'no_array' ? '这张图上没有你的阵' : (j || {}).error === 'fuel_full' ? '燃料已满（上限 72 小时）' : '加灵石失败');
+    }
+  } catch (e) {}
+  await advSharedRefresh();
+  window.advDefArrayPanel(kind);
+};
+window.advDefArrayTake = async function(kind) {
+  try {
+    const nm = kind === 'def' ? '防御阵' : '遮天阵';
+    if (!confirm(`确定拆除这张图的${nm}？旗与剩余燃料全退，驻守的灵宠归还。`)) return;
+    const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
+    const resp = await MHXY.api('/api/defarray/remove', { method: 'POST', body: { dk, kind } });
+    const j = resp && resp.json;
+    if (resp.ok && j && j.ok) {
+      const rf = j.refund || {};
+      const field = kind === 'def' ? 'flagDef' : 'flagVeil';
+      S[field] = S[field] || { 1: 0, 2: 0, 3: 0 };
+      S[field][rf.tier] = (S[field][rf.tier] | 0) + (rf.flags | 0);
+      if ((rf.fuel | 0) > 0) { S.ores = S.ores || {}; S.ores[rf.fuelKey] = (S.ores[rf.fuelKey] | 0) + (rf.fuel | 0); }
+      if ((rf.pets || []).length) { const _have = new Set((S.pets || []).map(p => p && p.id)); for (const _p of rf.pets) { if (_p && _p.id != null && !_have.has(_p.id)) { S.pets.push(_p); _have.add(_p.id); if ((_p.id | 0) > (S.petSeq | 0)) S.petSeq = _p.id | 0; } } }
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      advTip(`💥 ${nm}已拆除，退${kind === 'def' ? '阵旗' : '遮天旗'}×${rf.flags | 0}${(rf.fuel | 0) > 0 ? `、退${lootLabel('ores', rf.fuelKey)}×${rf.fuel}` : ''}${(rf.pets || []).length ? `、灵宠 ${(rf.pets || []).length} 只归还` : ''}`);
+      commit();
+    } else {
+      advTip((j || {}).error === 'no_array' ? '这张图上没有你的阵' : '拆除失败');
+    }
+  } catch (e) {}
+  await advSharedRefresh();
+  try { sheetRun(); } catch (_) {}
+};
+let _guardSel = null;
+window.advGuardPanel = function() {
+  try {
+    if (!S.run || !S.run.shared) return;
+    const a = (S.run.shared.arrays || []).find(v => v.mine && v.kind === 'def');
+    if (!a) { advTip('这张图上没有你的防御阵'); return; }
+    const tier = Math.min(3, Math.max(1, a.tier | 0 || 1));
+    const cap = C.DEFARRAY_GUARD_PETS_L[tier] || 0;
+    if (!_guardSel) _guardSel = { shenshi: !!(a.guard && a.guard.shenshi), pets: [] };
+    const sel = _guardSel;
+    const petBtns = (S.pets || []).map(p => {
+      const P = (typeof PETS !== 'undefined' && PETS[p.k]) ? PETS[p.k] : { icon: '🐾', name: '灵宠' };
+      const on = sel.pets.includes(p.id);
+      return `<button class="btn ${on ? 'on' : ''}" data-guardpet="${p.id}" style="padding:6px 10px;font-size:12px">${P.icon}${P.name}#${p.id}</button>`;
+    }).join('');
+    const cur = a.guard ? `当前驻守：${a.guard.shenshi ? '神识' : '无神识'} · 灵宠 ${(a.guard.pets || []).length} 只` : '当前未驻守';
+    openSheet(`<h2>👁️ 防御阵驻守（${['', '小型', '中型', '大型'][tier]}）</h2><div class="hint">${cur}<br>容量：神识 + ${cap} 只灵宠。神识驻守只取属性快照、不扣数值；灵宠驻守期间离身。保存后替换当前驻守，原驻守灵宠自动归还。</div><div class="row" style="flex-wrap:wrap;gap:4px"><button class="btn ${sel.shenshi ? 'on' : ''}" data-guardss style="padding:6px 10px;font-size:12px">👁️ 神识驻守</button></div><div class="row" style="flex-wrap:wrap;gap:4px">${petBtns || '<small style="color:var(--dim)">没有灵宠</small>'}</div><div class="grid2"><button class="btn gold" data-guardsave>保存驻守</button><button class="btn" data-a2back>返回地图</button></div>`);
+  } catch (e) {}
+};
+window.advGuardToggleSs = function() { try { if (!_guardSel) _guardSel = { shenshi: false, pets: [] }; _guardSel.shenshi = !_guardSel.shenshi; window.advGuardPanel(); } catch (e) {} };
+window.advGuardTogglePet = function(id) {
+  try {
+    if (!_guardSel) _guardSel = { shenshi: false, pets: [] };
+    const a = (S.run.shared.arrays || []).find(v => v.mine && v.kind === 'def');
+    const cap = a ? (C.DEFARRAY_GUARD_PETS_L[Math.min(3, Math.max(1, a.tier | 0 || 1))] || 0) : 0;
+    const i = _guardSel.pets.indexOf(id);
+    if (i >= 0) _guardSel.pets.splice(i, 1);
+    else if (_guardSel.pets.length >= cap) { advTip(cap <= 0 ? '小型防御阵只能驻守神识' : `最多驻守 ${cap} 只灵宠`); return; }
+    else _guardSel.pets.push(id);
+    window.advGuardPanel();
+  } catch (e) {}
+};
+window.advGuardSave = async function() {
+  try {
+    const sel = _guardSel || { shenshi: false, pets: [] };
+    const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
+    const resp = await MHXY.api('/api/defarray/guard', { method: 'POST', body: { dk, shenshi: sel.shenshi, petIds: sel.pets } });
+    const j = resp && resp.json;
+    if (resp.ok && j && j.ok) {
+      _guardSel = null;
+      S.pets = (S.pets || []).filter(p => !(j.removed || []).includes(p.id));
+      if (Array.isArray(S.pet)) S.pet = S.pet.filter(v => !(j.removed || []).includes(+v));
+      else if ((j.removed || []).includes(+S.pet)) S.pet = null;
+      if ((j.restoredPets || []).length) { const _have = new Set((S.pets || []).map(p => p && p.id)); for (const _p of j.restoredPets) { if (_p && _p.id != null && !_have.has(_p.id)) { S.pets.push(_p); _have.add(_p.id); if ((_p.id | 0) > (S.petSeq | 0)) S.petSeq = _p.id | 0; } } }
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      advTip('👁️ 驻守已设' + ((j.restoredPets || []).length ? `，原驻守灵宠 ${(j.restoredPets || []).length} 只归还` : ''));
+      commit();
+    } else {
+      advTip((j || {}).error === 'guard_cap' ? '灵宠超出驻守容量' : (j || {}).error === 'no_array' ? '这张图上没有你的防御阵' : '设驻守失败');
+    }
+  } catch (e) {}
+  await advSharedRefresh();
+  window.advDefArrayPanel('def');
+};
+window.advBreakArray = async function(kind, ownerNo) {
+  try {
+    if (!S.run || !S.run.shared || !S.run.shared.on || !S.run.grid) return;
+    const dk = S.run.shared.dk || S.run.dk, gx = S.run.grid.px, gy = S.run.grid.py;
+    const arrs = S.run.shared.arrays || [];
+    const tgt = arrs.find(a => a.kind === kind && (a.player_no | 0) === (ownerNo | 0) && a.x === gx && a.y === gy);
+    const nm = C.defarrayKindNameL(kind);
+    const ownerName = tgt ? tgt.username : ('#' + ownerNo);
+    if (!confirm(`确定攻打 ${ownerName} 的${nm}？不耗体力，打输照打怪失败算。`)) return;
+    const resp = await MHXY.api('/api/defarray/break', { method: 'POST', body: { dk, x: gx, y: gy, kind, ownerNo: ownerNo | 0 } });
+    const j = resp && resp.json;
+    if (resp.ok && j && j.ok) {
+      if (typeof j.hpCur === 'number') S.hpCur = j.hpCur;
+      if (typeof j.mana === 'number' && (S.realm | 0) >= 1) S.mana = j.mana;
+      if (j.defeat) { // 打输：败罚增量同步（与服务端同口径）
+        const df = j.defeat;
+        if (df.protected) { S.protect = Math.max(0, (S.protect | 0) - 1); }
+        else {
+          for (const k in (df.lost || {})) { S.attrs[k] = Math.max(1, (S.attrs[k] | 0) - (df.lost[k] | 0)); if (k === 'vit' && S.vitPeak) S.vitPeak = Math.max(0, (S.vitPeak | 0) - (df.lost[k] | 0)); }
+          S.gold = Math.max(0, (S.gold | 0) - (df.lostGold | 0));
+          S.stamina = 0;
+          S.lifespan = Math.max(0, (S.lifespan | 0) - 1);
+          if (df.statusAdded) { S.status = S.status || {}; if (df.statusAdded === 'depress') S.status.depress = 12; else S.status[df.statusAdded] = true; }
+        }
+        S.xp = (S.xp | 0) + (df.xp | 0);
+      }
+      if (j.loot) {
+        const lt = j.loot;
+        if (lt.flags) { const field = lt.kind === 'def' ? 'flagDef' : 'flagVeil'; S[field] = S[field] || { 1: 0, 2: 0, 3: 0 }; S[field][lt.tier] = (S[field][lt.tier] | 0) + (lt.flags | 0); }
+        if (lt.gains) advApplyGains({ gains: lt.gains });
+      }
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      commit();
+      window.advBreakResult(j, kind, ownerName);
+      await advSharedRefresh();
+      return; // 结果面板保留，不回地图
+    } else {
+      const _e = (j || {}).error;
+      advTip(_e === 'no_array' ? '阵已不在这格' : _e === 'dormant' ? '阵已休眠（无燃料），不可破' : _e === 'need_def_first' ? '须先打破同格的防御阵' : _e === 'cannot_see' ? '神识不足，看不破此阵' : _e === 'not_there' ? '你不在这格' : _e === 'no_hp' ? '气血耗尽，先调息回血' : _e === 'own_array' ? '不能打自己的阵' : '破阵失败');
+    }
+  } catch (e) {}
+  await advSharedRefresh();
+  try { sheetRun(); } catch (_) {}
+};
+window.advBreakResult = function(j, kind, ownerName) {
+  try {
+    const esc = x => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const nm = C.defarrayKindNameL(kind);
+    const lines = (j.log || []).map(l => esc(typeof l === 'string' ? l : (l && l.text) || '')).join('<br>');
+    let sum = '';
+    if (j.won && j.broken) {
+      if (j.loot && j.loot.flags) sum = `缴获${j.loot.kind === 'def' ? '阵旗' : '遮天旗'}×${j.loot.flags}。`;
+      else if (j.loot && j.loot.gains) { const _g = []; for (const gg of j.loot.gains) _g.push(`${lootLabel(gg.st, gg.k)}×${gg.n}`); sum = `缴获库存：${_g.length ? _g.join('、') : '空空如也'}（余下已损毁）。`; }
+      else sum = '阵已化为乌有。';
+    } else if (j.won && !j.broken) sum = '阵已被他人先破（或已不在），此战未得战利品。';
+    else sum = '破阵失败，阵纹丝不动。';
+    openSheet(`<h2>⚔️ 破${nm}${j.won ? '成功' : '失败'}</h2><div class="hint">${esc(ownerName)} 的${nm} · ${j.rounds | 0} 回合<br>${sum}</div><details><summary>战斗记录</summary><div class="scene" style="max-height:300px;overflow:auto;font-size:12px;line-height:1.5">${lines}</div></details><div class="grid2"><button class="btn gold full" data-a2back>返回地图</button></div>`);
+  } catch (e) {}
 };
 // 移动时同步位置到服务端（心跳）
 function advSharedHeartbeat(x, y) {

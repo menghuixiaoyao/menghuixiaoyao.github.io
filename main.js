@@ -2594,12 +2594,29 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       if (_slots.length || ((mySt ? mySt.amt : lt.amt) | 0) > 0) btns.push(`<button class="btn" data-advauto="1" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">${(window._advAuto && window._advAuto.active) ? '⏸️ 停止自动采集' : '▶️ 自动采集（慢3倍）'}</button>`); // v1216 冒险格自动采集开关
     }
     if (shared) {
-      const myArr = (shared.arrays || []).find(a => a.mine);
+      const myArr = (shared.arrays || []).find(a => a.mine && a.kind === 'collect'); // v1226 阵分三种：只认采集阵
       const arrHere = myArr && myArr.x === g.px && myArr.y === g.py;
-      const arrOnTile = (shared.arrays || []).some(a => a.x === g.px && a.y === g.py);
+      const arrOnTile = (shared.arrays || []).some(a => a.x === g.px && a.y === g.py && a.kind === 'collect'); // v1226 同格可共存：只看采集阵
       if (arrHere) { const _iv = myArr.inv || { mats: {}, ores: {}, lw: [], seeds: {} }; const _cnt = o => Object.values(o || {}).reduce((sv, v) => sv + (v | 0), 0); btns.push(`<button class="btn" data-advarr style="flex:1">🧭 ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myArr.tier | 0 || 1))]}采集阵（存货 ${_cnt(_iv.mats) + _cnt(_iv.ores) + (_iv.lw || []).length + _cnt(_iv.seeds)}）</button>`); }
       else if (mySt && _isLand && !arrOnTile && !myArr && ((S.formations && ((S.formations.f_gather | 0) + (S.formations.f_gather2 | 0) + (S.formations.f_gather3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplace style="flex:1">🧭 在此布采集阵</button>`);
       if (myArr && !arrHere) btns.push(`<button class="btn" data-advarr style="flex:1">🧭 我的采集阵（${myArr.x},${myArr.y}）</button>`);
+      // v1226 防御阵/遮天阵：自己的面板入口 + 布阵按钮 + 同格他人阵的破阵按钮
+      const myDef = (shared.arrays || []).find(a => a.mine && a.kind === 'def');
+      const myVeil = (shared.arrays || []).find(a => a.mine && a.kind === 'veil');
+      if (myDef) btns.push(`<button class="btn" data-defarrpanel="def" style="flex:1">🛡️ ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myDef.tier | 0 || 1))]}防御阵（${myDef.x},${myDef.y}）${myDef.fueled ? '' : '·休眠'}</button>`);
+      if (myVeil) btns.push(`<button class="btn" data-defarrpanel="veil" style="flex:1">🌫️ ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myVeil.tier | 0 || 1))]}遮天阵（${myVeil.x},${myVeil.y}）${myVeil.fueled ? '' : '·休眠'}</button>`);
+      if (mySt && _isLand && !myDef && ((S.formations && ((S.formations.f_def | 0) + (S.formations.f_def2 | 0) + (S.formations.f_def3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplacedef style="flex:1">🛡️ 在此布防御阵</button>`);
+      if (mySt && _isLand && !myVeil && ((S.formations && ((S.formations.f_veil | 0) + (S.formations.f_veil2 | 0) + (S.formations.f_veil3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplaceveil style="flex:1">🌫️ 在此布遮天阵</button>`);
+      const foes = (shared.arrays || []).filter(a => !a.mine && a.x === g.px && a.y === g.py);
+      for (const a of foes) {
+        const tnm = ['', '小型', '中型', '大型'][Math.min(3, Math.max(1, a.tier | 0 || 1))];
+        const knm = C.defarrayKindNameL(a.kind);
+        const ic = a.kind === 'def' ? '🛡️' : a.kind === 'veil' ? '🌫️' : '🧭';
+        if (!a.fueled && a.kind !== 'collect') { btns.push(`<button class="btn" disabled style="flex:1">${ic} ${escDg(a.username)}的${tnm}${knm}（休眠）</button>`); continue; }
+        if (a.player_no == null) continue;
+        const blocked = !C.defarrayCanBreakL(a.kind, foes.filter(f => (a.player_no != null && f.player_no === a.player_no) || f.username === a.username));
+        btns.push(`<button class="btn ${blocked ? '' : 'danger'}" ${blocked ? 'disabled' : `data-defbreak="${a.kind}:${a.player_no}"`} style="flex:1">⚔️ 破${escDg(a.username)}的${tnm}${knm}${blocked ? '（先破防御阵）' : ''}</button>`);
+      }
     }
     if (btns.length || infoLine) resRow = infoLine + (btns.length ? `<div class="row" style="display:flex;gap:8px;flex-wrap:wrap">${btns.join('')}</div>` : '');
   }
@@ -2700,6 +2717,16 @@ const ZQ_DEFS = [ // v1128 阵棋：小/中/大三档，合成采集阵（个数
   { g: 2, name: '中型阵棋', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['prey', 'deer', 10], ['prey', 'wolf', 5]], synth: 128, fkey: 'f_gather2', fname: '中型采集阵' },
   { g: 3, name: '大型阵棋', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['prey', 'wolf', 10], ['prey', 'tiger', 5]], synth: 256, fkey: 'f_gather3', fname: '大型采集阵' },
 ];
+const FLAG_DEFS = [ // v1226 阵旗：小/中/大三档，合成防御阵（个数 64/128/256）
+  { g: 1, name: '小型阵旗', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['mats', 'h_def', 10]], synth: 64, fkey: 'f_def', fname: '小型防御阵' },
+  { g: 2, name: '中型阵旗', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['mats', 'h_def', 20]], synth: 128, fkey: 'f_def2', fname: '中型防御阵' },
+  { g: 3, name: '大型阵旗', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['mats', 'h_def', 30]], synth: 256, fkey: 'f_def3', fname: '大型防御阵' },
+];
+const VEIL_DEFS = [ // v1226 遮天旗：小/中/大三档，合成遮天阵（个数 64/128/256）
+  { g: 1, name: '小型遮天旗', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['pages', 'pg1', 10]], synth: 64, fkey: 'f_veil', fname: '小型遮天阵' },
+  { g: 2, name: '中型遮天旗', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['pages', 'pg1', 20]], synth: 128, fkey: 'f_veil2', fname: '中型遮天阵' },
+  { g: 3, name: '大型遮天旗', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['pages', 'pg1', 30]], synth: 256, fkey: 'f_veil3', fname: '大型遮天阵' },
+];
 function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓制作
   const fRecipes = C.FORMATIONS || {}, tRecipes = C.TALISMANS || {};
   const fHtml = Object.keys(fRecipes).filter(k => k !== 'f_gather').map(k => { // v1128 采集阵旧直做配方取消，改阵棋合成（见下方）
@@ -2707,11 +2734,14 @@ function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓
     return `<div class="row"><div class="lab">🧭 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有阵法 ${S.formations && S.formations[k] || 0}</small></div><button class="btn gold" onclick="doCraftFormation('${k}')">制作</button></div>`;
   }).join('');
   const zqHtml = `<h3>♟️ 阵棋（合成采集阵）</h3>` + ZQ_DEFS.map(z => { const own = (S.zhenqi && S.zhenqi[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${st === 'prey' ? PREY[ik].name : ORES[ik].name}×${n}`).join(' + '); return `<div class="row"><div class="lab">♟️ <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 阵档决定可收资源等级，阵不收矿石</small></div><button class="btn" onclick="window.craftZhenqi(${z.g})">做阵棋</button><button class="btn gold" onclick="window.synthZhenqi(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
+  const flagNeedName = (st, ik) => st === 'ores' ? ORES[ik].name : st === 'mats' ? ((typeof MATS !== 'undefined' && MATS[ik] || {}).name || ik) : st === 'pages' ? PAGES[ik].name : ik; // v1226 旗材料名
+  const flagHtml = `<h3>🚩 阵旗（合成防御阵）</h3>` + FLAG_DEFS.map(z => { const own = (S.flagDef && S.flagDef[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🚩 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 防御阵战力固定，须先破它才能拆同格其他阵</small></div><button class="btn" onclick="window.craftFlag(${z.g})">做阵旗</button><button class="btn gold" onclick="window.synthFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
+  const veilHtml = `<h3>🎏 遮天旗（合成遮天阵）</h3>` + VEIL_DEFS.map(z => { const own = (S.flagVeil && S.flagVeil[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🎏 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 遮天阵遮掩同格你名下的阵，神识看不破就看不见</small></div><button class="btn" onclick="window.craftVeilFlag(${z.g})">做遮天旗</button><button class="btn gold" onclick="window.synthVeilFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
   const tHtml = Object.keys(tRecipes).map(k => {
     const r = tRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'pages' ? PAGES[ik].name : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">📜 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有符箓 ${S.talismans && S.talismans[k] || 0}</small></div><button class="btn gold" onclick="doCraftTalisman('${k}')">制作</button></div>`;
   }).join('');
-  openSheet(`<h2>🧭📜 制阵室·画符台</h2><div class="hint">阵法需「阵法」生活技能，符箓需「制符」生活技能（主宰轮回后参悟）。</div><h3>🧭 阵法台</h3>${fHtml}${zqHtml}<h3>📜 画符台</h3>${tHtml}<div class="row"><button class="btn full" data-a="close">关闭</button></div>`);
+  openSheet(`<h2>🧭📜 制阵室·画符台</h2><div class="hint">阵法需「阵法」生活技能，符箓需「制符」生活技能（主宰轮回后参悟）。</div><h3>🧭 阵法台</h3>${fHtml}${zqHtml}${flagHtml}${veilHtml}<h3>📜 画符台</h3>${tHtml}<div class="row"><button class="btn full" data-a="close">关闭</button></div>`);
 }
 window.craftZhenqi = function (g) { // v1128 做阵棋：材料直扣（无失败），需阵法生活技能
   try {
@@ -2733,6 +2763,54 @@ window.synthZhenqi = function (g) { // v1128 阵棋合成采集阵
     S.formations = S.formations || {};
     S.formations[z.fkey] = (S.formations[z.fkey] | 0) + 1;
     log('good', `🧭 ${z.synth} 个${z.name}合成【${z.fname}】×1！`);
+    save(); sheetFormationTalisman();
+  } catch (e) { try { log('bad', '合成出错:' + e.message); } catch (_) {} }
+};
+window.craftFlag = function (g) { // v1226 做阵旗：材料直扣（无失败），需阵法生活技能
+  try {
+    if (lifeLocked('formation')) { showTip('需要「阵法」生活技能（轮回后参悟）'); return; }
+    const z = FLAG_DEFS.find(v => v.g === g); if (!z) return;
+    const _nm = (st, ik) => st === 'ores' ? ORES[ik].name : ((typeof MATS !== 'undefined' && MATS[ik] || {}).name || ik);
+    for (const [st, ik, n] of z.need) if (((S[st] || {})[ik] | 0) < n) { showTip(`材料不足：${_nm(st, ik)} 需 ${n}`); return; }
+    for (const [st, ik, n] of z.need) { S[st][ik] -= n; if (S[st][ik] <= 0) delete S[st][ik]; }
+    if (!S.flagDef) S.flagDef = { 1: 0, 2: 0, 3: 0 };
+    S.flagDef[g] = (S.flagDef[g] | 0) + 1;
+    log('good', `🚩 制成【${z.name}】×1（现有 ${S.flagDef[g]}，满 ${z.synth} 可合成${z.fname}）`);
+    save(); sheetFormationTalisman();
+  } catch (e) { try { log('bad', '制作出错:' + e.message); } catch (_) {} }
+};
+window.synthFlag = function (g) { // v1226 阵旗合成防御阵
+  try {
+    const z = FLAG_DEFS.find(v => v.g === g); if (!z) return;
+    if (!S.flagDef || (S.flagDef[g] | 0) < z.synth) { showTip(`阵旗不足（需 ${z.synth}）`); return; }
+    S.flagDef[g] -= z.synth;
+    S.formations = S.formations || {};
+    S.formations[z.fkey] = (S.formations[z.fkey] | 0) + 1;
+    log('good', `🛡️ ${z.synth} 个${z.name}合成【${z.fname}】×1！`);
+    save(); sheetFormationTalisman();
+  } catch (e) { try { log('bad', '合成出错:' + e.message); } catch (_) {} }
+};
+window.craftVeilFlag = function (g) { // v1226 做遮天旗：材料直扣（无失败），需阵法生活技能
+  try {
+    if (lifeLocked('formation')) { showTip('需要「阵法」生活技能（轮回后参悟）'); return; }
+    const z = VEIL_DEFS.find(v => v.g === g); if (!z) return;
+    const _nm = (st, ik) => st === 'ores' ? ORES[ik].name : PAGES[ik].name;
+    for (const [st, ik, n] of z.need) if (((S[st] || {})[ik] | 0) < n) { showTip(`材料不足：${_nm(st, ik)} 需 ${n}`); return; }
+    for (const [st, ik, n] of z.need) { S[st][ik] -= n; if (S[st][ik] <= 0) delete S[st][ik]; }
+    if (!S.flagVeil) S.flagVeil = { 1: 0, 2: 0, 3: 0 };
+    S.flagVeil[g] = (S.flagVeil[g] | 0) + 1;
+    log('good', `🎏 制成【${z.name}】×1（现有 ${S.flagVeil[g]}，满 ${z.synth} 可合成${z.fname}）`);
+    save(); sheetFormationTalisman();
+  } catch (e) { try { log('bad', '制作出错:' + e.message); } catch (_) {} }
+};
+window.synthVeilFlag = function (g) { // v1226 遮天旗合成遮天阵
+  try {
+    const z = VEIL_DEFS.find(v => v.g === g); if (!z) return;
+    if (!S.flagVeil || (S.flagVeil[g] | 0) < z.synth) { showTip(`遮天旗不足（需 ${z.synth}）`); return; }
+    S.flagVeil[g] -= z.synth;
+    S.formations = S.formations || {};
+    S.formations[z.fkey] = (S.formations[z.fkey] | 0) + 1;
+    log('good', `🌫️ ${z.synth} 个${z.name}合成【${z.fname}】×1！`);
     save(); sheetFormationTalisman();
   } catch (e) { try { log('bad', '合成出错:' + e.message); } catch (_) {} }
 };
@@ -7982,6 +8060,16 @@ document.addEventListener('click', e => {
   else if (d.a2collect !== undefined) { try { window.advArrayTake(false); } catch(_) {} }
   else if (d.a2remove !== undefined) { try { window.advArrayTake(true); } catch(_) {} }
   else if (d.a2back !== undefined) { try { sheetRun(); } catch(_) {} }
+  else if (d.advplacedef !== undefined) { try { window.advPlaceDefArray('def'); } catch(_) {} } // v1226 布防御阵
+  else if (d.advplaceveil !== undefined) { try { window.advPlaceDefArray('veil'); } catch(_) {} } // v1226 布遮天阵
+  else if (d.defarrpanel !== undefined) { try { window.advDefArrayPanel(d.defarrpanel); } catch(_) {} } // v1226 防御/遮天阵面板
+  else if (d.defarrfuel !== undefined) { try { window.advDefArrayFuel(d.defarrfuel); } catch(_) {} } // v1226 防御/遮天阵加灵石
+  else if (d.defarrremove !== undefined) { try { window.advDefArrayTake(d.defarrremove); } catch(_) {} } // v1226 拆除防御/遮天阵
+  else if (d.defguard !== undefined) { try { window.advGuardPanel(); } catch(_) {} } // v1226 设驻守
+  else if (d.guardss !== undefined) { try { window.advGuardToggleSs(); } catch(_) {} } // v1226 神识驻守开关
+  else if (d.guardpet !== undefined) { try { window.advGuardTogglePet(+d.guardpet); } catch(_) {} } // v1226 驻守灵宠点选
+  else if (d.guardsave !== undefined) { try { window.advGuardSave(); } catch(_) {} } // v1226 保存驻守
+  else if (d.defbreak !== undefined) { try { const _p = String(d.defbreak).split(':'); window.advBreakArray(_p[0], +_p[1]); } catch(_) {} } // v1226 破阵
   else if (d.advmove) doAdvMove(d.advmove);
   else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格；v763 1秒冷却；v764 斜走；v766 直接跳跃；v767 斜走需技能
     try {
