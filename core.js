@@ -3541,7 +3541,7 @@ function addToolL(S, which, tool, keepId) {
 // ---- v1224 共享池/野外木掷（与服务端 lw.js sharedPoolRoll/wildWoodRoll 同规）----
 const WOOD_KEYS_L = ['qingteng', 'lingmu', 'yimu'];
 const WOOD_BY_GRADE_L = { 1: 'qingteng', 2: 'lingmu', 3: 'yimu' };
-const REPAIR_POOL_L = Array.from({ length: 11 }, (_, i) => 'repair' + i); // 修胎..修合灵物；修尊灵物不入池
+const REPAIR_POOL_L = Array.from({ length: 12 }, (_, i) => 'repair' + i); // v1225 修胎..修尊灵物全进池（Ye 定「留到修尊灵物」）
 function sharedPoolRollL(grade) { // 主城 1% 平值一掷，三组平分；grade=null（种植）木材随机
   if (Math.random() >= 0.01) return null;
   const x = Math.random();
