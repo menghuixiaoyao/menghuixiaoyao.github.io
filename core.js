@@ -3775,8 +3775,8 @@ const DEFARRAY_FUEL_L = { 1: 'sp2', 2: 'sp3', 3: 'sp4' };
 const DEFARRAY_MULT_L = { 1: 2, 2: 3, 3: 4 };
 const DEFARRAY_SYNTH_L = { 1: 64, 2: 128, 3: 256 };
 const DEFARRAY_GUARD_PETS_L = { 1: 0, 2: 1, 3: 3 };
-function defarrayThresholdL(ownAura, veil) {
-  if (!veil) return ownAura | 0;
+function defarrayThresholdL(veil) {
+  if (!veil) return 0;
   const base = DEFARRAY_AURA_L.veil[veil.tier] || 100;
   const mult = DEFARRAY_MULT_L[veil.tier] || 2;
   return base + (veil.ownerOnTile ? (veil.ownerQixi | 0) * mult : 0);
@@ -4001,6 +4001,11 @@ window.advPlaceArrayTier = async function(tier) {
     const resp = await MHXY.api('/api/array2/place', { method: 'POST', body: { dk, x: gx, y: gy, tier } });
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
+      const _fk = tier === 1 ? 'f_gather' : tier === 2 ? 'f_gather2' : 'f_gather3';
+      S.formations = S.formations || {};
+      S.formations[_fk] = Math.max(0, (S.formations[_fk] | 0) - 1);
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      commit();
       log('good', `🧭 采集阵已布于(${gx},${gy})，加灵石后自动采集这格刷新的资源`);
     } else {
       const _e = (j || {}).error;
@@ -4117,6 +4122,11 @@ window.advPlaceDefArrayTier = async function(kind, tier) {
     const resp = await MHXY.api('/api/defarray/place', { method: 'POST', body: { dk, kind, x: gx, y: gy, tier } });
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
+      const _fk = kind === 'def' ? (tier === 1 ? 'f_def' : tier === 2 ? 'f_def2' : 'f_def3') : (tier === 1 ? 'f_veil' : tier === 2 ? 'f_veil2' : 'f_veil3');
+      S.formations = S.formations || {};
+      S.formations[_fk] = Math.max(0, (S.formations[_fk] | 0) - 1);
+      if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
+      commit();
       log('good', `${kind === 'def' ? '🛡️' : '🌫️'} ${nm}已布于(${gx},${gy})，加灵石后生效`);
     } else {
       const _e = (j || {}).error;
@@ -4148,7 +4158,7 @@ window.advDefArrayPanel = function(kind) {
     } else {
       const myQixi = S.qixi | 0;
       const onTile = S.run.grid && S.run.grid.px === a.x && S.run.grid.py === a.y;
-      const th = C.defarrayThresholdL(C.DEFARRAY_AURA_L.veil[tier], { tier, ownerQixi: myQixi, ownerOnTile: !!onTile });
+      const th = C.defarrayThresholdL({ tier, ownerQixi: myQixi, ownerOnTile: !!onTile });
       extra = `<br>当前看破阈值：<b class="y">${th}</b>（神识须大于此数才能看破）${onTile ? `，你在格上（你的气息 ${myQixi} ×${C.DEFARRAY_MULT_L[tier]}）` : '，你不在格上（仅遮天气息）'}<br>遮天阵遮掩同格你名下的全部阵。`;
     }
     openSheet(`<h2>${ic} <span style="color:${C.GRADE_COLORS[tier - 1]}">${tierNm}${nm}</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（休眠中：不生效，加灵石恢复）'}<br>你的${fname}：${stoneCount} 颗（1 颗 = 1 小时）${extra}</div><div class="grid2"><button class="btn gold" data-defarrfuel="${kind}">${['🌒', '🌗', '💎'][tier - 1]} 加灵石</button>${kind === 'def' ? '<button class="btn" data-defguard>👁️ 设驻守</button>' : ''}<button class="btn danger" data-defarrremove="${kind}">💥 拆除</button><button class="btn" data-a2back>返回地图</button></div>`);
