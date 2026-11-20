@@ -4192,6 +4192,7 @@ window.useCaveToken = function(k) { // v798 使用洞府令/仙府令开格；v7
   } catch(e) { try { log('bad', '使用失败:' + e.message); } catch(_) {} }
 };
 function sheetBag() {
+  const _sh = document.getElementById('sheet'); const _keepSy = !!(_sh && _sh.innerHTML.indexOf('<h2>背包</h2>') >= 0); const _sy = _keepSy ? _sh.scrollTop : 0; // v1238 背包用物品不回弹：席子上已是背包时，重渲染保住滚动位置（用物品/服丹后调 sheetBag，旧逻辑经 openSheet 每次 scrollTop=0 把人顶回顶部；新开背包仍置顶）
   const list = C.invList(S), mats = Object.keys(MATS).filter(k => MATS[k].basic && S.mats[k] > 0);
   const _seals = (S.sealed || []).filter(x => x && !x.done);
   openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 💵美元 <b class="y">${S.usd || 0}</b> · 🌒下品 <b class="y">${S.ores.sp2|0}</b> · 🌗中品 <b class="y">${S.ores.sp3|0}</b> · 💎上品 <b class="y">${S.ores.sp4|0}</b> · 💠极品 <b class="y">${S.ores.sp5|0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（小型储物袋可扩充）。服用丹药可永久提升属性。</div>` +
@@ -4235,6 +4236,7 @@ function sheetBag() {
     `<h3>已习得技能</h3><div class="row"><div class="lab">普通攻击 · 防御` + S.skills.map(k => ` · <span class="pu">${SKILLS[k].name}</span>`).join('') + `<small>技能书由10张同名技能残页合成</small></div></div>` +
 
     `<button class="btn full" data-close>关闭</button>`);
+  if (_keepSy) { try { _sh.scrollTop = _sy; } catch(_) {} } // v1238 背包用物品不回弹：重渲染后把滚动位置还回去
 }
 function sheetBattleBag() {
   const pots = Object.keys(S.elixirs || {}).filter(k => S.elixirs[k] > 0).sort();
