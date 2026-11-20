@@ -3555,7 +3555,7 @@ function sheetAuc3List() {
   const herbs = S.herbs || {};
   Object.keys(herbs).forEach(k => {
     const n = herbs[k] | 0;
-    if (n > 0) html += `<div class="row"><div class="lab">🌿 ${k}×${n}</div><button class="btn gold" data-auc3pick="herbs:${k}">选择</button></div>`;
+    if (n > 0) html += `<div class="row"><div class="lab">🌿 ${window._herbHtml(k)}×${n}</div><button class="btn gold" data-auc3pick="herbs:${k}">选择</button></div>`;
   });
   html += `<div class="row"><button class="btn full" data-close>关闭</button></div>`;
   openSheet(html);
@@ -3569,7 +3569,7 @@ function sheetAuc3ListConfirm(store, key) {
   const maxN = s[key] | 0;
   if (maxN <= 0) { sheetAuction3('物品不足。'); return; }
   _auc3Pick = { store, key, maxN };
-  const name = store === 'herbs' ? key : (names[key] || key);
+  const name = store === 'herbs' ? ({ lq1: '地品灵草', lq2: '天品灵草', lq3: '仙品灵草' })[key] || key : (names[key] || key);
   const icon = store === 'herbs' ? '🌿' : (icons[key] || '📦');
   let html = `<h2>🎫 上架确认</h2><div class="hint">${icon} ${name}（拥有 ${maxN}）</div>` +
     `<div class="row"><div class="lab">数量（1-${maxN}）</div><input id="auc3qty" type="number" value="1" min="1" max="${maxN}" style="width:80px"></div>` +
@@ -3592,7 +3592,7 @@ function doAuc3Confirm() {
   const { store, key } = _auc3Pick;
   const names = { iron: '铁矿', copper: '铜矿', silver: '银矿', gold: '金矿', sp1: '灵气石', sp2: '下品灵石', sp3: '中品灵石', sp4: '上品灵石', sp5: '极品灵石' };
   const icons = { iron: '⛏️', copper: '🟤', silver: '⚪', gold: '🟡', sp1: '💎', sp2: '💎', sp3: '💎', sp4: '💎', sp5: '💠' };
-  const name = store === 'herbs' ? key : (names[key] || key);
+  const name = store === 'herbs' ? ({ lq1: '地品灵草', lq2: '天品灵草', lq3: '仙品灵草' })[key] || key : (names[key] || key);
   const icon = store === 'herbs' ? '🌿' : (icons[key] || '📦');
   (async () => {
     try {
@@ -4198,6 +4198,7 @@ function sheetBag() {
   openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 💵美元 <b class="y">${S.usd || 0}</b> · 🌒下品 <b class="y">${S.ores.sp2|0}</b> · 🌗中品 <b class="y">${S.ores.sp3|0}</b> · 💎上品 <b class="y">${S.ores.sp4|0}</b> · 💠极品 <b class="y">${S.ores.sp5|0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（小型储物袋可扩充）。服用丹药可永久提升属性。</div>` +
     `<h3>⛏️ 器具</h3>` + toolCardHtml('pick', 'bag') + toolCardHtml('hoe', 'bag') +
     (((S.lingwu || []).length || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => { const _base = Math.floor(w.y * 0.1), _f = C.eleFactorL(S, w.e), _gain = Math.floor(_base * _f), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w.e]}">${w.e}</b> · ${w.y} 年<small>炼寿元丹的材料（炼药面板）；生吃：寿元 +${_gain}${_note ? `（${_note}）` : ''}</small></div><button class="btn" onclick="window.lwEat(${i})">生吃</button></div>`; }).join('') + [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0).map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>种到洞府灵田，收割时才定五行，可长${C.LW_GRADE_NAMES[g - 1]}</small></div></div>`).join('') : '') +
+    ((S.herbs && ((S.herbs.lq1|0) + (S.herbs.lq2|0) + (S.herbs.lq3|0)) > 0) ? `<h3>🌿 灵草</h3>` + [1, 2, 3].filter(g => ((S.herbs['lq' + g]|0) > 0)).map(g => `<div class="row"><div class="lab">${window._herbHtml('lq' + g)} ×${S.herbs['lq' + g]}<small>田药园所采，可挂拍卖行出售</small></div></div>`).join('') : '') +
     (((S.syd || []).length) ? `<h3>💊 寿元丹</h3>` + S.syd.map((p, i) => { const _f = C.eleFactorL(S, p.e), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.LW_ELE_COLORS[p.e]}">${p.e}行寿元丹</b><small>寿元 +${Math.floor(p.val * _f)}${_note ? `（${_note}）` : ''} · 积丹毒</small></div><button class="btn gold" onclick="window.eatSyd(${i})">服用</button></div>`; }).join('') : '') +
     `<h3>丹药</h3>` +
     (list.length ? list.map(p => `<div class="row"><div class="lab">${potName(p.attr, p.grade)} ×${p.count}<small>${AN[p.attr]} +${p.grade}</small></div>
