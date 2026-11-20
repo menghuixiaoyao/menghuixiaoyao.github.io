@@ -2597,25 +2597,25 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       const myArr = (shared.arrays || []).find(a => a.mine && a.kind === 'collect'); // v1226 阵分三种：只认采集阵
       const arrHere = myArr && myArr.x === g.px && myArr.y === g.py;
       const arrOnTile = (shared.arrays || []).some(a => a.x === g.px && a.y === g.py && a.kind === 'collect'); // v1226 同格可共存：只看采集阵
-      if (arrHere) { const _iv = myArr.inv || { mats: {}, ores: {}, lw: [], seeds: {} }; const _cnt = o => Object.values(o || {}).reduce((sv, v) => sv + (v | 0), 0); btns.push(`<button class="btn" data-advarr style="flex:1">🧭 ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myArr.tier | 0 || 1))]}采集阵（存货 ${_cnt(_iv.mats) + _cnt(_iv.ores) + (_iv.lw || []).length + _cnt(_iv.seeds)}）</button>`); }
-      else if (mySt && _isLand && !arrOnTile && !myArr && ((S.formations && ((S.formations.f_gather | 0) + (S.formations.f_gather2 | 0) + (S.formations.f_gather3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplace style="flex:1">🧭 在此布采集阵</button>`);
-      if (myArr && !arrHere) btns.push(`<button class="btn" data-advarr style="flex:1">🧭 我的采集阵（${myArr.x},${myArr.y}）</button>`);
+      if (arrHere) { const _iv = myArr.inv || { mats: {}, ores: {}, lw: [], seeds: {} }; const _cnt = o => Object.values(o || {}).reduce((sv, v) => sv + (v | 0), 0); btns.push(`<button class="btn" data-advarr style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🧭 ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myArr.tier | 0 || 1))]}采集阵（存货 ${_cnt(_iv.mats) + _cnt(_iv.ores) + (_iv.lw || []).length + _cnt(_iv.seeds)}）</button>`); }
+      else if (mySt && _isLand && !arrOnTile && !myArr && ((S.formations && ((S.formations.f_gather | 0) + (S.formations.f_gather2 | 0) + (S.formations.f_gather3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplace style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🧭 在此布采集阵</button>`);
+      if (myArr && !arrHere) btns.push(`<button class="btn" data-advarr style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🧭 我的采集阵（${myArr.x},${myArr.y}）</button>`);
       // v1226 防御阵/遮天阵：自己的面板入口 + 布阵按钮 + 同格他人阵的破阵按钮
       const myDef = (shared.arrays || []).find(a => a.mine && a.kind === 'def');
       const myVeil = (shared.arrays || []).find(a => a.mine && a.kind === 'veil');
-      if (myDef) btns.push(`<button class="btn" data-defarrpanel="def" style="flex:1">🛡️ ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myDef.tier | 0 || 1))]}防御阵（${myDef.x},${myDef.y}）${myDef.fueled ? '' : '·休眠'}</button>`);
-      if (myVeil) btns.push(`<button class="btn" data-defarrpanel="veil" style="flex:1">🌫️ ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myVeil.tier | 0 || 1))]}遮天阵（${myVeil.x},${myVeil.y}）${myVeil.fueled ? '' : '·休眠'}</button>`);
-      if (mySt && _isLand && !myDef && ((S.formations && ((S.formations.f_def | 0) + (S.formations.f_def2 | 0) + (S.formations.f_def3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplacedef style="flex:1">🛡️ 在此布防御阵</button>`);
-      if (mySt && _isLand && !myVeil && ((S.formations && ((S.formations.f_veil | 0) + (S.formations.f_veil2 | 0) + (S.formations.f_veil3 | 0))) | 0) > 0) btns.push(`<button class="btn" data-advplaceveil style="flex:1">🌫️ 在此布遮天阵</button>`);
+      if (myDef) btns.push(`<button class="btn" data-defarrpanel="def" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🛡️ ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myDef.tier | 0 || 1))]}防御阵（${myDef.x},${myDef.y}）${myDef.fueled ? '' : '·休眠'}</button>`);
+      if (myVeil) btns.push(`<button class="btn" data-defarrpanel="veil" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🌫️ ${['', '小型', '中型', '大型'][Math.min(3, Math.max(1, myVeil.tier | 0 || 1))]}遮天阵（${myVeil.x},${myVeil.y}）${myVeil.fueled ? '' : '·休眠'}</button>`);
+      if (mySt && _isLand && !myDef) { const _defN = ((S.formations && ((S.formations.f_def | 0) + (S.formations.f_def2 | 0) + (S.formations.f_def3 | 0))) | 0); btns.push(_defN > 0 ? `<button class="btn" data-advplacedef style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🛡️ 在此布防御阵</button>` : `<button class="btn" disabled style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🛡️ 在此布防御阵（未拥有）</button>`); } // v1228 无阵也显示标记（禁用）
+      if (mySt && _isLand && !myVeil) { const _veilN = ((S.formations && ((S.formations.f_veil | 0) + (S.formations.f_veil2 | 0) + (S.formations.f_veil3 | 0))) | 0); btns.push(_veilN > 0 ? `<button class="btn" data-advplaceveil style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🌫️ 在此布遮天阵</button>` : `<button class="btn" disabled style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">🌫️ 在此布遮天阵（未拥有）</button>`); } // v1228 无阵也显示标记（禁用）
       const foes = (shared.arrays || []).filter(a => !a.mine && a.x === g.px && a.y === g.py);
       for (const a of foes) {
         const tnm = ['', '小型', '中型', '大型'][Math.min(3, Math.max(1, a.tier | 0 || 1))];
         const knm = C.defarrayKindNameL(a.kind);
         const ic = a.kind === 'def' ? '🛡️' : a.kind === 'veil' ? '🌫️' : '🧭';
-        if (!a.fueled && a.kind !== 'collect') { btns.push(`<button class="btn" disabled style="flex:1">${ic} ${escDg(a.username)}的${tnm}${knm}（休眠）</button>`); continue; }
+        if (!a.fueled && a.kind !== 'collect') { btns.push(`<button class="btn" disabled style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">${ic} ${escDg(a.username)}的${tnm}${knm}（休眠）</button>`); continue; }
         if (a.player_no == null) continue;
         const blocked = !C.defarrayCanBreakL(a.kind, foes.filter(f => (a.player_no != null && f.player_no === a.player_no) || f.username === a.username));
-        btns.push(`<button class="btn ${blocked ? '' : 'danger'}" ${blocked ? 'disabled' : `data-defbreak="${a.kind}:${a.player_no}"`} style="flex:1">⚔️ 破${escDg(a.username)}的${tnm}${knm}${blocked ? '（先破防御阵）' : ''}</button>`);
+        btns.push(`<button class="btn ${blocked ? '' : 'danger'}" ${blocked ? 'disabled' : `data-defbreak="${a.kind}:${a.player_no}"`} style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">⚔️ 破${escDg(a.username)}的${tnm}${knm}${blocked ? '（先破防御阵）' : ''}</button>`);
       }
     }
     if (btns.length || infoLine) resRow = infoLine + (btns.length ? `<div class="row" style="display:flex;gap:8px;flex-wrap:wrap">${btns.join('')}</div>` : '');
