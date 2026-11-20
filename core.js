@@ -3798,7 +3798,6 @@ function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件�
   const nx = g.px + d[0], ny = g.py + d[1];
   if (nx < 0 || ny < 0 || nx >= g.w || ny >= g.h) return { err: 'edge' };
   if (g.tiles[ny][nx].t === 'void') return { err: 'void' }; // v1151 虚空格不可站
-  if ((g.tiles[g.py][g.px] && g.tiles[g.py][g.px].gate) || g.tiles[ny][nx].gate) return { err: 'highland' }; // v1220 方向移动不许踏入/踏出高地：高地只许点格挪移（走技能门判定）
   g.px = nx; g.py = ny; g.moves++;
   const t = g.tiles[ny][nx];
   run.ev = null;

@@ -2491,7 +2491,6 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   if (_hiRowIdx < 0 && shared && shared.tiles) for (let _ry = 0; _ry < shared.tiles.length; _ry++) { const _row = shared.tiles[_ry]; if (_row && _row.some(function(_t) { return _t && _t.gate; })) { _hiRowIdx = _ry; break; } }
   const _myLt = g.tiles[g.py] && g.tiles[g.py][g.px];
   const _mySt = shared && shared.tiles && shared.tiles[g.py] ? shared.tiles[g.py][g.px] : null;
-  const _myGate = (_mySt && _mySt.gate) || (_myLt && _myLt.gate) || (g.py === _hiRowIdx && _hiRowIdx >= 0 ? C.hiGateFor(g.px) : null);
   const _cellHtml = function(x, y) { // v1220 单元格渲染抽成闭包：主图与高地行共用
     const t = (g.tiles[y] && g.tiles[y][x]) || { t: 'empty', seen: 0 }, isP = x === g.px && y === g.py;
     // v971 共享模式：tile 类型取服务端，本地 grid 只记位置
@@ -2534,14 +2533,6 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       if (isP) icon += `<span style="position:absolute;left:0;bottom:0;font-size:10px">🧭</span>`;
       else icon = `<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center">${icon}<span style="position:absolute;top:-2px;right:-2px;font-size:10px">🧭</span></div>`;
     }
-    const _stGate = shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x] ? shared.tiles[y][x].gate : null; // v1220 目标格技能门
-    const _tgtGate = _stGate || t.gate || (y === _hiRowIdx && _hiRowIdx >= 0 ? C.hiGateFor(x) : null);
-    if (_tgtGate) { // v1220 高地技能角标（1 字）：缩地蓝「缩」/大挪移紫「移」
-      const _gb = _tgtGate === 'danuoyi' ? '移' : '缩';
-      const _gbc = _tgtGate === 'danuoyi' ? '#b45cff' : '#4d9dff';
-      if (isP) icon += `<span style="position:absolute;left:0;top:0;background:${_gbc};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_gb}</span>`;
-      else icon = `<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center">${icon}<span style="position:absolute;left:-2px;bottom:-2px;background:${_gbc};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_gb}</span></div>`;
-    }
     const _dist = Math.abs(x - g.px) + Math.abs(y - g.py);
     const _cheb = Math.max(Math.abs(x - g.px), Math.abs(y - g.py)); // v764 斜走用切比雪夫距离
     const _hasSk = S.skills && S.skills.includes('shukuchi');
@@ -2551,8 +2542,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     // v767 无技能只能正交1格；有缩地/大挪移才能斜走
     const _isOrth = (x === g.px || y === g.py);
     const _adj = !isP && ((_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag));
-    const _teleport = !isP && (!!_myGate || !!_tgtGate); // v1220 挪移路径：站在高地上点任意格、或点高地格，都走挪移（技能门在点击分支判定）
-    return isP ? `<button class="acell${cls}" data-advself="1" style="position:relative">${icon}</button>` : (_teleport ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}" data-advtp="1">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`)); // v768 点自己看状态
+    return isP ? `<button class="acell${cls}" data-advself="1" style="position:relative">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`); // v768 点自己看状态；v1231 高地无门：与普通格同规，只相邻格可点
   };
   for (let y = 0; y < g.h; y++) { if (y === _hiRowIdx) continue; for (let x = 0; x < g.w; x++) cells += _cellHtml(x, y); }
   if (_hiRowIdx >= 0) { for (let x = 0; x < g.w; x++) hiCells += _cellHtml(x, _hiRowIdx); }
@@ -8080,17 +8070,6 @@ document.addEventListener('click', e => {
       if (S.forceReinc) { try { showTip(S.forceReincWhy === 'life' ? '⌛ 寿元耗尽，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>' : '☠️ 你已身死，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>'); } catch (_) {} return; } // v1178 冒险点格移动同锁
       // v971 共享地图：奖励格先 claim，成功才移动
       const _shared = _run.shared && _run.shared.on ? _run.shared : null;
-      const _teleport = d.advtp !== undefined; // v1220 挪移（高地↔主图）：绕过相邻判定，计一次普通移动
-      const _tgtLt = _gr.tiles[_gy] && _gr.tiles[_gy][_gx];
-      const _tgtSt = _shared && _shared.tiles && _shared.tiles[_gy] && _shared.tiles[_gy][_gx];
-      const _hiRow6 = _gr.tiles[6] && _gr.tiles[6].some(function(_t) { return _t && _t.gate; });
-      const _tgtGate = (_tgtSt && _tgtSt.gate) || (_tgtLt && _tgtLt.gate) || (_hiRow6 && _gy === 6 ? C.hiGateFor(_gx) : null);
-      if (_tgtGate) { // v1220 高地技能门（本地判定；服务端心跳/移动再验一次）
-        const _hasSkG = S.skills && S.skills.includes('shukuchi');
-        const _hasDnyG = S.skills && S.skills.includes('danuoyi');
-        const _passG = _tgtGate === 'danuoyi' ? _hasDnyG : (_hasSkG || _hasDnyG);
-        if (!_passG) { try { showTip(_tgtGate === 'danuoyi' ? '⛰️ 这块高地需要学会「大挪移」才能上去' : '⛰️ 这块高地需要学会「缩地」才能上去'); } catch (_) {} return; }
-      }
       const _doMove = function() {
         window._advMoveCd = Date.now();
         const _tt = _gr.tiles[_gy] && _gr.tiles[_gy][_gx];
@@ -8106,7 +8085,7 @@ document.addEventListener('click', e => {
         const _maxDist = _hasDny ? 3 : (_hasSk ? 2 : 1);
         const _maxDiag = _hasDny ? 2 : (_hasSk ? 1 : 0);
         const _isOrth = (_dx === 0 || _dy === 0);
-        const _canMove = (_teleport && _dist >= 1) || (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag);
+        const _canMove = (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag); // v1231 高地无门：与普通格同规（相邻正交 1 格；斜向仍要缩地/大挪移技能）
         if (_canMove) {
           // v766 直接跳到目标格，只触发落点事件
           _gr.px = _gx; _gr.py = _gy; _gr.moves++;
