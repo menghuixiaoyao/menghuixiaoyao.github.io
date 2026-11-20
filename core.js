@@ -12,7 +12,7 @@ const K = {
   COST_TRAIN: 1,          // 修炼：1 体力 = +1 属性
   COST_ALCHEMY: 1,        // 炼药消耗体力
   ADV_MON_MULT: 0.80,     // 文字冒险：一轮要打多场，单场怪物强度 × 0.80（再乘阶级倍率）
-  COST_ADVENTURE: 1,      // 冒险最低体力（初级）；各难度体力见 DIFFS.cost
+  COST_ADVENTURE: 1,      // 冒险最低体力（玄天葫芦）；各难度体力见 DIFFS.cost
   COST_PK: 1,             // PK 消耗体力
   ATTR_MIN: 1,            // 属性下限
   // —— 角色等级 ——
@@ -342,14 +342,14 @@ const STARTER_MATS = 0, STARTER_GOLD = 0; // 新手礼包：无（旧存档迁�
 function grantStarter(S) { ATTRS.forEach(a => S.mats['h_' + a] = (S.mats['h_' + a] || 0) + STARTER_MATS); S.gold += STARTER_GOLD; }
 // 冒险难度：mult 怪物强度倍率；win 胜利属性点；lose 战败扣点；gold 胜利金元；ms 怪物技能数
 const DIFFS = { // cost 体力；mult 怪物强度（相对玩家）；rec/recTot 建议等级/总属性（低于此值怪物按 recTot 的强度生成）；win/gold/xp 胜利奖励；lose 败扣属性；xpL 败得经验；st 败后伤病概率；ms 怪物技能数
-  easy:      { name: '初级', cost: 1,  mult: 0.76, rec: 1,  recTot: 5,   win: [1, 2],    gold: [10, 20],    xp: 10,  lose: 1,  xpL: 3,  st: 0.10, ms: 0, pre: '' },
-  mid:       { name: '中级', cost: 3,  mult: 0.88, rec: 2,  recTot: 30,  win: [5, 6],    gold: [48, 60],    xp: 36,  lose: 2,  xpL: 5,  st: 0.20, ms: 1, pre: '精英·' },
-  hard:      { name: '高级', cost: 5,  mult: 0.96, rec: 3,  recTot: 60,  win: [9, 12],   gold: [95, 115],   xp: 70,  lose: 3,  xpL: 8,  st: 0.30, ms: 2, pre: '首领·' },
-  brutal:    { name: '困难', cost: 10, mult: 1.00, rec: 5,  recTot: 120, win: [22, 26],  gold: [220, 260],  xp: 160, lose: 6,  xpL: 12, st: 0.40, ms: 2, pre: '凶煞·' },
-  hell:      { name: '地狱', cost: 15, mult: 1.04, rec: 7,  recTot: 200, win: [37, 44],  gold: [380, 430],  xp: 270, lose: 9,  xpL: 16, st: 0.50, ms: 3, pre: '炼狱·' },
-  abyss:     { name: '深渊', cost: 20, mult: 1.08, rec: 9,  recTot: 300, win: [55, 65],  gold: [560, 640],  xp: 400, lose: 12, xpL: 20, st: 0.60, ms: 4, pre: '深渊·' },
-  nightmare: { name: '噩梦', cost: 30, mult: 1.12, rec: 12, recTot: 450, win: [92, 108], gold: [930, 1050], xp: 660, lose: 18, xpL: 25, st: 0.70, ms: 5, pre: '梦魇·' },
-  mijing:    { name: '秘境', cost: 10, mult: 1.15, rec: 5,  recTot: 150, win: [30, 36],   gold: [300, 360],   xp: 220, lose: 10, xpL: 15, st: 0.50, ms: 3, pre: '秘境·' },
+  easy:      { name: '玄天葫芦', cost: 1,  mult: 0.76, rec: 1,  recTot: 5,   win: [1, 2],    gold: [10, 20],    xp: 10,  lose: 1,  xpL: 3,  st: 0.10, ms: 0, pre: '' },
+  mid:       { name: '太初灵芽', cost: 3,  mult: 0.88, rec: 2,  recTot: 30,  win: [5, 6],    gold: [48, 60],    xp: 36,  lose: 2,  xpL: 5,  st: 0.20, ms: 1, pre: '精英·' },
+  hard:      { name: '九转丹炉', cost: 5,  mult: 0.96, rec: 3,  recTot: 60,  win: [9, 12],   gold: [95, 115],   xp: 70,  lose: 3,  xpL: 8,  st: 0.30, ms: 2, pre: '首领·' },
+  brutal:    { name: '玲珑宝塔', cost: 10, mult: 1.00, rec: 5,  recTot: 120, win: [22, 26],  gold: [220, 260],  xp: 160, lose: 6,  xpL: 12, st: 0.40, ms: 2, pre: '凶煞·' },
+  hell:      { name: '红莲业火', cost: 15, mult: 1.04, rec: 7,  recTot: 200, win: [37, 44],  gold: [380, 430],  xp: 270, lose: 9,  xpL: 16, st: 0.50, ms: 3, pre: '炼狱·' },
+  abyss:     { name: '九幽弯月', cost: 20, mult: 1.08, rec: 9,  recTot: 300, win: [55, 65],  gold: [560, 640],  xp: 400, lose: 12, xpL: 20, st: 0.60, ms: 4, pre: '深渊·' },
+  nightmare: { name: '归墟之眼', cost: 30, mult: 1.12, rec: 12, recTot: 450, win: [92, 108], gold: [930, 1050], xp: 660, lose: 18, xpL: 25, st: 0.70, ms: 5, pre: '梦魇·' },
+  mijing:    { name: '玉净瓶', cost: 10, mult: 1.15, rec: 5,  recTot: 150, win: [30, 36],   gold: [300, 360],   xp: 220, lose: 10, xpL: 15, st: 0.50, ms: 3, pre: '秘境·' },
   wx_jin:  { name: '金行', cost: 5, mult: 1.15, rec: 8, recTot: 500, win: [30, 36], gold: [300, 360], xp: 220, lose: 10, xpL: 15, st: 0.50, ms: 0, pre: '金·', wx: 'jin' },
   wx_mu:   { name: '木行', cost: 5, mult: 1.15, rec: 8, recTot: 500, win: [30, 36], gold: [300, 360], xp: 220, lose: 10, xpL: 15, st: 0.50, ms: 0, pre: '木·', wx: 'mu' },
   wx_shui: { name: '水行', cost: 5, mult: 1.15, rec: 8, recTot: 500, win: [30, 36], gold: [300, 360], xp: 220, lose: 10, xpL: 15, st: 0.50, ms: 0, pre: '水·', wx: 'shui' },
@@ -3618,7 +3618,7 @@ function advResGrant(S, run, kind, grade) {
   return parts.join('；');
 }
 // ===== v1186 资源并存（本地图镜像，与服务端同规）=====
-// 每格（land）同时可存 7 种资源 + 3 档怪 = 10 个独立刷新器，各有自己的时钟与概率；灵气按图等级倍率（主城/初级 1 为基准）。
+// 每格（land）同时可存 7 种资源 + 3 档怪 = 10 个独立刷新器，各有自己的时钟与概率；灵气按图等级倍率（主城/玄天葫芦 1 为基准）。
 const RES_CODES_L = ['h1', 'h2', 'h3', 'o', 'v1', 'v2', 'v3'];
 const RES_IV_L = { h1: 60000, h2: 600000, h3: 1800000, o: 60000, v1: 60000, v2: 600000, v3: 1800000 };
 const RES_P_L = { h1: 0.315, h2: 0.09, h3: 0.045, o: 0.45, v1: 0.07, v2: 0.02, v3: 0.01 };
