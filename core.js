@@ -3660,9 +3660,9 @@ function advTileKillL(t, tier, kind, dk) { // v1218 本地图击杀：优先扣�
   t.mons = { w: 0, m: 0, s: 0 }; for (const e of list) t.mons[e.t]++;
 }
 const MON_TIER_COL_L = { w: '#e8e8e8', m: '#5aa2ff', s: '#ff5a5a' };
-function advMonChipsL(list) { // v1218 格子怪行：只写种类小签（⚔️+种类，颜色按档），不写档名、不写数量；v1219 小签可点：data-monatk 带档+种类，点小签打那只
+function advMonChipsL(list) { // v1218 格子怪行：只写种类小签（⚔️+种类，颜色按档），不写档名、不写数量；v1219 小签可点：data-monatk 带档+种类，点小签打那只；v1230 小签改小格子按钮（采矿按钮同款样式）
   if (!Array.isArray(list)) return '';
-  return list.filter(e => e && MON_TIER_COL_L[e.t] && MON_KINDS[e.k]).map(e => `<span data-monatk="${e.t}:${e.k}" style="color:${MON_TIER_COL_L[e.t]};cursor:pointer">⚔️${MON_KINDS[e.k]}</span>`).join(' ');
+  return list.filter(e => e && MON_TIER_COL_L[e.t] && MON_KINDS[e.k]).map(e => `<button class="btn" data-monatk="${e.t}:${e.k}" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap;color:${MON_TIER_COL_L[e.t]}">⚔️${MON_KINDS[e.k]}</button>`).join(' ');
 }
 function domSlotL(t) { let best = null, ba = 0; if (t && t.rs) for (const c of RES_CODES_L) { const a = (t.rs[c] && t.rs[c].a) | 0; if (a > ba) { ba = a; best = c; } } return best; }
 function advTierKeyL() { if (R() < 0.6) return 'w'; return R() < 0.75 ? 'm' : 's'; } // 弱60/中30/强10（与服务端同规）

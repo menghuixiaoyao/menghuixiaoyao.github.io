@@ -2579,7 +2579,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       const mons = (mySt ? mySt.mons : lt.mons) || { w: 0, m: 0, s: 0 };
       if (!mySt && lt && (lt.t === 'land' || lt.mons) && C.ensureMonListL) { try { C.ensureMonListL(lt, S.run.dk); } catch (_) {} } // v1218 本地图：显示前先给格子怪定身份
       const _monList = mySt ? (Array.isArray(mySt.monList) ? mySt.monList : null) : (lt && Array.isArray(lt.monList) ? lt.monList : null);
-      const monsTxt = _monList ? C.advMonChipsL(_monList) : [['w', '普通', '#e8e8e8'], ['m', '精英', '#5aa2ff'], ['s', '王', '#ff5a5a']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n, col]) => `<span data-monatk="${k}" style="color:${col};cursor:pointer">${n}</span>×${mons[k]}`).join(' '); // v1218 格子怪行只写种类小签（无 monList 时回落档数旧显示）；v1219 回落档名也可点开战（只带档）
+      const monsTxt = _monList ? C.advMonChipsL(_monList) : [['w', '普通', '#e8e8e8'], ['m', '精英', '#5aa2ff'], ['s', '王', '#ff5a5a']].filter(([k]) => (mons[k] | 0) > 0).map(([k, n, col]) => `<button class="btn" data-monatk="${k}" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap;color:${col}">${n}×${mons[k]}</button>`).join(' '); // v1218 格子怪行只写种类小签（无 monList 时回落档数旧显示）；v1219 回落档名也可点开战（只带档）；v1230 回落档名也改小格子按钮（数进按钮里）
       if (_slots.length) {
         infoLine = `<div class="hint" style="text-align:center">${_slots.map(([c, a]) => slotChip(c, a)).join(' ')}${monsTxt ? `<br>怪：${monsTxt}` : ''}</div>`;
         for (const [c] of _slots) btns.push(`<button class="btn" data-advres2="${c}" style="flex:1 1 auto;padding:5px 6px;font-size:12px;white-space:nowrap">✋ <span style="color:${(SLOT_CHIP_STYLE[c] || ['#ffffff'])[0]};font-weight:600">采·${C.resNameL(c)}</span></button>`); // v1213 采集按钮改小+按定版色（矿石白，Ye 定）
@@ -7934,7 +7934,7 @@ document.addEventListener('click', e => {
   }
   const ar = e.target.closest && e.target.closest('a[data-rankinfo]');
   if (ar && ar.dataset.rankinfo !== undefined) { e.preventDefault(); sheetRankInfo(+ar.dataset.rankinfo); return; }
-  // v1219 种类小签可点：span 不走 button 委托，在此先截获（档+种类打那只；回落档名只带档）
+  // v1219 种类小签可点：小签不走 button 委托，在此先截获（档+种类打那只；回落档名只带档）；v1230 小签改按钮，仍在此截获（closest 通吃 span/button）
   const mc = e.target.closest && e.target.closest('[data-monatk]');
   if (mc && mc.dataset.monatk !== undefined) {
     e.preventDefault();
