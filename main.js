@@ -435,20 +435,28 @@ function reserveHas(S) {
   return (S.reserveNode.h > 0 || S.reserveNode.o > 0 || (S.reserveNode.v | 0) > 0); // v538
 }
 // v540 田药园(3,2)：草药刷新
-function herbTick(S) { // v666 叠加：每分钟+1株，上限99
+function herbTick(S) { // v1237 三档灵药丛：地品每分钟/天品每10分钟/仙品每半小时，各上限99
   const now = Date.now();
-  if (!S.herbGarden) S.herbGarden = { h: 0, t: now };
+  if (!S.herbGarden) S.herbGarden = { h1: 0, h2: 0, h3: 0, t1: now, t2: now, t3: now };
   const hg = S.herbGarden;
-  if (!hg.t) hg.t = now; else if (hg.t > now) hg.t = now;
-  const mins = Math.floor((now - hg.t) / 60000);
-  if (mins <= 0) return;
-  hg.h = Math.min(99, (hg.h|0) + mins);
-  hg.t += mins * 60000;
+  if (hg.h1 === undefined) { // v1237 迁移：旧版单株并入地品丛（旧 t 作三档计时起点）
+    hg.h1 = Math.min(99, hg.h|0); hg.h2 = 0; hg.h3 = 0;
+    hg.t1 = hg.t2 = hg.t3 = hg.t || now;
+    delete hg.h; delete hg.t;
+  }
+  const rates = [[1, 60000, 't1'], [2, 600000, 't2'], [3, 1800000, 't3']];
+  for (const [g, step, tk] of rates) {
+    if (!hg[tk]) hg[tk] = now; else if (hg[tk] > now) hg[tk] = now;
+    const n = Math.floor((now - hg[tk]) / step);
+    if (n <= 0) continue;
+    hg['h' + g] = Math.min(99, (hg['h' + g]|0) + n);
+    hg[tk] += n * step;
+  }
 }
 function herbHas(S) {
   if (!S || !S.herbGarden) return false;
   herbTick(S);
-  return (S.herbGarden.h > 0);
+  return ((S.herbGarden.h1|0) + (S.herbGarden.h2|0) + (S.herbGarden.h3|0) > 0);
 }
 // v1002 草药品阶配色：地品蓝 / 天品黄 / 仙品红（Ye 定）
 window._herbHtml = function(key, name) {
@@ -456,16 +464,21 @@ window._herbHtml = function(key, name) {
   const n = name || ({ lq1: '地品灵草', lq2: '天品灵草', lq3: '仙品灵草' })[key] || key;
   return c ? '<b style="color:' + c + '">' + n + '</b>' : n;
 };
-window.doHerbGather = async function() { // v666 一次采1株
+window.doHerbGather = async function(grade) { // v1237 一次采1丛，grade 1/2/3；不传则自动取最高档有货的
+  herbTick(S);
+  const hg = S.herbGarden;
+  if (!grade) grade = (hg.h3|0) > 0 ? 3 : (hg.h2|0) > 0 ? 2 : 1;
+  if ((hg['h' + grade]|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
+  const hk = 'lq' + grade;
   // v966 彻底版：登录在线时走服务端
   if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
     try {
-      const resp = await MHXY.api('/api/roll/herb_garden', {method:'POST', body:{}});
+      const resp = await MHXY.api('/api/roll/herb_garden', {method:'POST', body:{grade}});
       const j = resp && resp.json;
       if (resp.ok && j && j.ok) {
         if (!S.herbs) S.herbs = {};
         S.herbs[j.key] = (S.herbs[j.key]|0) + 1;
-        if (S.herbGarden) S.herbGarden.h = Math.max(0, (S.herbGarden.h|0) - 1);
+        if (S.herbGarden) S.herbGarden['h' + grade] = Math.max(0, (S.herbGarden['h' + grade]|0) - 1);
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
         let bonusTxt = '';
         if (j.bonus && j.bonus.k) { // v1224 共享池额外收获
@@ -474,7 +487,7 @@ window.doHerbGather = async function() { // v666 一次采1株
           bonusTxt = `，另得 ${premTxt(j.bonus.k)}×${j.bonus.n || 1}`;
         }
         const hn = window._herbHtml(j.key);
-        log('good', `🌱 在田药园采集：${hn}×1（剩余${S.herbGarden ? S.herbGarden.h|0 : 0}株）${bonusTxt}`);
+        log('good', `🌱 在田药园采集：${hn}×1（剩余${S.herbGarden ? S.herbGarden['h' + grade]|0 : 0}丛）${bonusTxt}`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openHerbSheet();
         if (typeof toastLog === 'function') toastLog('good', `采集${hn}×1`);
@@ -485,21 +498,20 @@ window.doHerbGather = async function() { // v666 一次采1株
   }
   // v540 采集田药园；v542 免费
   herbTick(S);
-  const hg = S.herbGarden;
-  if ((hg.h|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
-  const hk = Math.random() < 0.7 ? 'lq1' : 'lq2'; // 地品灵草/天品灵草
+  const hg2 = S.herbGarden;
+  if ((hg2['h' + grade]|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
   if (!S.herbs) S.herbs = {};
   S.herbs[hk] = (S.herbs[hk]|0) + 1;
-  hg.h--;
+  hg2['h' + grade]--;
   let bonusTxt = '';
-  const sp = C.sharedPoolRollL(hk === 'lq1' ? 1 : 2); // v1224 田药园进主城共享池，木材按灵药品级对应
+  const sp = C.sharedPoolRollL(grade); // v1224 田药园进主城共享池，木材按灵药品级对应
   if (sp) {
     if (sp.type === 'dew') { const m = rollTier(LU, S.attrs.def * luck(S)); if (C.gainItem(S, 'mats', m, 1) > 0) bonusTxt = `，另得 ${premTxt(m)}×1`; }
     else if (sp.type === 'wood') { if (C.gainItem(S, 'mats', sp.key, 1) > 0) bonusTxt = `，另得 ${premTxt(sp.key)}×1`; }
     else { S.inv = S.inv || {}; S.inv[sp.key] = (S.inv[sp.key] | 0) + 1; bonusTxt = `，另得 ${premTxt(sp.key)}×1`; }
   }
   const hn = window._herbHtml(hk);
-  log('good', `🌱 在田药园采集：${hn}×1（剩余${hg.h}株）${bonusTxt}`);
+  log('good', `🌱 在田药园采集：${hn}×1（剩余${hg2['h' + grade]}丛）${bonusTxt}`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openHerbSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${hn}×1`);
@@ -556,7 +568,7 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
     if (typeof S !== 'undefined' && S && S.thunderOk) { window.toggleAutoGather(type); return; }
     let _fn = null, _txt = '';
     try {
-      if (type === 'herb') { herbTick(S); if ((S.herbGarden.h|0) > 0) { _fn = doHerbGather; _txt = '采药中……（自动）'; } }
+      if (type === 'herb') { herbTick(S); if (((S.herbGarden.h1|0) + (S.herbGarden.h2|0) + (S.herbGarden.h3|0)) > 0) { _fn = doHerbGather; _txt = '采药中……（自动）'; } }
       else if (type === 'ranch') { // v799 养殖园自动；v809 改随机：肉/蛋随机收
         try { if (typeof ranchTick === 'function') ranchTick(S); } catch(_) {}
         const _rr = S.ranch || {};
@@ -910,7 +922,13 @@ window.openReserveSheet = function() {
 window.openHerbSheet = function() {
   try {
     herbTick(S); const hg = S.herbGarden;
-    openSheet(`<h2>🌱 田药园</h2><div class="hint">每分钟生长1株，上限99 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('采药中……',doHerbGather)" ${(hg.h|0)>0?'':'disabled'}>🌱 采1株<br><small>剩余×${hg.h|0}</small></button><button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
+    const rows = [1, 2, 3].map(g => {
+      const name = { 1: '地品灵草丛', 2: '天品灵草丛', 3: '仙品灵草丛' }[g];
+      const cyc = { 1: '每分钟 1 丛', 2: '每 10 分钟 1 丛', 3: '每半小时 1 丛' }[g];
+      const cnt = (hg['h' + g]|0);
+      return `<div class="row"><div class="lab">${window._herbHtml('lq' + g, name)}<small>${cyc} · 剩余×${cnt}</small></div><button class="btn gold" onclick="gatherProgWrap('采药中……',function(){doHerbGather(${g})})" ${cnt > 0 ? '' : 'disabled'}>采 1 丛</button></div>`;
+    }).join('');
+    openSheet(`<h2>🌱 田药园</h2><div class="hint">灵药丛分开长、分开采：采哪丛得哪品 · 各上限 99 · 免费</div>${rows}<button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openRanchSheet = function() {
@@ -1271,7 +1289,7 @@ function cityMoveThunder() {
         else if (isCookRefine2) ci.innerHTML = '🍳 <b>灶台</b> 🪙 <b>点金台</b> · <u>点我选择</u>'; // v458
         else if (isBeastGarden2) ci.innerHTML = '🐾 <b>兽园</b> · <u>点我驯兽</u>'; // v465
         else if (isCasino2) ci.innerHTML = '🎲 <b>赌场</b> · <u>点我进入</u>';
-        else if (isHerb2) { try { herbTick(S); const _hg = S.herbGarden; ci.innerHTML = '🌱 <b>田药园</b>' + (_hg.h>0 ? '（草药×'+_hg.h+'）' : '（待生长）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '🌱 <b>田药园</b> · <u>点我采集</u>'; } } // v553
+        else if (isHerb2) { try { herbTick(S); const _hg = S.herbGarden; const _ht = (_hg.h1|0) + (_hg.h2|0) + (_hg.h3|0); ci.innerHTML = '🌱 <b>田药园</b>' + (_ht>0 ? '（草药×'+_ht+'）' : '（待生长）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '🌱 <b>田药园</b> · <u>点我采集</u>'; } } // v553
         else if (isRanch2) { try { ranchTick(S); const _rc = S.ranch; const _r2 = []; if (_rc.m>0) _r2.push('肉×'+_rc.m); if (_rc.e>0) _r2.push('蛋×'+_rc.e); ci.innerHTML = '🥚 <b>养殖园</b>' + (_r2.length ? '（'+_r2.join('、')+'）' : '（待产出）') + ' · <u>点我收获</u>'; } catch(e) { ci.innerHTML = '🥚 <b>养殖园</b> · <u>点我收获</u>'; } } // v553
         else {
           // v552 文字显示这格有啥：人/矿/灵草等
@@ -1285,8 +1303,8 @@ function cityMoveThunder() {
           } catch(e) {}
           // 田药园(3,2)
           if (wx === 3 && wy === 2) {
-            try { herbTick(S); const _hg = S.herbGarden;
-              _parts.push('🌱 <b>田药园</b>' + (_hg.h > 0 ? '：草药×' + _hg.h : '（待生长）'));
+            try { herbTick(S); const _hg = S.herbGarden; const _ht = (_hg.h1|0) + (_hg.h2|0) + (_hg.h3|0);
+              _parts.push('🌱 <b>田药园</b>' + (_ht > 0 ? '：草药×' + _ht : '（待生长）'));
             } catch(e) { _parts.push('🌱 <b>田药园</b>'); }
           }
           // 养殖园(2,0)
