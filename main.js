@@ -2640,7 +2640,9 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
 }
 function doAdvMove(dir) {
   if (S.forceReinc) { try { showTip(S.forceReincWhy === 'life' ? '⌛ 寿元耗尽，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>' : '☠️ 你已身死，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>'); } catch (_) {} return; } // v1178
-  const r = C.advMove(S, dir); if (!r || r.err) return;
+  const r = C.advMove(S, dir);
+  if (!r) return;
+  if (r.err) { if (r.err === 'need_skill') { try { showTip(r.skill === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '☁️ 这块云端格需要学会「缩地」才能上去'); } catch (_) {} } return; } // v1235 云端格方向移动被拦也要提示差哪个技能（此前静默）
   if (r.end) { showAdvEnd({ lines: ['抵达终点'], end: r.end }); return; }
   afterAct(); commit(); sheetRun();
   if (r.resMsg) { try { toastLog('good', r.resMsg); } catch (_) {} } // v1125 资源格采集反馈
@@ -8092,7 +8094,14 @@ document.addEventListener('click', e => {
         if (_tt && _tt.t === 'void') return; // v1151 虚空格不可站
         const _stt = _shared && _shared.tiles && _shared.tiles[_gy] && _shared.tiles[_gy][_gx];
         if (_stt && _stt.t === 'void') return;
-        if (!_tt) return; // v1220 本地无此格（旧 6 行存档图）不移动
+        if (!_tt) { // v1235 本地旧图无此格（开局早于 v1234，本地 7 行、共享已 8 行）：目标是云端格且没学会对应技能，先报差哪个技能，不静默
+          const _need0 = (_stt && _stt.need) || (_gy === 7 ? C.hiGateFor(_gx) : null);
+          if (_need0) {
+            const _has0 = _need0 === 'danuoyi' ? (S.skills && S.skills.includes('danuoyi')) : ((S.skills && S.skills.includes('shukuchi')) || (S.skills && S.skills.includes('danuoyi')));
+            if (!_has0) { try { showTip(_need0 === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '☁️ 这块云端格需要学会「缩地」才能上去'); } catch (_) {} }
+          }
+          return;
+        }
         const _dx = _gx - _gr.px, _dy = _gy - _gr.py;
         const _cheb = Math.max(Math.abs(_dx), Math.abs(_dy));
         const _dist = Math.abs(_dx) + Math.abs(_dy);
