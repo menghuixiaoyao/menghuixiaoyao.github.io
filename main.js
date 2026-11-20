@@ -2435,8 +2435,9 @@ function sheetAdventure(page) {
           <button class="btn gold" data-adv="mijing" ${S.stamina >= mj.cost && !S.dead && mjLeft > 0 ? '' : 'disabled'}>进入秘境</button></div>`;
       }
       const d = DIFFS[k]; const low = S.level < d.rec || C.total(S.attrs) < d.recTot, rw = C.RANK_W[k], sum = rw.reduce((a, b) => a + b, 0);
-      return `<div class="row"><div class="lab">${d.name} <small style="display:inline" class="${low ? 'r' : 'g'}">建议 Lv.${d.rec}+ · 总属性 ${d.recTot}+</small><small>-${d.cost} 体力 · ${C.ADV_STEPS[k]} 步 · 怪物 ${C.RANKS.map((r, i) => rw[i] ? `<span class="${r.cls}">${r.name}${Math.round(rw[i] / sum * 100)}%</span>` : '').filter(Boolean).join(' ')} · 败：属性 -${d.lose}、伤病 ${C.pct(d.st)}</small></div>
-        <button class="btn ${d.cost >= 10 ? 'red' : d.cost >= 3 ? 'gold' : ''}" data-adv="${k}" ${S.stamina >= d.cost && !S.dead ? '' : 'disabled'}>出发</button></div>`;
+      const _minR = C.ADV_MIN_REALM[k], _realmOk = C.advRealmOk(S, k); // v1236 进冒险最低境界
+      return `<div class="row"><div class="lab">${d.name} <small style="display:inline" class="${low ? 'r' : 'g'}">建议 Lv.${d.rec}+ · 总属性 ${d.recTot}+</small>${_minR !== undefined ? ` <small style="display:inline" class="${_realmOk ? 'g' : 'r'}">需${C.REALMS[_minR]}境界</small>` : ''}<small>-${d.cost} 体力 · ${C.ADV_STEPS[k]} 步 · 怪物 ${C.RANKS.map((r, i) => rw[i] ? `<span class="${r.cls}">${r.name}${Math.round(rw[i] / sum * 100)}%</span>` : '').filter(Boolean).join(' ')} · 败：属性 -${d.lose}、伤病 ${C.pct(d.st)}</small></div>
+        <button class="btn ${d.cost >= 10 ? 'red' : d.cost >= 3 ? 'gold' : ''}" data-adv="${k}" ${S.stamina >= d.cost && !S.dead && _realmOk ? '' : 'disabled'}>${_realmOk ? '出发' : '需' + C.REALMS[_minR]}</button></div>`;
     }).join('');
   }
   const pageBtns = [1,2,3,4,5].map(p => `<button class="btn" data-advpage="${p}" style="flex:1;${p===page?'opacity:0.5':''}">${p}</button>`).join('');
@@ -2662,6 +2663,7 @@ function showAdvEnd(r) { // 冒险结算统一展示
 function doAdventure(dk) {
   if (pk && pk.adv && !pk.trib) { try { showTip('⚔️ 战斗中，先解决眼前的战斗'); } catch(_) {} try { if (typeof renderCombat === 'function') renderCombat(); else render(); } catch(_) {} return; } // v1188 冒险战斗中不重开冒险面板（防撤退/走格把进行中的战斗变残留）
   if (S.run && !S.dead) { sheetRun(); return; } // 已在冒险中：直接继续
+  if (!C.advRealmOk(S, dk)) { try { showTip(`🗺️ ${DIFFS[dk].name}需${C.REALMS[C.ADV_MIN_REALM[dk]]}境界才能进入`); } catch (_) {} return; } // v1236 进冒险最低境界（主宰轮回过不限）
   const run = C.advStart(S, dk); if (!run) { if (S.dead) { closeSheet(); afterAct(); commit(); } return; }
   if (C.hasSt(S, 'poison') && !S.dead) { // 中毒：每次进冒险扣中毒时生命上限的10%
     if (!S.status.poisonBase) S.status.poisonBase = S.attrs.vit;
