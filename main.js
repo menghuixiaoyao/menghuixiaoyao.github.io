@@ -2490,6 +2490,9 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   let _hiRowIdx = -1; // v1220 高地行：本地格或共享格带 gate 的那一行（无则 -1，旧图/秘境/五行图不受影响）
   for (let _ry = 0; _ry < g.tiles.length; _ry++) { const _row = g.tiles[_ry]; if (_row && _row.some(function(_t) { return _t && _t.gate; })) { _hiRowIdx = _ry; break; } }
   if (_hiRowIdx < 0 && shared && shared.tiles) for (let _ry = 0; _ry < shared.tiles.length; _ry++) { const _row = shared.tiles[_ry]; if (_row && _row.some(function(_t) { return _t && _t.gate; })) { _hiRowIdx = _ry; break; } }
+  let _clRowIdx = -1; // v1234 云端行：本地格或共享格带 need 的那一行（无则 -1，旧图/秘境/五行图不受影响）
+  for (let _ry = 0; _ry < g.tiles.length; _ry++) { const _row = g.tiles[_ry]; if (_row && _row.some(function(_t) { return _t && _t.need; })) { _clRowIdx = _ry; break; } }
+  if (_clRowIdx < 0 && shared && shared.tiles) for (let _ry = 0; _ry < shared.tiles.length; _ry++) { const _row = shared.tiles[_ry]; if (_row && _row.some(function(_t) { return _t && _t.need; })) { _clRowIdx = _ry; break; } }
   const _myLt = g.tiles[g.py] && g.tiles[g.py][g.px];
   const _mySt = shared && shared.tiles && shared.tiles[g.py] ? shared.tiles[g.py][g.px] : null;
   const _cellHtml = function(x, y) { // v1220 单元格渲染抽成闭包：主图与高地行共用
@@ -2534,6 +2537,14 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       if (isP) icon += `<span style="position:absolute;left:0;bottom:0;font-size:10px">🧭</span>`;
       else icon = `<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center">${icon}<span style="position:absolute;top:-2px;right:-2px;font-size:10px">🧭</span></div>`;
     }
+    const _stNeed = shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x] ? shared.tiles[y][x].need : null; // v1234 云端格技能角标
+    const _tgtNeed = _stNeed || t.need || (y === _clRowIdx && _clRowIdx >= 0 ? C.hiGateFor(x) : null);
+    if (_tgtNeed) { // v1234 云端技能角标（1 字）：缩地蓝「缩」/大挪移紫「移」（沿用 v1220 高地角标样式）
+      const _nb = _tgtNeed === 'danuoyi' ? '移' : '缩';
+      const _nbc = _tgtNeed === 'danuoyi' ? '#b45cff' : '#4d9dff';
+      if (isP) icon += `<span style="position:absolute;left:0;top:0;background:${_nbc};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_nb}</span>`;
+      else icon = `<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center">${icon}<span style="position:absolute;left:-2px;bottom:-2px;background:${_nbc};color:#fff;font-size:8px;line-height:1.5;padding:0 3px;border-radius:4px">${_nb}</span></div>`;
+    }
     const _dist = Math.abs(x - g.px) + Math.abs(y - g.py);
     const _cheb = Math.max(Math.abs(x - g.px), Math.abs(y - g.py)); // v764 斜走用切比雪夫距离
     const _hasSk = S.skills && S.skills.includes('shukuchi');
@@ -2545,9 +2556,12 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     const _adj = !isP && ((_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag));
     return isP ? `<button class="acell${cls}" data-advself="1" style="position:relative">${icon}</button>` : (_adj ? `<button class="acell${cls}" data-advx="${x}" data-advy="${y}">${icon}</button>` : `<div class="acell${cls}">${icon}</div>`); // v768 点自己看状态；v1231 高地无门：与普通格同规，只相邻格可点
   };
-  for (let y = 0; y < g.h; y++) { if (y === _hiRowIdx) continue; for (let x = 0; x < g.w; x++) cells += _cellHtml(x, y); }
+  let clCells = ''; // v1234 云端行
+  for (let y = 0; y < g.h; y++) { if (y === _hiRowIdx || y === _clRowIdx) continue; for (let x = 0; x < g.w; x++) cells += _cellHtml(x, y); }
   if (_hiRowIdx >= 0) { for (let x = 0; x < g.w; x++) hiCells += _cellHtml(x, _hiRowIdx); }
+  if (_clRowIdx >= 0) { for (let x = 0; x < g.w; x++) clCells += _cellHtml(x, _clRowIdx); }
   const hiSec = hiCells ? `<div style="text-align:center;font-size:11px;color:var(--dim);margin:6px 0 0">⛰️高地</div><div class="agrid" style="margin-top:2px">${hiCells}</div>` : '';
+  const clSec = clCells ? `<div style="text-align:center;font-size:11px;color:var(--dim);margin:6px 0 0">☁️云端</div><div class="agrid" style="margin-top:2px">${clCells}</div>` : '';
   const scene = ev
     ? (ev.type === 'dungeonText' ? escDg(ev.text) : ev.type === 'fight' ? `${ev.text ? `<span class="r">${ev.text}</span> ` : ''}${ev.boss ? '<b class="r">守关</b>' : ''}一只${monKindCard(ev.mon, ev.monTile ? ev.monTile.tier : null, '挡住去路')}`
       : ev.type === 'guarded' ? `🛡️ ${ev.text}——${monKindCard(ev.mon, null, '正守着' + (ev.loot === 'herb' ? '🌿灵草' : '🎁宝箱'))}`
@@ -2615,7 +2629,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   const _recentHtml = (() => { try { const _lg = (Array.isArray(S.log) ? S.log.slice(-3) : []).filter(e => e && e.h); if (!_lg.length) return ''; return `<div class="empty" style="text-align:left;padding:8px 2px">📜 近况${_lg.map(e => `<div style="font-size:11px;color:var(--dim)"><span style="color:#666">${e.t || ''}</span> ${e.h}</div>`).join('')}</div>`; } catch(_) { return ''; } })();
   openSheet(`<h2>${run.dungeon ? '🏰 ' + escDg(run.dungeon.title) + ' <small style="font-size:12px;color:var(--dim)">作者：' + escDg(run.dungeon.by) + '</small>' : '🗺️ ' + d.name + '冒险'} <small style="font-size:12px;color:var(--dim)">已走 ${g.moves} 格 · 触发 ${run.evCount | 0} 事件</small></h2>` +
     (out && out.lines && out.lines.length ? `<div class="hint">${out.lines.join('；')}${out.battle ? `<details><summary>战斗记录（${out.battle.round} 回合）</summary>${out.battle.lines.join('')}</details>` : ''}</div>` : '') +
-    hiSec + `<div class="agrid">${cells}</div>${_coLine}` +
+    clSec + hiSec + `<div class="agrid">${cells}</div>${_coLine}` +
     `<div class="scene">${scene}</div>` +
     resRow +
     (ev && ev.type === 'dungeonText' ? `<div class="grid2"><button class="btn gold full" data-dungeontext>继续前行</button></div>` : ev ? `<div class="grid2">${chs.map((c, i) => `<button class="btn ${c.retreat ? '' : i === 0 ? 'gold' : ''}" data-advc="${i}" ${c.dis ? 'disabled' : ''} style="line-height:1.3">${c.l}${c.hint ? `<br><small>${c.hint}</small>` : ''}</button>`).join('')}</div><div class="hint" style="text-align:center">也可直接走开，事件留在格子上，回来再处理</div>` : '') +
@@ -8087,6 +8101,12 @@ document.addEventListener('click', e => {
         const _maxDist = _hasDny ? 3 : (_hasSk ? 2 : 1);
         const _maxDiag = _hasDny ? 2 : (_hasSk ? 1 : 0);
         const _isOrth = (_dx === 0 || _dy === 0);
+        const _clRow7 = _gr.tiles[7] && _gr.tiles[7].some(function(_t) { return _t && _t.need; }); // v1234 云端行（本地第 7 行）判定
+        const _tgtNeed = (_stt && _stt.need) || (_tt && _tt.need) || (_clRow7 && _gy === 7 ? C.hiGateFor(_gx) : null); // v1234 云端格技能门（本地判定；服务端心跳/移动再验一次）
+        if (_tgtNeed) {
+          const _passN = _tgtNeed === 'danuoyi' ? _hasDny : (_hasSk || _hasDny);
+          if (!_passN) { try { showTip(_tgtNeed === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '☁️ 这块云端格需要学会「缩地」才能上去'); } catch (_) {} return; }
+        }
         const _canMove = (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag); // v1231 高地无门：与普通格同规（相邻正交 1 格；斜向仍要缩地/大挪移技能）
         if (_canMove) {
           // v766 直接跳到目标格，只触发落点事件

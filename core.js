@@ -3411,7 +3411,13 @@ const ADV_MAP_SHAPES = { // v1151 异形地图（与服务端 advmap.js 同图�
   mijing: { s: [1, 5], r: ['X....X', 'X....X', 'XX.XXX', '.....X', '......', '.S...X'] }
 };
 const ADV_HI_Y = 6; // v1220 高地行：y=6，6 块高地（与服务端 advmap.js HI_Y 同规）
-function hiGateFor(x) { return x < 3 ? 'shukuchi' : 'danuoyi'; } // v1220 高地技能门：前 3 块缩地、后 3 块大挪移（与服务端同规）
+const ADV_CLOUD_Y = 7; // v1234 云端行：y=7，6 块云端格（与服务端 advmap.js CLOUD_Y 同规）
+function hiGateFor(x) { return x < 3 ? 'shukuchi' : 'danuoyi'; } // v1220 高地技能门：前 3 块缩地、后 3 块大挪移（与服务端同规）；v1234 云端行沿用同一分法
+function cloudNeedPasses(skills, need) { // v1234 云端格技能门：大挪移可进缩地云端格，缩地云端格接受 shukuchi 或 danuoyi，大挪移云端格只接受 danuoyi（与服务端 hiGatePasses 同规）
+  if (!skills) return false;
+  if (need === 'danuoyi') return skills.includes('danuoyi');
+  return skills.includes('shukuchi') || skills.includes('danuoyi');
+}
 function advShapeFor(dk) { return ADV_MAP_SHAPES[dk] || ADV_MAP_SHAPES.easy; }
 function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空格不可站；事件格撒在可行走格上
   const shp = advShapeFor(dk || 'easy');
@@ -3431,6 +3437,9 @@ function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空
     const _hiRow = [];
     for (let x = 0; x < ADV_GW; x++) { const _ht = advFreshResTileL(_nowG, advQiL(dk), dk); _ht.gate = hiGateFor(x); _hiRow.push(_ht); }
     tiles.push(_hiRow);
+    const _clRow = []; // v1234 云端：8 张冒险图各加 6 块（y=7 行），内容与普通 land 格同规，带 need 技能门（前 3 缩地、后 3 大挪移）；五行图不加
+    for (let x = 0; x < ADV_GW; x++) { const _ct = advFreshResTileL(_nowG, advQiL(dk), dk); _ct.need = hiGateFor(x); _clRow.push(_ct); }
+    tiles.push(_clRow);
   }
   return { w: ADV_GW, h: tiles.length, tiles, px: sx, py: sy, ex: ADV_GW - 1, ey: 0, moves: 0 };
 }
@@ -3772,7 +3781,7 @@ function defarrayCanBreakL(kind, ownerArrays) { // 顺序预检：破采集/遮�
   if (kind === 'def') return true;
   return !(ownerArrays || []).some(a => a.kind === 'def' && a.fueled);
 }
-Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, toolsNormalizeL, activeToolL, takeToolL, addToolL, sharedPoolRollL, wildWoodRollL, smeltL, WOOD_KEYS_L, WOOD_BY_GRADE_L, REPAIR_POOL_L, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL, hiGateFor, DEFARRAY_POWER_L, DEFARRAY_AURA_L, DEFARRAY_FUEL_L, DEFARRAY_MULT_L, DEFARRAY_SYNTH_L, DEFARRAY_GUARD_PETS_L, defarrayThresholdL, defarrayBreakLootL, defarrayKindNameL, defarrayTierNameL, defarrayCanBreakL }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）；v1220 高地门判定导出；v1226 防御阵/遮天阵导出
+Object.assign(C, { TOOL_NAMES, TOOL_TIER_COLORS, TOOL_LVL_COLORS, LW_GRADE_NAMES, LW_SEED_NAMES, GRADE_COLORS, toolNeedL, toolCritMultL, toolUseL, toolsNormalizeL, activeToolL, takeToolL, addToolL, sharedPoolRollL, wildWoodRollL, smeltL, WOOD_KEYS_L, WOOD_BY_GRADE_L, REPAIR_POOL_L, lwYearCapL, rollLwYearsL, herbBonusL, veinStoneL, rollResGradeL, toolGateL, LW_ELES, LW_ELE_COLORS, rollLwEleL, rootBaseL, hasRootEleL, eleFactorL, eleNoteL, mutRootL, tryAwakenRoot, tryComprehendRoot, HERB_ELE, herbEatenToday, eatHerb, danDuCap, toxImmune, tryToxRoot, addDanDu, toxEff, tryToxDan, advFreshResTileL, advResSettleGrid, advLocalGather, advMonTileEv, resNameL, resIconL, resKindOfL, resGradeOfL, domSlotL, RES_CODES_L, advQiL, afkHourly, afkTick, ensureMonListL, advTileKillL, advMonChipsL, hiGateFor, advGenGrid, DEFARRAY_POWER_L, DEFARRAY_AURA_L, DEFARRAY_FUEL_L, DEFARRAY_MULT_L, DEFARRAY_SYNTH_L, DEFARRAY_GUARD_PETS_L, defarrayThresholdL, defarrayBreakLootL, defarrayKindNameL, defarrayTierNameL, defarrayCanBreakL }); // v1129 五行导出；v1154 资源格导出；v1161 afkHourly 导出（供 main 的 tick 经 C 调用）；v1220 高地门判定导出；v1226 防御阵/遮天阵导出；v1234 advGenGrid 导出（供云端行自测）
 function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件未解决也可走开，事件留在格子上）
   const run = S.run; if (!run || !run.grid || S.dead) return null;
   if (S.forceReinc) return { err: 'nolife' }; // v1178 身死/寿元耗尽：冒险内也不能移动
@@ -3782,6 +3791,8 @@ function advMove(S, dir) { // 格子移动：up/down/left/right（v184：事件�
   const nx = g.px + d[0], ny = g.py + d[1];
   if (nx < 0 || ny < 0 || nx >= g.w || ny >= g.h) return { err: 'edge' };
   if (g.tiles[ny][nx].t === 'void') return { err: 'void' }; // v1151 虚空格不可站
+  const _nt = g.tiles[ny][nx]; // v1234 云端格技能门：进云端格须有对应技能（大挪移可进缩地格）；高地行无 need，不受影响
+  if (_nt && _nt.need && !cloudNeedPasses(S.skills || [], _nt.need)) return { err: 'need_skill', skill: _nt.need };
   g.px = nx; g.py = ny; g.moves++;
   const t = g.tiles[ny][nx];
   run.ev = null;
@@ -3810,6 +3821,7 @@ function advSyncSharedTileTypes(S, stTiles) { // v1220 共享 tile 同步（含�
       if (_st.rs) { const _rs = {}; for (const _c in _st.rs) _rs[_c] = { a: _st.rs[_c] | 0, at: Date.now() }; _lt.rs = _rs; _lt.t = 'land'; }
       if (_st.mons) _lt.mons = _st.mons;
       if (_st.gate !== undefined) _lt.gate = _st.gate || null;
+      if (_st.need !== undefined) _lt.need = _st.need || null; // v1234 云端格 need 随 tile 同步
     }
   }
 }
