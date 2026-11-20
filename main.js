@@ -2474,6 +2474,7 @@ const SLOT_CHIP_STYLE = { h1: ['#3ecf6f', '地品'], h2: ['#4d9dff', '天品'], 
 function slotChip(c, a) { const _ss = SLOT_CHIP_STYLE[c] || ['#cccccc', C.resNameL(c)]; return `<span style="color:${_ss[0]};font-size:11px;white-space:nowrap">${C.resIconL(c)}${_ss[1]}×${a}</span>`; }
 function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 + 事件面板
   const run = S.run; if (!run || !run.grid) return;
+  const _sh = document.getElementById('sheet'); const _keepSy = !!(_sh && _sh.querySelector('.agrid')); const _sy = _keepSy ? _sh.scrollTop : 0; // v1232 回弹：席子上已是冒险图时，重渲染保住滚动位置（5 秒轮询/自动采集每步都调 sheetRun，旧逻辑经 openSheet 每次 scrollTop=0 把人顶回顶部；新开冒险仍置顶）
   const d = DIFFS[run.dk], g = run.grid, ev = run.ev, chs = ev ? (ev.type === 'dungeonText' ? [] : C.advChoices(S)) : [];
   const TICON = { start: '🟫', empty: '⬜', fight: '⚔️', fortune: '✨', chest: '🎁', gchest: '🎁', gherb: '🌿', trap: '⚠️', rest: '⛺', event: '📜', rherb: '🌱', rore: '⛏️', rvein: '💎', herb: '🌿', ore: '⛏️', vein: '💎' }; // v1154 资源格类型图标
   const shared = run.shared && run.shared.on ? run.shared : null;
@@ -2621,6 +2622,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
     `<div class="row" style="display:flex;gap:8px"><button class="btn gold" data-dazuo style="flex:1">🧘 调息（回10%生命）</button><button class="btn" data-tpscroll style="flex:1" ${(S.meds.tpscroll|0) > 0 ? '' : 'disabled'}>📜 传送卷×${S.meds.tpscroll|0}</button></div>` +
     `<div class="row" style="display:flex;gap:8px"><button class="btn" data-advretreat style="flex:1">🏳️ 撤退</button><button class="btn" data-close style="flex:1">稍后继续</button></div>` +
     `<div class="empty" style="text-align:left;padding:8px 2px">本轮收获：${rewTxt(run.rew)}</div>` + _recentHtml);
+  if (_keepSy) { try { _sh.scrollTop = _sy; } catch(_) {} } // v1232 回弹：重渲染后把滚动位置还回去
 }
 function doAdvMove(dir) {
   if (S.forceReinc) { try { showTip(S.forceReincWhy === 'life' ? '⌛ 寿元耗尽，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>' : '☠️ 你已身死，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>'); } catch (_) {} return; } // v1178
