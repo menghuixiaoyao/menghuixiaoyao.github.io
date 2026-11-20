@@ -4183,7 +4183,7 @@ function sheetBag() {
     ((S.inv['detox']|0) > 0 ? `<div class="row"><div class="lab">🍃 <b class="y">化无丹</b> ×${S.inv['detox']}<small>服用：丹毒 -20（当前丹毒 ${S.danDu|0}/${C.danDuCap(S)}）</small></div><button class="btn gold" data-detoxuse="1">服用</button></div>` : '') +
     (((S.dan && S.dan.bigu)|0) > 0 ? `<div class="row"><div class="lab">🍘 <b class="y">辟谷丸</b> ×${S.dan.bigu}<small>服用：饱食 +20（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="bigu">服用</button></div>` : '') +
     (((S.dan && S.dan.qili)|0) > 0 ? `<div class="row"><div class="lab">💪 <b class="y">气力丸</b> ×${S.dan.qili}<small>服用：体力 +3（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="qili">服用</button></div>` : '') +
-    `<div class=row><div>🌿修复灵物</div><button data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神乘劫余散合尊'[i]}灵物×${S.inv['repair'+i]}</div><button data-rep=${i}>服</button></div>`:'').join('')+
+    `<div class=row><div>🌿修复灵物</div><button class="btn" data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神乘劫余散合尊'[i]}灵物×${S.inv['repair'+i]}</div><button class="btn" data-rep=${i}>服</button></div>`:'').join('')+
 
 
     (!list.length && !(S.inv['mai']|0) ? '<div class="empty">空空如也，去炼药吧～</div>' : '') +
