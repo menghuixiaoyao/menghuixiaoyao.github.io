@@ -4027,7 +4027,7 @@ window.advArrayPanel = function() {
     const _sum = o => Object.values(o || {}).reduce((s, v) => s + (v | 0), 0);
     const invTxt = `材料 ×${_sum(inv.mats) + _sum(inv.ores)} · 灵物 ×${(inv.lw || []).length} · 种子 ×${_sum(inv.seeds)}${(inv.xy | 0) > 0 ? ` · 仙玉 ×${inv.xy}` : ''}`;
     const tierNm = ['', '小型', '中型', '大型'][Math.min(3, Math.max(1, a.tier | 0 || 1))];
-    openSheet(`<h2>🧭 <span style="color:${C.GRADE_COLORS[(a.tier | 0 || 1) - 1]}">${tierNm}采集阵</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的${_fname}：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：${invTxt}<br>阵只收草药与灵脉（按阵档），矿石留格上等手挖；阵收取无暴击。</div><div class="grid2"><button class="btn gold" data-a2fuel>${['🌗', '💎', '💠'][_ftier - 1]} 加灵石</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>💥 拆除</button><button class="btn" data-a2back>返回地图</button></div>`);
+    openSheet(`<h2>🧭 <span style="color:${C.GRADE_COLORS[(a.tier | 0 || 1) - 1]}">${tierNm}采集阵</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的${_fname}：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：${invTxt}<br>阵只收草药与灵脉（按阵档），矿石留格上等手挖；阵收取无暴击。</div><div class="grid2"><button class="btn gold" data-a2fuel>${['🌗', '💎', '💠'][_ftier - 1]} 加灵石</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>📥 收回</button><button class="btn" data-a2back>返回地图</button></div>`);
   } catch (e) {}
 };
 window.advArrayFuel = async function() {
@@ -4054,7 +4054,7 @@ window.advArrayFuel = async function() {
 };
 window.advArrayTake = async function(remove) {
   try {
-    if (remove && !confirm('确定拆除这张图的采集阵？库存将自动收取。')) return;
+    if (remove && !confirm('确定收回这张图的采集阵？阵棋、库存与剩余燃料全部收回。')) return;
     const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
     const resp = await MHXY.api(remove ? '/api/array2/remove' : '/api/array2/collect', { method: 'POST', body: { dk } });
     const j = resp && resp.json;
@@ -4068,7 +4068,7 @@ window.advArrayTake = async function(remove) {
       }
       if (got.length) advTip(`📦 从采集阵收取：${got.join('、')}`);
       else advTip('阵内空空如也');
-      if (remove) advTip(`💥 采集阵已拆除，库存已收取${j.refund ? `，退阵棋×${j.refund.zhenqi}${(j.refund.fuel | 0) > 0 ? `、退${lootLabel('ores', j.refund.fuelKey)}×${j.refund.fuel}` : ''}` : ''}`);
+      if (remove) advTip(`📥 采集阵已收回，库存已收取${j.refund ? `，退阵棋×${j.refund.zhenqi}${(j.refund.fuel | 0) > 0 ? `、退${lootLabel('ores', j.refund.fuelKey)}×${j.refund.fuel}` : ''}` : ''}`);
       commit();
     } else {
       advTip((j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : '收取失败');
