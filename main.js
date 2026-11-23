@@ -464,6 +464,13 @@ window._herbHtml = function(key, name) {
   const n = name || ({ lq1: '地品灵草', lq2: '天品灵草', lq3: '仙品灵草' })[key] || key;
   return c ? '<b style="color:' + c + '">' + n + '</b>' : n;
 };
+window._afterHerbSheet = function() { // v1242 采药后面板：田药园面板已开着就刷新；冒险中不主动弹出来抢面板
+  try {
+    var _sh = document.getElementById('sheet');
+    var _open = !!(_sh && _sh.innerHTML.indexOf('田药园') !== -1);
+    if (_open || !(S.run && S.run.grid)) openHerbSheet();
+  } catch (_) { try { openHerbSheet(); } catch (_) {} }
+};
 window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2/3；不传则自动取最高档有货的；产出与野外同表，灵草停产，共享池保留
   herbTick(S);
   const hg = S.herbGarden;
@@ -481,7 +488,7 @@ window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2
         const left = S.herbGarden ? S.herbGarden['h' + grade]|0 : 0;
         log('good', `🌱 在田药园采集：${got.length ? got.join('、') : '空'}（剩余${left}丛）`);
         thunderGatherJudge();
-        commit(); renderWorldMap(); openHerbSheet();
+        commit(); renderWorldMap(); window._afterHerbSheet();
         if (typeof toastLog === 'function') toastLog('good', got.length ? ('采集' + got[0]) : '采药完成');
         return;
       }
@@ -513,7 +520,7 @@ window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2
   const got = (C.advApplyGains ? C.advApplyGains({ gains: _gains }) : []);
   log('good', `🌱 在田药园采集：${got.length ? got.join('、') : '空'}（剩余${hg2['h' + grade]}丛）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
-  commit(); renderWorldMap(); openHerbSheet();
+  commit(); renderWorldMap(); window._afterHerbSheet();
   if (typeof toastLog === 'function') toastLog('good', got.length ? ('采集' + got[0]) : '采药完成');
 }; // v540
 window.gatherProgWrap = function(txt, fn) { // v717 田药园/灵脉矿区采集进度条

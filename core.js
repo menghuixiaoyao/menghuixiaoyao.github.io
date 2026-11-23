@@ -3874,8 +3874,8 @@ function advSharedPoll(S) {
         // v971 轮询时也同步 tile 类型
         advSyncSharedTileTypes(S, st.json.tiles);
         try { if (S.run.grid) advSharedHeartbeat(S.run.grid.px, S.run.grid.py); } catch (_) {} // v1168 轮询顺带心跳保活 DO 玩家记录（5 分钟 TTL），防站太久记录过期、战斗格 claim not_there
-        // 如果冒险面板开着，刷新显示
-        if (typeof sheetRun === 'function' && S.run && S.run.grid) {
+        // 如果冒险面板开着，刷新显示（v1242 面板没开不重开：轮询只刷新、不抢席子）
+        if (typeof sheetRun === 'function' && S.run && S.run.grid && (!window.advAutoPanelOpen || window.advAutoPanelOpen())) {
           try { sheetRun(); } catch (_) {}
         }
       }
