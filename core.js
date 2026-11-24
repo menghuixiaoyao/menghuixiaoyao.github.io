@@ -4277,8 +4277,9 @@ window.advBreakArray = async function(kind, ownerNo) {
     const tgt = arrs.find(a => a.kind === kind && (a.player_no | 0) === (ownerNo | 0) && a.x === gx && a.y === gy);
     const nm = C.defarrayKindNameL(kind);
     const ownerName = tgt ? tgt.username : ('#' + ownerNo);
-    if (!confirm(`确定攻打 ${ownerName} 的${nm}？不耗体力，打输照打怪失败算。`)) return;
-    const resp = await MHXY.api('/api/defarray/break', { method: 'POST', body: { dk, x: gx, y: gy, kind, ownerNo: ownerNo | 0 } });
+    const _pre = (typeof window.preBattlePick === 'function') ? await window.preBattlePick('⚔️ 破阵准备', `确定攻打 ${ownerName} 的${nm}？不耗体力，打输照打怪失败算。`) : { burnBlood: 0, burnMana: 0, burnLife: 0, zx: null };
+    if (!_pre) { await advSharedRefresh(); try { sheetRun(); } catch (_) {} return; }
+    const resp = await MHXY.api('/api/defarray/break', { method: 'POST', body: { dk, x: gx, y: gy, kind, ownerNo: ownerNo | 0, pre: _pre } });
     const j = resp && resp.json;
     if (resp.ok && j && j.ok) {
       if (typeof j.hpCur === 'number') S.hpCur = j.hpCur;

@@ -1560,7 +1560,7 @@ try { if (typeof C !== 'undefined' && typeof C.afkTick === 'function' && typeof 
   if (typeof S === 'undefined' || !S) return;
   try { renderWorldMap(); } catch (_) {}
   /* 战斗中只显示战斗界面，隐藏主界面 header */
-  const hdr = document.querySelector('header'); if (hdr) hdr.style.display = pk ? 'none' : '';
+  const hdr = document.querySelector('header'); if (hdr) hdr.style.display = (pk || (window.pkBattle && window.pkBattle.state)) ? 'none' : '';
   /* 体力耗尽时主界面显示闭关选择（不再弹窗） */
   if (S.bc && S.bc.length) { // 全服通告：弹横幅 + 记日志
     const items = S.bc; S.bc = [];
@@ -1688,6 +1688,7 @@ function doDazuo() { // v199 打坐调息：恢复10%生命上限；v277 1分钟
 }
 function renderActions() {
   const nav = $('actions');
+  if (window.pkBattle && window.pkBattle.state) { pkBattleRender(); return; }
   if (pk) { renderCombat(); return; }
   // v306 去掉体力耗尽简化版，永远显示完整功能区
   $('combat').classList.remove('on'); nav.classList.add('main'); try { document.body.classList.remove('combating'); } catch(_) {} // v837 战斗结束移除body类
@@ -1745,6 +1746,7 @@ function fRow(f) {
 }
 function renderCombat() {
   try { if (typeof window !== 'undefined') pk = window.pk || null; } catch(_) {} // v836 跨块同步，不留旧对象
+  if (window.pkBattle && window.pkBattle.state) { pkBattleRender(); return; }
   try { // v793 兜底：心魔已死但界面还在，直接走结算；v795 血量<1也算死（小数血量）；v827 防重入破死循环；v830 序号检查
     if (window._inPkOver) return;
     const _G = (typeof G !== 'undefined' ? G : window);
@@ -1818,6 +1820,411 @@ function renderCombat() {
   }
 }
 
+/* ---------- v1248 手动 PK ---------- */
+window.pkBattle = null;
+function pkEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function pkBattleLifeMax() { return Math.max(0, Math.floor(((S.lifespan | 0) - 1) / 10)); }
+function pkBattleMyPets() {
+  const ids = Array.isArray(S.pet) ? S.pet : (S.pet != null ? [S.pet] : []);
+  return ids.map(function(id) { return (S.pets || []).filter(function(p) { return p && p.id === +id; })[0]; }).filter(function(p) { return !!p; });
+}
+function pkBattleUnitHtml(u, isMe) {
+  const hpPct = u.maxHp > 0 ? Math.max(0, Math.min(100, u.hp / u.maxHp * 100)) : 0;
+  const mpPct = u.maxMp > 0 ? Math.max(0, Math.min(100, u.mp / u.maxMp * 100)) : 0;
+  let h = '<div class="cf"><span class="nm" style="color:' + (isMe ? 'var(--blue)' : 'var(--red)') + '">' + pkEsc(u.username || '?') + (u.playerNo ? '[' + u.playerNo + ']' : '') + (u.acted ? ' ✓已出招' : '') + '</span>';
+  h += '<div class="bar hp"><i style="width:' + hpPct + '%"></i><span>' + C.fmtN(u.hp) + '/' + C.fmtN(u.maxHp) + '</span></div>';
+  h += '<div class="bar mp"><i style="width:' + mpPct + '%"></i><span>' + C.fmtN(u.mp) + '/' + C.fmtN(u.maxMp) + '</span></div>';
+  (u.pets || []).forEach(function(p) {
+    const pp = p.maxHp > 0 ? Math.max(0, Math.min(100, p.hp / p.maxHp * 100)) : 0;
+    h += '<div class="cf" style="opacity:' + (p.alive ? 1 : .35) + '"><span class="nm" style="font-size:11px;padding-left:6px">🐾 ' + pkEsc(p.name || '灵宠') + (p.alive ? '' : ' 💫 已倒下') + '</span><div class="bar hp"><i style="width:' + pp + '%"></i><span>' + C.fmtN(p.hp) + '/' + C.fmtN(p.maxHp) + '</span></div></div>';
+  });
+  h += '</div>';
+  return h;
+}
+function pkBattleActionsHtml(me, foe, acted) {
+  const pb = window.pkBattle;
+  const dis = acted ? ' disabled' : '';
+  let h = '';
+  if (acted) h += '<div style="grid-column:1/-1;font-size:12px;color:var(--dim)">已出招，等待对方…</div>';
+  const foePet = (foe.pets || []).filter(function(p) { return p.alive && p.hp > 0; })[0];
+  if (foePet) {
+    h += '<div style="grid-column:1/-1;font-size:12px;color:var(--dim)">🎯 目标：<button class="act' + (pb.target === 'pet' ? '' : ' gold') + '" data-pkbt="foe"' + dis + '><span class="t">' + pkEsc(foe.username || '对手') + '</span></button> <button class="act' + (pb.target === 'pet' ? ' gold' : '') + '" data-pkbt="pet"' + dis + '><span class="t">🐾' + pkEsc(foePet.name || '灵宠') + '</span></button></div>';
+  }
+  const cn = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  const bb = [0, 20, 45, 70, 100, 130, 165, 205, 250, 300, 355];
+  const lifeMax = pkBattleLifeMax();
+  const isXian = (S.realm | 0) >= 10;
+  const isMortal = (S.realm | 0) === 0;
+  const showBurnFa = !isXian && !isMortal;
+  h += '<div style="grid-column:1/-1;font-size:10px;color:var(--dim)">🔥燃血' + (showBurnFa ? '💧燃法' : '') + '⏳燃寿（点一下+1层，最高10层；剩余寿元 ' + (S.lifespan | 0) + ' 年）</div>';
+  h += '<button class="act' + (pb.burnBlood > 0 ? ' gold' : '') + '" data-pkbb="blood"' + dis + '><span class="t">🔥燃血 ' + (pb.burnBlood > 0 ? cn[pb.burnBlood] + '倍' : '关') + '</span><span class="s">' + (pb.burnBlood > 0 ? pb.burnBlood + '/10层 -' + (pb.burnBlood * 5) + '%血/回合 攻+' + bb[pb.burnBlood] + '%' : '点+1层，-5%血/回合/层') + '</span></button>';
+  if (showBurnFa) h += '<button class="act' + (pb.burnMana > 0 ? ' gold' : '') + '" data-pkbb="mana"' + dis + '><span class="t">💧燃法 ' + (pb.burnMana > 0 ? cn[pb.burnMana] + '倍' : '关') + '</span><span class="s">' + (pb.burnMana > 0 ? pb.burnMana + '/10层 -' + (pb.burnMana * 5) + '%法/回合 法攻+' + bb[pb.burnMana] + '%' : '点+1层，-5%法力/回合/层') + '</span></button>';
+  h += '<button class="act' + (pb.burnLife > 0 ? ' gold' : '') + '" data-pkbb="life"' + dis + '><span class="t">⏳燃寿 ' + (pb.burnLife > 0 ? '×' + pb.burnLife + '层' : '关') + '</span><span class="s">' + (pb.burnLife > 0 ? pb.burnLife + '/10层 攻+' + (pb.burnLife * 30) + '%' : '点+1层，-10年寿元/层（最多' + lifeMax + '层）') + '</span></button>';
+  const xb = (pb.state && pb.state.me && pb.state.me.xb != null) ? pb.state.me.xb : ((me && me.xb != null) ? me.xb : null);
+  if (isXian && xb != null) h += '<div style="grid-column:1/-1;font-size:10px;color:var(--dim)">⚡仙力爆发 ' + xb + ' 点（服务端结算，只读）</div>';
+  const myPets = pkBattleMyPets();
+  if (myPets.length) {
+    h += '<div style="grid-column:1/-1;font-size:10px;color:var(--dim)">🐾 灵宠指令（点选切换，不消耗回合）</div>';
+    myPets.forEach(function(p, i) {
+      const o = pb.petOrders[i] || 'auto';
+      h += '<div style="grid-column:1/-1;display:flex;gap:4px;align-items:center;font-size:11px;color:var(--dim)"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + pkEsc(p.name) + '</span>' + [['auto', '🤖自动'], ['attack', '⚔️攻击'], ['defend', '🛡️防御'], ['magic', '✨法术']].map(function(pair) {
+        return '<button class="act' + (o === pair[0] ? ' gold' : '') + '" data-pkbo="' + i + ':' + pair[0] + '" style="padding:4px 8px;flex:0 0 auto"' + dis + '><span class="t" style="font-size:12px">' + pair[1] + '</span></button>';
+      }).join('') + '</div>';
+    });
+  }
+  const sk = Object.keys(C.SKILLS).filter(function(k) { return k !== 'tunmo' && !C.SKILLS[k].passive && (S.skills || []).includes(k); }).map(function(k) {
+    const s = C.SKILLS[k];
+    const dis2 = (me.mp >= s.mp) ? dis : ' disabled';
+    return '<button class="act skill" data-pkba="' + k + '"' + dis2 + '><span class="t">' + s.name + '</span><span class="s">' + s.mp + ' 法力</span></button>';
+  }).join('');
+  h += '<button class="act white" data-pkba="attack"' + dis + '><span class="t">普通攻击</span><span class="s">力量×1</span></button>';
+  if (!isMortal) h += '<button class="act" data-pkba="mana_attack"' + dis + '><span class="t">' + (isXian ? '⚡仙力攻击' : '💧法力攻击') + '</span><span class="s">' + (isXian ? '1仙力=100万伤' : '1法力=10伤') + '</span></button>';
+  if (isXian) h += '<button class="act" data-pkba="xian_defend"' + dis + '><span class="t">🛡️仙力防御</span><span class="s">1仙力=100万防·1回合</span></button>';
+  if (!isMortal) h += '<button class="act" data-pkba="fashu_defend"' + dis + '><span class="t">🔰法术防御</span><span class="s">' + (isXian ? '1仙力=100万法防' : '1法力=10法防') + '·1回合</span></button>';
+  h += sk;
+  h += '<button class="act" data-pkba="defend"' + dis + '><span class="t">防御</span><span class="s">减伤</span></button>';
+  const potN = Object.keys(S.elixirs || {}).filter(function(k) { return k[0] === 'h' && k.indexOf('hp') === 0; }).reduce(function(a, k) { return a + (S.elixirs[k] | 0); }, 0);
+  if (potN > 0) h += '<button class="act" data-pkba="pot:hp"' + dis + '><span class="t">' + C.POTIONS.hp.name + '</span><span class="s">×' + potN + ' · 用最好的</span></button>';
+  h += '<button class="act" data-pkbplan="1"><span class="t">⚙️ 预设</span><span class="s">超时按预设出招</span></button>';
+  h += '<button class="act" data-pkbclose="1"><span class="t">🚪 离开</span><span class="s">超时按预设出招</span></button>';
+  h += '<button class="act danger" data-pkbsurr="1" style="grid-column:span 3;padding:6px"><span class="s">认输</span></button>';
+  return h;
+}
+function pkBattleRender() {
+  const pb = window.pkBattle;
+  if (!pb || !pb.state) return;
+  const st = pb.state;
+  const units = st.units || [];
+  if (!units.length) return;
+  const me = units.filter(function(u) { return u.isMe; })[0] || units[0];
+  const foe = units.filter(function(u) { return u !== me; })[0] || units[1] || units[0];
+  try {
+    $('combat').classList.add('on');
+    $('actions').classList.remove('main');
+    document.body.classList.add('combating');
+    const wm = $('worldMapSec');
+    if (wm) wm.style.display = 'none';
+  } catch (_) {}
+  const secs = st.deadline ? Math.max(0, Math.ceil((st.deadline - Date.now()) / 1000)) : 0;
+  let html = '<div style="margin-bottom:14px">' + pkBattleUnitHtml(foe, false) + '</div>';
+  html += '<div style="text-align:center;margin:10px 0;font-size:15px;font-weight:bold;color:var(--gold);letter-spacing:6px">⚔️ VS ⚔️</div>';
+  html += '<div style="margin-top:14px">' + pkBattleUnitHtml(me, true) + '</div>';
+  html += '<div style="font-size:11px;color:var(--dim)">第 ' + ((st.round | 0) + 1) + ' 回合 · <span id="pkbCd">⏳ ' + secs + 's</span>' + (st.arena ? ' · 擂台' : '') + (st.spar ? ' · 切磋' : '') + '</div>';
+  const logLines = (st.log || []).slice(-8);
+  if (logLines.length) {
+    html += '<div style="max-height:120px;overflow-y:auto;font-size:12px;line-height:1.6;margin-top:6px">' + logLines.map(function(l) {
+      const tx = typeof l === 'string' ? l : (l.text || '');
+      return '<div class="bl">' + pkEsc(tx) + '</div>';
+    }).join('') + '</div>';
+  }
+  if (pb._conn) html += '<div class="hint">连接中…</div>';
+  $('combat').innerHTML = html;
+  $('actions').innerHTML = pkBattleActionsHtml(me, foe, !!pb.acted);
+}
+function pkBattleCountdownStart() {
+  const pb = window.pkBattle;
+  if (!pb) return;
+  if (pb.cdT) clearInterval(pb.cdT);
+  pb.cdT = setInterval(function() {
+    const p2 = window.pkBattle;
+    if (!p2 || !p2.state) return;
+    const el = document.getElementById('pkbCd');
+    if (el && p2.state.deadline) el.textContent = '⏳ ' + Math.max(0, Math.ceil((p2.state.deadline - Date.now()) / 1000)) + 's';
+  }, 1000);
+}
+function pkBattleStop() {
+  const pb = window.pkBattle;
+  if (pb) {
+    if (pb.pollT) clearTimeout(pb.pollT);
+    if (pb.cdT) clearInterval(pb.cdT);
+  }
+  window.pkBattle = null;
+}
+function pkBattleLeave() {
+  pkBattleStop();
+  try {
+    $('combat').classList.remove('on');
+    $('actions').classList.add('main');
+    document.body.classList.remove('combating');
+    const wm = $('worldMapSec');
+    if (wm) wm.style.display = '';
+  } catch (_) {}
+  try { render(); } catch (_) {}
+}
+function pkBattleOpen(state, battleId) {
+  if (!state) return;
+  pkBattleStop();
+  const myPets = pkBattleMyPets();
+  window.pkBattle = { id: battleId || state.id || null, state: state, pollT: null, cdT: null, burnBlood: 0, burnMana: 0, burnLife: 0, petOrders: myPets.map(function() { return 'auto'; }), target: 'foe', acted: !!(state.me && state.me.acted), _conn: false, _presetPrompted: false };
+  try { if (typeof closeSheet === 'function') closeSheet(); } catch (_) {}
+  pkBattleRender();
+  try { const hdr = document.querySelector('header'); if (hdr) hdr.style.display = 'none'; } catch (_) {}
+  pkBattleCountdownStart();
+  pkBattlePollStart();
+  if (!S._bpSet || !Array.isArray(S.battlePlan) || S.battlePlan.length !== 5) {
+    window.pkBattle._presetPrompted = true;
+    try { log('sys', '⚔️ 超时按战斗预设出招（5 回合一循环），请先点选每回合招式；不设则默认全攻击。'); } catch (_) {}
+    try { sheetBattlePlan(); } catch (_) {}
+  }
+}
+function pkBattlePollStart() {
+  const pb = window.pkBattle;
+  if (!pb) return;
+  const tick = async function() {
+    const p2 = window.pkBattle;
+    if (!p2 || !p2.state) return;
+    try {
+      if (!window.MHXY || !window.MHXY.api) { p2.pollT = setTimeout(tick, 4000); return; }
+      const r = await window.MHXY.api('/api/pk/battle/state');
+      if (r.ok && r.json && r.json.ok && r.json.state) {
+        p2._conn = false;
+        pkBattleOnState(r.json.state, r.json);
+        const p3 = window.pkBattle;
+        if (p3 && p3.state) p3.pollT = setTimeout(tick, 2000);
+      } else {
+        p2._conn = true;
+        pkBattleRender();
+        p2.pollT = setTimeout(tick, 4000);
+      }
+    } catch (_) {
+      p2._conn = true;
+      try { pkBattleRender(); } catch (e) {}
+      p2.pollT = setTimeout(tick, 4000);
+    }
+  };
+  pb.pollT = setTimeout(tick, 2000);
+}
+function pkBattleOnState(st, extra) {
+  const pb = window.pkBattle;
+  if (!pb || !st) return;
+  pb.state = st;
+  if (st.id) pb.id = st.id;
+  if (st.phase === 'over') { pkBattleOver(st, extra); return; }
+  if (st.me) pb.acted = !!st.me.acted;
+  pkBattleRender();
+}
+function pkBattleOver(st, extra) {
+  const ex = extra || {};
+  const res = ex.result || st.result || {};
+  const cons = ex.consequences || null;
+  const units = st.units || [];
+  const ch = units[0] || {};
+  const cd = units[1] || {};
+  const logArr = (res.log || st.log || []).map(function(l) { return typeof l === 'string' ? l : (l && l.text) || ''; });
+  const out = { winner: res.winner || st.winner || null, draw: !!res.draw, rounds: (res.rounds != null ? res.rounds : st.round), log: logArr, hpLeft: res.hpLeft || {}, mpLeft: res.mpLeft || {}, seed: res.seed, usage: res.usage, challenger: { accountId: ch.accountId, username: ch.username }, challenged: { accountId: cd.accountId, username: cd.username } };
+  pkBattleStop();
+  try {
+    $('combat').classList.remove('on');
+    document.body.classList.remove('combating');
+  } catch (_) {}
+  if (typeof window.pkShowResult === 'function') { try { window.pkShowResult(out, cons); } catch (_) {} }
+  try { if (window.MHXY && window.MHXY.downloadSave) window.MHXY.downloadSave(true); } catch (_) {}
+  try { render(); } catch (_) {}
+}
+async function pkBattleAct(act, amt) {
+  const pb = window.pkBattle;
+  if (!pb || !pb.state || pb.acted) return;
+  const action = { act: act, burnBlood: pb.burnBlood | 0, burnMana: pb.burnMana | 0, burnLife: pb.burnLife | 0, petOrders: (pb.petOrders || []).slice(), target: pb.target || 'foe' };
+  if (amt != null) action.amount = amt;
+  pb.acted = true;
+  pkBattleRender();
+  try {
+    const r = await window.MHXY.api('/api/pk/battle/act', { method: 'POST', body: { action: action } });
+    if (r.ok && r.json && r.json.ok) {
+      if (r.json.state) pkBattleOnState(r.json.state, r.json);
+    } else {
+      pb.acted = false;
+      pkBattleRender();
+      try { toastLog('sys', '出招失败：' + ((r.json && r.json.error) || '网络不通')); } catch (_) {}
+    }
+  } catch (_) {
+    try { pb.acted = false; pkBattleRender(); } catch (e) {}
+  }
+}
+async function pkBattleSurrender() {
+  const pb = window.pkBattle;
+  if (!pb || !pb.state) return;
+  try { if (!confirm('确定认输吗？按落败结算。')) return; } catch (_) {}
+  pb.acted = true;
+  pkBattleRender();
+  try {
+    const r = await window.MHXY.api('/api/pk/battle/surrender', { method: 'POST', body: {} });
+    if (r.ok && r.json && r.json.ok) {
+      if (r.json.state) pkBattleOnState(r.json.state, r.json);
+      else if (r.json.result) pkBattleOver(pb.state, r.json);
+    } else {
+      pb.acted = false;
+      pkBattleRender();
+      try { toastLog('sys', '认输失败：' + ((r.json && r.json.error) || '网络不通')); } catch (_) {}
+    }
+  } catch (_) {
+    try { pb.acted = false; pkBattleRender(); } catch (e) {}
+  }
+}
+function pkBattlePromptAmount(act) {
+  const pb = window.pkBattle;
+  if (!pb || !pb.state) return;
+  const st = pb.state;
+  const me = (st.units || []).filter(function(u) { return u.isMe; })[0] || (st.units || [])[0];
+  const isXian = (S.realm | 0) >= 10;
+  const cur = me ? Math.floor(me.mp || 0) : 0;
+  let v = null;
+  try {
+    if (act === 'mana_attack') {
+      const unit = isXian ? '仙力' : '法力';
+      const ratio = isXian ? '1点=100万伤害' : '1点=10伤害';
+      v = prompt('输入消耗的' + unit + '（' + ratio + '，当前' + cur + '）：', '');
+    } else if (act === 'xian_defend') {
+      v = prompt('消耗多少仙力防御？(1点=100万防御，当前仙力 ' + cur + ')', '');
+    } else {
+      const unit = isXian ? '仙力' : '法力';
+      v = prompt('消耗多少' + unit + '法术防御？(1' + unit + '=' + (isXian ? '100万' : '10') + '点法术防御，专门抵挡法术，当前' + unit + ' ' + cur + ')', '');
+    }
+  } catch (_) { return; }
+  if (v === null) return;
+  const amt = Math.max(0, Math.floor(+v || 0));
+  if (amt <= 0) { try { toastLog('sys', '已取消'); } catch (_) {} return; }
+  if (amt > cur) { try { toastLog('sys', (isXian ? '仙力' : '法力') + '不足'); } catch (_) {} return; }
+  pkBattleAct(act + ':' + amt, amt);
+}
+function pkBattleClick(d, t) {
+  const pb = window.pkBattle;
+  if (!pb || !pb.state) return false;
+  if (d.pkbb) {
+    const which = d.pkbb;
+    if (which === 'blood') pb.burnBlood = pb.burnBlood >= 10 ? 0 : pb.burnBlood + 1;
+    else if (which === 'mana') pb.burnMana = pb.burnMana >= 10 ? 0 : pb.burnMana + 1;
+    else if (which === 'life') { const mx = pkBattleLifeMax(); pb.burnLife = pb.burnLife >= Math.min(10, mx) ? 0 : pb.burnLife + 1; }
+    pkBattleRender();
+    return true;
+  }
+  if (d.pkbt) {
+    if (d.pkbt === 'pet') {
+      const st = pb.state;
+      const foe = (st.units || []).filter(function(u) { return !u.isMe; })[0];
+      const hasPet = foe && (foe.pets || []).some(function(p) { return p.alive && p.hp > 0; });
+      if (!hasPet) return true;
+    }
+    pb.target = d.pkbt;
+    pkBattleRender();
+    return true;
+  }
+  if (d.pkbo !== undefined) {
+    const parts = String(d.pkbo).split(':');
+    const idx = +parts[0];
+    if (pb.petOrders[idx] !== undefined) pb.petOrders[idx] = parts[1];
+    pkBattleRender();
+    return true;
+  }
+  if (d.pkba) {
+    if (pb.acted) return true;
+    const act = d.pkba;
+    if (act === 'mana_attack' || act === 'xian_defend' || act === 'fashu_defend') { pkBattlePromptAmount(act); return true; }
+    pkBattleAct(act);
+    return true;
+  }
+  if (d.pkbsurr !== undefined) { pkBattleSurrender(); return true; }
+  if (d.pkbplan !== undefined) { try { sheetBattlePlan(); } catch (_) {} return true; }
+  if (d.pkbclose !== undefined) {
+    try { if (!confirm('离开对战？本回合超时将按你的战斗预设出招。')) return true; } catch (_) {}
+    pkBattleLeave();
+    return true;
+  }
+  return false;
+}
+/* ---------- v1248 战前准备面板（自动打法共用） ---------- */
+function preBattleOwnedZx() {
+  const out = [];
+  try {
+    const zx = S.zx || {};
+    for (const k in zx) { if (zx[k] > 0 && DISHES[k] && DISHES[k].zx) out.push(k); }
+  } catch (_) {}
+  return out;
+}
+function preBattleMaxLife() { return Math.max(0, Math.floor(((S.lifespan | 0) - 1) / 10)); }
+function showPreBattlePanel(opts) {
+  const o = opts || {};
+  window._preBattle = { title: o.title || '⚔️ 战前准备', note: o.note || '', burnBlood: 0, burnMana: 0, burnLife: 0, zx: null, onConfirm: o.onConfirm || null, onCancel: o.onCancel || null };
+  preBattleRender();
+}
+function preBattleRender() {
+  const p = window._preBattle;
+  if (!p) return;
+  const mxLife = preBattleMaxLife();
+  const zxs = preBattleOwnedZx();
+  const stepRow = function(key, label, val, max) {
+    return '<div class="row"><div class="lab">' + label + '<small>当前 ' + val + ' 层（最多 ' + max + ' 层）</small></div><div style="display:flex;gap:6px"><button class="btn" data-pbstep="' + key + ':-1">−</button><button class="btn" data-pbstep="' + key + ':1">＋</button></div></div>';
+  };
+  let h = '<h2>' + pkEsc(p.title) + '</h2>';
+  if (p.note) h += '<div class="hint">' + pkEsc(p.note) + '</div>';
+  h += '<div class="hint">燃血/燃法：每层 -5% 血/法，攻击加成；燃寿：每层 -10 年寿元，攻击 +30%。</div>';
+  h += stepRow('blood', '🔥 燃血', p.burnBlood, 10);
+  h += stepRow('mana', '💧 燃法', p.burnMana, 10);
+  h += stepRow('life', '⏳ 燃寿<small>剩余寿元 ' + (S.lifespan | 0) + ' 年</small>', p.burnLife, mxLife);
+  h += '<div class="hint">🍲 珍馐（每场限用 1 种）</div>';
+  if (zxs.length) {
+    h += zxs.map(function(k) { return '<button class="btn' + (p.zx === k ? ' gold' : '') + '" data-pbzx="' + k + '">' + DISHES[k].name + ' ×' + (S.zx[k] | 0) + '</button>'; }).join(' ');
+    h += ' <button class="btn' + (p.zx ? '' : ' gold') + '" data-pbzx="">不用珍馐</button>';
+  } else {
+    h += '<div class="hint">无珍馐</div>';
+  }
+  h += '<div class="row" style="display:flex;gap:8px;margin-top:10px"><button class="btn gold" style="flex:1" data-pbconfirm>确认出战</button><button class="btn" style="flex:1" data-pbcancel>取消</button></div>';
+  openSheet(h);
+}
+function preBattleClick(d, t) {
+  const p = window._preBattle;
+  if (d.pbstep) {
+    if (!p) return false;
+    const parts = String(d.pbstep).split(':');
+    const key = parts[0];
+    const delta = +parts[1] || 0;
+    if (key === 'blood') p.burnBlood = Math.max(0, Math.min(10, p.burnBlood + delta));
+    else if (key === 'mana') p.burnMana = Math.max(0, Math.min(10, p.burnMana + delta));
+    else if (key === 'life') p.burnLife = Math.max(0, Math.min(preBattleMaxLife(), p.burnLife + delta));
+    preBattleRender();
+    return true;
+  }
+  if (d.pbzx !== undefined) {
+    if (!p) return false;
+    p.zx = d.pbzx || null;
+    preBattleRender();
+    return true;
+  }
+  if (d.pbconfirm !== undefined) {
+    if (!p) return false;
+    const pre = { burnBlood: p.burnBlood | 0, burnMana: p.burnMana | 0, burnLife: p.burnLife | 0, zx: p.zx || null };
+    const cb = p.onConfirm;
+    window._preBattle = null;
+    try { closeSheet(); } catch (_) {}
+    if (cb) { try { cb(pre); } catch (_) {} }
+    return true;
+  }
+  if (d.pbcancel !== undefined) {
+    if (!p) return false;
+    const cb = p.onCancel;
+    window._preBattle = null;
+    try { closeSheet(); } catch (_) {}
+    if (cb) { try { cb(); } catch (_) {} }
+    return true;
+  }
+  return false;
+}
+window.preBattlePick = function(title, note) {
+  return new Promise(function(resolve) {
+    if (typeof showPreBattlePanel !== 'function') { resolve({ burnBlood: 0, burnMana: 0, burnLife: 0, zx: null }); return; }
+    try {
+      showPreBattlePanel({ title: title, note: note, onConfirm: function(pre) { resolve(pre); }, onCancel: function() { resolve(null); } });
+    } catch (_) { resolve({ burnBlood: 0, burnMana: 0, burnLife: 0, zx: null }); }
+  });
+};
+window.showPreBattlePanel = showPreBattlePanel;
+window.pkBattleOpen = pkBattleOpen;
+window.pkBattleOnState = pkBattleOnState;
+window.pkBattleStop = pkBattleStop;
+window.pkBattleRender = pkBattleRender;
+window.pkBattleLeave = pkBattleLeave;
+
+
 function sheetBattleLog() { // v296 战斗记录弹窗：点📜查看；操作记录与战斗记录分开展示
   const b = (typeof pk !== 'undefined' && pk && pk.battle) || null; if (!b) return;
   const ops = (b.opLines || []).join('');
@@ -1838,6 +2245,7 @@ function closeSheet() {
 }
 window.closeSheet = closeSheet;
 window.sheetRun = sheetRun; window.log = log; window.toastLog = toastLog; window.commit = commit; window.afterAct = afterAct; window.render = render; // v1176 跨文件导出：v1157 拆分后 core/tail 封装外裸调这些名字解析不到、又被 try/catch 吞掉——冒险采集/攻击/布阵静默失效的根源
+window.sheetBattlePlan = sheetBattlePlan; // v1248 手动 PK 预设按钮与开局提示用
 window.openSheet = openSheet; // v959 联机模块需要（顶层函数默认非全局）
 $('mask').addEventListener('click', e => { if (e.target === $('mask') && !$('mask').dataset.lock) closeSheet(); });
 
@@ -7997,6 +8405,8 @@ document.addEventListener('click', e => {
     if (!_ok) { try { showTip(S.forceReincWhy === 'life' ? '⌛ 寿元耗尽，什么都做不了<br><small>只能解除牵绊（仙缘面板：退宗 / 解婚约 / 解绑）、聊天，然后轮回</small>' : '☠️ 你已身死，什么都做不了<br><small>只能解除牵绊（仙缘面板：退宗 / 解婚约 / 解绑）、聊天，然后轮回</small>'); } catch (_) {} return; }
   }
   if (window.MHXY && MHXY.onClick(d, t, e)) return; // v959 联机模块钩子
+  if (window.pkBattle && window.pkBattle.state && pkBattleClick(d, t)) return;
+  if (preBattleClick(d, t)) return;
   if (d.ptoffer) { ptOfferFlow(d.ptoffer); return; } // v1221 私人交易
   if (d.ptplace !== undefined) { ptPickerSheet(); return; }
   if (d.ptsubmit !== undefined) { ptSubmitPlace(); return; }
@@ -8533,7 +8943,7 @@ document.addEventListener('click', e => {
   else if (d.sha) doSha(d.sha);
   else if (d.drink) doDrink(d.drink, +d.g, +d.n);
   else if (d.take) window.finishPk(d.take);
-  else if (d.bp) { const [idx, act] = d.bp.split(':'); if (!Array.isArray(S.battlePlan)) S.battlePlan = ['attack','attack','attack','attack','attack']; S.battlePlan[+idx] = act; save(); sheetBattlePlan(); }
+  else if (d.bp) { const [idx, act] = d.bp.split(':'); if (!Array.isArray(S.battlePlan)) S.battlePlan = ['attack','attack','attack','attack','attack']; S.battlePlan[+idx] = act; S._bpSet = 1; save(); sheetBattlePlan(); }
   else if (d.bppet) { const [_pid2, _idx2, _ord2] = d.bppet.split(':'); const _sp2 = (S.pets || []).find(p => p && p.id === +_pid2); if (_sp2) { if (!Array.isArray(_sp2.battlePlan) || _sp2.battlePlan.length !== 5) _sp2.battlePlan = ['auto', 'auto', 'auto', 'auto', 'auto']; _sp2.battlePlan[+_idx2] = _ord2; save(); sheetBattlePlan(); } }
   else if ('close' in d) closeSheet();
   else if ('reset' in d) doReset();

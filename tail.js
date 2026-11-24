@@ -1060,11 +1060,16 @@ async function pkRefresh(){
   }).join('');
 }
 async function pkChallenge(targetId){
-  var r = await api('/api/pk/challenge', { method:'POST', body:{ target_account_id:targetId, arena:false, spar:true, take_attr:'str' } });
+  pkPickZx('发起挑战 · 选择珍馐', function(zx){ pkChallengeGo(targetId, zx); });
+}
+async function pkChallengeGo(targetId, zx){
+  var body = { target_account_id: targetId, arena: false, spar: true, take_attr: 'str' };
+  if (zx) body.zx = zx;
+  var r = await api('/api/pk/challenge', { method:'POST', body: body });
   if (r.ok && r.json && r.json.ok){
     M.challenging = r.json.challenge_id;
     glog('sys', '🤝 已向对方发出切磋邀请，等待接受（60秒）。可在"在线约战"面板等结果。');
-    pkPollResult(r.json.challenge_id, 0);
+    pkBattleWait(r.json.challenge_id, 0);
   } else {
     var err = (r.json||{}).error || r.status;
     glog('bad', '⚔️ 挑战失败' + (r.netErr ? '（网络不通）' : err === 'target_offline' ? '（对方已离线）' : err === 'already_challenging' ? '（你已有一场待应战的挑战）' : '：' + escH(err)));
@@ -1519,20 +1524,48 @@ window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外
 window.teamRefresh = teamRefresh; // v1187 导出：人物卡组队先刷新队伍状态，再决定要不要先建队
 window.pkChallenge = pkChallenge;
 window.pkAttack = pkAttack; // v1176 补导出攻击（外层 pkAttackPlayer 改调 window.*，v1171 只导出名字、调用方仍用裸名所以一直没通）
-async function pkPollResult(cid, n){
-  // WS 推送为主，轮询兜底（最多约65秒）
-  if (n > 13) return;
+window.pkAccept = pkAccept;
+window.pkRaidVein = pkRaidVein;
+window.pkShowResult = pkShowResult;
+window.pkBattleWait = pkBattleWait;
+async function pkBattleWait(cid, n){
+  if (n > 30) return;
   if (M.challenging !== cid) return;
+  M._bwCid = cid;
   setTimeout(async function(){
     if (M.challenging !== cid) return;
-    var r = await api('/api/pk/result/' + encodeURIComponent(cid));
-    if (r.ok && r.json && r.json.ok && r.json.result){
-      M.challenging = null;
-      pkShowResult(r.json.result, null);
-    } else {
-      pkPollResult(cid, n + 1);
-    }
-  }, 5000);
+    try {
+      var r = await api('/api/pk/battle/state');
+      if (r.ok && r.json && r.json.ok && r.json.state){
+        M.challenging = null;
+        if (typeof window.pkBattleOpen === 'function') window.pkBattleOpen(r.json.state, r.json.state.id);
+        return;
+      }
+    } catch(_){}
+    pkBattleWait(cid, n + 1);
+  }, 2000);
+}
+function pkOwnedZx(){
+  var out = [];
+  try {
+    var zx = (window.S && window.S.zx) || {};
+    var D = (window.Core && window.Core.DISHES) || {};
+    for (var k in zx) { if ((zx[k] | 0) > 0 && D[k] && D[k].zx) out.push(k); }
+  } catch(_){}
+  return out;
+}
+var pkZxCb = null;
+function pkPickZx(title, cb){
+  var owned = pkOwnedZx();
+  if (!owned.length) { cb(null); return; }
+  pkZxCb = cb;
+  var D = (window.Core && window.Core.DISHES) || {};
+  var zx = (window.S && window.S.zx) || {};
+  var h = '<h2>🍲 ' + escH(title || '选择珍馐') + '</h2><div class="hint">战前珍馐（每场限用 1 种，先手生效）</div>'
+    + owned.map(function(k){ return '<div class="row"><div class="lab">' + escH(D[k].name) + '<small>×' + (zx[k] | 0) + ' · ' + escH(D[k].zxDesc || '') + '</small></div><button class="btn gold" data-zxpick="' + escH(k) + '">选用</button></div>'; }).join('')
+    + '<div class="row"><button class="btn full" data-zxpick="">不用珍馐</button></div>'
+    + '<div class="row"><button class="btn full" data-zxpickcancel>取消</button></div>';
+  try { openSheet(h); } catch(_){ pkZxCb = null; cb(null); }
 }
 function pkWsConnect(){
   if (!loggedIn() || M.pkWs) return;
@@ -1551,7 +1584,25 @@ function pkWsConnect(){
       } else if (m.type === 'declined'){
         if (M.challenging === m.challenge_id){ M.challenging = null; glog('sys', '⚔️ 对方拒绝了你的挑战'); }
       } else if (m.type === 'accepted'){
-        glog('sys', '⚔️ 对方接受了挑战，服务端正在结算…');
+        glog('sys', '⚔️ 对方接受了挑战，进入手动对战…');
+        if (M.challenging && M._bwCid !== M.challenging) pkBattleWait(M.challenging, 0);
+      } else if (m.type === 'battle_start'){
+        (async function(){
+          try {
+            var r = await api('/api/pk/battle/state');
+            if (r.ok && r.json && r.json.ok && r.json.state && typeof window.pkBattleOpen === 'function') {
+              var cur = window.pkBattle;
+              if (!cur || !cur.state || cur.state.id !== r.json.state.id) window.pkBattleOpen(r.json.state, r.json.state.id);
+            }
+          } catch(_){}
+        })();
+      } else if (m.type === 'battle_over'){
+        (async function(){
+          try {
+            var r = await api('/api/pk/battle/state');
+            if (r.ok && r.json && r.json.ok && r.json.state && typeof window.pkBattleOnState === 'function') window.pkBattleOnState(r.json.state, r.json);
+          } catch(_){}
+        })();
       }
     };
     ws.onclose = function(){ if (M.pkWs === ws) M.pkWs = null; };
@@ -1566,27 +1617,46 @@ function pkOnChallenge(ch){
     : '⚔️ ' + (from.username || '?') + '[' + (from.playerNo || '?') + '] 向你发起真人PK！60秒内有效，是否接受？（服务端结算）';
   var ok = false;
   try{ ok = confirm(msg); }catch(_){}
-  if (ok) pkAccept(ch.id); else pkDecline(ch.id);
+  if (ok) pkAcceptZx(ch.id); else pkDecline(ch.id);
 }
 async function pkDecline(cid){
   await api('/api/pk/decline', { method:'POST', body:{ challenge_id:cid } });
   glog('sys', '⚔️ 已拒绝挑战');
 }
-async function pkAccept(cid){
-  glog('sys', '⚔️ 已接受挑战，服务端结算中…');
-  var r = await api('/api/pk/accept', { method:'POST', body:{ challenge_id:cid } });
+function pkAcceptZx(cid){
+  pkPickZx('接受挑战 · 选择珍馐', function(zx){ pkAccept(cid, zx); });
+}
+async function pkAccept(cid, zx){
+  glog('sys', '⚔️ 已接受挑战，进入手动对战…');
+  var body = { challenge_id: cid };
+  if (zx) body.zx = zx;
+  var r = await api('/api/pk/accept', { method:'POST', body: body });
   if (r.ok && r.json && r.json.ok){
     if (M.challenging === cid) M.challenging = null;
-    pkShowResult(r.json.result, r.json.consequences);
-    // 服务端已改 D1 存档 → 本地从云端同步回来，保证一致
-    await downloadSave(true);
+    if (r.json.battle && typeof window.pkBattleOpen === 'function') {
+      var st = r.json.battle.state || r.json.battle;
+      window.pkBattleOpen(st, r.json.battle.id || st.id);
+    } else if (r.json.result) {
+      pkShowResult(r.json.result, r.json.consequences);
+      await downloadSave(true);
+    } else {
+      pkBattleWait(cid, 0);
+    }
   } else {
-    glog('bad', '⚔️ 结算失败：' + escH((r.json||{}).error || r.status));
+    glog('bad', '⚔️ 接受失败：' + escH((r.json||{}).error || r.status));
   }
 }
 async function pkRaidVein(){
+  var pre = { burnBlood: 0, burnMana: 0, burnLife: 0, zx: null };
+  try {
+    if (typeof window.preBattlePick === 'function') {
+      var _p = await window.preBattlePick('⛰️ 灵脉偷袭准备', '战前选择燃血/燃法/燃寿与珍馐（可选）');
+      if (!_p) { glog('sys', '⛰️ 已取消匹配'); return; }
+      pre = _p;
+    }
+  } catch(_){}
   glog('sys', '⛰️ 正在匹配灵脉闭关者…');
-  var r = await api('/api/pk/raid-vein', { method:'POST', body:{ take_attr:'str' } });
+  var r = await api('/api/pk/raid-vein', { method:'POST', body:{ take_attr:'str', pre: pre } });
   if (r.ok && r.json && r.json.ok){
     pkShowResult(r.json.result, r.json.consequences);
     await downloadSave(true); // 服务端已改双方存档 → 同步回本地
@@ -1641,8 +1711,16 @@ async function pkAttack(targetId){
   if (!mode){ var me = await pkFetchMe(); mode = me && me.mode; }
   var dk = null;
   try { if (typeof S !== 'undefined' && S && S.run && S.run.shared) dk = S.run.shared.dk || S.run.dk || null; } catch(_){}
+  var pre = { burnBlood: 0, burnMana: 0, burnLife: 0, zx: null };
+  try {
+    if (typeof window.preBattlePick === 'function') {
+      var _p2 = await window.preBattlePick('⚔️ 出击准备', '战前选择燃血/燃法/燃寿与珍馐（可选）');
+      if (!_p2) { glog('sys', '⚔️ 已取消出击'); return; }
+      pre = _p2;
+    }
+  } catch(_){}
   glog('sys', '⚔️ 正在出击…');
-  var r = await api('/api/pk/attack', { method: 'POST', body: { target_account_id: targetId, take_attr: 'str', dk: dk } });
+  var r = await api('/api/pk/attack', { method: 'POST', body: { target_account_id: targetId, take_attr: 'str', dk: dk, pre: pre } });
   if (r.ok && r.json && r.json.ok){
     pkShowResult(r.json.result, r.json.consequences);
     await downloadSave(true);
@@ -1897,6 +1975,17 @@ function onClick(d, t, e){
   }
   if ('mhxychat' in d){ chatPanel(); return true; }
   if ('mhxychatsend' in d){ chatSend(); return true; }
+  if (d.zxpick !== undefined){
+    var _cb = pkZxCb; pkZxCb = null;
+    try { closeSheet(); } catch(_){}
+    if (_cb) _cb(d.zxpick || null);
+    return true;
+  }
+  if ('zxpickcancel' in d){
+    pkZxCb = null;
+    try { closeSheet(); } catch(_){}
+    return true;
+  }
   if ('mhxypk' in d){ pkPanel(); return true; }
   if ('mhxypkrefresh' in d){ pkRefresh(); return true; }
   if ('mhxyraid' in d){ pkRaidVein(); return true; }
