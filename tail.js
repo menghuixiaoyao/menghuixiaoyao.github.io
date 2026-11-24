@@ -1632,7 +1632,6 @@ function pkWsScheduleReconnect(){
 }
 function pkPollPending(){
   if (!loggedIn()) return Promise.resolve();
-  if (M.pkWs && M.pkWs.readyState === 1) return Promise.resolve(); // WS 正常时不轮询
   if (window.pkBattle || window.pk) return Promise.resolve(); // 对战中不弹新挑战
   if (_pkPolling) return Promise.resolve();
   _pkPolling = true;
@@ -1643,8 +1642,6 @@ function pkPollPending(){
     r.json.pending.forEach(function(ch){
       if (!ch || !ch.id) return;
       alive[ch.id] = 1;
-      if (_pkShownCh[ch.id]) return;
-      _pkShownCh[ch.id] = 1;
       pkOnChallenge(ch);
     });
     for (var id in _pkShownCh) if (!alive[id]) delete _pkShownCh[id]; // 已不在待接列表的清掉
@@ -1654,11 +1651,15 @@ function pkStartPendingPoll(){
   if (_pkPollT) return;
   _pkPollT = setInterval(function(){ pkPollPending(); }, (window.__pkPollMs || 10000));
 }
+window.pkOnChallenge = pkOnChallenge;
 window.pkWsConnect = pkWsConnect;
 window.pkPollPending = pkPollPending;
 window.pkStartPendingPoll = pkStartPendingPoll;
 window.closePkWs = closePkWs;
 function pkOnChallenge(ch){
+  if (!ch || !ch.id) return;
+  if (_pkShownCh[ch.id]) return;
+  _pkShownCh[ch.id] = 1;
   var from = ch.challenger || {};
   var msg = ch.spar
     ? '🤝 ' + (from.username || '?') + '[' + (from.playerNo || '?') + '] 邀你比试切磋（不抢不掉不结仇），60秒内有效，是否接受？'
