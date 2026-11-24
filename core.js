@@ -251,7 +251,7 @@ const EXP_BOOKS = {
 };
 const LIFE_SKILLS = { alc: { name: '炼药', icon: '⚗️', attr: 'int' }, cook: { name: '烹饪', icon: '🍳', attr: 'agi' }, forge: { name: '锻造', icon: '🔨', attr: 'str' }, refine: { name: '炼金', icon: '✨', attr: 'def' }, tame: { name: '驯兽', icon: '🐾', attr: 'vit' }, formation: { name: '阵法', icon: '🧭', attr: 'int' }, talisman: { name: '制符', icon: '📜', attr: 'int' } }; /* 每个生活技能关联一项属性；v266 烹饪→敏捷、炼金→防御；v560 加阵法、制符 */ // 有等级的生活技能，均消耗活力
 const ADV_LIFE = ['formation', 'talisman']; // v560 高阶生活技能：需主宰轮回后参悟
-const canAdvLife = S => (S.reinc && (S.reinc[12] | 0) > 0); // v560 主宰(第12境)轮回过
+const canAdvLife = S => (S.reinc && (S.reinc[13] | 0) > 0); // v560 主宰(第13境)轮回过；v1246 主宰改13
 const QNAME = ['', '普通', '精良', '极品'], QMULT = [0, 1, 1.5, 2];
 // 烹饪：菜肴比生食回复更多饱食/体力；精良/极品附带临时增益（属性：接下来 3 场战斗；气运：接下来 10 点体力的行动）
 const DISHES = {
@@ -335,7 +335,7 @@ const MATS = {
   lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（元婴以上元神照料才生长）', seed: 1 }, // v887；v890 洞府元婴限定
   qingteng: { name: '青藤', ele: '木' }, lingmu: { name: '灵木', ele: '木' }, yimu: { name: '乙木', ele: '木' }, // v1224 五行木材：不可出售（无 price），主城共享池/野外木掷出
   cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 }, // v890 改回元婴限定
-  xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 8 }
+  xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 10 }
 };
 Object.assign(MATS, LU);
 const STARTER_MATS = 0, STARTER_GOLD = 0; // 新手礼包：无（旧存档迁移时同样发放）
@@ -357,8 +357,8 @@ const DIFFS = { // cost 体力；mult 怪物强度（相对玩家）；rec/recTo
   wx_tu:   { name: '土行', cost: 5, mult: 1.15, rec: 8, recTot: 500, win: [30, 36], gold: [300, 360], xp: 220, lose: 10, xpL: 15, st: 0.50, ms: 0, pre: '土·', wx: 'tu' }
 };
 // v1236 进冒险最低境界（Ye 2026-11-19 22:10 口述：练气进初级、金丹进中级、化神进高级、渡劫进困难、仙人进地狱、合体进深渊、主宰进噩梦；秘境/五行图不走这张表）
-const ADV_MIN_REALM = { easy: 1, mid: 3, hard: 5, brutal: 7, hell: 8, abyss: 10, nightmare: 12 };
-const advRealmOk = (S, dk) => { const m = ADV_MIN_REALM[dk]; if (m === undefined) return true; if (canAdvLife(S)) return true; return (S.realm | 0) >= m; }; // 主宰轮回过（reinc[12]>0）不再受限
+const ADV_MIN_REALM = { easy: 1, mid: 3, hard: 5, brutal: 9, hell: 10, abyss: 7, nightmare: 13 }; // v1246 渡劫9/仙人10/合体7/主宰13
+const advRealmOk = (S, dk) => { const m = ADV_MIN_REALM[dk]; if (m === undefined) return true; if (canAdvLife(S)) return true; return (S.realm | 0) >= m; }; // 主宰轮回过（reinc[13]>0）不再受限；v1246 主宰改13
 // ======== 仙术五行修炼 ========
 const WUXING = [
   { k: 'jin',  name: '金', color: '#ffd700' },
@@ -475,7 +475,7 @@ const RACES = { // v1088 九族 + 天赋（种族独立选择，不跟头像走�
 G.RACES = RACES; // v1089 跨块导出：块1 种族页/人物卡/分发直接读 RACES（v1088 漏导出致种族页 ReferenceError）
 function newState() {
   const attrs = {}; ATTRS.forEach(k => attrs[k] = K.START_ATTR);
-  const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(13).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, usd: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, afkCarryMins: 0, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
+  const S = { v: 7, gearQ5: true, lifespan: 100, chatLog: [], consign: [], consignMarket: [], battlePlan: ['attack','attack','attack','attack','attack'], hunger: 100, dead: null, protect: K.PROTECT_N, status: { bleed: false, poison: false, depress: 0, bleedBase: 0, poisonBase: 0, bleedFrac: 0, poisonFrac: 0 }, meds: {}, lastTick: 0, level: 1, xp: 0, realm: 0, reinc: new Array(14).fill(0), btTotal: 0, stamina: K.START_STAMINA, gold: 0, xianyu: 0, usd: 0, attrs, alc: { lv: 1, xp: 0 }, inv: {}, mats: {}, ores: {}, prey: {}, eggs: {}, petEggs: 0, maiPages: 0, maiVLuo: 0, maiRLuo: 0, maiVMai: 0, maiRMai: 0, maiShu: 0, maiShuXp: 0, maiMigV89: 1, afkCarryMins: 0, shenzang: new Array(13).fill(0), shenzangDan: new Array(13).fill(0), danDu: 0, vigor: K.VIGOR_BASE, lifeChoices: [], life: { cook: { lv: 1, xp: 0 }, forge: { lv: 1, xp: 0 }, refine: { lv: 1, xp: 0 }, tame: { lv: 1, xp: 0 } }, dishes: {}, elixirs: {}, equip: { helm: null, neck: null, weapon: null, armor: null, boots: null }, gearBag: [], rings: 0, petBag: [], gearSeq: 0, buff: null, pages: {}, expBooks: {}, skillPages: {}, skillBooks: {}, pets: [], petSeq: 0, pet: null, food: {}, skills: [], lastCheckin: null,
     stats: { adv: 0, advWin: 0, pk: 0, pkWin: 0, brew: 0, brewOk: 0, checkins: 0 }, log: [], hpCur: null, curseN: 0,
     wxFrag: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPow: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxRes: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxPity: { jin: 0, mu: 0, shui: 0, huo: 0, tu: 0 }, wxD: '', wxN: 0, yinQi: 0, gender: null, avatar: 0, bindNum: null, race: null, _avatarPicked: false, _onboarded: false, _reincChain: false, _reincStep: null, xianyuan: {m:0,f:0}, binders: [], mail: [], sect: null, spouse: null,
     tools: { pick: [], hoe: [], active: { pick: null, hoe: null } }, toolSeq: 0, lingwu: [], lwseeds: { 1: 0, 2: 0, 3: 0 }, syd: [], zhenqi: { 1: 0, 2: 0, 3: 0 }, flagDef: { 1: 0, 2: 0, 3: 0 }, flagVeil: { 1: 0, 2: 0, 3: 0 } }; // v131 性别/头像；v263 仙缘系统；v264 结婚；v1088 种族/建号链；v1128 器具/灵物/种子/阵棋；v1224 器具多把数组；v1226 阵旗/遮天旗
@@ -488,8 +488,8 @@ function normalize(S) {
   if (!C.LIFE_SKILLS[S.lifeChoice]) S.lifeChoice = null; // v98 生活技能单选：旧存档强制重选
   if (!Array.isArray(S.lifeChoices)) S.lifeChoices = []; S.lifeChoices = S.lifeChoices.filter(k => C.LIFE_SKILLS[k]); // v98 多选数组
   if (!S.life) S.life = {}; S.lifeChoices.forEach(_k => { if (!S.life[_k]) S.life[_k] = { lv: 0, xp: 0 }; }); // v912 老存档补初始化
-  if (S.realm === undefined || !(S.realm >= 0) || S.realm > 12) S.realm = 0; S.realm = Math.floor(S.realm); // v12 境界
-  if (!Array.isArray(S.reinc)) S.reinc = new Array(13).fill(0); while (S.reinc.length < 13) S.reinc.push(0); S.reinc = S.reinc.map(n => Math.max(0, Math.floor(+n || 0)));
+  if (S.realm === undefined || !(S.realm >= 0) || S.realm > 13) S.realm = 0; S.realm = Math.floor(S.realm); // v12 境界；v1246 上限13
+  if (!Array.isArray(S.reinc)) S.reinc = new Array(14).fill(0); while (S.reinc.length < 14) S.reinc.push(0); S.reinc = S.reinc.map(n => Math.max(0, Math.floor(+n || 0))); // v1246 14境
   if (!(S.btTotal >= 0)) S.btTotal = 0; S.btTotal = Math.floor(S.btTotal); // v12 突破成功累计
   if (!(S.yinQi >= 0)) S.yinQi = 0; S.yinQi = Math.floor(S.yinQi); // v116 引气入体
   if (S.gender !== 'm' && S.gender !== 'f') S.gender = null; // v131 性别
@@ -552,7 +552,7 @@ function normalize(S) {
   if (!Array.isArray(S.consign)) S.consign = []; if (!Array.isArray(S.consignMarket)) S.consignMarket = []; // v13 寄售
   if (!S.btMultMig && S.btTotal > 0) { // v13 突破倍率×2→渐进表：一次性压缩属性（旧2^N → 新连乘）
     let _old = Math.pow(2, S.btTotal), _new = 1;
-    for (let _i = 0; _i < S.btTotal; _i++) _new *= (BT_MULT[_i % 12] || 1);
+    for (let _i = 0; _i < S.btTotal; _i++) _new *= (BT_MULT[_i % 13] || 1);
     const _ratio = _old > 0 ? _new / _old : 1;
     ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round((+S.attrs[k] || 1) * _ratio)));
     S.btMultMig = 1;
@@ -609,7 +609,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   for (const p of (Array.isArray(S.pets) ? S.pets : [])) { if (!p.peq || typeof p.peq !== 'object') p.peq = {}; for (const sl in SLOTS) if (p.peq[sl] && (!okPetGear(p.peq[sl]) || PET_GEAR[p.peq[sl].k].slot !== sl)) delete p.peq[sl]; }
   for (const sl in SLOTS) if (!okGear(S.equip[sl]) || GEAR[S.equip[sl].k].slot !== sl) S.equip[sl] = null;
   if (!S.elixirs || typeof S.elixirs !== 'object') S.elixirs = {}; for (const k in S.elixirs) if (!potOf(k) || !(S.elixirs[k] > 0)) delete S.elixirs[k]; else S.elixirs[k] = Math.floor(S.elixirs[k]);
-  bumpPeak(S); if ((S.realm|0) >= 8 && !(S.xianCap > 0)) S.xianCap = Math.max(1, Math.floor(S.mana || 0)); S.mana = S.mana === undefined ? manaMax(S) : Math.max(0, Math.min(manaCapEff(S), Math.floor(+S.mana || 0))); /* 法力按2倍存储上限截断；仙人旧存档仙力上限=当前值 */
+  bumpPeak(S); if ((S.realm|0) >= 10 && !(S.xianCap > 0)) S.xianCap = Math.max(1, Math.floor(S.mana || 0)); S.mana = S.mana === undefined ? manaMax(S) : Math.max(0, Math.min(manaCapEff(S), Math.floor(+S.mana || 0))); /* 法力按2倍存储上限截断；仙人旧存档仙力上限=当前值 */
   if (S.run && !(DIFFS[S.run.dk] && S.run.rew && (S.run.grid ? S.run.grid.tiles : (S.run.ev && (S.run.ev.type === 'fight' ? S.run.ev.mon : ADV_EVENTS[S.run.ev.id]))))) { S.run = null; S.advVit = 0; } /* 进行中的冒险（v182 格子） */
   S.gearQ5 = true; /* 旧 3 档品质 普通/精良/极品 → 5 档 普通/精良/史诗 */
   S.gearSeq = Math.max(Math.floor(+S.gearSeq || 0), ...S.gearBag.map(g => g.id), ...Object.values(S.equip).filter(Boolean).map(g => g.id), ...S.petBag.map(g => g.id), ...(Array.isArray(S.pets) ? S.pets : []).flatMap(p => Object.values(p.peq || {}).map(g => g.id)), 0);
@@ -686,14 +686,14 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
 }
 const xpNeed = lv => Math.round(K.XP_PER_LEVEL * Math.pow(lv, K.XP_EXP)); // 升级所需经验 = 50 × 等级^XP_EXP
 const alcNeed = lv => lv * K.ALC_XP_PER_LEVEL;
-// 境界：凡人→练气→筑基→金丹→元婴→化神→大乘→渡劫→仙人→金仙→合体→尊者→主宰；每境10级，10级为大圆满，需突破/轮回
-const REALMS = ['凡人','练气','筑基','金丹','元婴','化神','大乘','渡劫','仙人','金仙','合体','尊者','主宰'];
-const FAIL_STATES = { 0: ['凡胎','燃尽'], 1: ['虚气','伪气'], 2: ['虚基','残基'], 3: ['虚丹','假丹'], 4: ['虚婴','假婴'], 5: ['虚神','散神'], 6: ['伪乘','残乘'], 7: ['怯劫','避劫'], 8: ['劫余','残仙'], 9: ['散仙','游仙'], 10: ['虚合','假合'], 11: ['伪尊','空尊'] }; // v589 突破失败状态
-const DEGRADE_CHAIN = ['凡胎','虚气','虚基','虚丹','虚婴','虚神','伪乘','怯劫','劫余','散仙','虚合','伪尊']; 
-const DEGRADE_FAIL2 = {'凡胎':'燃尽','虚气':'伪气','虚基':'残基','虚丹':'假丹','虚婴':'假婴','虚神':'散神','伪乘':'残乘','怯劫':'避劫','劫余':'残仙','散仙':'游仙','虚合':'假合','伪尊':'空尊'}; // v592
+// 境界：凡人→练气→筑基→金丹→元婴→化神→炼虚→合体→大乘→渡劫→仙人→金仙→尊者→主宰；每境10级，10级为大圆满，需突破/轮回
+const REALMS = ['凡人','练气','筑基','金丹','元婴','化神','炼虚','合体','大乘','渡劫','仙人','金仙','尊者','主宰']; // v1246 炼虚插化神后、合体挪炼虚后
+const FAIL_STATES = { 0: ['凡胎','燃尽'], 1: ['虚气','伪气'], 2: ['虚基','残基'], 3: ['虚丹','假丹'], 4: ['虚婴','假婴'], 5: ['虚神','散神'], 6: ['虚炼','残炼'], 7: ['虚合','假合'], 8: ['伪乘','残乘'], 9: ['怯劫','避劫'], 10: ['劫余','残仙'], 11: ['散仙','游仙'], 12: ['伪尊','空尊'] }; // v589 突破失败状态；v1246 炼虚新增虚炼/残炼、合体挪至7、大乘8、渡劫9、仙人10、金仙11、尊者12
+const DEGRADE_CHAIN = ['凡胎','虚气','虚基','虚丹','虚婴','虚神','虚炼','虚合','伪乘','怯劫','劫余','散仙','伪尊']; // v1246 炼虚新增虚炼、合体挪至7
+const DEGRADE_FAIL2 = {'凡胎':'燃尽','虚气':'伪气','虚基':'残基','虚丹':'假丹','虚婴':'假婴','虚神':'散神','虚炼':'残炼','伪乘':'残乘','怯劫':'避劫','劫余':'残仙','散仙':'游仙','虚合':'假合','伪尊':'空尊'}; // v592；v1246 炼虚新增虚炼→残炼
 
-const REALM_LIFESPAN = [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600];
-const BT_MULT = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1]; // 突破倍率（按突破前境界）：凡人→练气×1无加成，之后每境+0.1
+const REALM_LIFESPAN = [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600, 819200]; // v1246 按序号翻倍延至主宰819200
+const BT_MULT = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2]; // 突破倍率（按突破前境界）：凡人→练气×1无加成，之后每境+0.1；v1246 延至尊者→主宰×2.2
 const CHAT_NAMES = ['清风道人','剑心','丹霞子','墨白','紫烟仙子','铁牛','凌波','玄机子','白眉老祖','小青','狂刀','妙音','石破天','云游僧','赤焰','寒月','老顽童','青衫客','丹青','夜雨'];
 const CHAT_MSGS = ['有人组队刷噩梦吗？','刚突破到金丹，哈哈！','求问筑基突破有啥技巧','收中品灵石，价格好商量','今天运气不错，挖到两块灵石','卡在渡劫大圆满一个月了，哭','萌新求带，有大佬吗','刚孵出青龙，开心！','这游戏真上头，不知不觉玩了一年','有人出极品丹药吗','冒险遇到王阶怪，被秒了……','分享个技巧：饱食80以上再修炼','准备轮回了，紧张','道友们早啊','今晚通宵冲境界','灵宠反咬我一口，心态崩了','锻造出传说了！截图留念','PK连赢三场，舒服','中毒了，求解毒丹','大佬们仙人境都怎么玩的'];
 function chatPush(S, name, text, sys, announce) { if (!Array.isArray(S.chatLog)) S.chatLog = []; S.chatLog.push({ n: name, t: String(text).slice(0, 100), sys: !!sys, announce: !!announce, time: Date.now() }); if (S.chatLog.length > 50) S.chatLog = S.chatLog.slice(-50); try { if (window._chatTab === 'world' && document.getElementById('chatFloat') && document.getElementById('chatFloat').classList.contains('on') && typeof window.renderChatFloat === 'function') { const _inp = document.getElementById('cfInput'); const _v = _inp ? _inp.value : ''; const _f = document.activeElement === _inp; window.renderChatFloat(); const _ni = document.getElementById('cfInput'); if (_ni && _f) { _ni.value = _v; _ni.focus(); } } } catch(_) {} return true; } // v445 悬浮聊天窗新消息自动刷新（保留输入框焦点）
@@ -741,6 +741,7 @@ const MANA_COST_ZJ = [0, 3000, 3300, 3600, 3900, 4500, 4800, 5100, 5500, 6000]; 
 const MANA_COST_JD = [0, 7350, 8090, 9510, 10500, 11600, 13600, 15000, 16500, 19400]; // 金丹1-9级升级法力费
 const MANA_COST_YY = [0, 25000, 27500, 30500, 33500, 37000, 41000, 45000, 49500, 54500]; // 元婴
 const MANA_COST_HS = [0, 70000, 77000, 85000, 93500, 103000, 113000, 124000, 137000, 150000]; // 化神
+const MANA_COST_LX = [0, 195000, 215000, 236000, 260000, 286000, 315000, 346000, 381000, 419000]; // 炼虚（v1246：按化神×2.8递进，与大乘表同值，待Ye定）
 const MANA_COST_DC = [0, 195000, 215000, 236000, 260000, 286000, 315000, 346000, 381000, 419000]; // 大乘
 const MANA_COST_DJ = [0, 545000, 600000, 660000, 726000, 799000, 879000, 967000, 1064000, 1170000]; // 渡劫
 const MANA_COST_XR = [0, 1520000, 1672000, 1840000, 2024000, 2226000, 2449000, 2694000, 2963000, 3260000]; // 仙人
@@ -748,9 +749,9 @@ const MANA_COST_JX = [0, 4240000, 4664000, 5130000, 5643000, 6208000, 6829000, 7
 const MANA_COST_HT = [0, 11816000, 13000000, 14300000, 15730000, 17300000, 19030000, 20930000, 23030000, 25330000]; // 合体
 const MANA_COST_ZZ = [0, 32930000, 36220000, 39840000, 43830000, 48210000, 53030000, 58330000, 64170000, 70580000]; // 尊者
 const MANA_COST_ZZ2 = [0, 91750000, 100930000, 111020000, 122120000, 134330000, 147770000, 162540000, 178800000, 196680000]; // 主宰
-const MANA_COST_TABLES = { 1: MANA_COST_LQ, 2: MANA_COST_ZJ, 3: MANA_COST_JD, 4: MANA_COST_YY, 5: MANA_COST_HS, 6: MANA_COST_DC, 7: MANA_COST_DJ, 8: MANA_COST_XR, 9: MANA_COST_JX, 10: MANA_COST_HT, 11: MANA_COST_ZZ, 12: MANA_COST_ZZ2 };
-const XIAN_NEED = { 8: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18], 9: [0, 36, 44, 52, 63, 75, 90, 108, 129, 155], 10: [0, 171, 180, 189, 198, 208, 219, 230, 241, 253], 11: [0, 279, 285, 291, 297, 302, 309, 315, 321, 327], 12: [0, 360, 368, 375, 383, 390, 398, 406, 414, 422] }; // v1122 Ye 定仙力升级表：仙人 2 起 +2/级；金仙 36 起 ×1.2；合体 171 起 ×1.05；尊者 279 起 ×1.02；主宰 360 起 ×1.02；衔接：合体 155×1.1、尊者 253×1.1、主宰 327×1.1，取整进位
-const manaNeed = (S, lv) => { if ((S.realm|0) >= 8) { const t = XIAN_NEED[S.realm|0]; return Math.max(1, t ? (t[lv] || 0) : 0); } const t = MANA_COST_TABLES[S.realm|0]; const v = t ? (t[lv] || 0) : xpNeed(lv); return v; }; // 练气以上用法力表，凡人用经验表；仙人以上用 Ye 定仙力表（旧 100 万:1 已废）
+const MANA_COST_TABLES = { 1: MANA_COST_LQ, 2: MANA_COST_ZJ, 3: MANA_COST_JD, 4: MANA_COST_YY, 5: MANA_COST_HS, 6: MANA_COST_LX, 7: MANA_COST_HT, 8: MANA_COST_DC, 9: MANA_COST_DJ, 10: MANA_COST_XR, 11: MANA_COST_JX, 12: MANA_COST_ZZ, 13: MANA_COST_ZZ2 }; // v1246 炼虚6/合体7/大乘8/渡劫9/仙人10/金仙11/尊者12/主宰13
+const XIAN_NEED = { 10: [0, 2, 4, 6, 8, 10, 12, 14, 16, 18], 11: [0, 36, 44, 52, 63, 75, 90, 108, 129, 155], 12: [0, 279, 285, 291, 297, 302, 309, 315, 321, 327], 13: [0, 360, 368, 375, 383, 390, 398, 406, 414, 422] }; // v1122 Ye 定仙力升级表：仙人 2 起 +2/级；金仙 36 起 ×1.2；尊者 279 起 ×1.02；主宰 360 起 ×1.02；衔接：尊者 253×1.1、主宰 327×1.1，取整进位；v1246 仙人改10、金仙11、尊者12、主宰13，合体改走法力表
+const manaNeed = (S, lv) => { if ((S.realm|0) >= 10) { const t = XIAN_NEED[S.realm|0]; return Math.max(1, t ? (t[lv] || 0) : 0); } const t = MANA_COST_TABLES[S.realm|0]; const v = t ? (t[lv] || 0) : xpNeed(lv); return v; }; // 练气以上用法力表，凡人用经验表；仙人以上用 Ye 定仙力表（旧 100 万:1 已废）
 function canLevelUp(S) { if (S.dead || S.level >= REALM_MAX_LV) return false; if (C.isPermanentlyDegraded(S) && S.level >= 9) return false; return C.useFali(S) ? S.mana >= manaNeed(S, S.level) : S.xp >= xpNeed(S.level); } // v590 第二次失败才卡9级
 function doManualLevelUp(S) {
   if (S.dead) return { err: 'dead' };
@@ -767,12 +768,12 @@ function doManualLevelUp(S) {
   }
   const ups = levelUp(S, 1);
   if (ups > 0) bumpPeak(S); // 升级生命恢复满状态
-  if (fullMana && ups > 0) { if ((S.realm|0) >= 8) S.xianCap = Math.max(1, Math.floor(S.xianCap * 1.1)); S.mana = Math.min(manaCapEff(S), Math.floor(S.mana * 1.1)); return { ok: true, ups, manaBoost: true }; } // 满法力/仙力升级：当前×1.1，仙人以上上限也×1.1
+  if (fullMana && ups > 0) { if ((S.realm|0) >= 10) S.xianCap = Math.max(1, Math.floor(S.xianCap * 1.1)); S.mana = Math.min(manaCapEff(S), Math.floor(S.mana * 1.1)); return { ok: true, ups, manaBoost: true }; } // 满法力/仙力升级：当前×1.1，仙人以上上限也×1.1
   return { ok: true, ups };
 }
 function levelUp(S, n) { S.level = S.level|0; n = Math.min(n|0, REALM_MAX_LV - S.level); if (!(n > 0)) return 0; const g = n * ((S.realm|0) + 1 + reincBonus(S)); S.level += n; ATTRS.forEach(k => S.attrs[k] = (S.attrs[k]|0) + g); S.shenshi = (S.shenshi|0) + n; S.qixi = (S.qixi|0) + n * 2;  try { if (typeof claimFlowerSS === 'function') { const _g = claimFlowerSS(S); if (_g > 0) { try { log('good', `🌸 花开加神识+${_g}`); } catch(_){} } } } catch(_){} return n; } // v944 轮回清零，无永久累积 神识+1/级，气息+2/级 神识+2/级，轮回清零，与气息对称 // 每升1级：全属性 +(境界+1+轮回加成)：凡人1、练气2、筑基3…；v932 神识+5/级不清零（花可跨世累积）；v928 气息+2/级，轮回清零
 function gainXp(S, n) { if (C.useFali(S)) { S.mana = Math.min(C.manaCapEff(S), S.mana + n); } else { S.xp += n; } return 0; } // 练气后经验转法力；只积累，不自动升级
-const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 11) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 6 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); r = Math.min(0.95, Math.max(0.01, r * (1 + fateMod(S, 'break')))); if (S.tabooAwake) r = Math.min(0.95, r + 0.05); if (S.race === 'human') r = Math.min(0.95, r + 0.05); return r; }; // v1013 禁忌苏醒；v1088 人族悟道 // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
+const breakthroughRate = S => { let r = Math.min(0.95, (0.60 - 0.05 * (S.realm|0)) * luck(S) + 0.01 * Math.min(20, S.btTotal || 0) - K.CURSE_BT * (S.curseN|0)); if ((S.realm|0) === 12) r = Math.min(0.95, r + faZeBtBonus(S)); if ((S.realm|0) >= 8 && (S.merit|0) >= 100) r = Math.min(0.95, r + 0.05); r = Math.min(0.95, Math.max(0.01, r * (1 + fateMod(S, 'break')))); if (S.tabooAwake) r = Math.min(0.95, r + 0.05); if (S.race === 'human') r = Math.min(0.95, r + 0.05); return r; }; // v1013 禁忌苏醒；v1088 人族悟道 // 突破成功率：（60%-境界×5%）×气运 + 历次成功每次+1%（上限+20%）- 诅咒层数×1%，总上限95%（凡人60%/练气55%/…/尊者→主宰5%）；v867法则圆满加成，v869按灵根数分档；v893功德≥100+5%
 const THUNDER_NUM = ['一','二','三','四','五','六','七','八','九'];
 const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {q, opts, ans}
   { q: '新入仙途的道友，初始有几点体力？', opts: ['3 点', '5 点', '10 点', '20 点'], ans: 1 },
@@ -899,11 +900,11 @@ function tribFoundationOpen(S) { try {
 try { window.TRIB_OMEN = { show: tribOmenShow, beat: tribOmenBeat, text: tribOmenText, foundOpen: tribFoundationOpen }; } catch(_) {}
 
 function pickTribQuiz(fromRealm) { // v174 心魔问心出题：仙人以下考游戏机制，仙人以上问道
-  const bank = (fromRealm | 0) >= 8 ? TRIB_Q_DAO : TRIB_Q_MECH;
+  const bank = (fromRealm | 0) >= 10 ? TRIB_Q_DAO : TRIB_Q_MECH;
   const pool = bank.slice(), qs = [];
   try { // v1180 玩家问心投稿（GM 审核通过）混入抽题池；文本转义后入池，署名随题走
     const wp = (typeof window !== 'undefined' && window._wenxinPool) || null;
-    const key = (fromRealm | 0) >= 8 ? 'dao' : 'mech';
+    const key = (fromRealm | 0) >= 10 ? 'dao' : 'mech';
     if (wp && Array.isArray(wp[key])) {
       const esc = (x) => String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       for (const it of wp[key]) {
@@ -1323,7 +1324,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   } else {
     S.degraded = null; // v591 正常突破成功清除降级状态
   }
-  let _btm = BT_MULT[Math.min(11, fromRealm | 0)] || 1, gradeName = null;
+  let _btm = BT_MULT[Math.min(12, fromRealm | 0)] || 1, gradeName = null;
   if (fromRealm >= 2) { // v175 筑基→金丹结金丹、金丹→元婴结元婴：品质替代原突破倍率；v284 元婴以上也有品质（v176：天劫异变按异变档位；v180：压条 1000% 为极）
     let g = trib && trib.jackpot ? gradeFromFull(trib.jackpot.full) : (trib && trib.cloudGrade ? trib.cloudGrade : tribGrade(S)); // v1233 渡劫品级雷云定：品级就是雷云出现时的档（异变档仍走 jackpot.full；无锁定值时回落旧算法）
     const isJi = !(trib && trib.jackpot) && (trib && trib.cloudJi != null ? trib.cloudJi : tribFull(S) >= 29); // v1233 渡劫品级雷云定：极限与否也在雷云出现时锁定；v1172 2900% 为圆满极限
@@ -1332,13 +1333,13 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
     gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极限' : ''); // v1172 Ye 定名：圆满极限
     if (fromRealm === 2) S.danGrade = gradeName; else if (fromRealm === 3) S.yingGrade = gradeName;
   }
-  if (fromRealm === 0 && S.xp > 0) S.savedXp = (S.savedXp || 0) + S.xp; S.realm++; S.lifespan = Math.max((S.lifespan|0) * 2, REALM_LIFESPAN[Math.min(12, S.realm|0)] || 100); S.level = 1; S.xp = 0; S.btTotal = (S.btTotal || 0) + 1;
+  if (fromRealm === 0 && S.xp > 0) S.savedXp = (S.savedXp || 0) + S.xp; S.realm++; S.lifespan = Math.max((S.lifespan|0) * 2, REALM_LIFESPAN[Math.min(13, S.realm|0)] || 100); S.level = 1; S.xp = 0; S.btTotal = (S.btTotal || 0) + 1;
   if (fromRealm === 0) { assignLingGen(S); try { log('good', `🌟 踏入练气，灵根觉醒：<b>${lingGenName(S)}</b>！`); } catch(_) {} } // v867 练气突破随机灵根
   else { const _aw = awakenRollAll(S); if (_aw.length) try { log('good', `🌟 <b>突破之机，灵根觉醒！</b>${_aw.join('、')}`); } catch(_) {} } // v1134 突破觉醒：须现有基础灵根，每条 5%
   const _toxR = tryToxRoot(S); if (_toxR) try { log('gold', `☣️ <b>丹毒淬体，突破之机觉醒异灵根【毒】！</b>`); } catch(_) {} // v1141 突破也掷一次毒根觉醒（丹毒 ≥5000，概率随丹毒涨）
   const _toxD = tryToxDan(S, fromRealm); if (_toxD) try { log('gold', `☣️ <b>丹毒凝聚成丹——结出【毒丹】！</b>自此丹毒溢出将入累积池`); } catch(_) {} // v1145 结毒丹（仅金丹突破判）
-  if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v857 修v856：realm++后存到新境界索引 chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true); if (/散仙|游仙|虚气|伪气|虚基|残基|虚丹|假丹|虚婴|假婴|虚神|散神|伪乘|残乘|怯劫|避劫|劫余|残仙|虚合|假合|伪尊|空尊|凡胎|燃尽/.test(REALMS[S.realm]||'')) _btm = 1.2; // v811 降级状态突破倍率1.2
-  ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 8) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } tribBtFlavor(S, fromRealm); return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
+  if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v857 修v856：realm++后存到新境界索引 chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true); if (/散仙|游仙|虚气|伪气|虚基|残基|虚丹|假丹|虚婴|假婴|虚神|散神|虚炼|残炼|伪乘|残乘|怯劫|避劫|劫余|残仙|虚合|假合|伪尊|空尊|凡胎|燃尽/.test(REALMS[S.realm]||'')) _btm = 1.2; // v811 降级状态突破倍率1.2
+  ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 10) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } tribBtFlavor(S, fromRealm); return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
 } // 突破全属性×倍率表；渡劫→仙人时100万法力=1仙力转换，上限=转换后值
 function finishTribQuiz(S, quiz, answers) { // v174 心魔问心结算：答对 TRIB_QUIZ_NEED 道即过；v739 答题后50%遇心魔战斗；v746 补thunder.koWin
   const qs = (quiz && quiz.qs) || []; let correct = 0; const detail = qs.map((qq, i) => { const hit = (answers[i] | 0) === (qq.ans | 0); if (hit) correct++; return hit; });
@@ -1352,7 +1353,7 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
   if (S.dead) return { err: 'dead' };
   if (S.forceReinc || (S.lifespan|0) <= 0) return { err: 'nolife' }; // v182 寿元耗尽未死（强制轮回）：不再误报已死亡
   if (S.level < REALM_MAX_LV || S.realm >= REALMS.length - 1) return { err: 'cond' };
-  if ((S.realm|0) === 10) { S.sanShi = S.sanShi || [0,0,0]; if (S.sanShi.filter(x=>x).length < 3) return { err: 'sanshi' }; } // v818 合体突破需先斩三尸
+  if ((S.realm|0) === 7) { S.sanShi = S.sanShi || [0,0,0]; if (S.sanShi.filter(x=>x).length < 3) return { err: 'sanshi' }; } // v818 合体突破需先斩三尸；v1246 合体改7
   const _hpForBt = S.hpCur != null ? (S.hpCur|0) : 1; if ((_hpForBt + (S.advVit|0) * 5) <= 0) return { err: 'nohp' }; // 0血无法突破（黄条也算；hpCur=null为满血）
   if ((S.realm|0) >= 1) { const _mmBt = manaMax(S); if (_mmBt > 0 && (Math.floor(S.mana || 0)) < _mmBt) return { err: 'nomana' }; } // v177 法力未满 100/100 不能突破（凡人用经验，不限）
   if (S.thunderOk && (S.realm|0) >= 2) { const fromRealm = S.realm; let trib = {}; trib.cloudGrade = tribGrade(S); trib.cloudJi = tribFull(S) >= 29; return { ok: null, pending: 'thunder', trib, fromRealm, thunderPw: null }; } // v681 thunderOk直接进战斗；v1233 渡劫品级雷云定：雷云出现时锁定品级与极限
@@ -1402,7 +1403,7 @@ function reincarnate(S, keepAttr, sealInfo) { // 轮回：回到凡人1级，选
     } catch(_) { return null; }
   })();
   let n, from;
-  if (!Array.isArray(S.reinc)) S.reinc = new Array(13).fill(0);
+  if (!Array.isArray(S.reinc)) S.reinc = new Array(14).fill(0); // v1246 14境
   const isPerfect = S.level >= REALM_MAX_LV;
   // 走过的低境界（练气起至当前境界-1）必已大圆满突破，各池+1；当前境界只有大圆满才+1
   // 如金丹大圆满轮回：练气/筑基/金丹各+1=3；金丹未大圆满：练气/筑基各+1=2
@@ -1587,16 +1588,16 @@ function train(S, attr, n) {
 // —— 饥饿 / 气运 / 状态 / 灵宠忠诚 ——
 const hasSt = (S, k) => !!S.status && (k === 'poison' && toxImmune(S) ? false : (k === 'bleed' || k === 'poison' ? !!S.status[k] : S.status[k] > C.now())); // v1140 百毒不侵：中毒视为未中
 function bumpPeak(S) { const t = S.attrs.str + S.attrs.def + S.attrs.vit; S.vitPeak = Math.max(Math.floor(+S.vitPeak || 0), t); return S.vitPeak; }
-const resLbl = S => (S.realm|0) >= 8 ? '仙力' : (C.useFali(S) ? '法力' : '经验');
+const resLbl = S => (S.realm|0) >= 10 ? '仙力' : (C.useFali(S) ? '法力' : '经验');
 const fmtN = n => { n = Math.floor(+n || 0); return n >= 100000000 ? (n / 100000000).toFixed(2).replace(/\.00$/, '') + 'b' : n >= 1000000 ? (n / 1000000).toFixed(2).replace(/\.00$/, '') + 'm' : n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n); }; // v794 上亿b/百万m/上万k缩写，防战斗条数字溢出
-const manaMax = S => (S.realm|0) >= 8 ? Math.max(1, Math.floor(S.xianCap || 0)) : Math.floor((S.attrs.int * 3 + S.attrs.vit * 5 + S.attrs.str * 1 + S.attrs.def * 2 + S.attrs.agi * 4) * (S.manaMult || 1)); // 仙人以上仙力上限固定为转换时值 // 法力基础上限（练气后启用）
+const manaMax = S => (S.realm|0) >= 10 ? Math.max(1, Math.floor(S.xianCap || 0)) : Math.floor((S.attrs.int * 3 + S.attrs.vit * 5 + S.attrs.str * 1 + S.attrs.def * 2 + S.attrs.agi * 4) * (S.manaMult || 1)); // 仙人以上仙力上限固定为转换时值 // 法力基础上限（练气后启用）
 const manaCap = S => manaMax(S) * maiMult(S); // v91：法力可存至上限maiMult倍：基础2 + 虚脉（最多8条）+ 实脉（不封顶）
 const manaCapEff = S => manaCap(S) + Math.max(0, S.shaExcess || 0); // 煞气超额无视上限倍数规则
 function useManaPotion(S, k) { const P = potOf(k); if (!P || P.t !== 'mp') return { err: 'bad' }; if (S.dead) return { err: 'dead' }; if (!(S.elixirs[k] > 0)) return { err: 'none' }; const mx = manaMax(S); if (S.mana >= mx) return { err: 'full' }; const g = Math.min(mx - S.mana, Math.max(1, Math.round(mx * P.pct))); S.mana += g; if (!--S.elixirs[k]) delete S.elixirs[k]; return { ok: true, gain: g, mana: S.mana, max: mx }; }
 const useFali = S => (S.realm|0) >= 1; // 练气起法力取代活力/经验
 const lifeManaCost = S => Math.max(1, Math.ceil(manaMax(S) * 0.01)); // 生活技能耗基础法力上限1%，向上取整，最少1
-const lifeCost = S => S.dead ? 'dead' : (S.realm|0) >= 8 ? '' : useFali(S) ? (S.mana < lifeManaCost(S) ? 'mana' : '') : (S.vigor < K.COST_LIFE ? 'vigor' : ''); // 仙人境免费；10 级前 1 活力，10 级后 2 法力
-const payLife = S => { if ((S.realm|0) >= 8) return; if (useFali(S)) S.mana -= lifeManaCost(S); else S.vigor -= K.COST_LIFE; try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _trigP=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_trigP) { S._trigFail=0; const _scenes=[['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],['空气粘稠，呼吸不畅','金色雷纹在云中若隐若现','雷声如鼓，声声催心'],['灵气倒卷，阵法纹路浮现','云层裂开，白光倾泻','虚空嗡鸣，如大道低语'],['十里之内，鸟兽绝迹','雷光如瀑，倾天而下','威压先至，骨骼作响'],['天地灵气一空','云开一线，天眼似开','万籁俱寂，只闻心跳'],['凡尘涤荡，浊气尽散','雷柱接天，直贯九霄','天道之音，响彻神魂'],['仙器共鸣，嗡嗡作响','九彩劫云，遮天蔽日','法则碎片，四散飞溅'],['小世界灵气被抽空','虚空裂缝，蔓延天际','空间涟漪，层层荡开'],['数个小世界震动','劫云蔽星，日月无光','法则碰撞，星火四溅'],['三千世界战栗','灭世洪流，席卷星海','雷威吞声，万物噤声']]; const _sc=_scenes[Math.min(11,S.realm|0)]||_scenes[0]; tribOmenShow(S); log('warn', '🌩️ '+_sc[0]+'。'+_sc[1]+'。'+_sc[2]+'……<br>雷云判定中……'); const _succP=Math.min(1,0.01+0.01*S._succFail); if (Math.random()<_succP) { S.thunderOk=true; S._succFail=0; S._trigFail=0; log('good', '⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破契机已到，随时可破'); commit(); } else { S._succFail++; log('info', '<span style="filter:brightness(0)">🌫️</span> 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>'); } } else { S._trigFail++; } } } catch(_){} }; // v661 生活技能内联雷云判定
+const lifeCost = S => S.dead ? 'dead' : (S.realm|0) >= 10 ? '' : useFali(S) ? (S.mana < lifeManaCost(S) ? 'mana' : '') : (S.vigor < K.COST_LIFE ? 'vigor' : ''); // 仙人境免费；10 级前 1 活力，10 级后 2 法力
+const payLife = S => { if ((S.realm|0) >= 10) return; if (useFali(S)) S.mana -= lifeManaCost(S); else S.vigor -= K.COST_LIFE; try { if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) { S._trigFail=S._trigFail|0; S._succFail=S._succFail|0; const _trigP=Math.min(1,0.10+0.10*S._trigFail); if (Math.random()<_trigP) { S._trigFail=0; const _scenes=[['微风忽起，落叶打旋','天色微暗','远处闷雷一声'],['灵气躁动，飞鸟惊散','乌云聚顶，云层压得很低','雷声滚滚，由远及近'],['草木低伏，虫鸣骤止','劫云翻涌，云中有电光游走','雷声震耳，地面微颤'],['空气粘稠，呼吸不畅','金色雷纹在云中若隐若现','雷声如鼓，声声催心'],['灵气倒卷，阵法纹路浮现','云层裂开，白光倾泻','虚空嗡鸣，如大道低语'],['十里之内，鸟兽绝迹','雷光如瀑，倾天而下','威压先至，骨骼作响'],['天地灵气一空','云开一线，天眼似开','万籁俱寂，只闻心跳'],['凡尘涤荡，浊气尽散','雷柱接天，直贯九霄','天道之音，响彻神魂'],['仙器共鸣，嗡嗡作响','九彩劫云，遮天蔽日','法则碎片，四散飞溅'],['小世界灵气被抽空','虚空裂缝，蔓延天际','空间涟漪，层层荡开'],['数个小世界震动','劫云蔽星，日月无光','法则碰撞，星火四溅'],['三千世界战栗','灭世洪流，席卷星海','雷威吞声，万物噤声']]; const _sc=_scenes[Math.min(11,S.realm|0)]||_scenes[0]; tribOmenShow(S); log('warn', '🌩️ '+_sc[0]+'。'+_sc[1]+'。'+_sc[2]+'……<br>雷云判定中……'); const _succP=Math.min(1,0.01+0.01*S._succFail); if (Math.random()<_succP) { S.thunderOk=true; S._succFail=0; S._trigFail=0; log('good', '⚡ <b class="r">天道已将你锁定</b>——雷劫将至，生死只在一线之间！<br>速速调整状态，迎接天威洗礼！<br>⚡ 突破契机已到，随时可破'); commit(); } else { S._succFail++; log('info', '<span style="filter:brightness(0)">🌫️</span> 雷云缓缓散去，天威渐消……<br><span style="color:#888">看来火候未到，天道还未注意到你。继续修炼吧。</span>'); } } else { S._trigFail++; } } } catch(_){} }; // v661 生活技能内联雷云判定
 window.thunderRanch = function() { // v809 养殖园收获触发雷云判定（无消耗版）
   try {
     if ((S.level|0) >= C.REALM_MAX_LV && !S.thunderOk && (S.realm|0) >= 2) {
@@ -1669,7 +1670,7 @@ function die(S, cause) {
 function cureStatus(S, k) { if (k === 'bleed' || k === 'poison') { S.status[k] = false; S.status[k + 'Base'] = S.status[k + 'Frac'] = 0; } else S.status[k] = 0; }
 const activeStatus = S => Object.keys(STATUS).filter(k => hasSt(S, k));
 function luck(S) { return (S.hunger >= K.WELL_FED ? K.LUCK_FED : 1) * (hasSt(S, 'depress') ? K.DEPRESS_LUCK : 1) * (S.buff && S.buff.k === 'luck' ? S.buff.v : 1) * (1 + (activeSets(S).luck || 0)); }
-function hungerDown(S, n, ops) { ops = ops|0; const _realm = S.realm|0; if (_realm < 8 && ops > 0 && !S.dead) { if ((S.hunger|0) <= 0) { S._hungerOps = (S._hungerOps|0) + ops; const _th = (S.race === 'ming' ? 2 : 1) * ([1, 2, 3, 4, 10, 20, 40, 80][_realm] || 1); /* v1088 冥族阴体：饥饿劳作折寿减半（阈值翻倍） */ const _yr = [1, 2, 4, 8, 20, 40, 80, 160][_realm] || 1; if (S._hungerOps >= _th) { const _c = Math.floor(S._hungerOps / _th); S._hungerOps -= _c * _th; const _lp = _c * _yr; S.lifespan = Math.max(0, (S.lifespan|0) - _lp); if (S.lifespan <= 0 && !S.dead) S.forceReinc = true; try{log('warn', `🍗 饱食为0！饥饿劳作扣 <span class="r">${_lp}年寿元</span>（剩余${S.lifespan|0}年）`);}catch(e){} } } else S._hungerOps = 0; } S.hunger = Math.max(0, S.hunger - n); }
+function hungerDown(S, n, ops) { ops = ops|0; const _realm = S.realm|0; if (_realm < 10 && ops > 0 && !S.dead) { if ((S.hunger|0) <= 0) { S._hungerOps = (S._hungerOps|0) + ops; const _th = (S.race === 'ming' ? 2 : 1) * ([1, 2, 3, 4, 10, 20, 40, 80, 160, 320][_realm] || 1); /* v1088 冥族阴体：饥饿劳作折寿减半（阈值翻倍） */ const _yr = [1, 2, 4, 8, 20, 40, 80, 160, 320, 640][_realm] || 1; if (S._hungerOps >= _th) { const _c = Math.floor(S._hungerOps / _th); S._hungerOps -= _c * _th; const _lp = _c * _yr; S.lifespan = Math.max(0, (S.lifespan|0) - _lp); if (S.lifespan <= 0 && !S.dead) S.forceReinc = true; try{log('warn', `🍗 饱食为0！饥饿劳作扣 <span class="r">${_lp}年寿元</span>（剩余${S.lifespan|0}年）`);}catch(e){} } } else S._hungerOps = 0; } S.hunger = Math.max(0, S.hunger - n); }
 function loyalUp(p, chance, lo, hi) { if (R() < chance) { const g = ri(lo, hi); p.loyal = Math.min(100, p.loyal + g); return g; } return 0; }
 const staGain = (S, n) => n;
 let poisonAcc = 0; // 中毒期间消耗体力损失的生命（UI 读取后清零）
@@ -1680,7 +1681,7 @@ function doAfkChoose(type) {
   if (!type) {
     const _luo = C.maiLuo(S);
     const _lgT = window.LG ? `\\n🌟灵根${window.LG.name(S)}：闭关收益 ${window.LG.afkTxt(S)}` : '';
-    const _isXian = (S.realm|0) >= 8, _gainTxt = _isXian ? '仙力' : '法力';
+    const _isXian = (S.realm|0) >= 10, _gainTxt = _isXian ? '仙力' : '法力';
     const _unit = _isXian ? '小时' : '分钟';
     const _base = _isXian ? (1 + C.maiMai(S) + C.szBigCount(S)) : (1 + _luo);
     const _baseV = _isXian ? (2 + C.maiMai(S) + C.szBigCount(S)) : (2 + _luo);
@@ -1693,7 +1694,7 @@ function doAfkChoose(type) {
     let gain = 0; const _carry0 = S.afkCarryMins | 0;
     try { gain = afkExit(S, 'manual'); } catch(e) {}
     S.afk = null;
-    try { const lbl = C.resLbl(S); log('good', gain > 0 ? `🛌 出关，获得 <span class="g">${lbl} +${gain}</span>` : ((S.realm|0) >= 8 && (S.afkCarryMins|0) > _carry0 ? `🛌 出关，仙力零头已累计 <span class="g">${S.afkCarryMins|0} 分钟</span>（满60入账）` : `🛌 出关（无收益）`)); } catch(e) {}
+    try { const lbl = C.resLbl(S); log('good', gain > 0 ? `🛌 出关，获得 <span class="g">${lbl} +${gain}</span>` : ((S.realm|0) >= 10 && (S.afkCarryMins|0) > _carry0 ? `🛌 出关，仙力零头已累计 <span class="g">${S.afkCarryMins|0} 分钟</span>（满60入账）` : `🛌 出关（无收益）`)); } catch(e) {}
     afterAct();
   } else {
     if (S.afk) { try { afkExit(S, 'switch'); } catch(e) {} S.afk = null; }
@@ -1741,7 +1742,7 @@ function afkTick(S) { // v1215 定期入账：闭关中每满1分钟（法力/�
     if (mins <= 0) return 0;
     const w2x = ((C.setCounts(S).fatal || 0) >= 2) ? 2 : 1;
     gain = mins * w2x; bankedSecs = mins * 60;
-  } else if ((S.realm|0) >= 8) {
+  } else if ((S.realm|0) >= 10) {
     const hours = Math.floor(secs / 3600);
     if (hours <= 0) { S.afkCarryMins = Math.floor(secs / 60); return 0; }
     const dc = (C.setCounts(S).def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1;
@@ -1790,7 +1791,7 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
     const dc = (C.setCounts(S).def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1;
     const afkMult = di >= 0 ? GEAR_SETS.def.afkMult[di] : 0;
     const _lgAfk = 1 + lingGenAfkMult(S); // v867 灵根闭关加成：天灵根快，五灵根慢
-    if ((S.realm|0) >= 8) { const _hours = Math.floor(_secs / 3600); gain = _hours * ((isVein ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) * (1 + afkMult) * _lgAfk; S.afkCarryMins = Math.floor((_secs - _hours * 3600) / 60); _exitBanked = { mins: _mins, hours: _hours, carry: S.afkCarryMins }; } // 仙人以上：仙力按整小时，洞府 1+脉+大气旋，灵脉 2+脉+大气旋
+    if ((S.realm|0) >= 10) { const _hours = Math.floor(_secs / 3600); gain = _hours * ((isVein ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) * (1 + afkMult) * _lgAfk; S.afkCarryMins = Math.floor((_secs - _hours * 3600) / 60); _exitBanked = { mins: _mins, hours: _hours, carry: S.afkCarryMins }; } // 仙人以上：仙力按整小时，洞府 1+脉+大气旋，灵脉 2+脉+大气旋
     else { gain = _mins * ((isVein ? 2 : 1) + C.maiLuo(S)) * (1 + afkMult) * _lgAfk; _exitBanked = { mins: _mins, hours: 0, carry: S.afkCarryMins | 0 }; } // 仙人以下：法力按整分钟，洞府 1+络，灵脉 2+络
     if (isVein) { // v202 灵脉闭关：每小时判定凝气（练气以上突破需10缕凝气）；治愈套加成与凡人凝气一致
       const hours = Math.floor((Date.now() - S.afk.start + dbgMs) / 3600000);
@@ -1799,7 +1800,7 @@ function afkExit(S, reason) { window._afkShown = false; // 出关结算
       const nqRate = Math.min(0.95, (0.30 + nqBonus) * qiFactor());
       let nqN = 0;
       for (let i = 0; i < hours; i++) { if (Math.random() < nqRate) { nqN++; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) { nqN++; S.yinQi = (S.yinQi|0) + 1; } } }
-      if (nqN > 0) log('good', (S.realm|0) >= 8 ? `⚖️ 参悟法则，法则之力 <span class="g">+${nqN}缕</span>（${S.yinQi|0}/10）` : `🌀 灵脉凝气，凝气 <span class="g">+${nqN}缕</span>（${S.yinQi|0}/10）`);
+      if (nqN > 0) log('good', (S.realm|0) >= 10 ? `⚖️ 参悟法则，法则之力 <span class="g">+${nqN}缕</span>（${S.yinQi|0}/10）` : `🌀 灵脉凝气，凝气 <span class="g">+${nqN}缕</span>（${S.yinQi|0}/10）`);
     }
   }
   const afkSecs = Math.floor((Date.now() - S.afk.start + dbgMs) / 1000);
@@ -1885,7 +1886,7 @@ function eatFood(S, kind, k, n, petId) { // 吃肉/蛋：恢复饱食度（肉�
   store[k] -= n; if (!store[k]) delete store[k];
   const res = { n, hunger: it.hunger * n, sta: 0, pet, loyal: 0, cured: false };
   if (pet) { pet.hunger = Math.min(100, pet.hunger + res.hunger); for (let i = 0; i < n; i++) res.loyal += loyalUp(pet, K.FEED_LOYAL_P, 2, 4); if (hasSt(S, 'depress') && R() < K.DEPRESS_PET_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
-  else { S.hunger = Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 8) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
+  else { S.hunger = Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
   return res;
 }
 function useMed(S, k) { const m = MEDS[k]; if (!m || !(S.meds[k] > 0)) return { ok: false, why: 'none' }; if (m.cure === 'curse') { if (!((S.curseN|0) > 0)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; S.curseN = (S.curseN|0) - 1; return { ok: true, cure: 'curse' }; } if (!hasSt(S, m.cure)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); return { ok: true, cure: m.cure }; }
@@ -2085,7 +2086,7 @@ const mine = (S, n) => gather(S, 'mine', n), sellOre = (S, k, n) => sellItem(S, 
 /* ---------- 生活技能：烹饪 / 锻造 / 炼金 / 驯兽（炼药见下） ---------- */
 const lifeOf = (S, k) => { if (k === 'alc') return S.alc; const _v = S.life[k]; return _v ? _v : { lv: 0, xp: 0 }; }; // v905 未学习返回0级
 // v98 生活技能可选数量：筑基大圆满2、元婴大圆满3、仙人4、主宰5，其余1
-function lifeChoiceMax(S) { const r = S.realm | 0, lv = S.level | 0; if (r >= 12) return 5; if (r >= 8) return 4; if (r > 4 || (r === 4 && lv >= 10)) return 3; if (r > 2 || (r === 2 && lv >= 10)) return 2; return 1; }
+function lifeChoiceMax(S) { const r = S.realm | 0, lv = S.level | 0; if (r >= 13) return 5; if (r >= 10) return 4; if (r > 4 || (r === 4 && lv >= 10)) return 3; if (r > 2 || (r === 2 && lv >= 10)) return 2; return 1; }
 const lifeAttrRate = (S, k) => Math.min(K.LIFE_ATTR_RATE_MAX, S.attrs[LIFE_SKILLS[k].attr] * K.LIFE_ATTR_RATE);
 const lifeAttrQ = (S, k) => Math.min(K.LIFE_ATTR_Q_MAX, S.attrs[LIFE_SKILLS[k].attr] * K.LIFE_ATTR_Q);
 function gainLifeXp(S, k, xp) { const L = lifeOf(S, k); L.xp += xp; let up = 0; while (L.xp >= alcNeed(L.lv)) { L.xp -= alcNeed(L.lv); L.lv++; up++; } return up; }
@@ -2125,7 +2126,7 @@ function craft(S, skill, key, opt) { // 烹饪 / 锻造 / 炼金：1 活力；�
 function eatDish(S, key, n) { // 吃菜：饱食 + 体力（死亡中不回体力）；精良/极品附带增益（覆盖旧增益）
   const d = dishOf(key); if (!d) return null; n = Math.min(n || 1, S.dishes[key] || 0); if (n <= 0) return null;
   S.dishes[key] -= n; if (!S.dishes[key]) delete S.dishes[key];
-  S.hunger = Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 8) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
+  S.hunger = Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
   let buff = null; if (d.q >= 2) { buff = d.buff === 'luck' ? { k: 'luck', v: K.BUFF_LUCK[d.q], left: K.BUFF_ACTS, src: d.name } : { k: d.buff, v: K.BUFF_ATTR[d.q], left: K.BUFF_FIGHTS, src: d.name }; S.buff = buff; }
   return { n, hunger: d.hunger * n, sta, buff, d };
 }
@@ -2159,7 +2160,7 @@ function hatchWeights(S) { const m = 1 + Math.min(K.TAME_RARE_MAX, (lifeOf(S, 't
 function hatchProbs(S) { const w = hatchWeights(S), t = Object.values(w).reduce((a, b) => a + b, 0), o = {}; for (const k in w) o[k] = w[k] / t; return o; }
 function tame(S, attr, petId) { // 驯兽：1 活力，训练指定灵宠的一项属性（普通 +1 / 精良 +2 / 极品 +3），忠诚 +3（每 3 级 +1），并有概率获得灵宠经验；成仙后每次耗10年寿元，仙级以上灵宠双倍
   { const e = lifeCost(S); if (e) return { err: e }; } const p = petId ? (S.pets || []).find(x => x.id === petId) : activePet(S); if (!p) return { err: 'pet' };
-  const _lifeCost = (S.realm | 0) >= 8 ? (((p.q | 0) >= 6 ? 20 : 10)) : 0;
+  const _lifeCost = (S.realm | 0) >= 10 ? (((p.q | 0) >= 6 ? 20 : 10)) : 0;
   if (_lifeCost > 0 && (S.lifespan | 0) < _lifeCost) return { err: 'lifespan' };
   payLife(S); hungerDown(S, K.HUNGER_ACT, 1);
   if (_lifeCost > 0) S.lifespan -= _lifeCost;
@@ -2802,7 +2803,7 @@ function aiChoose(me, foe) {
     if (can('fireball') && R() < (fireGood ? 0.7 : 0.25)) ret = 'fireball';
     else if (can('vamp') && me.hp / me.maxHp < 0.8 && R() < 0.4) ret = 'vamp';
     else if (can('smash') && R() < 0.25) ret = 'smash';
-    else if ((me.realm|0) >= 8 && (me.mp|0) >= 10 && R() < 0.18) ret = 'xian_attack'; // v87：仙人境以上18%用仙力攻击
+    else if ((me.realm|0) >= 10 && (me.mp|0) >= 10 && R() < 0.18) ret = 'xian_attack'; // v87：仙人境以上18%用仙力攻击
     else if (defStreak < 2 && R() < 0.06) ret = 'defend';
     else ret = 'attack';
   }
@@ -3342,7 +3343,7 @@ function rollGear(S, t) { // 任意套装 / 部位 / 矿石 / 5 档品质；难�
 }
 function lootRoll(S, t, dk) { LOOT = LOOT || lootTable(); const pool = LOOT.filter(x => !x.mj || dk === 'mijing'); const e = wpick(pool, x => lootW(x, t)); return e; }
 const itemLabel = (st, k) => lootLabel(st, k);
-const REPAIR_CHAIN = '胎气基丹婴神乘劫余散合尊'; // v1224 修复灵物名链：修胎/修气/…/修尊灵物（Ye 定全带「灵物」二字）
+const REPAIR_CHAIN = '胎气基丹婴神炼合乘劫余散尊'; // v1224 修复灵物名链：修胎/修气/…/修尊灵物（Ye 定全带「灵物」二字）；v1246 炼虚修炼、合体修合挪至7
 function repairNameL(k) { const m = /^repair(\d+)$/.exec(k || ''); if (!m) return null; const ch = REPAIR_CHAIN[+m[1]]; return ch ? '修' + ch + '灵物' : null; }
 function invLabelL(k) { // v1224 inv 显示名：修复灵物/化无丹/煞气/强化符/变异丹/属性丹，未知键回落原 key（旧版无条件 split 会把 repair 键显示成 undefinedundefined丹）
   if (k === 'mai') return '🌀开脉丹';
@@ -3547,7 +3548,7 @@ function addToolL(S, which, tool, keepId) {
 // ---- v1224 共享池/野外木掷（与服务端 lw.js sharedPoolRoll/wildWoodRoll 同规）----
 const WOOD_KEYS_L = ['qingteng', 'lingmu', 'yimu'];
 const WOOD_BY_GRADE_L = { 1: 'qingteng', 2: 'lingmu', 3: 'yimu' };
-const REPAIR_POOL_L = Array.from({ length: 12 }, (_, i) => 'repair' + i); // v1225 修胎..修尊灵物全进池（Ye 定「留到修尊灵物」）
+const REPAIR_POOL_L = Array.from({ length: 13 }, (_, i) => 'repair' + i); // v1225 修胎..修尊灵物全进池（Ye 定「留到修尊灵物」）；v1246 13 种、多修炼灵物
 function sharedPoolRollL(grade) { // 主城 1% 平值一掷，三组平分；grade=null（种植）木材随机
   if (Math.random() >= 0.01) return null;
   const x = Math.random();
@@ -4335,7 +4336,7 @@ function advStart(S, dk) {
   if (!advRealmOk(S, dk)) return null; // v1236 进冒险最低境界（主宰轮回过不限）
   const isWx = dk.startsWith('wx_');
   if (isWx) { // 五行：仙人以上可进，10仙力+5体力，按境界每日限次；v874 需对应法则圆满
-    if ((S.realm | 0) < 8 || (Math.floor(S.mana || 0)) < WX_COST_XIAN) return null;
+    if ((S.realm | 0) < 10 || (Math.floor(S.mana || 0)) < WX_COST_XIAN) return null;
     const _wxEl = (wxByK(dk.slice(3)) || {}).name;
     if (!_wxEl || (((S.faZe || {})[_wxEl] | 0) < 100)) return null;
     const t = todayStr(); if (S.wxD !== t) { S.wxD = t; S.wxN = 0; }
@@ -4486,7 +4487,7 @@ async function advBattleSettle(S, run, b) { // 冒险战斗结算
     if ((S.protect | 0) > 0) { // 🛡️新人保护：免除战败惩罚（不扣属性、体力不清零、不扣金元、不染伤病）
       S.protect--;
       run.rew.xp += x; run.rew.lvUp += gainXp(S, x);
-      lines.push(`${b.draw ? '<span class="r">☠️同归于尽</span>' : `<span class="r">败给【${rk.name}】${m.name}</span>`}：<span class="y">🛡️新人保护（余 ${S.protect} 次）</span>，本次免除：属性 -${diff.lose}、体力清零（${lostSta}）、金元 -${lostGold}；${C.useFali(S) ? ((S.realm|0) >= 8 ? '仙力' : '法力') : '经验'} +${x}`);
+      lines.push(`${b.draw ? '<span class="r">☠️同归于尽</span>' : `<span class="r">败给【${rk.name}】${m.name}</span>`}：<span class="y">🛡️新人保护（余 ${S.protect} 次）</span>，本次免除：属性 -${diff.lose}、体力清零（${lostSta}）、金元 -${lostGold}；${C.useFali(S) ? ((S.realm|0) >= 10 ? '仙力' : '法力') : '经验'} +${x}`);
     } else {
       const lost = {}; for (let i = 0; i < diff.lose; i++) { const c = ATTRS.filter(k => S.attrs[k] > K.ATTR_MIN); if (!c.length) break; const a = pick(c); S.attrs[a]--; if (a === 'vit' && S.vitPeak) S.vitPeak--; lost[a] = (lost[a] || 0) + 1; }
       S.stamina = 0; S.gold -= lostGold;
