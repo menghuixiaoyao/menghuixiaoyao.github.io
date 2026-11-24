@@ -691,6 +691,7 @@ const REALMS = ['凡人','练气','筑基','金丹','元婴','化神','炼虚','
 const FAIL_STATES = { 0: ['凡胎','燃尽'], 1: ['虚气','伪气'], 2: ['虚基','残基'], 3: ['虚丹','假丹'], 4: ['虚婴','假婴'], 5: ['虚神','散神'], 6: ['虚炼','残炼'], 7: ['虚合','假合'], 8: ['伪乘','残乘'], 9: ['怯劫','避劫'], 10: ['劫余','残仙'], 11: ['散仙','游仙'], 12: ['伪尊','空尊'] }; // v589 突破失败状态；v1246 炼虚新增虚炼/残炼、合体挪至7、大乘8、渡劫9、仙人10、金仙11、尊者12
 const DEGRADE_CHAIN = ['凡胎','虚气','虚基','虚丹','虚婴','虚神','虚炼','虚合','伪乘','怯劫','劫余','散仙','伪尊']; // v1246 炼虚新增虚炼、合体挪至7
 const DEGRADE_FAIL2 = {'凡胎':'燃尽','虚气':'伪气','虚基':'残基','虚丹':'假丹','虚婴':'假婴','虚神':'散神','虚炼':'残炼','伪乘':'残乘','怯劫':'避劫','劫余':'残仙','散仙':'游仙','虚合':'假合','伪尊':'空尊'}; // v592；v1246 炼虚新增虚炼→残炼
+const DEGRADED_NAMES = Object.values(FAIL_STATES).flat(); // v1247 全量降级名（链内+二次失败态），供 v811 降级突破判定
 
 const REALM_LIFESPAN = [100, 200, 400, 800, 1600, 3200, 6400, 12800, 25600, 51200, 102400, 204800, 409600, 819200]; // v1246 按序号翻倍延至主宰819200
 const BT_MULT = [1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2]; // 突破倍率（按突破前境界）：凡人→练气×1无加成，之后每境+0.1；v1246 延至尊者→主宰×2.2
@@ -1308,6 +1309,7 @@ function faZeBenMingTxt(S) { // v873 本命圆满加成显示
 try { window.LG = { ELES: LINGGEN_ELEMS, ATTR: LINGGEN_ATTR, ICON: LINGGEN_ELE_ICON, assign: assignLingGen, name: lingGenName, ensure: ensureLingGen, trainBonus: lingGenTrainBonus, afkMult: lingGenAfkMult, afkTxt: lingGenAfkTxt, trainTxt: lingGenTrainTxt, faZeBonus: faZeBonus, faZeBtBonus: faZeBtBonus, benMingTxt: faZeBenMingTxt, base: rootBaseL, hasEle: hasRootEleL, factor: eleFactorL, mut: mutRootL, MUT: ROOT_MUT, tryAwaken: tryAwakenRoot, awakenAll: awakenRollAll, comprehend: tryComprehendRoot }; } catch(_) {} // v1129 变异助手 // v867 跨script块用window.LG
 function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 breakthrough / finishTribQuiz 共用）
   S.thunderOk = false; S._trigFail = 0; S._succFail = 0; // v659 突破后重置雷云判定
+  const _wasDegraded = S.degraded || null; // v1247 v811 原意：突破前是否处于降级状态（链内走提前返回拿 mult 1，链外走正常路）
   const _dchain = (typeof DEGRADE_CHAIN !== 'undefined') ? DEGRADE_CHAIN : null;
   if (_dchain && S.degraded && _dchain.indexOf(S.degraded) >= 0) {
     // v592 降级链中突破成功：进下一个链状态，属性不翻倍
@@ -1338,7 +1340,11 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   else { const _aw = awakenRollAll(S); if (_aw.length) try { log('good', `🌟 <b>突破之机，灵根觉醒！</b>${_aw.join('、')}`); } catch(_) {} } // v1134 突破觉醒：须现有基础灵根，每条 5%
   const _toxR = tryToxRoot(S); if (_toxR) try { log('gold', `☣️ <b>丹毒淬体，突破之机觉醒异灵根【毒】！</b>`); } catch(_) {} // v1141 突破也掷一次毒根觉醒（丹毒 ≥5000，概率随丹毒涨）
   const _toxD = tryToxDan(S, fromRealm); if (_toxD) try { log('gold', `☣️ <b>丹毒凝聚成丹——结出【毒丹】！</b>自此丹毒溢出将入累积池`); } catch(_) {} // v1145 结毒丹（仅金丹突破判）
-  if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v857 修v856：realm++后存到新境界索引 chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true); if (/散仙|游仙|虚气|伪气|虚基|残基|虚丹|假丹|虚婴|假婴|虚神|散神|虚炼|残炼|伪乘|残乘|怯劫|避劫|劫余|残仙|虚合|假合|伪尊|空尊|凡胎|燃尽/.test(REALMS[S.realm]||'')) _btm = 1.2; // v811 降级状态突破倍率1.2
+  if (gradeName) { S.realmGrades = S.realmGrades || {}; S.realmGrades[S.realm] = gradeName; } // v857 修v856：realm++后存到新境界索引
+  // v1247 修 v857 注释吞代码：下两行原在同一行 // 注释之后，从未执行
+  chatPush(S, '', (gradeName ? `🎉 ${S.name || '道友'}结成【${gradeName}】，突破至【${REALMS[S.realm]}】！` : `🎉 ${S.name || '道友'}突破至【${REALMS[S.realm]}】！`), true, true);
+  // v1247 修 v811：原判 REALMS[S.realm] 永远匹配不到降级名（新境界名不在降级名里），改为判突破前留下的降级状态
+  if (_wasDegraded && DEGRADED_NAMES.indexOf(_wasDegraded) >= 0) _btm = 1.2; // v811 降级状态突破倍率1.2
   ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 10) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } tribBtFlavor(S, fromRealm); return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
 } // 突破全属性×倍率表；渡劫→仙人时100万法力=1仙力转换，上限=转换后值
 function finishTribQuiz(S, quiz, answers) { // v174 心魔问心结算：答对 TRIB_QUIZ_NEED 道即过；v739 答题后50%遇心魔战斗；v746 补thunder.koWin
