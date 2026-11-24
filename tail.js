@@ -294,6 +294,9 @@ function clearAuth(clearRev){
   if (clearRev !== false) ls(LK.rev, null); // v1193 只清历史全局 rev；各账号自己的 rev 键保留，方便重登对齐
   M.baseRev = 0; M.dirty = false;
   stopPresence(); closeChatWs(); closePkWs();
+  if (_pkPollT){ clearInterval(_pkPollT); _pkPollT = null; }
+  if (_pkWsRetryT){ clearTimeout(_pkWsRetryT); _pkWsRetryT = null; }
+  _pkShownCh = {};
 }
 // v1193 号分离：云同步版本号按账号存（mhxy_rev_<account_id>），不再全号共用一个
 function revKey(){ var a = ls(LK.aid) || ''; return a ? LK.rev + '_' + a : LK.rev; }
@@ -573,6 +576,7 @@ async function baishiSync(){
 async function afterLogin(){
   await ensurePresence();
   pkWsConnect();
+  pkStartPendingPoll();
   await checkCloud();
   // v978 缓存 X 验证状态
   try {
@@ -1608,11 +1612,52 @@ function pkWsConnect(){
         })();
       }
     };
-    ws.onclose = function(){ if (M.pkWs === ws) M.pkWs = null; };
+    ws.onopen = function(){ if (_pkWsRetryT){ clearTimeout(_pkWsRetryT); _pkWsRetryT = null; } };
+    ws.onclose = function(){ if (M.pkWs === ws) M.pkWs = null; pkWsScheduleReconnect(); };
     ws.onerror = function(){ try{ ws.close(); }catch(_){} };
-  }catch(_){ M.pkWs = null; }
+  }catch(_){ M.pkWs = null; pkWsScheduleReconnect(); }
 }
 function closePkWs(){ if (M.pkWs){ try{ M.pkWs.close(); }catch(_){} M.pkWs = null; } }
+// v1251 挑战轮询回退＋WS 自动重连：WS 断时定时拉待接挑战，手游弱网也能收到
+var _pkWsRetryT = null;      // WS 重连定时器
+var _pkPollT = null;         // pending 轮询定时器
+var _pkShownCh = {};         // 已弹过挑战的 id（去重）
+var _pkPolling = false;      // 轮询进行中标志（防并发）
+function pkWsScheduleReconnect(){
+  if (_pkWsRetryT) return;
+  _pkWsRetryT = setTimeout(function(){
+    _pkWsRetryT = null;
+    if (loggedIn() && !M.pkWs) pkWsConnect();
+  }, (window.__pkWsRetryMs || 15000));
+}
+function pkPollPending(){
+  if (!loggedIn()) return Promise.resolve();
+  if (M.pkWs && M.pkWs.readyState === 1) return Promise.resolve(); // WS 正常时不轮询
+  if (window.pkBattle || window.pk) return Promise.resolve(); // 对战中不弹新挑战
+  if (_pkPolling) return Promise.resolve();
+  _pkPolling = true;
+  return api('/api/pk/pending').then(function(r){
+    _pkPolling = false;
+    if (!r.ok || !r.json || !r.json.ok || !r.json.pending) return;
+    var alive = {};
+    r.json.pending.forEach(function(ch){
+      if (!ch || !ch.id) return;
+      alive[ch.id] = 1;
+      if (_pkShownCh[ch.id]) return;
+      _pkShownCh[ch.id] = 1;
+      pkOnChallenge(ch);
+    });
+    for (var id in _pkShownCh) if (!alive[id]) delete _pkShownCh[id]; // 已不在待接列表的清掉
+  }).catch(function(){ _pkPolling = false; });
+}
+function pkStartPendingPoll(){
+  if (_pkPollT) return;
+  _pkPollT = setInterval(function(){ pkPollPending(); }, (window.__pkPollMs || 10000));
+}
+window.pkWsConnect = pkWsConnect;
+window.pkPollPending = pkPollPending;
+window.pkStartPendingPoll = pkStartPendingPoll;
+window.closePkWs = closePkWs;
 function pkOnChallenge(ch){
   var from = ch.challenger || {};
   var msg = ch.spar
@@ -2025,7 +2070,7 @@ function init(){
     try { _healed = separateOnLogin(ls(LK.aid) || '', ls(LK.name) || ''); } catch(_){}
     if (_healed){ setTimeout(function(){ try { location.reload(); } catch(_){} }, 60); }
     M.baseRev = loadBaseRev();
-    ensurePresence().then(function(){ pkWsConnect(); });
+    ensurePresence().then(function(){ pkWsConnect(); pkStartPendingPoll(); });
     // 轻量自检：token 是否还有效
     api('/api/save/meta').then(function(r){
       if (r.status === 401 && r.json && (r.json.error === 'session_replaced' || r.json.error === 'session_expired' || r.json.error === 'unauthorized')){
