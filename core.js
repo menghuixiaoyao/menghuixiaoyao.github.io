@@ -4627,6 +4627,8 @@ function pkSettle(S, pk, chosen) {
             _quiz.jackpot = _trib.jackpot || null;
             _quiz.koWin = koWin;
             _quiz.fromRealm = fromRealm;
+            // v1244 雷云锁：品级与极限按遇雷云时判定，不以心魔后灵力算（pkSettle 漏传致 2900% 得圆满，与 finishThunderBattle 同款传导）
+            _quiz.cloudGrade = _trib.cloudGrade || null; _quiz.cloudJi = !!_trib.cloudJi;
             _trib.quiz = _quiz;
             // 保存trib供后续使用
             try { S._pendingTrib = _trib; S._pendingFromRealm = fromRealm; } catch(_){}
