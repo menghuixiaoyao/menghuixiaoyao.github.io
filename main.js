@@ -8000,6 +8000,7 @@ function doArenaStart() {
   pk0.isArena = true;
   pk0.opp.name = '守擂者·' + pk0.opp.name;
   pk = pk0; pk.target = 'foe';
+  try { window.pk = pk; if (typeof G !== 'undefined' && G) G.pk = pk; } catch(_){} // v1249 擂台开战双写（同 doPkStart 漏写 pattern，render() v845 会清）
   closeSheet();
   log('pk', `🏟️ 你登上擂台，挑战 <b class="x">${pk.opp.name}</b>（${C.REALMS[pk.opp.realm]} Lv.${pk.opp.lv}）！`);
   afterAct(); commit(); render();
@@ -8054,6 +8055,7 @@ function doPkChooseRealm() {
 function doPkStart(forceRealm) {
   if (S.afk) { try { const gain = afkExit(S, 'pk'); log('good', gain > 0 ? `🧘 出关迎战，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 出关迎战。`); } catch(e) { S.afk = null; } }
   pk = C.pkStart(S, forceRealm); if (!pk) { if (S.dead) { afterAct(); commit(); } return; }
+  try { window.pk = pk; if (typeof G !== 'undefined' && G) G.pk = pk; } catch(_){} // v1249 NPC 切磋开战双写 window.pk 与 G.pk，render() v845 不再清掉
   pk.target = 'foe'; // 默认目标：对手本人
   try {
     const A = pk.battle && pk.battle.A;
@@ -8443,8 +8445,7 @@ document.addEventListener('click', e => {
   if (d.maildel !== undefined) { S.mail.splice(+d.maildel, 1); commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.maildelall !== undefined) { if (!confirm('确定删除全部已读邮件？')) return; S.mail = S.mail.filter(m => !m.claimed); commit(); refreshMainMailBtn(); doMail(); return; }
   if (d.xysect) { if (window.sectCreate) window.sectCreate(); return; } // v1164 改服务端开宗
-  if ('netpk' in d) { Net.queue(); return; }
-  if (d.netact) { Net.act(d.netact); return; }
+  if ('netpk' in d) { if (typeof window.pkPanel === 'function') window.pkPanel(); return; } // v1249 寻找对手改开已有在线约战面板（Net v92 死链已删）
   if ('close' in d) { closeSheet(); return; }
   if (d.refine) { doRefineGear(d.refine); return; }
   if (d.avataredit) { S._avatarSettings = 1; S._pickSet = S.avatarSet || 'r'; S._pickGender = S.gender || 'm'; sheetAvatar(S._pickGender); return; }
@@ -9283,90 +9284,5 @@ setInterval(() => { try { save(); } catch(e) {} }, 60000); // v1000 NPC 假消�
 setInterval(() => { try { ptPollOffersOnce(); } catch(e) {} }, 15000); // v1221 私人交易邀约轮询
 setInterval(() => { try { brPollOffersOnce(); } catch(e) {} }, 15000); // v1223 繁殖邀约轮询
 
-/* ---------- 联机对战 v92：WebSocket 1v1 ---------- */
-const NET_URL = 'ws://localhost:8080'; // 上线时改成正式服务器地址
-const Net = {
-  ws: null, myId: null, inQueue: false, battle: null,
-  connect() {
-    if (this.ws && this.ws.readyState === 1) return Promise.resolve();
-    return new Promise((res, rej) => {
-      try {
-        const ws = new WebSocket(NET_URL);
-        ws.onopen = () => { this.ws = ws; this.bind(); res(); };
-        ws.onerror = () => rej(new Error('连接失败'));
-        setTimeout(() => { if (ws.readyState !== 1) rej(new Error('连接超时')); }, 5000);
-      } catch (e) { rej(e); }
-    });
-  },
-  bind() {
-    this.ws.onmessage = (ev) => {
-      let m; try { m = JSON.parse(ev.data); } catch { return; }
-      this.onMsg(m.type, m.data || {});
-    };
-    this.ws.onclose = () => {
-      this.ws = null; this.inQueue = false;
-      if (this.battle) { log('bad', '⚠️ 与服务器断开连接，联机战斗结束'); this.battle = null; }
-    };
-  },
-  send(type, data) { if (this.ws && this.ws.readyState === 1) this.ws.send(JSON.stringify({ type, data })); },
-  onMsg(type, d) {
-    if (type === 'hello') { this.myId = d.id; }
-    else if (type === 'queue_ok') { log('sys', `🌐 正在寻找对手…（排队中 ${d.pos} 人）`); }
-    else if (type === 'battle_start') { this.onBattleStart(d); }
-    else if (type === 'battle_round') { this.onBattleRound(d); }
-    else if (type === 'battle_log') { (d.log || []).forEach(l => log('pk', l)); }
-    else if (type === 'battle_end') { this.onBattleEnd(d); }
-    else if (type === 'action_ok') { /* 出招确认 */ }
-    else if (type === 'err') { log('bad', '⚠️ ' + d.msg); }
-  },
-  async queue() {
-    try {
-      log('sys', '🌐 正在连接对战服务器…');
-      await this.connect();
-      // 上报档案
-      this.send('profile', {
-        name: S.name || '无名道友',
-        realm: S.realm | 0, level: S.level | 0,
-        attrs: S.attrs, power: C.total(S.attrs),
-      });
-      this.send('queue_join', {});
-      this.inQueue = true;
-      closeSheet();
-      log('sys', '🌐 已加入匹配队列，等待对手… <button class="btn" onclick="Net.leaveQueue()">取消</button>');
-    } catch (e) {
-      log('bad', '⚠️ 连接服务器失败：' + e.message + '（服务器可能未启动）');
-    }
-  },
-  leaveQueue() { this.send('queue_leave', {}); this.inQueue = false; log('sys', '已取消匹配'); },
-  onBattleStart(d) {
-    this.inQueue = false;
-    this.battle = { id: d.battleId, you: d.you, foe: d.foe, state: d.state };
-    log('pk', `🌐 <b class="y">匹配成功！</b>对手：<b class="x">${d.foe.name}</b>（${C.REALMS[d.foe.realm] || ''} Lv.${d.foe.level}）`);
-    this.send('battle_ready', {});
-  },
-  onBattleRound(d) {
-    if (!this.battle) return;
-    this.battle.state = d.state;
-    (d.log || []).forEach(l => log('pk', l));
-    if (d.needAction) this.showActions();
-  },
-  showActions() {
-    const st = this.battle.state[this.myId];
-    openSheet(`<h2>🌐 联机对战 <small>第 ${this.battle.foe.name}</small></h2>
-      <div class="hint">你的生命：<b class="y">${st.hp}/${st.maxHp}</b></div>
-      <div class="row"><button class="btn gold" data-netact="attack">⚔️ 普通攻击</button></div>
-      <div class="row"><button class="btn" data-netact="defend">🛡️ 防御</button></div>
-      <div class="row"><button class="btn danger" data-netact="flee">🏳️ 认输</button></div>`);
-  },
-  act(a) { this.send('battle_action', { act: a }); closeSheet(); log('pk', `你选择了：${{ attack: '⚔️攻击', defend: '🛡️防御', flee: '🏳️认输' }[a] || a}，等待对手…`); },
-  onBattleEnd(d) {
-    const win = d.winner === this.myId;
-    (d.log || []).forEach(l => log('pk', l));
-    log(win ? 'good' : 'bad', win ? `🎉 <b class="y">胜利！</b>你在联机对战中击败了对手！` : `😞 战败…${d.reason === 'flee' ? '你认输了' : d.reason === 'disconnect' ? '对方掉线' : ''}`);
-    this.battle = null;
-    closeSheet();
-    commit();
-  },
-};
 })();
 window.__ok_main=1;

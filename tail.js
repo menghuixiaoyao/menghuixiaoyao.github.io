@@ -1523,6 +1523,7 @@ setInterval(function(){
 window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
 window.teamRefresh = teamRefresh; // v1187 导出：人物卡组队先刷新队伍状态，再决定要不要先建队
 window.pkChallenge = pkChallenge;
+window.pkPanel = pkPanel; // v1249 导出：main.js data-netpk 跨块调在线约战面板
 window.pkAttack = pkAttack; // v1176 补导出攻击（外层 pkAttackPlayer 改调 window.*，v1171 只导出名字、调用方仍用裸名所以一直没通）
 window.pkAccept = pkAccept;
 window.pkRaidVein = pkRaidVein;
