@@ -1579,6 +1579,8 @@ function pkWsConnect(){
       if (!m) return;
       if (m.type === 'challenge' && m.challenge){
         pkOnChallenge(m.challenge);
+      } else if (m.type === 'hello' && m.pending && m.pending.length){
+        pkOnChallenge(m.pending[0]);
       } else if (m.type === 'result' && m.result){
         if (M.challenging){ M.challenging = null; }
         pkShowResult(m.result.public || m.result, null);
