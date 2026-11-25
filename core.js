@@ -295,9 +295,6 @@ const GEAR_SETS = { // 套装：同套装备件数 ≥2 生效，数值按 2/3/4
 };
 // 炼金：10 个低品合 1 个高品（最高四品，五品只能掉落）；矿石点化为金矿
 const REFINES = { // 炼金配方：主料 + 1 张普通残页（配方/丹方，看书 50% 得，约 2 体力）；失败只损耗第一种材料 1 份，残页不损耗
-  r_sp2: { name: '下品灵石', lv: 1, need: [['ores', 'sp1', 3], ['pages', 'pg1', 1]], out: ['ores', 'sp2'] },
-  r_sp3: { name: '中品灵石', lv: 2, need: [['ores', 'sp2', 3], ['pages', 'pg1', 1]], out: ['ores', 'sp3'] },
-  r_sp4: { name: '上品灵石', lv: 4, need: [['ores', 'sp3', 3], ['pages', 'pg1', 1]], out: ['ores', 'sp4'] },
   r_dw2: { name: '中品凝露', lv: 1, need: [['mats', 'dw1', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw2'] },
   r_dw3: { name: '上品凝露', lv: 2, need: [['mats', 'dw2', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw3'] },
   r_gold1: { name: '点铁成金', lv: 1, need: [['ores', 'iron', 15], ['pages', 'pg1', 1]], out: ['ores', 'gold'] }, // v1263 铁矿 5→15（残页 1 张不变）
@@ -2573,9 +2570,9 @@ function useMaiPages(S, n, seatIdx) { // v993：残页喂神藏气旋（每张+1
   return { n: used, lvUp, filled };
 }
 function synthVMai(S) { szSyncMai(S); return 0; } // v993：虚脉由神藏全开座数派生，不再手动合成
-function synthXPS(S) { // v1209：10灵气石合成1下品灵石（直接走 sp 家族，Ye 定版 10/100/100/100）
-  if ((S.ores.sp1|0) < 10) return 0;
-  S.ores.sp1 -= 10; S.ores.sp2 = (S.ores.sp2 | 0) + 1; return 1;
+function synthXPS(S) { // v1265：100灵气石合成1下品灵石（直接走 sp 家族，Ye 定版全程 100:1）
+  if ((S.ores.sp1|0) < 100) return 0;
+  S.ores.sp1 -= 100; S.ores.sp2 = (S.ores.sp2 | 0) + 1; return 1;
 }
 function synthZPS(S) { // v1209：100下品灵石合成1中品灵石
   if ((S.ores.sp2|0) < 100) return 0;
