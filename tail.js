@@ -243,7 +243,7 @@ if (typeof window.shenshiPanel !== 'function') {
 (function(){
 'use strict';
 var API = 'https://mhxy-game-api.yexiong262310.workers.dev';
-var LK = { tok:'mhxy_token', rev:'mhxy_rev', name:'mhxy_name', pno:'mhxy_pno', guest:'mhxy_guest', aid:'mhxy_aid' };
+var LK = { tok:'mhxy_token', rev:'mhxy_rev', name:'mhxy_name', pno:'mhxy_pno', guest:'mhxy_guest', aid:'mhxy_aid', last:'mhxy_last_active' };
 function ls(k, v){
   try{
     if (v === undefined) return localStorage.getItem(k);
@@ -290,7 +290,7 @@ function onReplaced(){
   showLoginGate(); // v970 掉线后弹门禁
 }
 function clearAuth(clearRev){
-  [LK.tok, LK.name, LK.pno, LK.guest, LK.aid].forEach(function(k){ ls(k, null); });
+  [LK.tok, LK.name, LK.pno, LK.guest, LK.aid, LK.last].forEach(function(k){ ls(k, null); });
   if (clearRev !== false) ls(LK.rev, null); // v1193 只清历史全局 rev；各账号自己的 rev 键保留，方便重登对齐
   M.baseRev = 0; M.dirty = false;
   stopPresence(); closeChatWs(); closePkWs();
@@ -347,6 +347,7 @@ function saveAuth(d){
   ls(LK.tok, d.token); ls(LK.aid, d.account_id || '');
   ls(LK.name, d.username || ''); ls(LK.pno, String(d.player_no || ''));
   ls(LK.guest, d.guest ? '1' : '0');
+  try { ls(LK.last, String(Date.now())); } catch(_){} // v1266 登录即活跃
   M.baseRev = loadBaseRev();
   if (swapped){
     glog('sys', '🌐 已按账号分开存档：这个账号将使用它自己的存档，正在重载…');
@@ -2064,7 +2065,49 @@ function onClick(d, t, e){
 }
 
 /* ---------- 启动 ---------- */
+// v1266 半小时不用自动退出登录（Ye 定）：最后活跃时间存 mhxy_last_active，30 分钟无操作自动退出
+var _idleTimer = null;
+function sessionIdleMs(){ try { var _k = (typeof window !== 'undefined' && window.Core && window.Core.K) || null; if (_k && _k.SESSION_IDLE_MS) return _k.SESSION_IDLE_MS; } catch(_){} return 30 * 60 * 1000; }
+function sessionTouch(){ try { if (!loggedIn()) return; ls(LK.last, String(Date.now())); } catch(_){} }
+function sessionLastActive(){ try { var v = parseInt(ls(LK.last) || '0', 10); return v > 0 ? v : 0; } catch(_){ return 0; } }
+function sessionIdleCheck(){
+  try {
+    if (!loggedIn()) return false;
+    var last = sessionLastActive();
+    if (!last) { sessionTouch(); return false; } // 旧会话无记录，视为刚活跃
+    if (Date.now() - last > sessionIdleMs()) { sessionIdleLogout(); return true; }
+    return false;
+  } catch(_){ return false; }
+}
+async function sessionIdleLogout(){
+  try { if (typeof save === 'function') save(); } catch(_){} // 本地先落盘（main.js 的 save 若不可见则跳过，localStorage 已是最新）
+  try { M.dirty = true; await syncNow(false); } catch(_){} // 先把进度同步上云，别丢进度
+  try { await api('/api/logout', { method: 'POST' }); } catch(_){}
+  try { await api('/api/world/logout', { method: 'POST' }); } catch(_){}
+  clearAuth(false);
+  glog('sys', '🌐 半小时无操作，已自动退出登录，请重新登录。');
+  showLoginGate();
+}
+function sessionIdleStart(){
+  try {
+    if (!loggedIn() || _idleTimer) return;
+    var _touch = function(){ try { sessionTouch(); } catch(_){} };
+    document.addEventListener('pointerdown', _touch, { passive: true });
+    document.addEventListener('keydown', _touch);
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') { try { sessionIdleCheck(); } catch(_){} } });
+    window.addEventListener('focus', function(){ try { sessionIdleCheck(); } catch(_){} });
+    _idleTimer = setInterval(function(){ try { sessionIdleCheck(); } catch(_){} }, 60000);
+  } catch(_){}
+}
 function init(){
+  // v1266 半小时不用自动退出：进游戏先验最后活跃时间，超了直接清凭证进登录界面
+  try {
+    if (loggedIn()) {
+      var _last = sessionLastActive();
+      if (_last > 0 && Date.now() - _last > sessionIdleMs()) { clearAuth(false); showLoginGate(); return; }
+      if (!_last) sessionTouch();
+    }
+  } catch(_){}
   // 已有 token → 恢复在线状态（静默，失败就当没登录）
   if (loggedIn()){
     var _healed = false;
@@ -2077,13 +2120,14 @@ function init(){
       if (r.status === 401 && r.json && (r.json.error === 'session_replaced' || r.json.error === 'session_expired' || r.json.error === 'unauthorized')){
         // onReplaced 已在 api() 内处理 replaced；expired/unknown 在此清掉
         if (r.json.error !== 'session_replaced'){ clearAuth(false); showLoginGate(); } // v970 token失效弹门禁
-      } else if (r.ok && r.json && r.json.ok){ try{ checkCloud(); }catch(_){} } // v1042 自动登录同样对齐账号存档
+      } else if (r.ok && r.json && r.json.ok){ if (typeof r.json.ledger_realm === 'number') { try { window.__ledgerRealm = r.json.ledger_realm; } catch(_){} try { if (typeof window.commit === 'function') window.commit(); } catch(_){} } try{ checkCloud(); }catch(_){} } // v1042 自动登录同样对齐账号存档；v1266 账本境界供突破登记断链恢复（到账即触发一次登记检测）
 
     });
   } else {
     // v970 登录门禁：未登录先弹登录页，不进游戏
     showLoginGate();
   }
+  sessionIdleStart(); // v1266 启动空闲计时（仅登录态计时）
 }
 // v970 登录门禁
 function showLoginGate(){
@@ -2176,6 +2220,7 @@ async function gateAfterAuth(d){
 window.MHXY = {
   panel: panel, markDirty: markDirty, onClick: onClick,
   loggedIn: loggedIn, syncNow: syncNow, init: init, api: api, myName: myName, myAid: myAid, downloadSave: downloadSave,
+  sessionTouch: sessionTouch, sessionIdleCheck: sessionIdleCheck, sessionIdleLogout: sessionIdleLogout, // v1266 空闲退出（供测试）
   setBaseRev: function(r){ M.baseRev = r; try{ ls(revKey(), String(r)); }catch(_){} } // v960 交易后更新同步基线（v1196：写本账号的 rev 键）
 };
 

@@ -1774,7 +1774,10 @@ function renderCombat() {
     if (window._inPkOver) return;
     const _G = (typeof G !== 'undefined' ? G : window);
     const _pk = (typeof pk !== 'undefined' && pk) ? pk : (_G && _G.pk ? _G.pk : null);
-    if (_pk && window._pkSeq && (!_pk._seq || _pk._seq !== window._pkSeq)) return; // 旧pk忽略
+    if (_pk && window._pkSeq && (!_pk._seq || _pk._seq !== window._pkSeq)) { // v1266 旧战斗被忽略时留诊断（每种序号只记一次），不再静默吞
+      try { const _dk = 'rc:' + (_pk._seq || '无'); window._rcLogged = window._rcLogged || {}; if (!window._rcLogged[_dk]) { window._rcLogged[_dk] = 1; if (typeof log === 'function') log('sys', '[诊断]战斗界面已忽略旧战斗：pkSeq=' + (_pk._seq || '无') + '，当前=' + window._pkSeq); } } catch(_) {}
+      return;
+    } // 旧pk忽略
     if (_pk && _pk.trib === 'demon' && _pk.battle && _pk.battle.B && _pk.battle.B.hp < 1) {
       if (typeof pkHandleOver === 'function') { window._inPkOver = true; try { pkHandleOver(); } finally { window._inPkOver = false; } return; }
     }
@@ -5065,6 +5068,17 @@ async function doLvUp() {
 window.doBreakthrough = doBreakthrough; // v438 突破按钮无响应兜底
 function doBreakthrough() {
   try { refreshWenxinPool(); } catch(_) {}
+  // v1266 未完成的问心优先重弹（雷云锁不丢）：问心展示失败/重进后重点不再重锁品级
+  try {
+    if (S._pendingTrib && S._pendingTrib.quiz && (S.realm|0) === (S._pendingFromRealm|0)) {
+      const _pq = S._pendingTrib.quiz;
+      if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_pq);
+      else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_pq);
+      else throw new Error('sheetTribQuiz 未定义');
+      try { log('warn', '⚡ 检测到未完成的问心，已为你重新弹出。'); } catch(_) {}
+      return;
+    }
+  } catch(_e) { try { log('bad', '⚡ 问心重弹失败：' + (_e.message || _e) + '<br>请截图联系管理。'); } catch(_) {} return; }
   if (S.afk) { log('bad', '⚡ 闭关中无法突破，请先出关。'); return; } // v267 闭关时不能突破
   if (C.isPermanentlyDegraded(S)) { log('bad', `⚡ 你已是【${S.degraded}】，道途已断，无法再破境。`); return; } // v590 第二次失败才不可破境
   if ((S.realm|0) === 0 && (S.xp|0) < C.xpNeed(C.REALM_MAX_LV - 1)) { log('bad', `⚡ 经验不足（<b class="y">${S.xp|0}/${C.xpNeed(C.REALM_MAX_LV - 1)}</b>），需积累经验才能破境。`); return; } // v573 凡人破境需经验满足
@@ -5085,7 +5099,8 @@ function doBreakthrough() {
     _th.avatar = _cloudRaw; _th.icon = _cloudRaw; _th.noPhoto = true; // v691 去掉人物头像用黑云
     const _b = new _bx.Battle(_bx.playerFighter(S, false), _th);
     _b.unlimited = true; _b.tribStrikes = (typeof window.tribStrikes === 'function' ? window.tribStrikes(S, r.trib) : 9); _b.surviveRounds = _b.tribStrikes + 1; // v985 雷劫分层：品级定雷数（存活兜底+1，沿用旧关系）
-    pk = { battle: _b, adv: true, trib: 'thunder', tribData: { trib: r.trib, fromRealm: r.fromRealm, pw: _pw } };
+    try { window._pkSeq = Date.now(); } catch(_) {} // v1266 雷云战打序号，旧pk失效（Ye 报：首点突破不进战斗）
+    pk = { battle: _b, adv: true, trib: 'thunder', tribData: { trib: r.trib, fromRealm: r.fromRealm, pw: _pw }, _seq: window._pkSeq };
     try { if (typeof G !== 'undefined' && G) G.pk = pk; window.pk = pk; } catch(_) {} // v842 雷劫开战双写window.pk，避免renderCombat被旧null覆盖
     try { closeSheet(); } catch(_){}
     afterAct(); save(); render();
@@ -6470,26 +6485,77 @@ async function srvProg(path, body) {
 window.__afkSrv = false; window.__afkLocalGain = null; window.__srvAfkMark = null; window.__afkLocalTotal = 0; window.__afkTickAt = 0;
 window.__srvRealmSeen = null; window.__srvAttrSnap = null; window.__pendingBt = null;
 try { const _afkExit0 = afkExit; if (typeof _afkExit0 === 'function') afkExit = function (S2, reason) { const g = _afkExit0(S2, reason); window.__afkLocalGain = (window.__afkLocalTotal | 0) + g; window.__afkLocalTotal = 0; return g; }; } catch (e) {}
+function btMultFor(to) { // v1266 突破倍率：优先按已锁品级（realmGrades）取，实时突破与断链恢复都准；取不到再按属性比值
+  try {
+    var _g = (S && S.realmGrades && S.realmGrades[to]) || '';
+    if (_g) {
+      var _n = String(_g);
+      if (_n.slice(-2) === '极限') return 2.2;
+      if (_n.indexOf('圆满') === 0) return 2.0;
+      if (_n.indexOf('完美') === 0) return 1.8;
+      if (_n.indexOf('上品') === 0) return 1.6;
+      if (_n.indexOf('中品') === 0) return 1.4;
+      if (_n.indexOf('下品') === 0) return 1.2;
+    }
+  } catch(_) {}
+  try {
+    if (to === (S.realm | 0)) {
+      var _keys = ['str', 'agi', 'def', 'vit', 'int'], _ratios = [];
+      for (var _k of _keys) { var _o = (window.__srvAttrSnap || {})[_k] | 0, _nn = (S.attrs || {})[_k] | 0; if (_o >= 1 && _nn >= 1) _ratios.push(_nn / _o); }
+      _ratios.sort(function(a, b) { return a - b; });
+      var _m = _ratios.length ? _ratios[Math.floor(_ratios.length / 2)] : 1;
+      _m = Math.round(_m * 10) / 10; if (!(_m >= 1)) _m = 1; if (_m > 2.2) _m = 2.2;
+      return _m;
+    }
+  } catch(_) {}
+  return 1;
+}
+function persistSrvRealm() { try { if (window.__srvRealmSeen != null) localStorage.setItem('mhxy_srv_realm_seen', String(window.__srvRealmSeen)); } catch(_) {} }
+function persistPendingBt() { try { if (window.__pendingBt) localStorage.setItem('mhxy_pending_bt', JSON.stringify(window.__pendingBt)); else localStorage.removeItem('mhxy_pending_bt'); } catch(_) {} }
 function progAfterSave() {
   try {
     if (!window.MHXY || !MHXY.loggedIn || !MHXY.loggedIn() || typeof S === 'undefined' || !S) return;
-    if (window.__srvRealmSeen == null) { window.__srvRealmSeen = S.realm | 0; window.__srvAttrSnap = Object.assign({}, S.attrs || {}); }
+    if (window.__srvRealmSeen == null) { // v1266 断链恢复：服务端账本境界优先于本地境界（刷新/重进不丢待登记的突破）
+      var _seen = null;
+      try { var _sv = parseInt(localStorage.getItem('mhxy_srv_realm_seen') || '', 10); if (Number.isFinite(_sv)) _seen = _sv; } catch(_) {}
+      try { var _pb = JSON.parse(localStorage.getItem('mhxy_pending_bt') || 'null'); if (_pb && typeof _pb.to === 'number' && typeof _pb.mult === 'number') window.__pendingBt = _pb; } catch(_) {}
+      if (_seen != null) window.__srvRealmSeen = _seen;
+      else if (typeof window.__ledgerRealm === 'number') window.__srvRealmSeen = window.__ledgerRealm;
+      else window.__srvRealmSeen = S.realm | 0;
+      if (window.__pendingBt && (S.realm | 0) < window.__pendingBt.to) { window.__pendingBt = null; persistPendingBt(); } // 轮回后旧待登记作废
+      window.__srvAttrSnap = Object.assign({}, S.attrs || {});
+      if (typeof window.__ledgerRealm !== 'number' && !window.__ledgerFetch && window.MHXY && MHXY.api) { // 账本境界还没拉到，拉一次再重跑
+        window.__ledgerFetch = true;
+        MHXY.api('/api/save/meta', {}).then(function(resp) {
+          if (resp && resp.ok && resp.json && typeof resp.json.ledger_realm === 'number') {
+            window.__ledgerRealm = resp.json.ledger_realm;
+            if (window.__srvRealmSeen !== resp.json.ledger_realm) { window.__srvRealmSeen = resp.json.ledger_realm; persistSrvRealm(); }
+            try { progAfterSave(); } catch(_) {}
+          }
+        }).catch(function() {});
+      }
+    }
     else if ((S.realm | 0) > window.__srvRealmSeen && !window.__pendingBt) {
-      const keys = ['str', 'agi', 'def', 'vit', 'int'], ratios = [];
-      for (const k of keys) { const o = (window.__srvAttrSnap || {})[k] | 0, n = S.attrs[k] | 0; if (o >= 1 && n >= 1) ratios.push(n / o); }
-      ratios.sort((a, b) => a - b);
-      let mult = ratios.length ? ratios[Math.floor(ratios.length / 2)] : 1;
-      mult = Math.round(mult * 10) / 10; if (!(mult >= 1)) mult = 1; if (mult > 2.2) mult = 2.2;
-      window.__pendingBt = { to: S.realm | 0, mult };
+      window.__pendingBt = { to: S.realm | 0, mult: btMultFor(S.realm | 0) }; // v1266 倍率按品级取（断链恢复时属性比值已失真）
+      persistPendingBt();
     }
     if (window.__pendingBt) {
       const pb = window.__pendingBt;
-      MHXY.api('/api/progress/breakthrough', { method: 'POST', body: { to: pb.to, mult: pb.mult, lingGen: S.lingGen || [], xianCap: S.xianCap || 0 } }).then(function (resp) {
-        if (resp && resp.ok && resp.json && resp.json.ok) { if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); window.__srvRealmSeen = pb.to; window.__pendingBt = null; }
-        else if (resp && resp.json && resp.json.error === 'already_or_skip') { window.__srvRealmSeen = pb.to; window.__pendingBt = null; }
-      }).catch(function () {});
+      if (!window.__pendingBtAt || Date.now() - window.__pendingBtAt >= 10000) { // v1266 重试节流：10 秒最多一次
+        window.__pendingBtAt = Date.now();
+        MHXY.api('/api/progress/breakthrough', { method: 'POST', body: { to: pb.to, mult: pb.mult, lingGen: S.lingGen || [], xianCap: S.xianCap || 0 } }).then(function (resp) {
+          if (resp && resp.ok && resp.json && resp.json.ok) { if (typeof resp.json.rev === 'number') MHXY.setBaseRev(resp.json.rev); window.__srvRealmSeen = (typeof resp.json.realm === 'number' ? resp.json.realm : pb.to); window.__pendingBt = null; window.__pendingBtWarned = false; persistSrvRealm(); persistPendingBt(); }
+          else if (resp && resp.json && resp.json.error === 'skip') { // v1266 断链：服务端账本落后多步，按服务端境界逐级重登
+            var _sr = (typeof resp.json.realm === 'number') ? resp.json.realm : null;
+            if (_sr != null && _sr < pb.to) { window.__srvRealmSeen = _sr; persistSrvRealm(); window.__pendingBt = { to: _sr + 1, mult: btMultFor(_sr + 1) }; window.__pendingBtAt = 0; window.__pendingBtWarned = false; persistPendingBt(); }
+            else { window.__srvRealmSeen = pb.to; window.__pendingBt = null; window.__pendingBtWarned = false; persistSrvRealm(); persistPendingBt(); }
+          }
+          else if (resp && resp.json && (resp.json.error === 'already_or_skip' || resp.json.error === 'already')) { window.__srvRealmSeen = pb.to; window.__pendingBt = null; window.__pendingBtWarned = false; persistSrvRealm(); persistPendingBt(); }
+          else { var _err = (resp && resp.json && resp.json.error) || 'network'; if (!window.__pendingBtWarned) { window.__pendingBtWarned = true; try { log('bad', '⚡ 突破登记失败（' + _err + '），境界暂未同步上云，正在重试——请勿退出，登记成功前不要再突破。'); } catch(_) {} } }
+        }).catch(function () { if (!window.__pendingBtWarned) { window.__pendingBtWarned = true; try { log('bad', '⚡ 突破登记网络失败，正在重试——请勿退出，登记成功前不要再突破。'); } catch(_) {} } });
+      }
     }
-    if ((S.realm | 0) < window.__srvRealmSeen) window.__srvRealmSeen = S.realm | 0;
+    if ((S.realm | 0) < window.__srvRealmSeen) { window.__srvRealmSeen = S.realm | 0; persistSrvRealm(); window.__pendingBt = null; persistPendingBt(); } // v1266 轮回降境：服务端已见境界同步下调，旧待登记作废
     window.__srvAttrSnap = Object.assign({}, S.attrs || {});
     if (S.afk && S.afk.start) {
       if (window.__srvAfkMark !== S.afk.start) {
@@ -9296,7 +9362,20 @@ try {
     // 延迟一点等 UI 就绪
     setTimeout(function() {
       try {
-        if (typeof tribQuizClean === 'function' && tribQuizClean(_pq) < K.TRIB_QUIZ_N) { // v1260 坏 quiz 直接清掉，不反复弹错
+        if (typeof tribQuizClean === 'function' && tribQuizClean(_pq) < K.TRIB_QUIZ_N) { // v1266 坏 quiz 重建新题、锁不丢（v1260 的直接清掉会丢雷云锁，2900% 变圆满）
+          try {
+            const _nq = (typeof C !== 'undefined' && C.pickTribQuiz) ? C.pickTribQuiz(S._pendingFromRealm | 0) : null;
+            if (_nq) {
+              _nq.jackpot = _pq.jackpot || null; _nq.koWin = !!_pq.koWin; _nq.fromRealm = S._pendingFromRealm | 0;
+              _nq.cloudGrade = _pq.cloudGrade || null; _nq.cloudJi = !!_pq.cloudJi;
+              S._pendingTrib.quiz = _nq;
+              if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_nq);
+              else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_nq);
+              try { log('warn', '⚡ 检测到损坏的问心，已换新题重新弹出（品级锁定不变）。'); } catch(_){}
+              try { if (typeof save === 'function') save(); } catch(_){}
+              return;
+            }
+          } catch(_e) {}
           try { delete S._pendingTrib; delete S._pendingFromRealm; S.thunderOk = true; } catch(_){}
           try { log('warn', '⚡ 检测到损坏的问心已清理，请重新点突破。'); } catch(_){}
           try { if (typeof save === 'function') save(); } catch(_){}

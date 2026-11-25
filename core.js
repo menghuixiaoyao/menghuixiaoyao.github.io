@@ -62,6 +62,7 @@ const K = {
   TRIB_GRADE_FULL: [24, 17, 11, 5, 0], // v1172 Ye 定：品质对应压条门槛（圆满2400%/完美1700%/上品1100%/中品500%；超500%必不低于中品）
   TRIB_GRADE_JI_MULT: 2.2,   // v1172 Ye 定：压条 2900% 为圆满极限（圆满之上独立一档）
   TRIB_JACKPOT_P: 0.01,      // v176 天劫异变：压条≤200% 时 1% 概率撞上高阶雷劫（中品/上品/完美/圆满随机）
+  SESSION_IDLE_MS: 30 * 60 * 1000, // v1266 半小时不用自动退出登录（Ye 定）
   // —— 冒险 ——
   MON_BASE: 25, MON_SCALE: 0.90, // 怪物总属性 ≈ (25 + (玩家总属性-25)×0.90) × 难度倍率 × (0.9~1.1)
   // —— 金元 ——
@@ -255,8 +256,10 @@ const canAdvLife = S => (S.reinc && (S.reinc[13] | 0) > 0); // v560 主宰(第13
 const QNAME = ['', '普通', '精良', '极品'], QMULT = [0, 1, 1.5, 2];
 // 烹饪：菜肴比生食回复更多饱食/体力；精良/极品附带临时增益（属性：接下来 3 场战斗；气运：接下来 10 点体力的行动）
 const DISHES = {
-  d_rabbit: { name: '烤兔肉',       lv: 1, need: [['food', 'rabbit', 1]],                 hunger: 20, sta: 2, buff: 'agi' },
-  d_egg:    { name: '香煎鸡蛋',     lv: 1, need: [['eggs', 'chicken', 2]],                hunger: 15, sta: 1, buff: 'luck' },
+  d_rabbit: { name: '烤兔肉',       lv: 1, need: [['food', 'rabbit', 1], ['mats', 'h_agi', 20]], hunger: 20, sta: 2, buff: 'agi' },
+  d_egg:    { name: '香煎鸡蛋',     lv: 1, need: [['eggs', 'chicken', 2], ['mats', 'h_def', 20]], hunger: 15, sta: 1, buff: 'def' },
+  d_duck:   { name: '灵草鸭蛋羹',   lv: 2, need: [['eggs', 'duck', 1], ['mats', 'h_agi', 20]], hunger: 20, sta: 2, buff: 'agi' },
+  d_ostrich:{ name: '灵草鸵鸟蛋',   lv: 3, need: [['eggs', 'ostrich', 1], ['mats', 'h_str', 20]], hunger: 40, sta: 5, buff: 'str' },
   d_deer:   { name: '药膳鹿肉羹',   lv: 2, need: [['food', 'deer', 1], ['mats', 'h_vit', 1]],  hunger: 30, sta: 4, buff: 'def' },
   d_goose:  { name: '灵草鹅蛋饼',   lv: 2, need: [['eggs', 'goose', 1], ['mats', 'h_int', 1]], hunger: 25, sta: 2, buff: 'int' },
   d_wolf:   { name: '红烧狼肉',     lv: 3, need: [['food', 'wolf', 1], ['mats', 'h_str', 1]],  hunger: 40, sta: 5, buff: 'str' },
@@ -982,7 +985,8 @@ function startThunderBattle(S, trib, fromRealm, pwOverride) {
   b.unlimited = true;
   b.foeFirst = true; // v1176 雷云绝对先手
   b.tribStrikes = tribStrikes(S, trib); b.surviveRounds = b.tribStrikes + 1; // v985 雷劫分层
-  pk = { battle: b, trib: 'thunder', tribData: { trib, fromRealm, pw }, target: 'foe' };
+  try { window._pkSeq = Date.now(); } catch(_) {} // v1266 雷云战打序号，旧pk失效（Ye 报：首点突破不进战斗）
+  pk = { battle: b, trib: 'thunder', tribData: { trib, fromRealm, pw }, target: 'foe', _seq: window._pkSeq };
   try { closeSheet(); } catch(_){}
   if (trib.jackpot) { const _jg = C.gradeFromFull(trib.jackpot.full); log('warn', `⚡ <b>天现异象！</b>劫云翻涌——这竟是【<b class="y">${_jg.name}</b>】级别的天劫！扛过去便按【${_jg.name}】档结丹！`); }
   else if (pw >= 1.25) log('sys', '⚡ 天劫感应到你充盈的灵气，雷威大涨！');
@@ -1330,7 +1334,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   let _btm = BT_MULT[Math.min(12, fromRealm | 0)] || 1, gradeName = null;
   if (fromRealm >= 2) { // v175 筑基→金丹结金丹、金丹→元婴结元婴：品质替代原突破倍率；v284 元婴以上也有品质（v176：天劫异变按异变档位；v180：压条 1000% 为极）
     let g = trib && trib.jackpot ? gradeFromFull(trib.jackpot.full) : (trib && trib.cloudGrade ? trib.cloudGrade : tribGrade(S)); // v1233 渡劫品级雷云定：品级就是雷云出现时的档（异变档仍走 jackpot.full；无锁定值时回落旧算法）
-    const isJi = !(trib && trib.jackpot) && (trib && trib.cloudJi != null ? trib.cloudJi : tribFull(S) >= 29); // v1233 渡劫品级雷云定：极限与否也在雷云出现时锁定；v1172 2900% 为圆满极限
+    const isJi = !(trib && trib.jackpot) && (trib && trib.cloudJi != null ? trib.cloudJi : (trib && trib.cloudGrade && (trib.cloudGrade.full | 0) >= 29 ? true : tribFull(S) >= 29)); // v1233 渡劫品级雷云定：极限与否也在雷云出现时锁定；v1172 2900% 为圆满极限；v1266 cloudJi 缺失时按锁定的 cloudGrade.full≥29 补，不静默降档
     // v1233 渡劫品级雷云定：三条件加品（v750）取消——品级雷云一出来就定死，心魔只是阻碍（过/不过），问心/心魔/击溃都不再影响品级
     _btm = isJi ? K.TRIB_GRADE_JI_MULT : g.mult;
     gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极限' : ''); // v1172 Ye 定名：圆满极限
@@ -5112,7 +5116,8 @@ C.startThunderBattle = function(S, trib, fromRealm, pwOverride) {
   const b = new Battle(playerFighter(S, false), thunder);
   b.unlimited = true;
   const _G = (typeof G!=='undefined'?G:window);
-  _G.pk = { battle: b, adv: true, trib: 'thunder', tribData: { trib: trib, fromRealm: fromRealm, pw: pw } };
+  try { _G._pkSeq = Date.now(); } catch(_) {} // v1266 雷云战打序号
+  _G.pk = { battle: b, adv: true, trib: 'thunder', tribData: { trib: trib, fromRealm: fromRealm, pw: pw }, _seq: _G._pkSeq };
   try { _G.closeSheet(); } catch(_){}
   try { _G.afterAct(); } catch(_){}
   try { _G.save(); } catch(_){}
