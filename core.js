@@ -357,7 +357,7 @@ const DIFFS = { // cost 体力；mult 怪物强度（相对玩家）；rec/recTo
   wx_tu:   { name: '土行', cost: 5, mult: 1.15, rec: 8, recTot: 500, win: [30, 36], gold: [300, 360], xp: 220, lose: 10, xpL: 15, st: 0.50, ms: 0, pre: '土·', wx: 'tu' }
 };
 // v1236 进冒险最低境界（Ye 2026-11-19 22:10 口述：练气进初级、金丹进中级、化神进高级、渡劫进困难、仙人进地狱、合体进深渊、主宰进噩梦；秘境/五行图不走这张表）
-const ADV_MIN_REALM = { easy: 1, mid: 3, hard: 5, brutal: 9, hell: 10, abyss: 7, nightmare: 13 }; // v1246 渡劫9/仙人10/合体7/主宰13
+const ADV_MIN_REALM = { easy: 1, mid: 3, hard: 5, brutal: 7, hell: 9, abyss: 10, nightmare: 13 }; // v1262 玲珑合体7/红莲渡劫9/九幽仙人10/归墟主宰13
 const advRealmOk = (S, dk) => { const m = ADV_MIN_REALM[dk]; if (m === undefined) return true; if (canAdvLife(S)) return true; return (S.realm | 0) >= m; }; // 主宰轮回过（reinc[13]>0）不再受限；v1246 主宰改13
 // ======== 仙术五行修炼 ========
 const WUXING = [
