@@ -318,7 +318,8 @@ window.shenshiPanel = function() { // v887 化神神识；v1057 外放激活10�
     const wm = S.worldMap || { px: 2, py: 3 };
     const _spots = [
       { x: 3, y: 2, name: '🌱田药园', fn: 'openHerbSheet' },
-      { x: 2, y: 0, name: '🥚养殖园', fn: 'openRanchSheet' }
+      { x: 2, y: 0, name: '🥚养殖园', fn: 'openRanchSheet' },
+      { x: 4, y: 3, name: '⛏️灵脉矿区', fn: 'openReserveSheet' }, // v1261 灵脉矿区恢复，远程收取同田药园/养殖园
     ].filter(s => {
       const _d = Math.max(Math.abs(s.x - wm.px), Math.abs(s.y - wm.py));
       return _d >= 1 && _d <= 3;
@@ -408,7 +409,7 @@ function renderWorldMap() {
     try { refreshMainMailBtn(); } catch(_) {}
 // v536 保留地(4,3)资源点：草药+矿石定时刷新
 // v1212 主城老采集阵已整体下线（采集阵统一为冒险图新体系 array2；老阵存量已走系统邮件结算返还）
-function reserveTick(S) { // 草药/矿石每分钟+1 上限99；灵脉按大小刷新：小型1分钟/中型10分钟/巨型30分钟一条（v1007）
+function reserveTick(S) { // 矿石每分钟+1 上限99；灵脉按大小刷新：小型1分钟/中型10分钟/巨型30分钟一条（v1007）；草药不产了（v1261）
   const now = Date.now();
   if (!S.reserveNode) S.reserveNode = { h: 0, o: 0, v: 0, vt: 0, t: now };
   const rn = S.reserveNode;
@@ -425,14 +426,13 @@ function reserveTick(S) { // 草药/矿石每分钟+1 上限99；灵脉按大小
   }
   const mins = Math.floor((now - rn.t) / 60000);
   if (mins <= 0) return;
-  rn.h = Math.min(99, (rn.h|0) + mins);
-  rn.o = Math.min(99, (rn.o|0) + mins);
+  rn.o = Math.min(99, (rn.o|0) + mins); // v1261 草药不产了，h 不再长（旧库存不动，面板/自动采集已去草药）
   rn.t += mins * 60000;
 }
 function reserveHas(S) {
   if (!S || !S.reserveNode) return false;
   reserveTick(S);
-  return (S.reserveNode.h > 0 || S.reserveNode.o > 0 || (S.reserveNode.v | 0) > 0); // v538
+  return (S.reserveNode.o > 0 || (S.reserveNode.v | 0) > 0); // v538；v1261 草药不产，不计 h
 }
 // v540 田药园(3,2)：草药刷新
 function herbTick(S) { // v1237 三档灵药丛：地品每分钟/天品每10分钟/仙品每半小时，各上限99
@@ -589,8 +589,7 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
       }
       else {
         reserveTick(S); const _rn = S.reserveNode;
-        if ((_rn.h|0) > 0) { _fn = doReserveHerb; _txt = '采草药中……（自动）'; }
-        else if ((_rn.o|0) > 0) { _fn = doReserveOre; _txt = '挖矿中……（自动）'; }
+        if ((_rn.o|0) > 0) { _fn = doReserveOre; _txt = '挖矿中……（自动）'; } // v1261 草药不产了
         else if ((_rn.v|0) > 0) { _fn = doReserveVein; _txt = '采灵脉中……（自动）'; }
       }
     } catch(_){}
@@ -923,7 +922,7 @@ window.openReserveSheet = function() {
     reserveTick(S); const rn = S.reserveNode;
     const _vn = ['小型灵脉','中型灵脉','巨型灵脉'];
     const vtxt = (rn.v|0) > 0 ? '灵脉×' + rn.v : '无';
-    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">草药矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><div class="grid2"><button class="btn gold" onclick="gatherProgWrap('采草药中……',doReserveHerb)" ${(rn.h|0)>0?'':'disabled'}>🌿 采草药<br><small>剩余×${rn.h|0}</small></button><button class="btn gold" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石<br><small>剩余×${rn.o|0}</small></button></div>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石（剩余×${rn.o|0}）</button>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.openHerbSheet = function() {
@@ -1044,16 +1043,17 @@ function npcPos(S) {
       const isBeastGarden = (x === 3 && y === 3) ? true : false; // v465 兽园
       const isFormationTalisman = (x === 3 && y === 5) ? true : false; // v790 制阵室·画符台
       const isHerbGarden = (x === 3 && y === 2) ? true : false; // v540 田药园（v1125 Ye 定保留）
+      const isReserve = (x === 4 && y === 3) ? true : false; // v1261 灵脉矿区恢复
       const isRanch = (x === 2 && y === 0) ? true : false; // v541 养殖园：肉和蛋（v1125 Ye 定保留）
       const dur = (typeof S !== 'undefined' && S.furnaceDur) ? S.furnaceDur : { alc: 100, forge: 100, ding: 200 }; if (dur.ding == null) dur.ding = 200;
       const _npcQxG = _npcHere ? ((_npcHere[7]|0) || (_npcHere[5]*2)) : 999; const _mySSG = (typeof effShenshi === 'function' && typeof S !== 'undefined' && S) ? effShenshi(S) : 0; // v969 NPC格子图标神识判定，与信息栏v937一致
-      const icon = isP ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" onerror="this.outerHTML='🧑'">` : (isNpc && _npcHere[2] && _npcQxG <= _mySSG) ? `<img src="${_npcHere[2]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" title="${(_npcHere[3]||'') + ' ' + (_npcHere[6]||'')}">` : isFurnace === 'both_alc' ? '<span style="font-size:20px">🏛️</span>' : isFurnace ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:20px">🔨</span><span style="font-size:8px;color:var(--dim)">${dur[isFurnace]||100}/100</span></div>` : isArena === 'pk' ? '<span style="font-size:20px">⚔️</span>' : isArena === 'arena' ? '<span style="font-size:20px">🏟️</span>' : isPortal ? '<span style="font-size:20px">🌀</span>' : isShop ? '<span style="font-size:20px">🏪</span>' : isTrainPortal ? '<span style="font-size:20px">⛰️</span>' : isStall ? '<span style="font-size:20px">🎪</span>' : isCasino ? '<span style="font-size:20px">🎲</span>' : isCultivate ? '<span style="font-size:13px">☯️🪷🕉️⚡⛰️</span>' : isCookRefine ? '<span style="font-size:16px">🍳🪙</span>' : isBeastGarden ? '<span style="font-size:20px">🐾</span>' : isFormationTalisman ? '<span style="font-size:16px">🧭📜</span>' : isHerbGarden ? (herbHas(S) ? '<span style="font-size:20px">🌱</span>' : '⬜') : isRanch ? (ranchHas(S) ? '<span style="font-size:20px">🥚</span>' : '⬜') : '⬜'; // v1057 NPC全图显示（神识可见） // v540；v541 // v465 兽园 // v456 大殿只显示🏛️；v457 修炼区五图标；v458 灶台点金台；v790 阵符坊；v1125 灵脉矿区删除（资源搬到冒险图），田药园/养殖园保留
+      const icon = isP ? `<img src="${(typeof avatarUrl === 'function' ? avatarUrl() : '')}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" onerror="this.outerHTML='🧑'">` : (isNpc && _npcHere[2] && _npcQxG <= _mySSG) ? `<img src="${_npcHere[2]}" style="width:100%;height:100%;object-fit:cover;border-radius:6px;display:block" title="${(_npcHere[3]||'') + ' ' + (_npcHere[6]||'')}">` : isFurnace === 'both_alc' ? '<span style="font-size:20px">🏛️</span>' : isFurnace ? `<div style="display:flex;flex-direction:column;align-items:center"><span style="font-size:20px">🔨</span><span style="font-size:8px;color:var(--dim)">${dur[isFurnace]||100}/100</span></div>` : isArena === 'pk' ? '<span style="font-size:20px">⚔️</span>' : isArena === 'arena' ? '<span style="font-size:20px">🏟️</span>' : isPortal ? '<span style="font-size:20px">🌀</span>' : isShop ? '<span style="font-size:20px">🏪</span>' : isTrainPortal ? '<span style="font-size:20px">⛰️</span>' : isStall ? '<span style="font-size:20px">🎪</span>' : isCasino ? '<span style="font-size:20px">🎲</span>' : isCultivate ? '<span style="font-size:13px">☯️🪷🕉️⚡⛰️</span>' : isCookRefine ? '<span style="font-size:16px">🍳🪙</span>' : isBeastGarden ? '<span style="font-size:20px">🐾</span>' : isFormationTalisman ? '<span style="font-size:16px">🧭📜</span>' : isHerbGarden ? (herbHas(S) ? '<span style="font-size:20px">🌱</span>' : '⬜') : isRanch ? (ranchHas(S) ? '<span style="font-size:20px">🥚</span>' : '⬜') : isReserve ? (reserveHas(S) ? '<span style="font-size:20px">⛏️</span>' : '⬜') : '⬜'; // v1057 NPC全图显示（神识可见） // v540；v541 // v465 兽园 // v456 大殿只显示🏛️；v457 修炼区五图标；v458 灶台点金台；v790 阵符坊；v1261 灵脉矿区恢复（只产矿石＋3档灵脉，不产草药）
       const furnaceAttr = isFurnace && !isP ? ` data-furnace="${isFurnace}"` : '';
       const arenaAttr = isArena && !isP ? ` data-arena="${isArena}"` : '';
       if (!isSwordCell(x, y)) { cells += `<div style="aspect-ratio:1;visibility:hidden"></div>`; continue; }
       let _cellIcon = icon; // v892 化神分身在神识范围内资源点显示
       try {
-        if ((S.realm|0) >= 5 && (isHerbGarden || isRanch) && !isP) {
+        if ((S.realm|0) >= 5 && (isHerbGarden || isRanch || isReserve) && !isP) {
           const _wm = S.worldMap || { px: 2, py: 3 };
           const _d = Math.max(Math.abs(x - _wm.px), Math.abs(y - _wm.py));
           if (_d >= 1 && _d <= 3) _cellIcon = `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%">${icon}<span style="position:absolute;bottom:-2px;right:-2px;font-size:10px" title="化神分身可收取">👤</span></div>`;
@@ -1076,7 +1076,7 @@ function npcPos(S) {
         }
         if (_pl && _pl.length) { if (isP) { _cellIcon = `<div style="position:relative;width:100%;height:100%">${_cellIcon}<span style="position:absolute;bottom:-2px;right:-2px;font-size:10px" title="同格道友：${_pl.map(function(p){ return String(p.username || ''); }).join('、')}">🧑×${_pl.length}</span></div>`; } else { _cellIcon = `<div style="font-size:10px;line-height:1;text-align:center;cursor:pointer" onclick="event.stopPropagation();window.showPlayersAt(${x},${y})" title="点击查看${_pl.length}位道友资料">🧑${_pl.length > 1 ? '×' + _pl.length : ''}<br><span style="font-size:8px">${String(_pl[0].username || '').slice(0, 4)}</span><br><span style="font-size:8px;color:#7ec8ff">查看资料</span></div>`; } }
       } catch(_) {} // v1009 真人玩家标记；v1057 可见规则
-      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isFormationTalisman ? '制阵室·画符台' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : ''}">${_cellIcon}</div>`; // v713 修title泄漏；v790 阵符坊
+      cells += `<div data-mx="${x}" data-my="${y}"${furnaceAttr}${arenaAttr} style="aspect-ratio:1;background:#1a1a2e;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer" title="${isFurnace === 'both_alc' ? '大殿' : isArena === 'pk' ? 'PK' : isArena === 'arena' ? '擂台' : isPortal ? '传送阵' : isShop ? '商会' : isTrainPortal ? '洞府·灵脉闭关' : isStall ? '摆摊区' : isCasino ? '赌场' : isCultivate ? '修炼区' : isCookRefine ? '灶台·点金台' : isBeastGarden ? '兽园' : isFormationTalisman ? '制阵室·画符台' : isHerbGarden ? '田药园' : isRanch ? '养殖园' : isReserve ? '灵脉矿区' : ''}">${_cellIcon}</div>`; // v713 修title泄漏；v790 阵符坊
     }
     grid.innerHTML = cells;
     grid.querySelectorAll('[data-mx]').forEach(c => {
@@ -1232,6 +1232,14 @@ function cityMoveThunder() {
             }
             return;
           }
+          if (isReserveCell) { // v1261 灵脉矿区恢复
+            if (w.px === x && w.py === y) {
+              if (typeof openReserveSheet === 'function') openReserveSheet();
+            } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
+              w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
+            }
+            return;
+          }
           if (arena) {
             if (w.px === x && w.py === y) {
               if (arena === 'pk' && typeof doPkChooseRealm === 'function') doPkChooseRealm();
@@ -1285,6 +1293,7 @@ function cityMoveThunder() {
         const isBeastGarden2 = (wx === 3 && wy === 3); // v465 兽园
         const isHerb2 = (wx === 3 && wy === 2); // v553 田药园（v1125 保留）
         const isRanch2 = (wx === 2 && wy === 0); // v553 养殖园（v1125 保留）
+        const isReserve2 = (wx === 4 && wy === 3); // v1261 灵脉矿区恢复
         if (furn2 === 'both_alc') ci.innerHTML = '⚗️ <b>炼丹炉</b>(' + (dur.alc != null ? dur.alc : 100) + '/100) 🏺 <b>丹鼎</b>(' + (dur.ding != null ? dur.ding : 200) + '/200) 🔨 <b>炼器炉</b>(' + (dur.forge != null ? dur.forge : 100) + '/100）· <u>点我选择</u>'; // v448 炼器炉并入
         else if (arena2 === 'pk') ci.innerHTML = '⚔️ <b>PK</b> · <u>点我进入</u>';
         else if (arena2 === 'arena') ci.innerHTML = '🏟️ <b>擂台</b> · <u>点我进入</u>';
@@ -1298,6 +1307,7 @@ function cityMoveThunder() {
         else if (isCasino2) ci.innerHTML = '🎲 <b>赌场</b> · <u>点我进入</u>';
         else if (isHerb2) { try { herbTick(S); const _hg = S.herbGarden; const _ht = (_hg.h1|0) + (_hg.h2|0) + (_hg.h3|0); ci.innerHTML = '🌱 <b>田药园</b>' + (_ht>0 ? '（草药×'+_ht+'）' : '（待生长）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '🌱 <b>田药园</b> · <u>点我采集</u>'; } } // v553
         else if (isRanch2) { try { ranchTick(S); const _rc = S.ranch; const _r2 = []; if (_rc.m>0) _r2.push('肉×'+_rc.m); if (_rc.e>0) _r2.push('蛋×'+_rc.e); ci.innerHTML = '🥚 <b>养殖园</b>' + (_r2.length ? '（'+_r2.join('、')+'）' : '（待产出）') + ' · <u>点我收获</u>'; } catch(e) { ci.innerHTML = '🥚 <b>养殖园</b> · <u>点我收获</u>'; } } // v553
+        else if (isReserve2) { try { reserveTick(S); const _rn2 = S.reserveNode; const _r3 = []; if ((_rn2.o|0)>0) _r3.push('矿石×'+_rn2.o); if ((_rn2.v|0)>0) _r3.push('灵脉×'+_rn2.v); ci.innerHTML = '⛏️ <b>灵脉矿区</b>' + (_r3.length ? '（'+_r3.join('、')+'）' : '（待生长）') + ' · <u>点我采集</u>'; } catch(e) { ci.innerHTML = '⛏️ <b>灵脉矿区</b> · <u>点我采集</u>'; } } // v1261
         else {
           // v552 文字显示这格有啥：人/矿/灵草等
           const _parts = [];
@@ -1323,6 +1333,15 @@ function cityMoveThunder() {
               _parts.push('🥚 <b>养殖园</b>' + (_r2.length ? '：' + _r2.join('、') : '（待产出）'));
             } catch(e) { _parts.push('🥚 <b>养殖园</b>'); }
           }
+          // 灵脉矿区(4,3) v1261
+          if (wx === 4 && wy === 3) {
+            try { reserveTick(S); const _rn3 = S.reserveNode;
+              const _r3 = [];
+              if ((_rn3.o|0) > 0) _r3.push('矿石×' + _rn3.o);
+              if ((_rn3.v|0) > 0) _r3.push('灵脉×' + _rn3.v);
+              _parts.push('⛏️ <b>灵脉矿区</b>' + (_r3.length ? '：' + _r3.join('、') : '（待生长）'));
+            } catch(e) { _parts.push('⛏️ <b>灵脉矿区</b>'); }
+          }
           ci.innerHTML = _parts.length ? _parts.join('<br>') : '⬜ 空地（' + wx + ',' + wy + '）';
         }
         // v554 NPC也显示在信息栏；v556 独立点击
@@ -1346,8 +1365,8 @@ function cityMoveThunder() {
             ci.innerHTML += (ci.innerHTML ? '<br>' : '') + '<span style="cursor:pointer" onclick="event.stopPropagation();window.showPlayersAt(' + wx + ',' + wy + ')">👥 <b>道友×' + _wp1160.length + '</b>（' + _pn1160 + '）· <u>点我查看</u></span>'; // v1167 整行可点
           }
         } catch(e) {}
-        ci.style.cursor = (furn2 || arena2 || isPortal2 || isShop2 || isTrain2 || isStall2 || isCasino2 || isCultivate2 || isCookRefine2 || isBeastGarden2 || isHerb2 || isRanch2) ? 'pointer' : 'default'; // v452；v458；v465；v553
-        ci.onclick = (furn2 || arena2 || isPortal2 || isShop2 || isTrain2 || isStall2 || isCasino2 || isCultivate2 || isCookRefine2 || isBeastGarden2 || isHerb2 || isRanch2) ? () => { // v452；v458；v465
+        ci.style.cursor = (furn2 || arena2 || isPortal2 || isShop2 || isTrain2 || isStall2 || isCasino2 || isCultivate2 || isCookRefine2 || isBeastGarden2 || isHerb2 || isRanch2 || isReserve2) ? 'pointer' : 'default'; // v452；v458；v465；v553；v1261
+        ci.onclick = (furn2 || arena2 || isPortal2 || isShop2 || isTrain2 || isStall2 || isCasino2 || isCultivate2 || isCookRefine2 || isBeastGarden2 || isHerb2 || isRanch2 || isReserve2) ? () => { // v452；v458；v465；v1261
           try {
             if (typeof isPortal2 !== 'undefined' && isPortal2 && typeof sheetAdventure === 'function') { sheetAdventure(); return; }
             if (typeof isShop2 !== 'undefined' && isShop2 && typeof sheetShop === 'function') { sheetShop(); return; }
@@ -1376,6 +1395,10 @@ function cityMoveThunder() {
             }
             if (typeof isRanch2 !== 'undefined' && isRanch2) { // v553 养殖园；v555 分开
               if (typeof openRanchSheet === 'function') openRanchSheet();
+              return;
+            }
+            if (typeof isReserve2 !== 'undefined' && isReserve2) { // v1261 灵脉矿区
+              if (typeof openReserveSheet === 'function') openReserveSheet();
               return;
             }
             if (arena2 === 'arena' && typeof doArena === 'function') { doArena(); return; }
