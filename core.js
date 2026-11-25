@@ -159,12 +159,12 @@ const ORES = {
   silver: { name: '银矿', p: 0.15, price: 15 },
   gold:   { name: '金矿', p: 0.05, price: 40 },
   // 灵石：不参与矿石稀有度掷骰；挖到灵石时再按品阶掷骰（p 为基础概率）
-  // 灵石五品（sp1~sp5）：挖矿偶得，不可出售；服用得经验（五品直接升 1 级）；炼药可投入 1 块，成功率与上品各 +alc
-  sp1: { name: '灵气石', p: 0.50, xp: 20,  alc: 0.05, extra: true },
-  sp2: { name: '下品灵石', p: 0.25, xp: 50,  alc: 0.10, extra: true },
-  sp3: { name: '中品灵石', p: 0.15, xp: 120, alc: 0.15, extra: true },
-  sp4: { name: '上品灵石', p: 0.08, xp: 300, alc: 0.25, extra: true },
-  sp5: { name: '极品灵石', p: 0.02, lvl: 1,  alc: 0.40, extra: true },
+  // 灵石五品（sp1~sp5）：挖矿偶得，不可出售；服用只加法力/仙力（mana 为每块增量，capPct 为压条上限百分比）；炼药可投入 1 块，成功率与上品各 +alc
+  sp1: { name: '灵气石', p: 0.50, mana: 10, capPct: 100, alc: 0.05, extra: true },
+  sp2: { name: '下品灵石', p: 0.25, mana: 100, capPct: 200, alc: 0.10, extra: true },
+  sp3: { name: '中品灵石', p: 0.15, mana: 10000, capPct: 500, alc: 0.15, extra: true },
+  sp4: { name: '上品灵石', p: 0.08, mana: 100000, capPct: 1000, alc: 0.25, extra: true },
+  sp5: { name: '极品灵石', p: 0.02, mana: 1000000, capPct: 1500, alc: 0.40, extra: true },
   // v1224 精炼矿：提炼 100:1 得；不参与挖矿掷骰（extra），不可出售（无 price），不可服用/不可入灵石掷骰（refined），五行：玄铁水/赤铜火/秘银土/庚金金
   xuatie: { name: '玄铁', ele: '水', extra: true, refined: true }, chitong: { name: '赤铜', ele: '火', extra: true, refined: true },
   miyin: { name: '秘银', ele: '土', extra: true, refined: true }, gengjin: { name: '庚金', ele: '金', extra: true, refined: true }
@@ -302,6 +302,7 @@ const REFINES = { // 炼金配方：主料 + 1 张普通残页（配方/丹方�
   r_dw3: { name: '上品凝露', lv: 2, need: [['mats', 'dw2', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw3'] },
   r_gold1: { name: '点铁成金', lv: 1, need: [['ores', 'iron', 15], ['pages', 'pg1', 1]], out: ['ores', 'gold'] }, // v1263 铁矿 5→15（残页 1 张不变）
   r_gold2: { name: '铜化金',   lv: 2, need: [['ores', 'copper', 10], ['pages', 'pg1', 1]], out: ['ores', 'gold'] }, // v1263 铜矿 3→10（残页不变）
+  r_jingye: { name: '极品灵液', lv: 1, need: [['ores', 'sp5', 10], ['pages', 'pg1', 10], ['mats', 'h_str', 100], ['mats', 'h_vit', 100], ['mats', 'h_agi', 100], ['mats', 'h_int', 100], ['mats', 'h_def', 100]], out: ['mats', 'jingye'] }, // v1267 极品灵液：极品灵石×10+残页×10+五属性草各×100
   p_hp: { name: '生命药水', lv: 1, need: [['mats', 'h_vit', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'hp' }, // 品质决定回复量
   p_mp: { name: '法力药水', lv: 1, need: [['mats', 'h_int', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'mp' },
   // v1224 提炼：100 基础矿 → 1 精炼矿，必成，不用残页；走独立 smelt 分支（不进通用 craft 成功率/双倍逻辑）
@@ -335,10 +336,12 @@ const MATS = {
   h_int: { name: '智力草', price: 5, basic: 'int' },
   lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（元婴以上元神照料才生长）', seed: 1 }, // v887；v890 洞府元婴限定
   qingteng: { name: '青藤', ele: '木' }, lingmu: { name: '灵木', ele: '木' }, yimu: { name: '乙木', ele: '木' }, // v1224 五行木材：不可出售（无 price），主城共享池/野外木掷出
+  jingye: { name: '极品灵液', mana: 1000000, capPct: 2000, extra: true, desc: '服用：法力 +1000000（压条上限 2000%）' }, // v1267 炼金极品灵液：不可出售（无 price），服用只加法力/仙力
   cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 }, // v890 改回元婴限定
   xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 10 }
 };
 Object.assign(MATS, LU);
+FARM.jingye = MATS.jingye; // v1267 极品灵液挂 FARM（extra 不参与种植掉落）防 normalize 的 farm 清理误删 mats 键
 const STARTER_MATS = 0, STARTER_GOLD = 0; // 新手礼包：无（旧存档迁移时同样发放）
 function grantStarter(S) { ATTRS.forEach(a => S.mats['h_' + a] = (S.mats['h_' + a] || 0) + STARTER_MATS); S.gold += STARTER_GOLD; }
 // 冒险难度：mult 怪物强度倍率；win 胜利属性点；lose 战败扣点；gold 胜利金元；ms 怪物技能数
@@ -1528,11 +1531,24 @@ function smashSpirit(S, n) {
   return { n, got };
 }
 function useSpirit(S, k, n) {
-  const it = ORES[k]; if (!it || !it.extra || it.refined) return null; // v1224 精炼矿不可服用
-  n = Math.min(n || 1, S.ores[k] || 0); if (n <= 0) return null;
-  S.ores[k] -= n; if (!S.ores[k]) delete S.ores[k];
-  if (it.lvl) return { n, xp: 0, ups: levelUp(S, it.lvl * n) };
-  return { n, xp: it.xp * n, ups: gainXp(S, it.xp * n) };
+  const it = ORES[k]; if (!it || !it.extra || it.refined || !it.mana || !useFali(S)) return null; // v1267 只加法力；凡人未练气不消耗
+  const want = Math.min(Math.floor(n || 1), S.ores[k] || 0); if (want <= 0) return null;
+  const cap = Math.min(manaCapEff(S), Math.floor(manaMax(S) * it.capPct / 100));
+  const cur = Math.floor(S.mana || 0), room = cap - cur; if (room <= 0) return null;
+  const used = Math.min(want, Math.ceil(room / it.mana)), gained = Math.min(room, used * it.mana);
+  S.ores[k] -= used; if (!S.ores[k]) delete S.ores[k];
+  S.mana = cur + gained;
+  return { n: used, gained, mana: S.mana, cap };
+}
+function useJingye(S, n) { // v1267 服用极品灵液：只加法力/仙力，压条上限 2000%
+  const it = MATS.jingye; if (!it || !useFali(S)) return null;
+  const want = Math.min(Math.floor(n || 1), (S.mats && S.mats.jingye) || 0); if (want <= 0) return null;
+  const cap = Math.min(manaCapEff(S), Math.floor(manaMax(S) * it.capPct / 100));
+  const cur = Math.floor(S.mana || 0), room = cap - cur; if (room <= 0) return null;
+  const used = Math.min(want, Math.ceil(room / it.mana)), gained = Math.min(room, used * it.mana);
+  S.mats.jingye -= used; if (!S.mats.jingye) delete S.mats.jingye;
+  S.mana = cur + gained;
+  return { n: used, gained, mana: S.mana, cap };
 }
 function useLu(S, k, n) { // 服用凝露：每点随机加到一项属性
   const it = LU[k]; if (!it) return null;
@@ -4765,7 +4781,7 @@ function pkSettle(S, pk, chosen) {
 try { (typeof window !== 'undefined' ? window : globalThis).pkSettle = pkSettle; } catch(_) {} // v727 顶层导出pkSettle给script#2用
 
 // v960：本地寄售函数（consignList/consignCancel/consignBuy/consignTick/genMarket）已删除，转线上
-Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, SZ_SEATS, SZ_MER_ORDER, szProg, szSetProg, szVMaiCount, szVMaiPress, szDanCap, szBigCount, maiRMaiEff, szOpenCount, szSmallCount, szFirstDanOpen, szSyncMai, szSeatLitNames, szDan, szLitCnt, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, ADV_MIN_REALM, advRealmOk, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advResGrant, advNewEvent, lootTable, lootRoll, lootLabel, repairNameL, invLabelL, REPAIR_CHAIN, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
+Object.assign(C, { fmtN, resLbl, grantStarter, bagCap, itemCap, itemCount, gainItem, rnd, ri, pick, total, pct, todayStr, newState, normalize, announce, MAI_RATE, maiLuo, maiMai, maiMult, maiShuLv, SZ_SEATS, SZ_MER_ORDER, szProg, szSetProg, szVMaiCount, szVMaiPress, szDanCap, szBigCount, maiRMaiEff, szOpenCount, szSmallCount, szFirstDanOpen, szSyncMai, szSeatLitNames, szDan, szLitCnt, drinkMai, synthVMai, synthXPS, synthZPS, synthSPS, synthJPS, useSha, manaCapEff, useMaiPages, MIJING_DAILY, WUXING, wxByK, WX_COST_XIAN, WX_COST_STA, WX_DAILY, WX_FRAG_DROP, wxDailyLeft, wxFragName, wxPowName, wxResName, synthWx, PET_SET, petMatchTxt, petSkillTxt, PET_GEAR, PET_SLOT_NAMES, petActiveSets, equipPetGear, unequipPetGear, sellPetGear, xpNeed, alcNeed, gainXp, levelUp, canLevelUp, doManualLevelUp, manaNeed, useSpirit, useJingye, smashSpirit, PQLT, petQ, hatchPet, setPet, battleAttrs, petBonusTxt, petFighter, rollPet, activePet, activePets, QNAME, DISHES, GEAR, SLOTS, REFINES, FORMATIONS, TALISMANS, RECIPES, vigorGain, vigorCap, lifeOf, lifeChoiceMax, lifeAttrRate, lifeAttrQ, gainLifeXp, lifeRate, lifeQProbs, craft, eatDish, dishOf, dishSta, refineDouble, gearAdd, gearVal, GEAR_SETS, SET_ITEMS, gearItemName, setCounts, setQuality, SET_QMULT, monTotal, ADV_STEPS, ADV_MIN_REALM, advRealmOk, RANKS, RANK_W, EV_TYPES, ADV_EVENTS, advStart, advSharedInit, advSharedHeartbeat, advChoices, advChoose, advAuto, advCtx, advResGrant, advNewEvent, lootTable, lootRoll, lootLabel, repairNameL, invLabelL, REPAIR_CHAIN, rollGear, HAND_EVENTS, advCheckP, fleeP, itemLabel, advDC, manaMax, manaCap, lifeManaCost, useManaPotion, useFali, lifeCost, POTIONS, POT_PCT, potOf, useHpPotion, bestPot, bumpPeak, GQNAME, GQ_SET, GQ_ORE, ORE_RATE, forgeRate, forgeQProbs, setDefBoost, hurtMods, activeSets, fatalStrike, shareAura, playerFighter, equipGear, unequipGear, gearPrice, sellGear, tameBiteMult, tamePetXpChance, hatchProbs, tame, tamePill, feedBeastPill, fightAttrs, PAGES, EXP_BOOKS, LIFE_SKILLS, ADV_LIFE, canAdvLife, skillPageChance, combinePages, useExpBook, combineSkillPages, useSkillBook, sellSkillBook, skillBookPrice, die, leftBeforeDeath, hasSt, addStatus, takePoisonLoss, addPoisonAcc, drainVit, cureStatus, activeStatus, luck, afterAction, petBiteChance, eatFood, useMed, petXpNeed, petGainXp, petAssign, devourPet, smashProbs, SMASH_N, useLu, tierProbs, luProbs, canCheckin, checkinAmount, checkin, train, mine, oreProbs, mineCritChance, sellOre, gather, gatherProbs, gatherCrit, sellItem, eatMeat, spiritChance, spiritProbs, meatChance, meatPerHunt, eggTotal, REALMS, REALM_LIFESPAN, BT_MULT, CHAT_NAMES, CHAT_MSGS, chatPush, chatNpc, chatSend, consignPrice, consignName, REALM_MAX_LV, REINC_CAP, reincBonus, realmTxt, breakthroughRate, breakthrough, thunderTrib, demonTrib, tribPower, tribFull, tribGrade, gradeFromFull, pickTribQuiz, finishTribQuiz, applyFailState, FAIL_STATES, isPermanentlyDegraded, DEGRADE_CHAIN, DEGRADE_FAIL2, useRepair, reincarnate, genRankNPCs, getRankList,
   alcRate, potCountProbs, gradeProbs, brew, brewDetox, brewAntidote, DANWAN, brewDan, useDanwan, useMutPill, useDetoxPill, toxFactor, toxTier, MUT_PILLS, qiNow, qiFactor, qiTierName, qiAdd, buy, invList, invCount, drink, fighter, Battle, aiChoose, canUse, reflects,
   genMonster, genOpponent, adventure, advBattleSetup, advBattleSettle, advEnd, advMove, advRetreat, sneakP, guardedLoot, pkStart, pkSurrender, pkSettle, applyZhenxiu, applyBtSuccess, applyFailState }); // v688 导出突破函数
 G.Core = C;
