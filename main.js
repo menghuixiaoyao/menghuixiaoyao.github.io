@@ -739,16 +739,16 @@ window.thunderJudgeWithProb = function(baseP) { // v741 可调概率的雷云判
   } catch(_){}
 };
 // v541 养殖园(2,0)：肉和蛋
-function ranchTick(S) { // v666 叠加：每分钟肉/蛋各+1，上限99
+function ranchTick(S) { // v666 叠加；v1264 每 10 分钟肉/蛋各+1，上限99（r.t 基准不动，已攒数量不动）
   const now = Date.now();
   if (!S.ranch) S.ranch = { m: 0, e: 0, t: now };
   const r = S.ranch;
   if (!r.t) r.t = now; else if (r.t > now) r.t = now;
-  const mins = Math.floor((now - r.t) / 60000);
-  if (mins <= 0) return;
-  r.m = Math.min(99, (r.m|0) + mins);
-  r.e = Math.min(99, (r.e|0) + mins);
-  r.t += mins * 60000;
+  const blocks = Math.floor((now - r.t) / 600000);
+  if (blocks <= 0) return;
+  r.m = Math.min(99, (r.m|0) + blocks);
+  r.e = Math.min(99, (r.e|0) + blocks);
+  r.t += blocks * 600000;
 }
 function ranchHas(S) {
   if (!S || !S.ranch) return false;
@@ -940,7 +940,7 @@ window.openHerbSheet = function() {
 window.openRanchSheet = function() {
   try {
     ranchTick(S); const r = S.ranch;
-    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
+    openSheet(`<h2>🥚 养殖园</h2><div class="hint">每10分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
 window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义）
