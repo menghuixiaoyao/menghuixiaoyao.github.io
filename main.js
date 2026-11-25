@@ -5082,11 +5082,24 @@ function doBreakthrough() {
   if (!r.ok) { try { if (window.TRIB_OMEN) window.TRIB_OMEN.beat(S, 'fail'); } catch(_) {} }
   afterAct(); commit(); render();
 }
+function tribQuizClean(quiz) { // v1260 过滤问心坏题（null/undefined/畸形），就地清理后返回有效题数
+  try {
+    if (!quiz || !Array.isArray(quiz.qs)) return 0;
+    quiz.qs = quiz.qs.filter(qq => qq && typeof qq.q === 'string' && Array.isArray(qq.opts) && qq.opts.length === 4 && Number.isInteger(qq.ans) && qq.ans >= 0 && qq.ans <= 3);
+    return quiz.qs.length;
+  } catch(_) { return 0; }
+}
+window.tribQuizClean = tribQuizClean; // v1260 恢复路径共用
 // v174 心魔问心答题面板
 let tqQuiz = null; const tqAns = {};
 function sheetTribQuiz(quiz) {
+  if (!quiz || !Array.isArray(quiz.qs)) { try { log('bad', '⚡ 问心数据异常，无法出题。'); } catch(_){} return; } // v1260 空 quiz 防崩
   if (tqQuiz !== quiz) { for (const k in tqAns) delete tqAns[k]; } // v434 只有新题目才清空答案，重绘保留已选
   tqQuiz = quiz;
+  if (tribQuizClean(quiz) < K.TRIB_QUIZ_N) { // v1260 坏题过滤后不足 3 道：跳过本次问心，按通过处理
+    openSheet(`<h2>👹 心魔问心</h2><div class="hint">⚠️ 题库异常（抽到的题目损坏），已跳过本次问心，按通过处理。</div><div class="row"><button class="btn gold full" onclick="window.doTribQuizSkip()">继续突破</button></div>`);
+    return;
+  }
   try { window.__tqOmen = (window.TRIB_OMEN && window.TRIB_OMEN.text(S, 'quiz')) || ''; } catch(_) { window.__tqOmen = ''; }
   const qn = ['一', '二', '三', '四', '五'];
   openSheet(`<h2>👹 心魔问心</h2>${window.__tqOmen ? '<div class="hint">' + window.__tqOmen + '</div>' : ''}<div class="hint">心魔化作${quiz.qs.length}问，直指道心——答对 <b class="y">${K.TRIB_QUIZ_NEED} 道</b>方可通过。答错则突破失败，退级并折寿！</div>` +
@@ -5116,9 +5129,13 @@ window.doTribQuizAnswer = function(qi, oi) {
   tqAns[qi] = oi;
   if (Object.keys(tqAns).length < tqQuiz.qs.length) { sheetTribQuiz(tqQuiz); return; }
   const quiz = tqQuiz; tqQuiz = null;
+  finishTribQuizUI(quiz, quiz.qs.map((_, i) => tqAns[i]));
+}
+
+function finishTribQuizUI(quiz, answers) { // v1260 问心结算共用尾巴（答题完成与跳过共用）
   // v982 问心完成，清理 _pendingTrib
   try { delete S._pendingTrib; delete S._pendingFromRealm; } catch(_){}
-  const r = C.finishTribQuiz(S, quiz, quiz.qs.map((_, i) => tqAns[i]));
+  const r = C.finishTribQuiz(S, quiz, answers);
   closeSheet();
   if (r.pending === 'demon') { // v739 答题后遇心魔战斗
     const n2 = r.trib.quizCorrect;
@@ -5152,6 +5169,12 @@ window.doTribQuizAnswer = function(qi, oi) {
   else log('bad', `👹 心魔问心失败……退回 <span class="r">${r.back} 级</span>（当前 Lv.${S.level}），折寿 <span class="r">${r.lifeLost}</span> 年。`);
   afterAct(); commit(); render();
 }
+window.doTribQuizSkip = function() { // v1260 题库异常跳过问心：按通过处理
+  if (!tqQuiz) return;
+  const quiz = tqQuiz; tqQuiz = null;
+  quiz._skipped = true;
+  finishTribQuizUI(quiz, (quiz.qs || []).map(qq => (qq && qq.ans) | 0));
+};
 // 胎中之谜：每次突破每个封存物独立判定50%（幸运套每2件+5%，出战灵宠有幸运技能+10%），一次突破最多觉醒一个
 function sealAwakenProb(S) {
   const n = ((C.setCounts(S).luck || 0));
@@ -9249,6 +9272,12 @@ try {
     // 延迟一点等 UI 就绪
     setTimeout(function() {
       try {
+        if (typeof tribQuizClean === 'function' && tribQuizClean(_pq) < K.TRIB_QUIZ_N) { // v1260 坏 quiz 直接清掉，不反复弹错
+          try { delete S._pendingTrib; delete S._pendingFromRealm; S.thunderOk = true; } catch(_){}
+          try { log('warn', '⚡ 检测到损坏的问心已清理，请重新点突破。'); } catch(_){}
+          try { if (typeof save === 'function') save(); } catch(_){}
+          return;
+        }
         if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_pq);
         else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_pq);
         try { log('warn', '⚡ 检测到未完成的问心，已为你重新弹出。'); } catch(_){}

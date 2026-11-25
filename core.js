@@ -789,7 +789,6 @@ const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {
   { q: '凡人突破至练气的基础成功率是？', opts: ['90%', '60%', '30%', '10%'], ans: 1 },
   { q: '突破需要凝气积攒到几缕？', opts: ['5 缕', '10 缕', '20 缕', '50 缕'], ans: 1 },
   { q: '轮回转世时，进行中的冒险会怎样？', opts: ['强制结束', '继续进行', '暂停保留', '奖励翻倍'], ans: 0 },
-,
   { q: '灵宠出战需要什么生活技能？', opts: ['炼药', '驯兽', '锻造', '烹饪'], ans: 1 },
   { q: '开脉丹一次最多能开几条经脉？', opts: ['1 条', '3 条', '5 条', '10 条'], ans: 0 },
   { q: '寄售行上架物品需要支付什么？', opts: ['金元手续费', '灵石', '仙玉', '免费上架'], ans: 0 },
@@ -802,7 +801,7 @@ const TRIB_Q_MECH = [ // v174 心魔问心题库：仙人以下考游戏机制 {
   { q: '降级状态下突破成功，属性翻倍吗？', opts: ['翻倍', '不翻倍', '翻三倍', '属性清零'], ans: 1 },
   { q: '轮回转世后，降级状态会怎样？', opts: ['保留', '清除', '加重', '随机'], ans: 1 },
   { q: '养殖园自动收获时，先收什么？', opts: ['先收蛋', '先收肉', '随机', '同时收'], ans: 1 },
-  { q: '雷云判定需要什么条件？', opts: ['任意境界', '大圆满Lv.10+筑基以上', '仙人以上', '渡劫以上'], ans: 1 },,
+  { q: '雷云判定需要什么条件？', opts: ['任意境界', '大圆满Lv.10+筑基以上', '仙人以上', '渡劫以上'], ans: 1 },
   { q: '体力每小时自然恢复几点？', opts: ['1 点', '2 点', '5 点', '10 点'], ans: 0 },
   { q: '饱食度低于多少时，劳作会扣寿元？', opts: ['50', '30', '10', '0'], ans: 3 },
   { q: '炼药、烹饪、锻造、炼金、驯兽，最多能学几种？', opts: ['1 种', '2 种', '3 种', '5 种'], ans: 0 },
@@ -841,7 +840,6 @@ const TRIB_Q_DAO = [ // v174 心魔问心题库：仙人以上问道
   { q: '若天要亡你，你当如何？', opts: ['跪地求饶', '逆天一战', '转世重修', '躲入凡尘'], ans: 1 },
   { q: '何为真正的"逍遥"？', opts: ['无拘无束，为所欲为', '无挂无碍，本心自在', '法力无边，横行无忌', '寿元无限，坐看沧海'], ans: 1 },
   { q: '问道者，问的是谁的道？', opts: ['天道的道', '师尊的道', '自己的道', '古圣的道'], ans: 2 },
-,
   { q: '一花一世界，一叶一菩提，说的是什么？', opts: ['神通广大', '微观亦有大道', '灵气浓郁', '寿元悠长'], ans: 1 },
   { q: '"朝闻道，夕死可矣"，求的是什么？', opts: ['长生不老', '悟道之喜', '飞升成仙', '法力无边'], ans: 1 },
   { q: '上善若水，水善利万物而不争，修士当学什么？', opts: ['争强好胜', '不争之德', '趋炎附势', '明哲保身'], ans: 1 },
@@ -900,9 +898,11 @@ function tribFoundationOpen(S) { try {
 } catch(_) {} }
 try { window.TRIB_OMEN = { show: tribOmenShow, beat: tribOmenBeat, text: tribOmenText, foundOpen: tribFoundationOpen }; } catch(_) {}
 
-function pickTribQuiz(fromRealm) { // v174 心魔问心出题：仙人以下考游戏机制，仙人以上问道
+function pickTribQuiz(fromRealm) { // v174 心魔问心出题：仙人以下考游戏机制，仙人以上问道；v1260 题库空洞过滤（MECH/DAO 各有 stray 逗号留下的空位，splice 会抽到 undefined）
   const bank = (fromRealm | 0) >= 10 ? TRIB_Q_DAO : TRIB_Q_MECH;
-  const pool = bank.slice(), qs = [];
+  const _ok = qq => qq && typeof qq.q === 'string' && Array.isArray(qq.opts) && qq.opts.length === 4 && Number.isInteger(qq.ans) && qq.ans >= 0 && qq.ans <= 3;
+  const cleanBank = bank.filter(_ok);
+  const pool = cleanBank.slice(), qs = [];
   try { // v1180 玩家问心投稿（GM 审核通过）混入抽题池；文本转义后入池，署名随题走
     const wp = (typeof window !== 'undefined' && window._wenxinPool) || null;
     const key = (fromRealm | 0) >= 10 ? 'dao' : 'mech';
@@ -914,7 +914,10 @@ function pickTribQuiz(fromRealm) { // v174 心魔问心出题：仙人以下考�
       }
     }
   } catch (_) {}
-  while (qs.length < K.TRIB_QUIZ_N && pool.length) qs.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  const pool2 = pool.filter(_ok);
+  while (qs.length < K.TRIB_QUIZ_N && pool2.length) qs.push(pool2.splice(Math.floor(Math.random() * pool2.length), 1)[0]);
+  let _gi = 0;
+  while (qs.length < K.TRIB_QUIZ_N && cleanBank.length) qs.push(cleanBank[_gi++ % cleanBank.length]); // v1260 不够 3 道用内置库补足（保底复用）
   return { qs, fromRealm: fromRealm | 0 };
 }
 function tribFull(S) { // v175 灵气条/仙力充满度（压条可超出上限）；v1172 Ye 定最高 2900%
@@ -1347,8 +1350,9 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   if (_wasDegraded && DEGRADED_NAMES.indexOf(_wasDegraded) >= 0) _btm = 1.2; // v811 降级状态突破倍率1.2
   ATTRS.forEach(k => S.attrs[k] = Math.max(1, Math.round(S.attrs[k] * _btm))); if (S.realm === 10) { const _mm = manaMax(S); S.mana = Math.floor(Math.max(S.mana, _mm) / 1000000); S.xianCap = Math.max(10, S.mana); } tribBtFlavor(S, fromRealm); return { ok: true, realm: REALMS[S.realm], manaDoubled: true, trib, grade: gradeName, mult: _btm };
 } // 突破全属性×倍率表；渡劫→仙人时100万法力=1仙力转换，上限=转换后值
-function finishTribQuiz(S, quiz, answers) { // v174 心魔问心结算：答对 TRIB_QUIZ_NEED 道即过；v739 答题后50%遇心魔战斗；v746 补thunder.koWin
-  const qs = (quiz && quiz.qs) || []; let correct = 0; const detail = qs.map((qq, i) => { const hit = (answers[i] | 0) === (qq.ans | 0); if (hit) correct++; return hit; });
+function finishTribQuiz(S, quiz, answers) { // v174 心魔问心结算：答对 TRIB_QUIZ_NEED 道即过；v739 答题后50%遇心魔战斗；v746 补thunder.koWin；v1260 跳过按通过、坏题防崩
+  const qs = (quiz && quiz.qs) || []; let correct = 0; const detail = qs.map((qq, i) => { const hit = (answers[i] | 0) === ((qq && qq.ans) | 0); if (hit) correct++; return hit; });
+  if (quiz && quiz._skipped) correct = Math.max(correct, K.TRIB_QUIZ_NEED); // v1260 题库异常跳过，按通过处理
   const trib = { quizMet: true, quizCorrect: correct, quizDetail: detail, jackpot: (quiz && quiz.jackpot) || null, thunder: { koWin: !!(quiz && quiz.koWin) }, cloudGrade: (quiz && quiz.cloudGrade) || null, cloudJi: !!(quiz && quiz.cloudJi) }; // v1233 渡劫品级雷云定：问心后新 trib 接力锁定值
   if (correct < K.TRIB_QUIZ_NEED) { const _fr = (S.realm|0); const _ds = applyFailState(S, _fr); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * (S.race === 'ming' ? 0.05 : 0.10))); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'demon-quiz', trib, lifeLost, degraded: _ds }; } // v589 失败进降级状态；v1088 冥族阴体：渡劫失败折寿减半
   const _demonP = quiz.koWin ? 0.7 : 0.5; // v739 答题后遇心魔战斗：击溃雷云70%，否则50%
