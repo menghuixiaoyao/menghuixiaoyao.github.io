@@ -300,15 +300,16 @@ const REFINES = { // 炼金配方：主料 + 1 张普通残页（配方/丹方�
   r_sp4: { name: '上品灵石', lv: 4, need: [['ores', 'sp3', 3], ['pages', 'pg1', 1]], out: ['ores', 'sp4'] },
   r_dw2: { name: '中品凝露', lv: 1, need: [['mats', 'dw1', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw2'] },
   r_dw3: { name: '上品凝露', lv: 2, need: [['mats', 'dw2', 3], ['pages', 'pg1', 1]], out: ['mats', 'dw3'] },
-  r_gold1: { name: '点铁成金', lv: 1, need: [['ores', 'iron', 5], ['pages', 'pg1', 1]], out: ['ores', 'gold'] },
-  r_gold2: { name: '铜化金',   lv: 2, need: [['ores', 'copper', 3], ['pages', 'pg1', 1]], out: ['ores', 'gold'] },
+  r_gold1: { name: '点铁成金', lv: 1, need: [['ores', 'iron', 15], ['pages', 'pg1', 1]], out: ['ores', 'gold'] }, // v1263 铁矿 5→15（残页 1 张不变）
+  r_gold2: { name: '铜化金',   lv: 2, need: [['ores', 'copper', 10], ['pages', 'pg1', 1]], out: ['ores', 'gold'] }, // v1263 铜矿 3→10（残页不变）
   p_hp: { name: '生命药水', lv: 1, need: [['mats', 'h_vit', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'hp' }, // 品质决定回复量
   p_mp: { name: '法力药水', lv: 1, need: [['mats', 'h_int', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'mp' },
   // v1224 提炼：100 基础矿 → 1 精炼矿，必成，不用残页；走独立 smelt 分支（不进通用 craft 成功率/双倍逻辑）
   smelt_iron: { name: '提炼玄铁', lv: 1, need: [['ores', 'iron', 100]], out: ['ores', 'xuatie'], smelt: 'iron' },
   smelt_copper: { name: '提炼赤铜', lv: 1, need: [['ores', 'copper', 100]], out: ['ores', 'chitong'], smelt: 'copper' },
   smelt_silver: { name: '提炼秘银', lv: 1, need: [['ores', 'silver', 100]], out: ['ores', 'miyin'], smelt: 'silver' },
-  smelt_gold: { name: '提炼庚金', lv: 1, need: [['ores', 'gold', 100]], out: ['ores', 'gengjin'], smelt: 'gold' }
+  smelt_gold: { name: '提炼庚金', lv: 1, need: [['ores', 'gold', 100]], out: ['ores', 'gengjin'], smelt: 'gold' },
+  gold_touch: { name: '点金术', lv: 1, need: [['ores', 'gold', 2]], out: ['gold'], smelt: 'gold_touch' } // v1263 点金术：金矿×2 → 金元+100，走提炼 smelt 模式（必成、不用残页、耗 1 活力/仙人以上耗法力、给炼金经验）
 };
 const POTIONS = { hp: { name: '生命药水', icon: '❤️', res: '生命' }, mp: { name: '法力药水', icon: '💧', res: '法力' } };
 const POT_PCT = [0, 0.30, 0.40, 0.50]; // 普通 / 精良 / 极品：回复 30% / 40% / 50% 上限
@@ -3580,8 +3581,8 @@ function smeltL(S, key) {
   if (!haveNeed(S, rc.need)) return { err: 'mat' };
   payLife(S); hungerDown(S, K.HUNGER_ACT, 1);
   rc.need.forEach(([st, k, n]) => takeItem(S, st, k, n));
-  const [st, k] = rc.out;
-  S[st][k] = (S[st][k] || 0) + 1; // 产出直接入账不走背包上限（净 -99，仿 craft 直加，避免超上限存档吞产出）
+  if (rc.out[0] === 'gold') S.gold = (S.gold | 0) + 100; // v1263 点金术：金矿×2 → 金元+100（直接加金元，不进 ores）
+  else { const [st, k] = rc.out; S[st][k] = (S[st][k] || 0) + 1; } // 产出直接入账不走背包上限（净 -99，仿 craft 直加，避免超上限存档吞产出）
   const xp = K.LIFE_XP_OK, lvUp = gainLifeXp(S, 'refine', xp);
   return { ok: true, skill: 'refine', key, n: 1, xp, lvUp };
 }
