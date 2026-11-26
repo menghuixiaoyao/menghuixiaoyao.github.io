@@ -8629,6 +8629,8 @@ document.addEventListener('click', e => {
   else if (d.advarr !== undefined) { try { window.advArrayPanel(); } catch(_) {} } // v1125 采集阵面板
   else if (d.a2fuel !== undefined) { try { window.advArrayFuel(); } catch(_) {} }
   else if (d.a2collect !== undefined) { try { window.advArrayTake(false); } catch(_) {} }
+  else if (d.a2view !== undefined) { try { window.advArrayView(); } catch(_) {} }
+  else if (d.a2panel !== undefined) { try { window.advArrayPanel(); } catch(_) {} }
   else if (d.a2remove !== undefined) { try { window.advArrayTake(true); } catch(_) {} }
   else if (d.a2back !== undefined) { try { sheetRun(); } catch(_) {} }
   else if (d.advplacedef !== undefined) { try { window.advPlaceDefArray('def'); } catch(_) {} } // v1226 布防御阵

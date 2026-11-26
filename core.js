@@ -4066,7 +4066,23 @@ window.advArrayPanel = function() {
     if ((inv.xy | 0) > 0) _parts.push(`仙玉 ×${inv.xy | 0}`);
     const invTxt = _parts.length ? _parts.join('、') : '空';
     const tierNm = ['', '小型', '中型', '大型'][Math.min(3, Math.max(1, a.tier | 0 || 1))];
-    openSheet(`<h2>🧭 <span style="color:${C.GRADE_COLORS[(a.tier | 0 || 1) - 1]}">${tierNm}采集阵</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的${_fname}：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：${invTxt}<br>阵只收草药与灵脉（按阵档），矿石留格上等手挖；阵收取无暴击。</div><div class="grid2"><button class="btn gold" data-a2fuel>${['🌗', '💎', '💠'][_ftier - 1]} 加灵石</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>📥 收回</button><button class="btn" data-a2back>返回地图</button></div>`);
+    openSheet(`<h2>🧭 <span style="color:${C.GRADE_COLORS[(a.tier | 0 || 1) - 1]}">${tierNm}采集阵</span> (${a.x},${a.y})</h2><div class="hint">燃料剩余：<b class="y">${fuelH}</b> 小时${a.fueled ? '' : '（已停工，加灵石恢复）'}<br>你的${_fname}：${stoneCount} 颗（1 颗 = 1 小时）<br>阵内库存：${invTxt}<br>阵只收草药与灵脉（按阵档），矿石留格上等手挖；阵收取无暴击。</div><div class="grid2"><button class="btn gold" data-a2fuel>${['🌗', '💎', '💠'][_ftier - 1]} 加灵石</button><button class="btn" data-a2view>👁 查看物资</button><button class="btn" data-a2collect>📦 收取</button><button class="btn danger" data-a2remove>📥 收回</button><button class="btn" data-a2back>返回地图</button></div>`);
+  } catch (e) {}
+};
+window.advArrayView = function() {
+  try {
+    if (!S.run || !S.run.shared) return;
+    const a = (S.run.shared.arrays || []).find(v => v.mine && v.kind === 'collect');
+    if (!a) { advTip('这张图上没有你的采集阵'); return; }
+    const inv = a.inv || { mats: {}, ores: {}, xy: 0, lw: [], seeds: {} };
+    const rows = [];
+    for (const k in (inv.mats || {})) { const n = inv.mats[k] | 0; if (n > 0) rows.push([lootLabel('mats', k), n]); }
+    for (const k in (inv.ores || {})) { const n = inv.ores[k] | 0; if (n > 0) rows.push([lootLabel('ores', k), n]); }
+    { const _lwc = {}; for (const w of (inv.lw || [])) { if (!w) continue; const _kk = `${C.LW_GRADE_NAMES[(w.g | 0 || 1) - 1] || '灵物'}·${w.e || ''}（${w.y | 0} 年）`; _lwc[_kk] = (_lwc[_kk] | 0) + 1; } for (const kk in _lwc) rows.push([kk, _lwc[kk]]); }
+    for (let g = 1; g <= 3; g++) { const n = (inv.seeds && inv.seeds[g]) | 0; if (n > 0) rows.push([C.LW_SEED_NAMES[g - 1], n]); }
+    if ((inv.xy | 0) > 0) rows.push(['仙玉', inv.xy | 0]);
+    const tierNm = ['', '小型', '中型', '大型'][Math.min(3, Math.max(1, a.tier | 0 || 1))];
+    openSheet(`<h2>👁 ${tierNm}采集阵内物资 (${a.x},${a.y})</h2>` + (rows.length ? rows.map(r => `<div class="row"><div class="lab">${r[0]}</div><div>×${r[1]}</div></div>`).join('') : '<div class="empty">阵内空空如也</div>') + `<div class="grid2"><button class="btn gold" data-a2collect>📦 收取</button><button class="btn" data-a2panel>返回阵面板</button></div>`);
   } catch (e) {}
 };
 window.advArrayFuel = async function() {
