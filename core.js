@@ -1337,8 +1337,13 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   let _btm = BT_MULT[Math.min(12, fromRealm | 0)] || 1, gradeName = null;
   if (fromRealm >= 2) { // v175 筑基→金丹结金丹、金丹→元婴结元婴：品质替代原突破倍率；v284 元婴以上也有品质（v176：天劫异变按异变档位；v180：压条 1000% 为极）
     let g = trib && trib.jackpot ? gradeFromFull(trib.jackpot.full) : (trib && trib.cloudGrade ? trib.cloudGrade : tribGrade(S)); // v1233 渡劫品级雷云定：品级就是雷云出现时的档（异变档仍走 jackpot.full；无锁定值时回落旧算法）
-    const isJi = !(trib && trib.jackpot) && ((trib && trib.cloudJi === true) || (trib && trib.cloudGrade && trib.cloudGrade.full >= 28.995) || (trib && trib.cloudJi == null && tribFull(S) >= 28.995)); // v1233 渡劫品级雷云定：极限与否也在雷云出现时锁定；v1172 2900% 为圆满极限；v1266 cloudJi 缺失时按锁定的 cloudGrade.full≥29 补，不静默降档
-    // v1233 渡劫品级雷云定：三条件加品（v750）取消——品级雷云一出来就定死，心魔只是阻碍（过/不过），问心/心魔/击溃都不再影响品级
+    let isJi = !(trib && trib.jackpot) && ((trib && trib.cloudJi === true) || (trib && trib.cloudGrade && trib.cloudGrade.full >= 28.995) || (trib && trib.cloudJi == null && tribFull(S) >= 28.995)); // v1233 渡劫品级雷云定：极限与否也在雷云出现时锁定；v1172 2900% 为圆满极限；v1266 cloudJi 缺失时按锁定的 cloudGrade.full≥29 补，不静默降档
+    // v1270 Ye 定：防御过雷云只加境，击溃雷云多一品（圆满击溃升极限）
+    if (!(trib && trib.jackpot) && trib && trib.thunder && trib.thunder.koWin && !isJi) {
+      const _gi = (g && g.gi != null) ? g.gi : gradeFromFull(g && g.full != null ? g.full : tribFull(S)).gi;
+      if (_gi > 0) g = { gi: _gi - 1, name: K.TRIB_GRADES[_gi - 1], mult: K.TRIB_GRADE_MULT[_gi - 1], full: g.full };
+      else isJi = true;
+    }
     _btm = isJi ? K.TRIB_GRADE_JI_MULT : g.mult;
     gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极限' : ''); // v1172 Ye 定名：圆满极限
     if (fromRealm === 2) S.danGrade = gradeName; else if (fromRealm === 3) S.yingGrade = gradeName;
