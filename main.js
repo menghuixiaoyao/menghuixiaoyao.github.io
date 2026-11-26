@@ -3107,6 +3107,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
   if (_keepSy) { try { _sh.scrollTop = _sy; } catch(_) {} } // v1232 回弹：重渲染后把滚动位置还回去
 }
 function doAdvMove(dir) {
+  if (window._myTeam && !window._isTeamLeader) { try { toastLog('sys', '👥 组队跟随中，移动由队长控制'); } catch (_) {} return; } // v1290 队员冒险图锁移动、跟随队长
   if (S.forceReinc) { try { showTip(S.forceReincWhy === 'life' ? '⌛ 寿元耗尽，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>' : '☠️ 你已身死，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>'); } catch (_) {} return; } // v1178
   const r = C.advMove(S, dir);
   if (!r) return;
@@ -8721,6 +8722,7 @@ document.addEventListener('click', e => {
   else if (d.defbreak !== undefined) { try { const _p = String(d.defbreak).split(':'); window.advBreakArray(_p[0], +_p[1]); } catch(_) {} } // v1226 破阵
   else if (d.advmove) doAdvMove(d.advmove);
   else if (d.advx !== undefined) { // v758 点地图格子移动；v762 缩地两格/大挪移三格；v763 1秒冷却；v764 斜走；v766 直接跳跃；v767 斜走需技能
+    if (window._myTeam && !window._isTeamLeader) { try { toastLog('sys', '👥 组队跟随中，移动由队长控制'); } catch (_) {} return; } // v1290 队员冒险图锁移动、跟随队长
     try {
       const _now = Date.now();
       if (window._advMoveCd && _now - window._advMoveCd < 1000) return; // 1秒内不重复移动

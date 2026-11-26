@@ -3914,6 +3914,18 @@ function advSharedPoll(S) {
         S.run.shared.tiles = st.json.tiles;
         S.run.shared.players = st.json.players || [];
         S.run.shared.arrays = st.json.arrays || []; // v1125 采集阵同步
+        // v1290 Ye 定：组队队员的冒险图头像跟随队长（按队长编号对位，头像随队长格子走）
+        try {
+          if (window._myTeam && !window._isTeamLeader && S.run.grid) {
+            const _ld = (window._myTeam.members || []).find(m => m.isLeader);
+            const _lp = _ld && (S.run.shared.players || []).find(p => p.player_no != null && _ld.playerNo != null && String(p.player_no) === String(_ld.playerNo));
+            if (_lp && (S.run.grid.px !== _lp.x || S.run.grid.py !== _lp.y)) {
+              S.run.grid.px = _lp.x; S.run.grid.py = _lp.y;
+              advSharedHeartbeat(_lp.x, _lp.y);
+              if (typeof window.save === 'function') window.save();
+            }
+          }
+        } catch (_) {}
         // v971 轮询时也同步 tile 类型
         advSyncSharedTileTypes(S, st.json.tiles);
         try { if (S.run.grid) advSharedHeartbeat(S.run.grid.px, S.run.grid.py); } catch (_) {} // v1168 轮询顺带心跳保活 DO 玩家记录（5 分钟 TTL），防站太久记录过期、战斗格 claim not_there
