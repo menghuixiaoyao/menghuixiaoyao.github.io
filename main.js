@@ -7437,6 +7437,21 @@ async function doArena() { // v245 擂台：所有境界可见；v246 每个境�
   }
   const tickMsg = arenaTickChampion(a); // v247 守擂结算
   const cr = S.realm | 0;
+  // v1284 同步服务端现任擂主：本地擂主状态可能过期（服务端守擂计时为准）
+  if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) {
+    try {
+      const _rr = await MHXY.api('/api/arena/rank?realm=' + cr + '&tab=day');
+      if (_rr.ok && _rr.json && _rr.json.ok && _rr.json.champion) {
+        const _champ = _rr.json.champion;
+        const _me = (_rr.json.list || []).find(e => e.isMe);
+        if (_me && _champ.accountId === _me.accountId) {
+          a.champion = { name: S.name || _champ.username, since: _champ.since || Date.now(), isPlayer: true, claimedMins: (a.champion && a.champion.claimedMins) || 0 };
+        } else {
+          a.champion = { name: _champ.username, since: _champ.since || Date.now(), isPlayer: false };
+        }
+      }
+    } catch(e) {}
+  }
   const ch = a.champion;
   const chHtml = ch ? (ch.isPlayer ? `🏆 现任擂主：<b class="y">你</b>（已守擂 ${arenaFmtDuration(arenaDefenseTime(a))}）` : `🏆 现任擂主：<b class="x">${ch.name}</b>（已守擂 ${arenaFmtDuration(arenaDefenseTime(a))}）`) : '';
   const _settleTxt = arenaSettleText('day'); // v1283 日榜结算与服务端 UTC 周期一致
@@ -7446,7 +7461,7 @@ async function doArena() { // v245 擂台：所有境界可见；v246 每个境�
   <div class="row"><div class="lab">${chHtml}</div></div>
   <div class="row"><div class="lab">🏟️ 擂台积分<small>${a.score} 分</small></div><div class="lab">战绩<small>${a.win} 胜 / ${a.lose} 负</small></div></div>
   <div class="row"><div class="lab">🔥 连胜<small>${a.streak} 连胜（最高 ${a.best}）</small></div></div>
-  <div class="row"><button class="btn gold full" data-arena-start="1">⚔️ 挑战${ch && !ch.isPlayer ? ch.name : '守擂者'}（-${K.COST_PK}体力）</button></div>
+  ${ch && ch.isPlayer ? `<div class="hint">🏆 你已是擂主，守擂中（守擂1分钟=1分）</div>` : `<div class="row"><button class="btn gold full" data-arena-start="1">⚔️ 挑战${ch ? ch.name : '守擂者'}（-${K.COST_PK}体力）</button></div>`}
   <div class="row"><button class="btn full" data-arena-rank="day">🏆 ${C.REALMS[cr]}擂台榜单（日/周/月/年）</button></div>
   <div class="row"><button class="btn full" data-close="1">关闭</button></div>`);
 }
@@ -8161,6 +8176,8 @@ function doSect() { // v1164 真人宗门面板（服务端数据）
   }).catch(function() { openSheet('<h2>🏯 宗门</h2><div class="hint">加载失败（网络不通）</div>'); });
 }
 function doArenaStart() {
+  const _aa = arenaData();
+  if (_aa.champion && _aa.champion.isPlayer) { toastLog('sys', '🏆 你已是擂主，守擂中'); return; } // v1284 擂主不能挑战自己
   if (S.afk) { try { const gain = afkExit(S, 'arena'); log('good', gain > 0 ? `🧘 出关迎战，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : `🧘 出关迎战。`); } catch(e) { S.afk = null; } }
   const pk0 = C.pkStart(S, S.realm | 0); if (!pk0) { if (S.dead) { afterAct(); commit(); } return; }
   pk0.isArena = true;
