@@ -2849,22 +2849,22 @@ function sheetAlchemy(warn) {
     tRow('💧 凝露', 'lu', LUK, m, LU) + tRow('💠 灵石', 'spirit', SPK, S.ores, ORES) +
     `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">🧪 加料<small>自选 0-3 味投进炉里（点按增减）。搭配对了有惊喜，不对会炸炉——基础料损 1 份、加料全损，结果自负</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${[['h_str', MATS['h_str'].name], ['h_agi', MATS['h_agi'].name], ['h_def', MATS['h_def'].name], ['h_vit', MATS['h_vit'].name], ['h_int', MATS['h_int'].name], ['dw1', '下品凝露'], ['dw2', '中品凝露'], ['dw3', '上品凝露']].map(([ek, nm]) => { const have = m[ek] || 0, sel = alcExtraSel[ek] || 0; return `<button class="btn ${sel ? 'on' : ''}" data-extra="${ek}" ${have > 0 ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${nm} ×${have}<br><small>${sel ? '已投 ' + sel : '未投'}</small></button>`; }).join('')}</div>` +
     `<div class="hint">🧪 丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b>/${C.danDuCap(S)}（${C.toxTier(S.danDu|0)}）· 当前丹药药效 <b class="y">${Math.round(C.toxFactor(S) * 100)}%</b> ${S.toxDan ? ` · ☣️毒丹累积池 <b class="y">${S.toxPool|0}</b>` : ''} · 化无丹可清毒（见下方丹方）</div>` +
-    ATTRS.map(k => { const h = m['h_' + k] || 0, noEgg = eggTotal(S) < 1; return `<div class="row"><div class="lab">${AN[k]}丹<small>${MATS['h_' + k].name} ×<b class="${h ? 'g' : 'r'}">${h}</b> + 兽蛋 ×<b class="${noEgg ? 'r' : 'g'}">${eggTotal(S)}</b></small></div>
+    ATTRS.map(k => { const h = m['h_' + k] || 0, noEgg = eggTotal(S) < 1; return `<div class="row"><div class="lab">${AN[k]}丹<small>技能 ${xpTrackTxt(pillXpStore(), k)} · ${MATS['h_' + k].name} ×<b class="${h ? 'g' : 'r'}">${h}</b> + 兽蛋 ×<b class="${noEgg ? 'r' : 'g'}">${eggTotal(S)}</b></small></div>
       <button class="btn" data-brew="${k}" data-n="1" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 1 次</button>
       <button class="btn gold" data-brew="${k}" data-n="5" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 5 次</button></div>`; }).join('') +
-    `<div class="row"><div class="lab">🍃 化无丹<small>${MATS['h_vit'].name} ×<b class="${(m['h_vit']||0) ? 'g' : 'r'}">${m['h_vit']||0}</b> + 一品凝露 ×<b class="${(m['dw1']||0) ? 'g' : 'r'}">${m['dw1']||0}</b> · 成丹 1-3 颗 · 服 1 颗清丹毒 20 点（持有 <b class="y">${S.inv['detox']|0}</b>）</small></div>
+    `<div class="row"><div class="lab">🍃 化无丹<small>技能 ${xpTrackTxt(pillXpStore(), 'detox')} · ${MATS['h_vit'].name} ×<b class="${(m['h_vit']||0) ? 'g' : 'r'}">${m['h_vit']||0}</b> + 一品凝露 ×<b class="${(m['dw1']||0) ? 'g' : 'r'}">${m['dw1']||0}</b> · 成丹 1-3 颗 · 服 1 颗清丹毒 20 点（持有 <b class="y">${S.inv['detox']|0}</b>）</small></div>
       <button class="btn" data-brewdetox="1" ${(C.lifeCost(S) || !(m['h_vit'] > 0) || !(m['dw1'] > 0)) ? 'disabled' : ''}>炼 1 次</button>
       <button class="btn gold" data-brewdetox="5" ${(C.lifeCost(S) || !(m['h_vit'] > 0) || !(m['dw1'] > 0)) ? 'disabled' : ''}>炼 5 次</button></div>` +
-    `<div class="row"><div class="lab">💊 解毒丹<small>${MATS['h_agi'].name} ×<b class="${(m['h_agi']||0) ? 'g' : 'r'}">${m['h_agi']||0}</b> + 一品凝露 ×<b class="${(m['dw1']||0) ? 'g' : 'r'}">${m['dw1']||0}</b> · 成丹 1-3 颗 · 解除中毒（持有 <b class="y">${S.meds['antidote']|0}</b>）</small></div>
+    `<div class="row"><div class="lab">💊 解毒丹<small>技能 ${xpTrackTxt(pillXpStore(), 'antidote')} · ${MATS['h_agi'].name} ×<b class="${(m['h_agi']||0) ? 'g' : 'r'}">${m['h_agi']||0}</b> + 一品凝露 ×<b class="${(m['dw1']||0) ? 'g' : 'r'}">${m['dw1']||0}</b> · 成丹 1-3 颗 · 解除中毒（持有 <b class="y">${S.meds['antidote']|0}</b>）</small></div>
       <button class="btn" data-brewantidote="1" ${(C.lifeCost(S) || !(m['h_agi'] > 0) || !(m['dw1'] > 0)) ? 'disabled' : ''}>炼 1 次</button>
       <button class="btn gold" data-brewantidote="5" ${(C.lifeCost(S) || !(m['h_agi'] > 0) || !(m['dw1'] > 0)) ? 'disabled' : ''}>炼 5 次</button></div>` +
-    `<div class="row"><div class="lab">🍘 辟谷丸<small>${MATS['h_vit'].name} ×<b class="${(m['h_vit']||0) ? 'g' : 'r'}">${m['h_vit']||0}</b> + 兽蛋 ×<b class="${eggTotal(S) ? 'g' : 'r'}">${eggTotal(S)}</b> · 饱食 +20 · 丸非丹，不积丹毒（持有 <b class="y">${(S.dan && S.dan.bigu)|0}</b>）</small></div>
+    `<div class="row"><div class="lab">🍘 辟谷丸<small>技能 ${xpTrackTxt(pillXpStore(), 'bigu')} · ${MATS['h_vit'].name} ×<b class="${(m['h_vit']||0) ? 'g' : 'r'}">${m['h_vit']||0}</b> + 兽蛋 ×<b class="${eggTotal(S) ? 'g' : 'r'}">${eggTotal(S)}</b> · 饱食 +20 · 丸非丹，不积丹毒（持有 <b class="y">${(S.dan && S.dan.bigu)|0}</b>）</small></div>
       <button class="btn" data-brewdan="bigu" data-n="1" ${(C.lifeCost(S) || !(m['h_vit'] > 0) || eggTotal(S) < 1 || (S.alc.lv|0) < 3) ? 'disabled' : ''}>${(S.alc.lv|0) < 3 ? '炼药 Lv.3' : '炼 1 次'}</button>
       <button class="btn gold" data-brewdan="bigu" data-n="5" ${(C.lifeCost(S) || !(m['h_vit'] > 0) || eggTotal(S) < 1 || (S.alc.lv|0) < 3) ? 'disabled' : ''}>${(S.alc.lv|0) < 3 ? '炼药 Lv.3' : '炼 5 次'}</button></div>` +
-    `<div class="row"><div class="lab">💪 气力丸<small>${MATS['h_str'].name} ×<b class="${(m['h_str']||0) ? 'g' : 'r'}">${m['h_str']||0}</b> + 兽蛋 ×<b class="${eggTotal(S) ? 'g' : 'r'}">${eggTotal(S)}</b> · 体力 +3 · 丸非丹，不积丹毒（持有 <b class="y">${(S.dan && S.dan.qili)|0}</b>）</small></div>
+    `<div class="row"><div class="lab">💪 气力丸<small>技能 ${xpTrackTxt(pillXpStore(), 'qili')} · ${MATS['h_str'].name} ×<b class="${(m['h_str']||0) ? 'g' : 'r'}">${m['h_str']||0}</b> + 兽蛋 ×<b class="${eggTotal(S) ? 'g' : 'r'}">${eggTotal(S)}</b> · 体力 +3 · 丸非丹，不积丹毒（持有 <b class="y">${(S.dan && S.dan.qili)|0}</b>）</small></div>
       <button class="btn" data-brewdan="qili" data-n="1" ${(C.lifeCost(S) || !(m['h_str'] > 0) || eggTotal(S) < 1 || (S.alc.lv|0) < 5) ? 'disabled' : ''}>${(S.alc.lv|0) < 5 ? '炼药 Lv.5' : '炼 1 次'}</button>
       <button class="btn gold" data-brewdan="qili" data-n="5" ${(C.lifeCost(S) || !(m['h_str'] > 0) || eggTotal(S) < 1 || (S.alc.lv|0) < 5) ? 'disabled' : ''}>${(S.alc.lv|0) < 5 ? '炼药 Lv.5' : '炼 5 次'}</button></div>` +
-    `<h3>🌿 灵物丹</h3>` + ((S.lingwu || []).length ? S.lingwu.map((w2, i2) => { const needLv = [6, 8, 10][w2.g - 1], can = (S.alc.lv | 0) >= needLv && (m['h_vit'] | 0) >= 3 && eggTotal(S) >= 1 && !C.lifeCost(S); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w2.g - 1]}">${C.LW_GRADE_NAMES[w2.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w2.e]}">${w2.e}</b>（${w2.y} 年）<small>炼寿元丹：生命草×3（有 ${m['h_vit'] | 0}）+ 兽蛋×1（有 ${eggTotal(S)}）· 成丹寿元 +${Math.floor(w2.y * 0.5)} · 年份暴击 ${Math.min(40, String(w2.y).length * 5)}% 出 2~10 颗 · 服丹倍率：对行100%·同系80%·双根共鸣130%·不对行50%</small></div><button class="btn gold" onclick="window.brewSyd(${i2})" ${can ? '' : 'disabled'}>${(S.alc.lv | 0) < needLv ? '炼药 Lv.' + needLv : '炼寿元丹'}</button></div>`; }).join('') : '<div class="empty">暂无灵物（冒险采草药有概率出）</div>') +
+    `<h3>🌿 灵物丹</h3><div class="hint">寿元丹技能 ${xpTrackTxt(pillXpStore(), 'syd')} · 开脉丹技能 ${xpTrackTxt(pillXpStore(), 'km')}</div>` + ((S.lingwu || []).length ? S.lingwu.map((w2, i2) => { const needLv = [6, 8, 10][w2.g - 1], can = (S.alc.lv | 0) >= needLv && (m['h_vit'] | 0) >= 3 && eggTotal(S) >= 1 && !C.lifeCost(S); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w2.g - 1]}">${C.LW_GRADE_NAMES[w2.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w2.e]}">${w2.e}</b>（${w2.y} 年）<small>炼寿元丹：生命草×3（有 ${m['h_vit'] | 0}）+ 兽蛋×1（有 ${eggTotal(S)}）· 成丹寿元 +${Math.floor(w2.y * 0.5)} · 年份暴击 ${Math.min(40, String(w2.y).length * 5)}% 出 2~10 颗 · 服丹倍率：对行100%·同系80%·双根共鸣130%·不对行50%</small></div><button class="btn gold" onclick="window.brewSyd(${i2})" ${can ? '' : 'disabled'}>${(S.alc.lv | 0) < needLv ? '炼药 Lv.' + needLv : '炼寿元丹'}</button></div>`; }).join('') : '<div class="empty">暂无灵物（冒险采草药有概率出）</div>') +
     (() => { const cnt = [1, 2, 3].map(g => (S.lingwu || []).filter(w => w.g === g).length); const can = cnt.every(c => c > 0) && eggTotal(S) >= 1 && (S.alc.lv | 0) >= 10 && !C.lifeCost(S); return `<div class="row"><div class="lab">🌀 开脉丹<small>地品×${cnt[0]} 天品×${cnt[1]} 仙品×${cnt[2]}（各需 1 株，自动用年份最低的）+ 兽蛋×1（有 ${eggTotal(S)}）· 不分五行 · 每颗开一穴（持有 <b class="y">${S.inv['mai'] | 0}</b>）</small></div><button class="btn gold" onclick="window.brewKm()" ${can ? '' : 'disabled'}>${(S.alc.lv | 0) < 10 ? '炼药 Lv.10' : '炼开脉丹'}</button></div>`; })() +
     `<div class="grid2"><button class="btn full" data-life="cook">← 生活技能</button><button class="btn full" data-close>关闭</button></div>`);
 }
@@ -3181,6 +3181,11 @@ function medSection() {
   const ks = Object.keys(C.MEDS).filter(k => S.meds[k] > 0);
   return `<h3>疗伤药</h3>` + (ks.length ? ks.map(k => { const m = C.MEDS[k], need = k === 'stealthfu' ? true : (m.cure === 'curse' ? (S.curseN|0) > 0 : C.hasSt(S, m.cure)); return `<div class="row"><div class="lab">💊 ${m.name} ×${S.meds[k]}<small>${m.desc}${k === 'stealthfu' && Number(S.stealthUntil || 0) > Date.now() ? ` · <span class="g">🥷 隐身中（剩 ${Math.ceil((Number(S.stealthUntil) - Date.now()) / 60000)} 分钟）</span>` : ''}</small></div><button class="btn ${need ? 'gold' : ''}" data-med="${k}" ${need ? '' : 'disabled'}>${need ? '使用' : '无需'}</button></div>`; }).join('') : '<div class="empty">暂无，可在商店购买</div>');
 }
+function xpTrackOf(store, key) { if (!store[key] || typeof store[key] !== 'object') store[key] = { lv: 1, xp: 0 }; return store[key]; } // v1277 单独经验线
+function xpTrackGain(store, key, xp) { const t = xpTrackOf(store, key); t.xp += xp; let up = 0; while (t.xp >= C.alcNeed(t.lv)) { t.xp -= C.alcNeed(t.lv); t.lv++; up++; } return up; }
+function xpTrackTxt(store, key) { const t = xpTrackOf(store, key); return `Lv.${t.lv}（${t.xp}/${C.alcNeed(t.lv)}）`; }
+function flagXpKind(kind) { if (!S.flagXp || typeof S.flagXp !== 'object') S.flagXp = {}; if (!S.flagXp[kind] || typeof S.flagXp[kind] !== 'object') S.flagXp[kind] = {}; return S.flagXp[kind]; }
+function pillXpStore() { if (!S.pillXp || typeof S.pillXp !== 'object') S.pillXp = {}; return S.pillXp; }
 const ZQ_DEFS = [ // v1128 阵棋：小/中/大三档，合成采集阵（个数 64/128/256）
   { g: 1, name: '小型采集阵旗', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['prey', 'rabbit', 10], ['prey', 'deer', 5]], synth: 64, fkey: 'f_gather', fname: '小型采集阵' },
   { g: 2, name: '中型采集阵旗', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['prey', 'deer', 10], ['prey', 'wolf', 5]], synth: 128, fkey: 'f_gather2', fname: '中型采集阵' },
@@ -3202,10 +3207,10 @@ function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓
     const r = fRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'mats' ? ((typeof MATS !== 'undefined' && MATS[ik]||{}).name||ik) : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">🧭 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有阵法 ${S.formations && S.formations[k] || 0}</small></div><button class="btn gold" onclick="doCraftFormation('${k}')">制作</button></div>`;
   }).join('');
-  const zqHtml = `<h3>🚩 采集阵旗（合成采集阵）</h3>` + ZQ_DEFS.map(z => { const own = (S.zhenqi && S.zhenqi[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${st === 'prey' ? PREY[ik].name : ORES[ik].name}×${n}`).join(' + '); return `<div class="row"><div class="lab">♟️ <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 阵档决定可收资源等级，阵不收矿石</small></div><button class="btn" onclick="window.craftZhenqi(${z.g})">做采集阵旗</button><button class="btn gold" onclick="window.synthZhenqi(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
+  const zqHtml = `<h3>🚩 采集阵旗（合成采集阵）</h3>` + ZQ_DEFS.map(z => { const own = (S.zhenqi && S.zhenqi[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${st === 'prey' ? PREY[ik].name : ORES[ik].name}×${n}`).join(' + '); return `<div class="row"><div class="lab">♟️ <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>技能 ${xpTrackTxt(flagXpKind('zq'), z.g)} · 材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 阵档决定可收资源等级，阵不收矿石</small></div><button class="btn" onclick="window.craftZhenqi(${z.g})">做采集阵旗</button><button class="btn gold" onclick="window.synthZhenqi(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
   const flagNeedName = (st, ik) => st === 'ores' ? ORES[ik].name : st === 'mats' ? ((typeof MATS !== 'undefined' && MATS[ik] || {}).name || ik) : st === 'pages' ? PAGES[ik].name : ik; // v1226 旗材料名
-  const flagHtml = `<h3>🚩 防御阵旗（合成防御阵）</h3>` + FLAG_DEFS.map(z => { const own = (S.flagDef && S.flagDef[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🚩 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 防御阵战力固定，须先破它才能拆同格其他阵</small></div><button class="btn" onclick="window.craftFlag(${z.g})">做防御阵旗</button><button class="btn gold" onclick="window.synthFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
-  const veilHtml = `<h3>🎏 遮天旗（合成遮天阵）</h3>` + VEIL_DEFS.map(z => { const own = (S.flagVeil && S.flagVeil[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🎏 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 遮天阵遮掩同格你名下的阵，神识看不破就看不见</small></div><button class="btn" onclick="window.craftVeilFlag(${z.g})">做遮天旗</button><button class="btn gold" onclick="window.synthVeilFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
+  const flagHtml = `<h3>🚩 防御阵旗（合成防御阵）</h3>` + FLAG_DEFS.map(z => { const own = (S.flagDef && S.flagDef[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🚩 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>技能 ${xpTrackTxt(flagXpKind('fd'), z.g)} · 材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 防御阵战力固定，须先破它才能拆同格其他阵</small></div><button class="btn" onclick="window.craftFlag(${z.g})">做防御阵旗</button><button class="btn gold" onclick="window.synthFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
+  const veilHtml = `<h3>🎏 遮天旗（合成遮天阵）</h3>` + VEIL_DEFS.map(z => { const own = (S.flagVeil && S.flagVeil[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🎏 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>技能 ${xpTrackTxt(flagXpKind('veil'), z.g)} · 材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 遮天阵遮掩同格你名下的阵，神识看不破就看不见</small></div><button class="btn" onclick="window.craftVeilFlag(${z.g})">做遮天旗</button><button class="btn gold" onclick="window.synthVeilFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
   const tHtml = Object.keys(tRecipes).map(k => {
     const r = tRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'pages' ? PAGES[ik].name : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">📜 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有符箓 ${S.talismans && S.talismans[k] || 0}</small></div><button class="btn gold" onclick="doCraftTalisman('${k}')">制作</button></div>`;
@@ -3220,7 +3225,8 @@ window.craftZhenqi = function (g) { // v1128 做阵棋：材料直扣（无失�
     for (const [st, ik, n] of z.need) { S[st][ik] -= n; if (S[st][ik] <= 0) delete S[st][ik]; }
     if (!S.zhenqi) S.zhenqi = { 1: 0, 2: 0, 3: 0 };
     S.zhenqi[g] = (S.zhenqi[g] | 0) + 1;
-    log('good', `♟️ 制成【${z.name}】×1（现有 ${S.zhenqi[g]}，满 ${z.synth} 可合成${z.fname}）`);
+    const _fu = xpTrackGain(flagXpKind('zq'), g, K.LIFE_XP_OK);
+    log('good', `🚩 制成【${z.name}】×1（现有 ${S.zhenqi[g]}，满 ${z.synth} 可合成${z.fname}）· 技能 ${xpTrackTxt(flagXpKind('zq'), g)}${_fu ? '，升级！' : ''}`);
     save(); sheetFormationTalisman();
   } catch (e) { try { log('bad', '制作出错:' + e.message); } catch (_) {} }
 };
@@ -3244,7 +3250,8 @@ window.craftFlag = function (g) { // v1226 做阵旗：材料直扣（无失败�
     for (const [st, ik, n] of z.need) { S[st][ik] -= n; if (S[st][ik] <= 0) delete S[st][ik]; }
     if (!S.flagDef) S.flagDef = { 1: 0, 2: 0, 3: 0 };
     S.flagDef[g] = (S.flagDef[g] | 0) + 1;
-    log('good', `🚩 制成【${z.name}】×1（现有 ${S.flagDef[g]}，满 ${z.synth} 可合成${z.fname}）`);
+    const _fu = xpTrackGain(flagXpKind('fd'), g, K.LIFE_XP_OK);
+    log('good', `🚩 制成【${z.name}】×1（现有 ${S.flagDef[g]}，满 ${z.synth} 可合成${z.fname}）· 技能 ${xpTrackTxt(flagXpKind('fd'), g)}${_fu ? '，升级！' : ''}`);
     save(); sheetFormationTalisman();
   } catch (e) { try { log('bad', '制作出错:' + e.message); } catch (_) {} }
 };
@@ -3268,7 +3275,8 @@ window.craftVeilFlag = function (g) { // v1226 做遮天旗：材料直扣（无
     for (const [st, ik, n] of z.need) { S[st][ik] -= n; if (S[st][ik] <= 0) delete S[st][ik]; }
     if (!S.flagVeil) S.flagVeil = { 1: 0, 2: 0, 3: 0 };
     S.flagVeil[g] = (S.flagVeil[g] | 0) + 1;
-    log('good', `🎏 制成【${z.name}】×1（现有 ${S.flagVeil[g]}，满 ${z.synth} 可合成${z.fname}）`);
+    const _fu = xpTrackGain(flagXpKind('veil'), g, K.LIFE_XP_OK);
+    log('good', `🎏 制成【${z.name}】×1（现有 ${S.flagVeil[g]}，满 ${z.synth} 可合成${z.fname}）· 技能 ${xpTrackTxt(flagXpKind('veil'), g)}${_fu ? '，升级！' : ''}`);
     save(); sheetFormationTalisman();
   } catch (e) { try { log('bad', '制作出错:' + e.message); } catch (_) {} }
 };
@@ -5407,7 +5415,7 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
 }
 async function doBrew(k, n) {
   if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择该生活技能'); return; } // v204
-  const lines = []; let got = [], ok = 0, fail = 0, ups = 0, used = {}, stop = ''; let bombN = 0; // v998
+  const lines = []; let got = [], ok = 0, fail = 0, ups = 0, used = {}, stop = ''; let bombN = 0; let pillUps = 0; // v998
   // v964 彻底版：登录在线时走服务端掷骰
   const useBrewServer = window.MHXY && MHXY.loggedIn && MHXY.loggedIn() && alcExtrasArr().length === 0; // v998 有加料走本地判定（服务端扩展已 [DEV] 同步 muse2）
   for (let i = 0; i < n; i++) {
@@ -5455,6 +5463,7 @@ async function doBrew(k, n) {
     else if (r.bomb) { fail++; bombN++; lines.push(`💥 <b class="r">炸炉！</b>炉盖冲天，这一炉废了（加料尽毁，药引未伤）`); }
     else { fail++; lines.push(`💨 丹炉炸裂，炼制失败`); }
     ups += r.lvUp;
+    pillUps += xpTrackGain(pillXpStore(), k, (r.ok || r.mut) ? K.LIFE_XP_OK : K.LIFE_XP_FAIL);
   }
   for (const _ek in alcExtraSel) delete alcExtraSel[_ek]; // v1269 炼完清加料选择，免得下次炼丹自动重复同一搭配
   if (bombN > 0) { S.bc = S.bc || []; S.bc.push('💥 炸炉啦——有道友炼丹时炉盖飞天，丹香三里，焦了一里。'); } // v998 小事件包装：炸炉上世界横幅
@@ -5463,6 +5472,7 @@ async function doBrew(k, n) {
   log('alc', `⚗️ 炼制${AN[k]}丹 ${ok + fail} 次：成功 <span class="g">${ok}</span>，失败 <span class="r">${fail}</span>` + (usedTxt ? `（使用 ${usedTxt}）` : '') +
     (ok + fail > 1 ? `<details open><summary>炼制详情</summary>${lines.map(l => `<div class="bl">${l}</div>`).join('')}</details>` : `<br>${lines[0]}`) +
     (ups ? `<br><span class="y">炼药等级提升至 Lv.${S.alc.lv}！成功率 ${C.pct(C.alcRate(S))}</span>` : '') +
+    (pillUps ? `<br><span class="y">${AN[k]}丹技能提升至 ${xpTrackTxt(pillXpStore(), k)}！</span>` : '') +
     (stop ? `<br><span class="r">⚠️ ${stop}</span>` : ''));
   afterAct(); commit(); S.dead ? closeSheet() : sheetAlchemy(stop);
 }
@@ -5476,12 +5486,12 @@ function doAlcExtra(ek) { // v998 加料点按
 }
 function doBrewAntidote(n) { // v1163 炼制解毒丹（本地判定，与化无丹同口径）
   if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择该生活技能'); return; }
-  const lines = []; let ok = 0, fail = 0, got = 0, ups = 0, stop = '';
+  const lines = []; let ok = 0, fail = 0, got = 0, ups = 0, stop = ''; let pillUpsA = 0;
   for (let i = 0; i < n; i++) {
     const r = C.brewAntidote(S); if (!r) break;
     if (r.err) { stop = r.err === 'mat' ? '缺敏捷草或一品凝露，无法炼制解毒丹。' : r.err === 'mana' ? '法力不足，无法继续炼药。' : r.err === 'dead' ? '你已身亡，无法炼药。' : '活力不足，无法继续炼药。'; break; }
     if (r.ok) { ok++; got += r.n; lines.push('✅ 成丹 解毒丹 ×' + r.n); } else { fail++; lines.push('💨 丹炉炸裂，炼制失败'); }
-    ups += r.lvUp;
+    ups += r.lvUp; pillUpsA += xpTrackGain(pillXpStore(), 'antidote', r.ok ? K.LIFE_XP_OK : K.LIFE_XP_FAIL);
   }
   if (!ok && !fail) { toastLog('sys', '⚠️ ' + stop); sheetAlchemy(stop); return; }
   log('alc', '💊 炼制解毒丹 ' + (ok + fail) + ' 次：成功 <span class="g">' + ok + '</span>（得解毒丹 ×' + got + '），失败 <span class="r">' + fail + '</span>' + (ok + fail > 1 ? '<details open><summary>炼制详情</summary>' + lines.map(l => '<div class="bl">' + l + '</div>').join('') + '</details>' : '<br>' + lines[0]) + (ups ? '<br><span class="y">炼药等级提升至 Lv.' + S.alc.lv + '！</span>' : '') + (stop ? '<br><span class="r">⚠️ ' + stop + '</span>' : ''));
@@ -5489,12 +5499,12 @@ function doBrewAntidote(n) { // v1163 炼制解毒丹（本地判定，与化无
 }
 function doBrewDetox(n) { // v998 炼制化无丹（本地判定）
   if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择该生活技能'); return; }
-  const lines = []; let ok = 0, fail = 0, got = 0, ups = 0, stop = '';
+  const lines = []; let ok = 0, fail = 0, got = 0, ups = 0, stop = ''; let pillUpsD = 0;
   for (let i = 0; i < n; i++) {
     const r = C.brewDetox(S); if (!r) break;
     if (r.err) { stop = r.err === 'mat' ? '缺生命草或一品凝露，无法炼制化无丹。' : r.err === 'mana' ? '法力不足，无法继续炼药。' : r.err === 'dead' ? '你毒发身亡了。' : '活力不足，无法继续炼药。'; break; }
     if (r.ok) { ok++; got += r.n; lines.push('✅ 成丹 化无丹 ×' + r.n); } else { fail++; lines.push('💨 丹炉炸裂，炼制失败'); }
-    ups += r.lvUp;
+    ups += r.lvUp; pillUpsD += xpTrackGain(pillXpStore(), 'detox', r.ok ? K.LIFE_XP_OK : K.LIFE_XP_FAIL);
   }
   if (!ok && !fail) { toastLog('sys', '⚠️ ' + stop); sheetAlchemy(stop); return; }
   log('alc', '🍃 炼制化无丹 ' + (ok + fail) + ' 次：成功 <span class="g">' + ok + '</span>（得化无丹 ×' + got + '），失败 <span class="r">' + fail + '</span>' + (ok + fail > 1 ? '<details open><summary>炼制详情</summary>' + lines.map(l => '<div class="bl">' + l + '</div>').join('') + '</details>' : '<br>' + lines[0]) + (ups ? '<br><span class="y">炼药等级提升至 Lv.' + S.alc.lv + '！</span>' : '') + (stop ? '<br><span class="r">⚠️ ' + stop + '</span>' : ''));
@@ -5516,12 +5526,12 @@ function doUseDetox() { // v998 服化无丹
 function doBrewDan(key, n) { // v1096 炼丸（本地判定，照抄化无丹）
   if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择该生活技能'); return; }
   const def = C.DANWAN[key]; if (!def) return;
-  const lines = []; let ok = 0, fail = 0, got = 0, ups = 0, stop = '';
+  const lines = []; let ok = 0, fail = 0, got = 0, ups = 0, stop = ''; let pillUpsW = 0;
   for (let i = 0; i < n; i++) {
     const r = C.brewDan(S, key); if (!r) break;
     if (r.err) { stop = r.err === 'mat' ? '缺药草或兽蛋，无法炼制' + def.name + '。' : r.err === 'mana' ? '法力不足，无法继续炼药。' : r.err === 'vigor' ? '活力不足，无法继续炼药。' : r.err === 'lv' ? '炼药等级不足（需 Lv.' + def.lv + '）。' : r.err === 'dead' ? '你毒发身亡了。' : ''; break; }
     if (r.ok) { ok++; got += r.n; lines.push('✅ 成丸 ' + def.name + ' ×' + r.n); } else { fail++; lines.push('💨 丹炉炸裂，炼制失败'); }
-    ups += r.lvUp;
+    ups += r.lvUp; pillUpsW += xpTrackGain(pillXpStore(), key, r.ok ? K.LIFE_XP_OK : K.LIFE_XP_FAIL);
   }
   if (!ok && !fail) { toastLog('sys', '⚠️ ' + stop); sheetAlchemy(stop); return; }
   log('alc', '💊 炼制' + def.name + ' ' + (ok + fail) + ' 次：成功 <span class="g">' + ok + '</span>（得' + def.name + ' ×' + got + '），失败 <span class="r">' + fail + '</span>' + (ups ? '，炼药升至 Lv.' + S.alc.lv : '') + (lines.length ? '<br>' + lines.join('<br>') : ''));
@@ -5539,7 +5549,8 @@ window.brewSyd = function (idx) { // v1129 炼寿元丹
     if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择炼药技能'); return; }
     const r = C.brewSyd(S, idx); if (!r) return;
     if (r.err) { toastLog('bad', r.err === 'mat' ? '材料不足（生命草×3 + 兽蛋×1）' : r.err === 'lv' ? '炼药等级不足' : r.err === 'mana' ? '法力不足' : r.err === 'vigor' ? '活力不足' : '无法炼制'); sheetAlchemy(); return; }
-    if (r.ok) log('good', `⚗️ 炼成 <b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b> ×${r.n}${r.crit ? '（<b class="y">💥年份暴击！</b>）' : ''}，每颗寿元 +${r.val}（背包服用）`);
+    const _pu = xpTrackGain(pillXpStore(), 'syd', r.ok ? K.LIFE_XP_OK : K.LIFE_XP_FAIL);
+    if (r.ok) log('good', `⚗️ 炼成 <b style="color:${C.LW_ELE_COLORS[r.e]}">${r.e}行寿元丹</b> ×${r.n}${r.crit ? '（<b class="y">💥年份暴击！</b>）' : ''}，每颗寿元 +${r.val}（背包服用）· 技能 ${xpTrackTxt(pillXpStore(), 'syd')}${_pu ? '，升级！' : ''}`);
     else log('bad', '⚗️ 炼制失败，灵物与材料已消耗');
     if (r.lvUp) log('good', `⚗️ 炼药升级至 Lv.${S.alc.lv}！`);
     commit(); sheetAlchemy();
@@ -5550,7 +5561,8 @@ window.brewKm = function () { // v1129 炼开脉丹
     if (lifeLocked('alc')) { toastLog('bad', '🔒 未选择炼药技能'); return; }
     const r = C.brewKm(S); if (!r) return;
     if (r.err) { toastLog('bad', r.err === 'mat' ? '灵物不足（地+天+仙各需 1 株）或缺兽蛋' : r.err === 'lv' ? '炼药等级不足（需 Lv.10）' : r.err === 'mana' ? '法力不足' : r.err === 'vigor' ? '活力不足' : '无法炼制'); sheetAlchemy(); return; }
-    if (r.ok) log('good', '🌀 炼成 <b class="y">开脉丹</b> ×1（星藏里服用开穴）');
+    const _pu = xpTrackGain(pillXpStore(), 'km', r.ok ? K.LIFE_XP_OK : K.LIFE_XP_FAIL);
+    if (r.ok) log('good', `🌀 炼成 <b class="y">开脉丹</b> ×1（星藏里服用开穴）· 技能 ${xpTrackTxt(pillXpStore(), 'km')}${_pu ? '，升级！' : ''}`);
     else log('bad', '⚗️ 炼制失败，三株灵物与兽蛋已消耗');
     if (r.lvUp) log('good', `⚗️ 炼药升级至 Lv.${S.alc.lv}！`);
     commit(); sheetAlchemy();

@@ -536,6 +536,10 @@ function normalize(S) {
   for (const _g of [1, 2, 3]) S.flagDef[_g] = Math.max(0, Math.floor(+S.flagDef[_g] || 0));
   if (!S.flagVeil || typeof S.flagVeil !== 'object') S.flagVeil = { 1: 0, 2: 0, 3: 0 }; // v1226 遮天旗
   for (const _g of [1, 2, 3]) S.flagVeil[_g] = Math.max(0, Math.floor(+S.flagVeil[_g] || 0));
+  if (!S.flagXp || typeof S.flagXp !== 'object') S.flagXp = {}; // v1277 九种旗各一条经验线
+  for (const _fk of ['zq', 'fd', 'veil']) { if (!S.flagXp[_fk] || typeof S.flagXp[_fk] !== 'object') S.flagXp[_fk] = {}; for (const _g of [1, 2, 3]) { const _t = S.flagXp[_fk][_g]; if (!_t || typeof _t !== 'object') S.flagXp[_fk][_g] = { lv: 1, xp: 0 }; else { _t.lv = Math.max(1, Math.floor(+_t.lv || 1)); _t.xp = Math.max(0, Math.floor(+_t.xp || 0)); } } }
+  if (!S.pillXp || typeof S.pillXp !== 'object') S.pillXp = {}; // v1277 每种丹各一条经验线
+  for (const _pk in S.pillXp) { const _t = S.pillXp[_pk]; if (!_t || typeof _t !== 'object') delete S.pillXp[_pk]; else { _t.lv = Math.max(1, Math.floor(+_t.lv || 1)); _t.xp = Math.max(0, Math.floor(+_t.xp || 0)); } }
   if (!S.formations || typeof S.formations !== 'object') S.formations = {};
   S.formations.f_gather = Math.max(0, Math.floor(+S.formations.f_gather || 0));
   S.formations.f_gather2 = Math.max(0, Math.floor(+S.formations.f_gather2 || 0));
