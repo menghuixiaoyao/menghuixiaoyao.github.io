@@ -138,7 +138,7 @@ window.showPlayerDetail = function(accountId){
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn" style="flex:1" onclick="window.pkAttackPlayer(\'' + _aid + '\')">⚔️ 攻击（按我的模式）</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
-      + '<button class="btn" style="flex:1" onclick="window.xyRequestPlayer(\'' + _aid + '\')">💞 仙缘</button></div>'
+      + '<button class="btn" id="xyReqBtn" style="flex:1" onclick="window.xyRequestPlayer(\'' + _aid + '\')">💞 仙缘</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
       + '<button class="btn gold" style="flex:1" onclick="window.ptTradePlayer(\'' + _aid + '\')">🤝 交易</button></div>'
       + '<div class="row" style="display:flex;gap:8px;margin-top:8px">'
@@ -173,14 +173,31 @@ window.pkPlayer = function(accountId){
 };
 // v1081 从玩家详情发起仙缘绑定请求
 window.xyRequestPlayer = function(accountId){
+  // v1285 点击后在按钮上直接给反馈（旧版只写日志，面板盖着日志看起来没反应）
+  var _btn = document.getElementById('xyReqBtn');
+  var _set = function(txt, dis){ if (_btn) { _btn.textContent = txt; _btn.disabled = !!dis; } };
   try {
-    if (typeof MHXY !== 'undefined' && MHXY.api) {
-      MHXY.api('/api/xianyuan/request', { method: 'POST', body: { targetId: accountId } }).then(function(r){
-        if (r.ok) { if (typeof toastLog === 'function') toastLog('good', '💞 仙缘请求已发出，等对方确认'); else if (typeof log === 'function') log('good', '💞 仙缘请求已发出'); }
-        else { var _m = '仙缘请求失败'; if (r.json && r.json.error === 'already_bound') _m = '已经绑定了'; else if (r.json && r.json.error === 'already_pending') _m = '已有待确认的请求'; else if (r.json && r.json.error === 'bad_target') _m = '不能和自己绑定'; else if (r.json && r.json.error === 'daily_bind_limit') _m = '今天已发起过绑定了（每天只能发起1个）'; if (typeof toastLog === 'function') toastLog('bad', _m); else if (typeof log === 'function') log('bad', _m); }
-      });
+    if (typeof MHXY === 'undefined' || !MHXY.api || (MHXY.loggedIn && !MHXY.loggedIn())) {
+      _set('💞 先登录联机账号', true);
+      if (typeof window.toastLog === 'function') window.toastLog('bad', '💞 仙缘：先登录联机账号');
+      return;
     }
-  } catch(e) {}
+    _set('💞 发送中…', true);
+    MHXY.api('/api/xianyuan/request', { method: 'POST', body: { targetId: accountId } }).then(function(r){
+      if (r.ok) { _set('💞 已发出，等对方确认', true); if (typeof window.toastLog === 'function') window.toastLog('good', '💞 仙缘请求已发出，等对方确认'); }
+      else {
+        var _m = '仙缘请求失败';
+        if (r.json && r.json.error === 'already_bound') _m = '已经绑定了';
+        else if (r.json && r.json.error === 'already_pending') _m = '已有待确认的请求';
+        else if (r.json && r.json.error === 'bad_target') _m = '不能和自己绑定';
+        else if (r.json && r.json.error === 'no_target') _m = '对方不存在';
+        else if (r.json && r.json.error === 'daily_bind_limit') _m = '今天已发起过绑定了（每天只能发起1个）';
+        else if (r.netErr) _m = '网络不通，稍后再试';
+        _set('💞 ' + _m, false);
+        if (typeof window.toastLog === 'function') window.toastLog('bad', _m);
+      }
+    }).catch(function(){ _set('💞 发送失败，点我重试', false); });
+  } catch(e) { _set('💞 发送失败，点我重试', false); }
 };
 // v902 关键函数兜底（iOS Safari大文件偶发undefined）
 if (typeof window.doTogglePetLock !== 'function') {

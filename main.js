@@ -7777,7 +7777,7 @@ function doXianyuan() { // 仙缘面板（v1081：玩家互绑版，NPC 模拟�
       if (cb) cb.onclick = function(){
         MHXY.api('/api/xianyuan/checkin', { method: 'POST', body: {} }).then(function(r){
           if (r.ok) {
-            if (r.json && r.json.already) { if (typeof toastLog === 'function') toastLog('sys', '今天已签到过了'); }
+            if (r.json && r.json.already && !(r.json.sent > 0)) { if (typeof toastLog === 'function') toastLog('sys', '今天已签到过了'); }
             else if (typeof toastLog === 'function') toastLog('good', `📬 签到成功！连续第${(r.json && r.json.streak) || 1}天，已给${(r.json && r.json.sent) || 0}位绑定者发体力邮件${(r.json && r.json.capped) ? `（${r.json.capped}位的前20已满，未送达）` : ''}`);
           }
         });
