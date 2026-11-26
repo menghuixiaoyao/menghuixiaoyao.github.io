@@ -4907,6 +4907,7 @@ function sheetBattlePlan() {
   openSheet(html);
 }
 function sheetPkWin() {
+  if (pk && pk.isArena) { if (typeof window.finishPk === 'function') window.finishPk(); return; } // v1283 擂台不夺取
   const o = pk.opp;
   const oInfoW = encodeURIComponent(JSON.stringify({name:o.name, realm:o.realm||0, level:o.lv||1, attrs:o.attrs||{}, skills:o.skills||[], style:o.style||'', pet:o.pet||null, lifespan:o.lifespan||0}));
   $('mask').dataset.lock = '1';
@@ -7438,8 +7439,8 @@ async function doArena() { // v245 擂台：所有境界可见；v246 每个境�
   const cr = S.realm | 0;
   const ch = a.champion;
   const chHtml = ch ? (ch.isPlayer ? `🏆 现任擂主：<b class="y">你</b>（已守擂 ${arenaFmtDuration(arenaDefenseTime(a))}）` : `🏆 现任擂主：<b class="x">${ch.name}</b>（已守擂 ${arenaFmtDuration(arenaDefenseTime(a))}）`) : '';
-  const _now = new Date(); const _mid = new Date(_now); _mid.setHours(24, 0, 0, 0); const _ms = _mid - _now; const _h = Math.floor(_ms / 3600000), _m = Math.floor((_ms % 3600000) / 60000);
-  openSheet(`<h2>🏟️ 擂台 · ${C.REALMS[cr]}</h2><div class="hint">本境界独立擂台 · 挑战守擂者，胜者为新擂主<br>胜 +10 积分、败 +1 积分；<b>日/周/月/年榜守擂1分钟=1分</b>；<b>不夺取属性、不掉属性</b><br>📅 日榜前20：🎲盲盒（第1名20个递减）<br>⏰ 距日榜结算还有 <b class="y">${_h}小时${_m}分</b></div>
+  const _settleTxt = arenaSettleText('day'); // v1283 日榜结算与服务端 UTC 周期一致
+  openSheet(`<h2>🏟️ 擂台 · ${C.REALMS[cr]}</h2><div class="hint">本境界独立擂台 · 挑战守擂者，胜者为新擂主<br>胜 +10 积分、败 +1 积分；<b>日/周/月/年榜守擂1分钟=1分</b>；<b>不夺取属性、不掉属性</b><br>📅 日榜前20：🎲盲盒（第1名20个递减）<br>${_settleTxt}</div>
   ${settleMsg ? `<div class="hint" style="color:var(--gold)">${settleMsg}</div>` : ''}
   ${tickMsg ? `<div class="hint" style="color:var(--gold)">${tickMsg}</div>` : ''}
   <div class="row"><div class="lab">${chHtml}</div></div>
@@ -7458,6 +7459,24 @@ function arenaPeriodKeys() {
   const month = day.slice(0, 7);
   const year = day.slice(0, 4);
   return { day, week, month, year };
+}
+// v1283 每个榜的结算时间：与服务端周期一致（UTC 周期界），显示为本地时间
+function arenaNextSettle(tab) {
+  const n = new Date();
+  if (tab === 'week') { const dow = (n.getUTCDay() + 6) % 7; return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() - dow + 7); }
+  if (tab === 'month') return Date.UTC(n.getUTCFullYear(), n.getUTCMonth() + 1, 1);
+  if (tab === 'year') return Date.UTC(n.getUTCFullYear() + 1, 0, 1);
+  return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1);
+}
+function arenaSettleText(tab) {
+  const t = arenaNextSettle(tab);
+  const d = new Date(t);
+  const pad = x => String(x).padStart(2, '0');
+  const date = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  const ms = Math.max(0, t - Date.now());
+  const days = Math.floor(ms / 86400000), hrs = Math.floor(ms % 86400000 / 3600000), mins = Math.floor(ms % 3600000 / 60000);
+  const left = days > 0 ? days + '天' + hrs + '小时' : (hrs > 0 ? hrs + '小时' + mins + '分' : mins + '分');
+  return '⏰ 本榜结算：' + date + '（还剩 ' + left + '）';
 }
 // v250 擂台日结：种子随机保证同一天NPC分数一致
 function arenaSeededRng(seedStr) {
@@ -7568,7 +7587,7 @@ function doArenaRank(tab) { // v246 擂台榜单：日/周/月/年；每个境�
     let html = `<h2>🏆 擂台榜单 · ${C.REALMS[cr]}</h2><div class="hint">你的排名：<b class="y">${myRank ? '第 ' + myRank + ' 名' : '未上榜'}</b>（${myScore || 0} 分） · 本境界独立榜单·按积分排名 · 真人数据</div>${chHtml}`
       + `<div class="grid2" style="margin-bottom:8px">` +
       tabs.map(function(t){ return `<button class="btn${tab===t[0]?' gold':''}" data-arena-rank="${t[0]}">${t[1]}</button>`; }).join('') +
-      `</div>`;
+      `</div><div class="hint">${arenaSettleText(tab)}</div>`;
     if (!list.length) html += `<div class="empty">本榜暂无真人成绩，来守擂抢榜首吧</div>`;
     else html += list.map(function(e){
       return `<div class="row"${e.isMe ? ' style="border:1px solid var(--gold);border-radius:8px"' : ''}>`
@@ -8272,7 +8291,7 @@ function pkHandleOver() { // v805 合并：删除旧版，保留v791版
     try { const _fp = finishAdvBattle(); if (_fp && _fp.catch) _fp.catch(e => { try { log('sys', '冒险结算异常:' + (e && e.message || e)); } catch(_) {} try { pk = null; } catch(_) {} try { window.pk = null; } catch(_) {} try { render(); } catch(_) {} try { if (S.run) sheetRun(); } catch(_) {} }); } catch(_e) {}
     return;
   }
-  if (b.winner === b.A) { render(); sheetPkWin(); return; }
+  if (b.winner === b.A) { if (_pk.isArena) { finishPk(); return; } render(); sheetPkWin(); return; } // v1283 擂台胜利直接结算，不弹夺取
   finishPk();
 }
 function pkClearActing() { try { if (pk) pk._acting = false; const ac = $('actions'); if (ac) ac.style.opacity = ''; } catch (_) {} }
