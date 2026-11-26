@@ -656,7 +656,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   S.pets = S.pets.filter(p => p && PETS[p.k] && p.attrs);
   S.pets.forEach(p => { ATTRS.forEach(a => p.attrs[a] = Math.max(1, Math.floor(+p.attrs[a] || 1))); p.q = (p.q >= 0 && p.q < PQLT.length) ? Math.floor(p.q) : 0; p.skills = Array.isArray(p.skills) ? p.skills.filter(sk => GEAR_SETS[sk]) : []; p.lv = Math.max(1, Math.floor(+p.lv || 1)); p.xp = Math.max(0, Math.floor(+p.xp || 0)); p.pts = Math.max(0, Math.floor(+p.pts || 0)); p.hunger = typeof p.hunger === 'number' && isFinite(p.hunger) ? clamp(p.hunger, 0, 100) : 100; p.loyal = typeof p.loyal === 'number' && isFinite(p.loyal) ? clamp(Math.round(p.loyal), 0, 100) : K.PET_LOYAL_START; p.life = typeof p.life === 'number' && isFinite(p.life) ? clamp(Math.floor(p.life), 1, K.PET_LIFE_MAX) : K.PET_LIFE_MAX; /* v9 寿命：老宠补满 */ p.talent = !!p.talent; /* v10 天赋神通：老宠默认未领悟 */ if (!p.peq || typeof p.peq !== 'object') p.peq = {}; for (const sl in SLOTS) if (p.peq[sl] && (!okPetGear(p.peq[sl]) || PET_GEAR[p.peq[sl].k].slot !== sl)) delete p.peq[sl]; if (!(p.id > 0)) p.id = ++S.petSeq; S.petSeq = Math.max(S.petSeq, p.id); if (p.sex !== 'm' && p.sex !== 'f') p.sex = R() < 0.5 ? 'm' : 'f'; p.bred = !!p.bred; });
   if (!Array.isArray(S.pet)) S.pet = S.pet != null ? [S.pet] : []; S.pet = S.pet.filter(id => S.pets.some(p => p.id === id)).slice(0, 4); if (!S.pet.length && S.pets.length) S.pet = [S.pets[0].id];
-  S.hunger = typeof S.hunger === 'number' && isFinite(S.hunger) ? clamp(S.hunger, 0, 10000) : 100; // v7：饥饿 / 状态 / 疗伤药；v1279 辟谷丸可突破至 10000
+  S.hunger = typeof S.hunger === 'number' && isFinite(S.hunger) ? Math.max(0, S.hunger) : 100; // v7：饥饿 / 状态 / 疗伤药；v1281 辟谷丸无限叠加，普通食物只在100以下加饱食
   const st0 = S.status && typeof S.status === 'object' ? S.status : {}, nn = x => Math.max(0, +x || 0);
   S.status = { bleed: !!st0.bleed, poison: st0.poison === true || (typeof st0.poison === 'number' && st0.poison > C.now()), depress: nn(st0.depress), bleedBase: nn(st0.bleedBase), poisonBase: nn(st0.poisonBase), bleedFrac: nn(st0.bleedFrac) % 1, poisonFrac: nn(st0.poisonFrac) % 1 };
   if (S.status.bleed && !S.status.bleedBase) S.status.bleedBase = Math.floor(+S.attrs.vit || 1);   // 旧存档：以当前生命为上限
@@ -1223,14 +1223,14 @@ function eatHerb(S, key) { // v1136 Ye 定：属性草每天可吃 5 棵——�
   if ((S.herbEat.n | 0) >= 5) return { err: 'daily' };
   S.mats[key]--; if (S.mats[key] <= 0) delete S.mats[key];
   S.herbEat.n++;
-  S.hunger = (S.hunger | 0) > 100 ? (S.hunger | 0) : Math.min(100, (S.hunger | 0) + 20);
+  const _hg = (S.hunger | 0) < 100 ? Math.min(20, 100 - (S.hunger | 0)) : 0; S.hunger = (S.hunger | 0) + _hg; // v1281 食物只在100以下加饱食
   const attr = LINGGEN_ATTR[e];
   if (!S.attrs) S.attrs = {};
   S.attrs[attr] = (S.attrs[attr] | 0) + 1;
   addDanDu(S, 20);
   const awakened = tryAwakenRoot(S, e);
   const comprehended = awakened ? null : tryComprehendRoot(S, e);
-  return { ok: 1, e, attr, n: S.herbEat.n, awakened, comprehended };
+  return { ok: 1, e, attr, n: S.herbEat.n, hunger: _hg, awakened, comprehended };
 }
 function tryToxRoot(S) { // v1141 Ye 定：只在突破成功时掷一次觉醒异灵根【毒】——丹毒 ≥5000 起判，基础概率 5%，丹毒每多 10 点 +0.1%（6000→15%，10000→55%）；额外灵根不占五行，须已有灵根承载
   if ((S.danDu | 0) < 5000) return null;
@@ -1922,7 +1922,7 @@ function eatFood(S, kind, k, n, petId) { // 吃肉/蛋：恢复饱食度（肉�
   store[k] -= n; if (!store[k]) delete store[k];
   const res = { n, hunger: it.hunger * n, sta: 0, pet, loyal: 0, cured: false };
   if (pet) { pet.hunger = Math.min(100, pet.hunger + res.hunger); for (let i = 0; i < n; i++) res.loyal += loyalUp(pet, K.FEED_LOYAL_P, 2, 4); if (hasSt(S, 'depress') && R() < K.DEPRESS_PET_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
-  else { S.hunger = S.hunger > 100 ? S.hunger : Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
+  else { const _hg = S.hunger < 100 ? Math.min(res.hunger, 100 - S.hunger) : 0; S.hunger += _hg; res.hunger = _hg; if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
   return res;
 }
 function useMed(S, k) { const m = MEDS[k]; if (!m || !(S.meds[k] > 0)) return { ok: false, why: 'none' }; if (m.cure === 'curse') { if (!((S.curseN|0) > 0)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; S.curseN = (S.curseN|0) - 1; return { ok: true, cure: 'curse' }; } if (!hasSt(S, m.cure)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); return { ok: true, cure: m.cure }; }
@@ -2162,9 +2162,9 @@ function craft(S, skill, key, opt) { // 烹饪 / 锻造 / 炼金：1 活力；�
 function eatDish(S, key, n) { // 吃菜：饱食 + 体力（死亡中不回体力）；精良/极品附带增益（覆盖旧增益）
   const d = dishOf(key); if (!d) return null; n = Math.min(n || 1, S.dishes[key] || 0); if (n <= 0) return null;
   S.dishes[key] -= n; if (!S.dishes[key]) delete S.dishes[key];
-  S.hunger = S.hunger > 100 ? S.hunger : Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
+  const _hg = S.hunger < 100 ? Math.min(d.hunger * n, 100 - S.hunger) : 0; S.hunger += _hg; const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
   let buff = null; if (d.q >= 2) { buff = d.buff === 'luck' ? { k: 'luck', v: K.BUFF_LUCK[d.q], left: K.BUFF_ACTS, src: d.name } : { k: d.buff, v: K.BUFF_ATTR[d.q], left: K.BUFF_FIGHTS, src: d.name }; S.buff = buff; }
-  return { n, hunger: d.hunger * n, sta, buff, d };
+  return { n, hunger: _hg, sta, buff, d };
 }
 const GQNAME = ['', '普通', '优秀', '精良', '史诗', '传说']; // 装备品质 5 档（名字颜色：白/绿/蓝/紫/橙）
 const GQ_SET = [0, 1, 1.1, 1.25, 1.4, 1.6];
@@ -2308,7 +2308,7 @@ function brewAntidote(S) { // v1163 解毒丹自炼（Ye 定：商店 1000 金/�
   return { ok, rate, n, xp, lvUp };
 }
 const DANWAN = { // v1096 炼药阶梯：辟谷丸/气力丸（丸非丹，不积丹毒；成品走 S.dan 透传，如菜肴）
-  bigu: { name: '辟谷丸', icon: '🍘', lv: 3, herb: 'h_vit', desc: '饱食 +20，可突破上限至10000', fx: 'hunger', val: 20 },
+  bigu: { name: '辟谷丸', icon: '🍘', lv: 3, herb: 'h_vit', desc: '饱食 +20，可无限叠加', fx: 'hunger', val: 20 },
   qili: { name: '气力丸', icon: '💪', lv: 5, herb: 'h_str', desc: '体力 +3', fx: 'sta', val: 3 },
 };
 function brewDan(S, key) { // v1096 炼丸（本地判定，照抄化无丹）
@@ -2377,7 +2377,7 @@ function useDanwan(S, key, n) { // v1096 服丸
   if (!S.dan) S.dan = {};
   const have = S.dan[key] || 0; n = Math.min(n || 1, have); if (n <= 0) return 0;
   S.dan[key] = have - n; if (!S.dan[key]) delete S.dan[key];
-  if (def.fx === 'hunger') S.hunger = Math.min(10000, (S.hunger|0) + def.val * n);
+  if (def.fx === 'hunger') S.hunger = (S.hunger|0) + def.val * n; // v1281 辟谷丸无限叠加
   else if (def.fx === 'sta') S.stamina = (S.stamina|0) + def.val * n;
   return n;
 }
@@ -2414,20 +2414,23 @@ function brew(S, attr, opt) {
   // v998 加料判定：变异优先；未中搭配按加料数掷炸炉（基础料只损药草、药引未动、加料全损）
   const extras = [];
   if (Array.isArray(opt.extras)) { for (const ek of opt.extras.slice(0, 3)) { if (ek.startsWith('h_')) { if (useMatN(S, ek, 100)) extras.push(ek); } else if (ek.startsWith('dw') && useMat(S, ek)) extras.push(ek); } }
+  const extrasLw = []; // v1281 加料可加有年份的灵物（按 S.lingwu 下标选定，消耗该株）
+  if (Array.isArray(opt.lwExtras) && Array.isArray(S.lingwu)) { const _idx = [...new Set(opt.lwExtras.map(x => x | 0))].filter(i => i >= 0 && i < S.lingwu.length).sort((a, b) => b - a); for (const i of _idx) { if (extras.length + extrasLw.length >= 3) break; const w = S.lingwu.splice(i, 1)[0]; if (w) extrasLw.push({ g: w.g | 0, y: w.y | 0, e: w.e }); } }
+  const extraN = extras.length + extrasLw.length;
   const _alcXp = () => { let u = 0; while (S.alc.xp >= alcNeed(S.alc.lv)) { S.alc.xp -= alcNeed(S.alc.lv); S.alc.lv++; u++; } return u; };
-  if (extras.length) {
-    const combo = mutComboFor(attr, extras);
+  if (extraN) {
+    const combo = extrasLw.length ? null : mutComboFor(attr, extras);
     if (combo) {
       takeEgg(S, 1); payLife(S); S.stats.brew++; S.stats.brewOk++; hungerDown(S, K.HUNGER_ACT, 1);
       S.inv['mut_' + combo] = (S.inv['mut_' + combo] || 0) + 1;
       if (MUT_PILLS[combo].jue) announce(S, '📢 全服通告：有道友炼丹时炉火冲霄，成此绝世变异【' + MUT_PILLS[combo].name + '】！');
       S.alc.xp += K.ALC_XP_OK;
-      return { ok: true, mut: combo, rate: 1, attr, potions: [], xp: K.ALC_XP_OK, lvUp: _alcXp(), lu: null, sp: null, extras };
+      return { ok: true, mut: combo, rate: 1, attr, potions: [], xp: K.ALC_XP_OK, lvUp: _alcXp(), lu: null, sp: null, extras, extrasLw };
     }
-    if (R() < [0, 0.15, 0.30, 0.50][extras.length]) {
+    if (R() < [0, 0.15, 0.30, 0.50][extraN]) {
       payLife(S); S.stats.brew++; hungerDown(S, K.HUNGER_ACT, 1);
       S.alc.xp += K.ALC_XP_FAIL;
-      return { ok: false, bomb: true, rate: 0, attr, potions: [], xp: K.ALC_XP_FAIL, lvUp: _alcXp(), lu: null, sp: null, extras };
+      return { ok: false, bomb: true, rate: 0, attr, potions: [], xp: K.ALC_XP_FAIL, lvUp: _alcXp(), lu: null, sp: null, extras, extrasLw };
     }
   }
   takeEgg(S, 1);
@@ -2435,13 +2438,15 @@ function brew(S, attr, opt) {
   opt = opt || {};
   const lu = (opt.lu && LU[opt.lu] && useMat(S, opt.lu)) ? opt.lu : null; // 可选投入 1 瓶凝露
   let sp = null; if (opt.spirit && ORES[opt.spirit] && ORES[opt.spirit].alc && (S.ores[opt.spirit] || 0) > 0) { sp = opt.spirit; S.ores[sp]--; if (!S.ores[sp]) delete S.ores[sp]; } // 可选投入 1 块灵石
-  const rate = alcRate(S, lu, sp), ok = R() < rate, potions = [];
-  const duilu = extras.length > 0 && extras.every(e => e === 'h_' + attr); // v998 对路
+  const rate = alcRate(S, lu, sp), ok = R() < rate, potions = []; let lwCrit = 0;
+  const duilu = extrasLw.length === 0 && extras.length > 0 && extras.every(e => e === 'h_' + attr); // v998 对路
   if (ok) {
     S.stats.brewOk++;
     const cnt = 1 + Math.floor(R() * 10); // 1-10枚随机
+    for (const w of extrasLw) if (R() < lwCritP(w.y)) lwCrit++; // v1281 灵物年份暴击：每株按年份位数×5%（封顶40%）判定，命中成丹 +1
+    const totalCnt = cnt + lwCrit;
     const gp = gradeProbs(S, lu, sp);
-    for (let i = 0; i < cnt; i++) {
+    for (let i = 0; i < totalCnt; i++) {
       const y = R(); let g = y < gp.q5 ? 5 : y < gp.q5 + gp.q4 ? 4 : y < gp.q5 + gp.q4 + gp.q3 ? 3 : y < gp.q5 + gp.q4 + gp.q3 + gp.q2 ? 2 : 1; if (duilu && i === 0 && g < 5) g += 1; // v998 对路首丹+1品
       potions.push(g); const key = attr + '_' + g; S.inv[key] = (S.inv[key] || 0) + 1;
       if (g >= 5) announce(S, `📢 全服通告：恭喜道友炼出【<span class="q3">完美${AN[attr]}丹</span>】！`);
@@ -2451,7 +2456,7 @@ function brew(S, attr, opt) {
   }
   const xp = ok ? K.ALC_XP_OK : K.ALC_XP_FAIL; S.alc.xp += xp;
   let lvUp = 0; while (S.alc.xp >= alcNeed(S.alc.lv)) { S.alc.xp -= alcNeed(S.alc.lv); S.alc.lv++; lvUp++; }
-  return { ok, rate, attr, potions, xp, lvUp, lu, sp, extras, duilu };
+  return { ok, rate, attr, potions, xp, lvUp, lu, sp, extras, extrasLw, lwCrit, duilu };
 }
 function useMat(S, k) { if ((S.mats[k] || 0) <= 0) return false; S.mats[k]--; if (!S.mats[k]) delete S.mats[k]; return true; }
 function useMatN(S, k, n) { if ((S.mats[k] || 0) < n) return false; S.mats[k] -= n; if (!S.mats[k]) delete S.mats[k]; return true; }
@@ -3216,7 +3221,7 @@ const ADV_EVENTS = {
     { l: '另寻他路', f: X => X.say('你绕了很远的路。') }] },
   inn:      { type: 'rest', t: '路边有一家客栈', ch: [
     { l: '住店歇息', cost: 0.2, f: X => { const l = X.heal(0.4, '一夜好眠'); X.cure('depress'); return l; } },
-    { l: '点一桌好菜', cost: 0.3, f: X => { X.S.hunger = X.S.hunger > 100 ? X.S.hunger : Math.min(100, X.S.hunger + 40); return X.buff(pick(['str', 'agi', 'def']), '酒足饭饱，浑身是劲'); } },
+    { l: '点一桌好菜', cost: 0.3, f: X => { X.S.hunger = X.S.hunger < 100 ? Math.min(100, X.S.hunger + 40) : X.S.hunger; return X.buff(pick(['str', 'agi', 'def']), '酒足饭饱，浑身是劲'); } },
     { l: '打听消息', f: X => X.xp(0.15, '你从食客口中听到不少江湖传闻') }] },
   hot_spring:{ type: 'rest', t: '前方有一处温泉', ch: [
     { l: '泡个澡', f: X => { const l = X.heal(0.35, '温泉洗去一身疲惫'); return X.cure('bleed') ? l + '；流血止住' : l; } },
