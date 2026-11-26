@@ -3182,14 +3182,14 @@ function medSection() {
   return `<h3>疗伤药</h3>` + (ks.length ? ks.map(k => { const m = C.MEDS[k], need = k === 'stealthfu' ? true : (m.cure === 'curse' ? (S.curseN|0) > 0 : C.hasSt(S, m.cure)); return `<div class="row"><div class="lab">💊 ${m.name} ×${S.meds[k]}<small>${m.desc}${k === 'stealthfu' && Number(S.stealthUntil || 0) > Date.now() ? ` · <span class="g">🥷 隐身中（剩 ${Math.ceil((Number(S.stealthUntil) - Date.now()) / 60000)} 分钟）</span>` : ''}</small></div><button class="btn ${need ? 'gold' : ''}" data-med="${k}" ${need ? '' : 'disabled'}>${need ? '使用' : '无需'}</button></div>`; }).join('') : '<div class="empty">暂无，可在商店购买</div>');
 }
 const ZQ_DEFS = [ // v1128 阵棋：小/中/大三档，合成采集阵（个数 64/128/256）
-  { g: 1, name: '小型阵棋', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['prey', 'rabbit', 10], ['prey', 'deer', 5]], synth: 64, fkey: 'f_gather', fname: '小型采集阵' },
-  { g: 2, name: '中型阵棋', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['prey', 'deer', 10], ['prey', 'wolf', 5]], synth: 128, fkey: 'f_gather2', fname: '中型采集阵' },
-  { g: 3, name: '大型阵棋', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['prey', 'wolf', 10], ['prey', 'tiger', 5]], synth: 256, fkey: 'f_gather3', fname: '大型采集阵' },
+  { g: 1, name: '小型采集阵旗', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['prey', 'rabbit', 10], ['prey', 'deer', 5]], synth: 64, fkey: 'f_gather', fname: '小型采集阵' },
+  { g: 2, name: '中型采集阵旗', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['prey', 'deer', 10], ['prey', 'wolf', 5]], synth: 128, fkey: 'f_gather2', fname: '中型采集阵' },
+  { g: 3, name: '大型采集阵旗', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['prey', 'wolf', 10], ['prey', 'tiger', 5]], synth: 256, fkey: 'f_gather3', fname: '大型采集阵' },
 ];
 const FLAG_DEFS = [ // v1226 阵旗：小/中/大三档，合成防御阵（个数 64/128/256）
-  { g: 1, name: '小型阵旗', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['mats', 'h_def', 10]], synth: 64, fkey: 'f_def', fname: '小型防御阵' },
-  { g: 2, name: '中型阵旗', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['mats', 'h_def', 20]], synth: 128, fkey: 'f_def2', fname: '中型防御阵' },
-  { g: 3, name: '大型阵旗', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['mats', 'h_def', 30]], synth: 256, fkey: 'f_def3', fname: '大型防御阵' },
+  { g: 1, name: '小型防御阵旗', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['mats', 'h_def', 10]], synth: 64, fkey: 'f_def', fname: '小型防御阵' },
+  { g: 2, name: '中型防御阵旗', need: [['ores', 'copper', 10], ['ores', 'silver', 5], ['mats', 'h_def', 20]], synth: 128, fkey: 'f_def2', fname: '中型防御阵' },
+  { g: 3, name: '大型防御阵旗', need: [['ores', 'silver', 10], ['ores', 'gold', 5], ['mats', 'h_def', 30]], synth: 256, fkey: 'f_def3', fname: '大型防御阵' },
 ];
 const VEIL_DEFS = [ // v1226 遮天旗：小/中/大三档，合成遮天阵（个数 64/128/256）
   { g: 1, name: '小型遮天旗', need: [['ores', 'iron', 10], ['ores', 'copper', 5], ['pages', 'pg1', 10]], synth: 64, fkey: 'f_veil', fname: '小型遮天阵' },
@@ -3202,9 +3202,9 @@ function sheetFormationTalisman() { // v790 制阵室·画符台：阵法/符箓
     const r = fRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'mats' ? ((typeof MATS !== 'undefined' && MATS[ik]||{}).name||ik) : ik; return `${_nm}×${n}`; }).join(' + ');
     return `<div class="row"><div class="lab">🧭 <b class="y">${r.name}</b><small>${r.desc}<br>材料：${need} · 拥有阵法 ${S.formations && S.formations[k] || 0}</small></div><button class="btn gold" onclick="doCraftFormation('${k}')">制作</button></div>`;
   }).join('');
-  const zqHtml = `<h3>♟️ 阵棋（合成采集阵）</h3>` + ZQ_DEFS.map(z => { const own = (S.zhenqi && S.zhenqi[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${st === 'prey' ? PREY[ik].name : ORES[ik].name}×${n}`).join(' + '); return `<div class="row"><div class="lab">♟️ <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 阵档决定可收资源等级，阵不收矿石</small></div><button class="btn" onclick="window.craftZhenqi(${z.g})">做阵棋</button><button class="btn gold" onclick="window.synthZhenqi(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
+  const zqHtml = `<h3>🚩 采集阵旗（合成采集阵）</h3>` + ZQ_DEFS.map(z => { const own = (S.zhenqi && S.zhenqi[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${st === 'prey' ? PREY[ik].name : ORES[ik].name}×${n}`).join(' + '); return `<div class="row"><div class="lab">♟️ <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 阵档决定可收资源等级，阵不收矿石</small></div><button class="btn" onclick="window.craftZhenqi(${z.g})">做采集阵旗</button><button class="btn gold" onclick="window.synthZhenqi(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
   const flagNeedName = (st, ik) => st === 'ores' ? ORES[ik].name : st === 'mats' ? ((typeof MATS !== 'undefined' && MATS[ik] || {}).name || ik) : st === 'pages' ? PAGES[ik].name : ik; // v1226 旗材料名
-  const flagHtml = `<h3>🚩 阵旗（合成防御阵）</h3>` + FLAG_DEFS.map(z => { const own = (S.flagDef && S.flagDef[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🚩 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 防御阵战力固定，须先破它才能拆同格其他阵</small></div><button class="btn" onclick="window.craftFlag(${z.g})">做阵旗</button><button class="btn gold" onclick="window.synthFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
+  const flagHtml = `<h3>🚩 防御阵旗（合成防御阵）</h3>` + FLAG_DEFS.map(z => { const own = (S.flagDef && S.flagDef[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🚩 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 防御阵战力固定，须先破它才能拆同格其他阵</small></div><button class="btn" onclick="window.craftFlag(${z.g})">做防御阵旗</button><button class="btn gold" onclick="window.synthFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
   const veilHtml = `<h3>🎏 遮天旗（合成遮天阵）</h3>` + VEIL_DEFS.map(z => { const own = (S.flagVeil && S.flagVeil[z.g]) | 0, fown = (S.formations && S.formations[z.fkey]) | 0; const need = z.need.map(([st, ik, n]) => `${flagNeedName(st, ik)}×${n}`).join(' + '); return `<div class="row"><div class="lab">🎏 <b style="color:${C.GRADE_COLORS[z.g - 1]}">${z.name}</b> ×${own}<small>材料：${need}<br>${z.synth} 个合成 1 个${z.fname}（拥有阵 ${fown}）· 遮天阵遮掩同格你名下的阵，神识看不破就看不见</small></div><button class="btn" onclick="window.craftVeilFlag(${z.g})">做遮天旗</button><button class="btn gold" onclick="window.synthVeilFlag(${z.g})" ${own >= z.synth ? '' : 'disabled'}>合成阵</button></div>`; }).join('');
   const tHtml = Object.keys(tRecipes).map(k => {
     const r = tRecipes[k], need = r.need.map(([st, ik, n]) => { const _nm = st === 'prey' ? PREY[ik].name : st === 'ores' ? ORES[ik].name : st === 'pages' ? PAGES[ik].name : ik; return `${_nm}×${n}`; }).join(' + ');
@@ -3227,7 +3227,7 @@ window.craftZhenqi = function (g) { // v1128 做阵棋：材料直扣（无失�
 window.synthZhenqi = function (g) { // v1128 阵棋合成采集阵
   try {
     const z = ZQ_DEFS.find(v => v.g === g); if (!z) return;
-    if (!S.zhenqi || (S.zhenqi[g] | 0) < z.synth) { showTip(`阵棋不足（需 ${z.synth}）`); return; }
+    if (!S.zhenqi || (S.zhenqi[g] | 0) < z.synth) { showTip(`采集阵旗不足（需 ${z.synth}）`); return; }
     S.zhenqi[g] -= z.synth;
     S.formations = S.formations || {};
     S.formations[z.fkey] = (S.formations[z.fkey] | 0) + 1;
@@ -3251,7 +3251,7 @@ window.craftFlag = function (g) { // v1226 做阵旗：材料直扣（无失败�
 window.synthFlag = function (g) { // v1226 阵旗合成防御阵
   try {
     const z = FLAG_DEFS.find(v => v.g === g); if (!z) return;
-    if (!S.flagDef || (S.flagDef[g] | 0) < z.synth) { showTip(`阵旗不足（需 ${z.synth}）`); return; }
+    if (!S.flagDef || (S.flagDef[g] | 0) < z.synth) { showTip(`防御阵旗不足（需 ${z.synth}）`); return; }
     S.flagDef[g] -= z.synth;
     S.formations = S.formations || {};
     S.formations[z.fkey] = (S.formations[z.fkey] | 0) + 1;

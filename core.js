@@ -4040,7 +4040,7 @@ window.advPlaceArrayTier = async function(tier) {
       log('good', `🧭 采集阵已布于(${gx},${gy})，加灵石后自动采集这格刷新的资源`);
     } else {
       const _e = (j || {}).error;
-      advTip(_e === 'no_formation' ? '没有采集阵（阵法台用阵棋合成）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' || _e === 'not_resource_tile' ? '只能布在资源格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
+      advTip(_e === 'no_formation' ? '没有采集阵（阵法台用采集阵旗合成）' : _e === 'array_limit' ? '采集阵已布满（不超过持有数）' : _e === 'already_in_map' ? '这张图已布过一阵' : _e === 'not_empty_tile' || _e === 'not_resource_tile' ? '只能布在资源格上' : _e === 'tile_taken' ? '这格已有采集阵' : '布阵失败');
     }
   } catch (e) {}
   await advSharedRefresh();
@@ -4109,7 +4109,7 @@ window.advArrayFuel = async function() {
 };
 window.advArrayTake = async function(remove) {
   try {
-    if (remove && !confirm('确定收回这张图的采集阵？阵棋、库存与剩余燃料全部收回。')) return;
+    if (remove && !confirm('确定收回这张图的采集阵？采集阵旗、库存与剩余燃料全部收回。')) return;
     const dk = (S.run.shared && S.run.shared.dk) || S.run.dk;
     const resp = await MHXY.api(remove ? '/api/array2/remove' : '/api/array2/collect', { method: 'POST', body: { dk } });
     const j = resp && resp.json;
@@ -4123,7 +4123,7 @@ window.advArrayTake = async function(remove) {
       }
       if (got.length) advTip(`📦 从采集阵收取：${got.join('、')}`);
       else advTip('阵内空空如也');
-      if (remove) advTip(`📥 采集阵已收回，库存已收取${j.refund ? `，退阵棋×${j.refund.zhenqi}${(j.refund.fuel | 0) > 0 ? `、退${lootLabel('ores', j.refund.fuelKey)}×${j.refund.fuel}` : ''}` : ''}`);
+      if (remove) advTip(`📥 采集阵已收回，库存已收取${j.refund ? `，退采集阵旗×${j.refund.zhenqi}${(j.refund.fuel | 0) > 0 ? `、退${lootLabel('ores', j.refund.fuelKey)}×${j.refund.fuel}` : ''}` : ''}`);
       commit();
     } else {
       advTip((j || {}).error === 'no_array' ? '这张图上没有你的采集阵' : '收取失败');
@@ -4183,7 +4183,7 @@ window.advPlaceDefArrayTier = async function(kind, tier) {
       log('good', `${kind === 'def' ? '🛡️' : '🌫️'} ${nm}已布于(${gx},${gy})，加灵石后生效`);
     } else {
       const _e = (j || {}).error;
-      advTip(_e === 'no_formation' ? `没有${nm}（阵法台用${kind === 'def' ? '阵旗' : '遮天旗'}合成）` : _e === 'array_limit' ? `${nm}已布满（不超过持有数）` : _e === 'already_in_map' ? '这张图已布过此阵' : _e === 'not_resource_tile' ? '只能布在资源格上' : '布阵失败');
+      advTip(_e === 'no_formation' ? `没有${nm}（阵法台用${kind === 'def' ? '防御阵旗' : '遮天旗'}合成）` : _e === 'array_limit' ? `${nm}已布满（不超过持有数）` : _e === 'already_in_map' ? '这张图已布过此阵' : _e === 'not_resource_tile' ? '只能布在资源格上' : '布阵失败');
     }
   } catch (e) {}
   await advSharedRefresh();
@@ -4254,7 +4254,7 @@ window.advDefArrayTake = async function(kind) {
       if ((rf.fuel | 0) > 0) { S.ores = S.ores || {}; S.ores[rf.fuelKey] = (S.ores[rf.fuelKey] | 0) + (rf.fuel | 0); }
       if ((rf.pets || []).length) { const _have = new Set((S.pets || []).map(p => p && p.id)); for (const _p of rf.pets) { if (_p && _p.id != null && !_have.has(_p.id)) { S.pets.push(_p); _have.add(_p.id); if ((_p.id | 0) > (S.petSeq | 0)) S.petSeq = _p.id | 0; } } }
       if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-      advTip(`💥 ${nm}已拆除，退${kind === 'def' ? '阵旗' : '遮天旗'}×${rf.flags | 0}${(rf.fuel | 0) > 0 ? `、退${lootLabel('ores', rf.fuelKey)}×${rf.fuel}` : ''}${(rf.pets || []).length ? `、灵宠 ${(rf.pets || []).length} 只归还` : ''}`);
+      advTip(`💥 ${nm}已拆除，退${kind === 'def' ? '防御阵旗' : '遮天旗'}×${rf.flags | 0}${(rf.fuel | 0) > 0 ? `、退${lootLabel('ores', rf.fuelKey)}×${rf.fuel}` : ''}${(rf.pets || []).length ? `、灵宠 ${(rf.pets || []).length} 只归还` : ''}`);
       commit();
     } else {
       advTip((j || {}).error === 'no_array' ? '这张图上没有你的阵' : '拆除失败');
@@ -4369,7 +4369,7 @@ window.advBreakResult = function(j, kind, ownerName) {
     const lines = (j.log || []).map(l => esc(typeof l === 'string' ? l : (l && l.text) || '')).join('<br>');
     let sum = '';
     if (j.won && j.broken) {
-      if (j.loot && j.loot.flags) sum = `缴获${j.loot.kind === 'def' ? '阵旗' : '遮天旗'}×${j.loot.flags}。`;
+      if (j.loot && j.loot.flags) sum = `缴获${j.loot.kind === 'def' ? '防御阵旗' : '遮天旗'}×${j.loot.flags}。`;
       else if (j.loot && j.loot.gains) { const _g = []; for (const gg of j.loot.gains) _g.push(`${lootLabel(gg.st, gg.k)}×${gg.n}`); sum = `缴获库存：${_g.length ? _g.join('、') : '空空如也'}（余下已损毁）。`; }
       else sum = '阵已化为乌有。';
     } else if (j.won && !j.broken) sum = '阵已被他人先破（或已不在），此战未得战利品。';
