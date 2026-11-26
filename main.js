@@ -9376,7 +9376,7 @@ try {
             const _nq = (typeof C !== 'undefined' && C.pickTribQuiz) ? C.pickTribQuiz(S._pendingFromRealm | 0) : null;
             if (_nq) {
               _nq.jackpot = _pq.jackpot || null; _nq.koWin = !!_pq.koWin; _nq.fromRealm = S._pendingFromRealm | 0;
-              _nq.cloudGrade = _pq.cloudGrade || null; _nq.cloudJi = !!_pq.cloudJi;
+              _nq.cloudGrade = _pq.cloudGrade || null; _nq.cloudJi = _pq.cloudJi == null ? null : !!_pq.cloudJi;
               S._pendingTrib.quiz = _nq;
               if (typeof sheetTribQuiz === 'function') sheetTribQuiz(_nq);
               else if (typeof window.sheetTribQuiz === 'function') window.sheetTribQuiz(_nq);

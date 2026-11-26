@@ -1100,7 +1100,7 @@ function finishThunderBattle() {
       trib.quiz = pickTribQuiz(fromRealm);
       trib.quiz.jackpot = trib.jackpot || null;
       trib.quiz.koWin = koWin; // v739 击溃雷云标记，用于答题后战斗概率加成
-      trib.quiz.cloudGrade = trib.cloudGrade || null; trib.quiz.cloudJi = !!trib.cloudJi; // v1233 渡劫品级雷云定：问心传导锁定值
+      trib.quiz.cloudGrade = trib.cloudGrade || null; trib.quiz.cloudJi = trib.cloudJi == null ? null : !!trib.cloudJi; // v1233 渡劫品级雷云定：问心传导锁定值
       commit(); render();
       sheetTribQuiz(trib.quiz);
       return;
@@ -1337,7 +1337,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
   let _btm = BT_MULT[Math.min(12, fromRealm | 0)] || 1, gradeName = null;
   if (fromRealm >= 2) { // v175 筑基→金丹结金丹、金丹→元婴结元婴：品质替代原突破倍率；v284 元婴以上也有品质（v176：天劫异变按异变档位；v180：压条 1000% 为极）
     let g = trib && trib.jackpot ? gradeFromFull(trib.jackpot.full) : (trib && trib.cloudGrade ? trib.cloudGrade : tribGrade(S)); // v1233 渡劫品级雷云定：品级就是雷云出现时的档（异变档仍走 jackpot.full；无锁定值时回落旧算法）
-    const isJi = !(trib && trib.jackpot) && (trib && trib.cloudJi != null ? trib.cloudJi : (trib && trib.cloudGrade && (trib.cloudGrade.full | 0) >= 29 ? true : tribFull(S) >= 29)); // v1233 渡劫品级雷云定：极限与否也在雷云出现时锁定；v1172 2900% 为圆满极限；v1266 cloudJi 缺失时按锁定的 cloudGrade.full≥29 补，不静默降档
+    const isJi = !(trib && trib.jackpot) && ((trib && trib.cloudJi === true) || (trib && trib.cloudGrade && trib.cloudGrade.full >= 28.995) || (trib && trib.cloudJi == null && tribFull(S) >= 28.995)); // v1233 渡劫品级雷云定：极限与否也在雷云出现时锁定；v1172 2900% 为圆满极限；v1266 cloudJi 缺失时按锁定的 cloudGrade.full≥29 补，不静默降档
     // v1233 渡劫品级雷云定：三条件加品（v750）取消——品级雷云一出来就定死，心魔只是阻碍（过/不过），问心/心魔/击溃都不再影响品级
     _btm = isJi ? K.TRIB_GRADE_JI_MULT : g.mult;
     gradeName = g.name + REALMS[fromRealm + 1] + (isJi ? '极限' : ''); // v1172 Ye 定名：圆满极限
@@ -1358,7 +1358,7 @@ function applyBtSuccess(S, fromRealm, trib) { // v174 突破成功进境（供 b
 function finishTribQuiz(S, quiz, answers) { // v174 心魔问心结算：答对 TRIB_QUIZ_NEED 道即过；v739 答题后50%遇心魔战斗；v746 补thunder.koWin；v1260 跳过按通过、坏题防崩
   const qs = (quiz && quiz.qs) || []; let correct = 0; const detail = qs.map((qq, i) => { const hit = (answers[i] | 0) === ((qq && qq.ans) | 0); if (hit) correct++; return hit; });
   if (quiz && quiz._skipped) correct = Math.max(correct, K.TRIB_QUIZ_NEED); // v1260 题库异常跳过，按通过处理
-  const trib = { quizMet: true, quizCorrect: correct, quizDetail: detail, jackpot: (quiz && quiz.jackpot) || null, thunder: { koWin: !!(quiz && quiz.koWin) }, cloudGrade: (quiz && quiz.cloudGrade) || null, cloudJi: !!(quiz && quiz.cloudJi) }; // v1233 渡劫品级雷云定：问心后新 trib 接力锁定值
+  const trib = { quizMet: true, quizCorrect: correct, quizDetail: detail, jackpot: (quiz && quiz.jackpot) || null, thunder: { koWin: !!(quiz && quiz.koWin) }, cloudGrade: (quiz && quiz.cloudGrade) || null, cloudJi: quiz && quiz.cloudJi != null ? !!quiz.cloudJi : null }; // v1233 渡劫品级雷云定：问心后新 trib 接力锁定值
   if (correct < K.TRIB_QUIZ_NEED) { const _fr = (S.realm|0); const _ds = applyFailState(S, _fr); const lifeLost = Math.max(1, Math.floor((S.lifespan|0) * (S.race === 'ming' ? 0.05 : 0.10))); S.lifespan = Math.max(1, (S.lifespan|0) - lifeLost); return { ok: false, back: 0, tribFail: 'demon-quiz', trib, lifeLost, degraded: _ds }; } // v589 失败进降级状态；v1088 冥族阴体：渡劫失败折寿减半
   const _demonP = quiz.koWin ? 0.7 : 0.5; // v739 答题后遇心魔战斗：击溃雷云70%，否则50%
   if (Math.random() < _demonP) { trib.demonAfterQuiz = true; return { ok: null, pending: 'demon', trib, fromRealm: quiz.fromRealm | 0 }; }
@@ -1371,7 +1371,7 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
   if ((S.realm|0) === 7) { S.sanShi = S.sanShi || [0,0,0]; if (S.sanShi.filter(x=>x).length < 3) return { err: 'sanshi' }; } // v818 合体突破需先斩三尸；v1246 合体改7
   const _hpForBt = S.hpCur != null ? (S.hpCur|0) : 1; if ((_hpForBt + (S.advVit|0) * 5) <= 0) return { err: 'nohp' }; // 0血无法突破（黄条也算；hpCur=null为满血）
   if ((S.realm|0) >= 1) { const _mmBt = manaMax(S); if (_mmBt > 0 && (Math.floor(S.mana || 0)) < _mmBt) return { err: 'nomana' }; } // v177 法力未满 100/100 不能突破（凡人用经验，不限）
-  if (S.thunderOk && (S.realm|0) >= 2) { const fromRealm = S.realm; let trib = {}; trib.cloudGrade = tribGrade(S); trib.cloudJi = tribFull(S) >= 29; return { ok: null, pending: 'thunder', trib, fromRealm, thunderPw: null }; } // v681 thunderOk直接进战斗；v1233 渡劫品级雷云定：雷云出现时锁定品级与极限
+  if (S.thunderOk && (S.realm|0) >= 2) { const fromRealm = S.realm; let trib = {}; trib.cloudGrade = tribGrade(S); trib.cloudJi = trib.cloudGrade.full >= 28.995; return { ok: null, pending: 'thunder', trib, fromRealm, thunderPw: null }; } // v681 thunderOk直接进战斗；v1233 渡劫品级雷云定：雷云出现时锁定品级与极限
   if (R() < breakthroughRate(S)) { const fromRealm = S.realm;
     let trib = null;
     if ((fromRealm|0) >= 2) { // v172 筑基→金丹起：判定成功后先渡雷劫，雷劫后概率遇心魔劫
@@ -1386,7 +1386,7 @@ function breakthrough(S) { // 突破：成功进下境1级，全属性×突破�
           trib.jackpot = { full: _jt, pw: 1 + _jt / 9 * (K.TRIB_POWER_MAX - 1) };
         }
       }
-      trib.cloudGrade = tribGrade(S); trib.cloudJi = tribFull(S) >= 29; // v1233 渡劫品级雷云定：雷云出现时锁定品级与极限（异变档仍走 jackpot.full）
+      trib.cloudGrade = tribGrade(S); trib.cloudJi = trib.cloudGrade.full >= 28.995; // v1233 渡劫品级雷云定：雷云出现时锁定品级与极限（异变档仍走 jackpot.full）
       return { ok: null, pending: 'thunder', trib, fromRealm, thunderPw: trib.jackpot ? trib.jackpot.pw : null }; // v654 雷劫改手动战斗
     }
     S.thunderOk = false; return applyBtSuccess(S, fromRealm, trib); }
@@ -4658,7 +4658,7 @@ function pkSettle(S, pk, chosen) {
             _quiz.koWin = koWin;
             _quiz.fromRealm = fromRealm;
             // v1244 雷云锁：品级与极限按遇雷云时判定，不以心魔后灵力算（pkSettle 漏传致 2900% 得圆满，与 finishThunderBattle 同款传导）
-            _quiz.cloudGrade = _trib.cloudGrade || null; _quiz.cloudJi = !!_trib.cloudJi;
+            _quiz.cloudGrade = _trib.cloudGrade || null; _quiz.cloudJi = _trib.cloudJi == null ? null : !!_trib.cloudJi;
             _trib.quiz = _quiz;
             // 保存trib供后续使用
             try { S._pendingTrib = _trib; S._pendingFromRealm = fromRealm; } catch(_){}
@@ -5116,7 +5116,7 @@ C.thunderCloud = function(S) { // v687 6档黑云
   try {
     const _f = (typeof tribFull === 'function' ? tribFull(S) : 0) || 0;
     const _b = (e) => '<span style="filter:brightness(0)">' + e + '</span>';
-    if (_f >= 29) return _b('🫯'); // v1172 圆满极限（门槛随新压条阶梯）
+    if (_f >= 28.995) return _b('🫯'); // v1172 圆满极限（门槛随新压条阶梯）
     if (_f >= 24) return _b('⛈️'); // 圆满
     if (_f >= 17) return _b('🌩️'); // 完美
     if (_f >= 11) return _b('🌫️'); // 上品
