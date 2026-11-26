@@ -304,7 +304,6 @@ const REFINES = { // 炼金配方：主料 + 1 张普通残页（配方/丹方�
   r_gold2: { name: '铜化金',   lv: 2, need: [['ores', 'copper', 10], ['pages', 'pg1', 1]], out: ['ores', 'gold'] }, // v1263 铜矿 3→10（残页不变）
   r_jingye: { name: '极品灵液', lv: 1, need: [['ores', 'sp5', 10], ['pages', 'pg1', 10], ['mats', 'h_str', 100], ['mats', 'h_vit', 100], ['mats', 'h_agi', 100], ['mats', 'h_int', 100], ['mats', 'h_def', 100]], out: ['mats', 'jingye'] }, // v1267 极品灵液：极品灵石×10+残页×10+五属性草各×100
   p_hp: { name: '生命药水', lv: 1, need: [['mats', 'h_vit', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'hp' }, // 品质决定回复量
-  p_mp: { name: '法力药水', lv: 1, need: [['mats', 'h_int', 1], ['mats', 'dw1', 1], ['pages', 'pg1', 1]], pot: 'mp' },
   // v1224 提炼：100 基础矿 → 1 精炼矿，必成，不用残页；走独立 smelt 分支（不进通用 craft 成功率/双倍逻辑）
   smelt_iron: { name: '提炼玄铁', lv: 1, need: [['ores', 'iron', 100]], out: ['ores', 'xuatie'], smelt: 'iron' },
   smelt_copper: { name: '提炼赤铜', lv: 1, need: [['ores', 'copper', 100]], out: ['ores', 'chitong'], smelt: 'copper' },
@@ -312,9 +311,9 @@ const REFINES = { // 炼金配方：主料 + 1 张普通残页（配方/丹方�
   smelt_gold: { name: '提炼庚金', lv: 1, need: [['ores', 'gold', 100]], out: ['ores', 'gengjin'], smelt: 'gold' },
   gold_touch: { name: '点金术', lv: 1, need: [['ores', 'gold', 2]], out: ['gold'], smelt: 'gold_touch' } // v1263 点金术：金矿×2 → 金元+100，走提炼 smelt 模式（必成、不用残页、耗 1 活力/仙人以上耗法力、给炼金经验）
 };
-const POTIONS = { hp: { name: '生命药水', icon: '❤️', res: '生命' }, mp: { name: '法力药水', icon: '💧', res: '法力' } };
+const POTIONS = { hp: { name: '生命药水', icon: '❤️', res: '生命' } }; // v1271 法力药水取消，法力靠灵石
 const POT_PCT = [0, 0.30, 0.40, 0.50]; // 普通 / 精良 / 极品：回复 30% / 40% / 50% 上限
-const potKey = (t, q) => t + q, potOf = k => { const m = /^(hp|mp)([1-3])$/.exec(k || ''); return m ? { t: m[1], q: +m[2], pct: POT_PCT[+m[2]], name: POTIONS[m[1]].name } : null; };
+const potKey = (t, q) => t + q, potOf = k => { const m = /^hp([1-3])$/.exec(k || ''); return m ? { t: 'hp', q: +m[1], pct: POT_PCT[+m[1]], name: POTIONS.hp.name } : null; };
 // 阵法配方 v788：阵法台制作，布阵后获得限时增益
 const FORMATIONS = {
   f_gather: { name: '采集阵', lv: 0, need: [['prey', 'wolf', 2], ['ores', 'sp1', 5], ['ores', 'iron', 3]], desc: '小型采集阵（v1128 起改由阵棋合成，此旧配方已停用）。可布于冒险图空格、田药园、养殖园，上品灵石驱动自动采集（1颗=1小时）', buff: 'gather', mult: 1.25, duration: 7200 }, // v908 配方：狼皮+灵气石+铁矿；v913 lv0可做；v1125 冒险图也可布阵
@@ -1626,7 +1625,7 @@ const fmtN = n => { n = Math.floor(+n || 0); return n >= 100000000 ? (n / 100000
 const manaMax = S => (S.realm|0) >= 10 ? Math.max(1, Math.floor(S.xianCap || 0)) : Math.floor((S.attrs.int * 3 + S.attrs.vit * 5 + S.attrs.str * 1 + S.attrs.def * 2 + S.attrs.agi * 4) * (S.manaMult || 1)); // 仙人以上仙力上限固定为转换时值 // 法力基础上限（练气后启用）
 const manaCap = S => manaMax(S) * maiMult(S); // v91：法力可存至上限maiMult倍：基础2 + 虚脉（最多8条）+ 实脉（不封顶）
 const manaCapEff = S => manaCap(S) + Math.max(0, S.shaExcess || 0); // 煞气超额无视上限倍数规则
-function useManaPotion(S, k) { const P = potOf(k); if (!P || P.t !== 'mp') return { err: 'bad' }; if (S.dead) return { err: 'dead' }; if (!(S.elixirs[k] > 0)) return { err: 'none' }; const mx = manaMax(S); if (S.mana >= mx) return { err: 'full' }; const g = Math.min(mx - S.mana, Math.max(1, Math.round(mx * P.pct))); S.mana += g; if (!--S.elixirs[k]) delete S.elixirs[k]; return { ok: true, gain: g, mana: S.mana, max: mx }; }
+function useManaPotion(S, k) { return { err: 'bad' }; } // v1271 法力药水已取消
 const useFali = S => (S.realm|0) >= 1; // 练气起法力取代活力/经验
 const lifeManaCost = S => Math.max(1, Math.ceil(manaMax(S) * 0.01)); // 生活技能耗基础法力上限1%，向上取整，最少1
 const lifeCost = S => S.dead ? 'dead' : (S.realm|0) >= 10 ? '' : useFali(S) ? (S.mana < lifeManaCost(S) ? 'mana' : '') : (S.vigor < K.COST_LIFE ? 'vigor' : ''); // 仙人境免费；10 级前 1 活力，10 级后 2 法力
@@ -2789,7 +2788,7 @@ function execAction(me, foe, act, L) {
     if (me._targetChoice === 'pet') foe = foe.pet; // 玩家指定先打灵宠
     else if (R() < K.PET_TARGET && foe.pets && foe.pets.length) { const _alive = foe.pets.filter(x => x.hp > 0 && !x.ko); if (_alive.length) foe = pick(_alive); } // 否则30%随机落到一只灵宠
   }
-  if (act.startsWith('pot:')) { const t = act.slice(4), k = bestPot(me.elixirs, t), P = potOf(k); if (P && t === 'mp') { if (me.mp >= me.maxMp) { L.push(`${nm(me)}法力已满，收起了药水`); return; } if (!--me.elixirs[k]) delete me.elixirs[k]; const g = Math.min(me.maxMp - me.mp, Math.max(1, Math.round(me.maxMp * P.pct))); me.mp += g; L.push(`${nm(me)}饮下<span class="${['', '', 'q2', 'q3'][P.q]}">${QNAME[P.q]}法力药水</span>💧，回复 <span class="pu">${g}</span> 点法力`); return; } if (P && me.hp >= me.maxHp) { L.push(`${nm(me)}生命已满，收起了药水`); return; } if (P) { if (!--me.elixirs[k]) delete me.elixirs[k];
+  if (act.startsWith('pot:')) { const t = act.slice(4), k = bestPot(me.elixirs, t), P = potOf(k); if (P && me.hp >= me.maxHp) { L.push(`${nm(me)}生命已满，收起了药水`); return; } if (P) { if (!--me.elixirs[k]) delete me.elixirs[k];
       const g = Math.min(me.maxHp - me.hp, Math.max(1, Math.round(me.maxHp * P.pct))); me.hp += g; L.push(`${nm(me)}饮下<span class="${['', '', 'q2', 'q3'][P.q]}">${QNAME[P.q]}生命药水</span>❤️，回复 <span class="g">${g}</span> 点生命`); } return; }
   if (act.startsWith('med:')) { const k = act.slice(4), m = MEDS[k]; if (m && me.isPlayer && (S.meds[k] > 0)) { S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); if (m.cure === 'bleed') me.bleed = false; if (m.cure === 'poison') { me.poison = 0; me.pStacks = 0; me.pDecay = 0; } L.push(`${nm(me)}使用💊<b>${m.name}</b>，${STATUS[m.cure].icon}${STATUS[m.cure].name}<span class="g">已解除</span>`); } else { L.push(`${nm(me)}想使用疗伤药，但没有可用的`); } return; }
   switch (act) {
@@ -3341,7 +3340,7 @@ const ADV_EVENTS = {
     { l: '谢过离开', f: X => X.say('你谢过樵夫，继续上路。') }] }
 };
 // —— 掉落表：游戏中所有物品都可能从冒险中获得（r 稀有度 0~4：越稀有越少，高难度越常见） ——
-const ELIXIR_KEYS = ['hp1', 'hp2', 'hp3', 'mp1', 'mp2', 'mp3'];
+const ELIXIR_KEYS = ['hp1', 'hp2', 'hp3'];
 function lootTable() {
   const L = [], add = (st, k, w, r, n, mj) => L.push({ st, k, w, r, n: n || 1, mj: !!mj });
   ['iron', 'copper', 'silver', 'gold'].forEach((k, i) => add('ores', k, [30, 18, 9, 4][i], i, [3, 2, 2, 1][i]));
