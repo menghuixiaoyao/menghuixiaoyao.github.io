@@ -5456,6 +5456,7 @@ async function doBrew(k, n) {
     else { fail++; lines.push(`💨 丹炉炸裂，炼制失败`); }
     ups += r.lvUp;
   }
+  for (const _ek in alcExtraSel) delete alcExtraSel[_ek]; // v1269 炼完清加料选择，免得下次炼丹自动重复同一搭配
   if (bombN > 0) { S.bc = S.bc || []; S.bc.push('💥 炸炉啦——有道友炼丹时炉盖飞天，丹香三里，焦了一里。'); } // v998 小事件包装：炸炉上世界横幅
   if (!ok && !fail) { if (S.dead) { closeSheet(); afterAct(); commit(); return; } toastLog('sys', '⚠️ ' + stop); sheetAlchemy(stop); return; }
   const usedTxt = LUK.filter(k => used[k]).map(k => `${rarTxt('farm', k)} ×${used[k]}`).concat(SPK.filter(k => used[k]).map(k => `${rarTxt('mine', k)} ×${used[k]}`)).join('、');
