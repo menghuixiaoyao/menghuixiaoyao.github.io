@@ -656,7 +656,7 @@ function claimFlowerSS(S) { // v940 三朵花加一次：每满3朵+300神识
   S.pets = S.pets.filter(p => p && PETS[p.k] && p.attrs);
   S.pets.forEach(p => { ATTRS.forEach(a => p.attrs[a] = Math.max(1, Math.floor(+p.attrs[a] || 1))); p.q = (p.q >= 0 && p.q < PQLT.length) ? Math.floor(p.q) : 0; p.skills = Array.isArray(p.skills) ? p.skills.filter(sk => GEAR_SETS[sk]) : []; p.lv = Math.max(1, Math.floor(+p.lv || 1)); p.xp = Math.max(0, Math.floor(+p.xp || 0)); p.pts = Math.max(0, Math.floor(+p.pts || 0)); p.hunger = typeof p.hunger === 'number' && isFinite(p.hunger) ? clamp(p.hunger, 0, 100) : 100; p.loyal = typeof p.loyal === 'number' && isFinite(p.loyal) ? clamp(Math.round(p.loyal), 0, 100) : K.PET_LOYAL_START; p.life = typeof p.life === 'number' && isFinite(p.life) ? clamp(Math.floor(p.life), 1, K.PET_LIFE_MAX) : K.PET_LIFE_MAX; /* v9 寿命：老宠补满 */ p.talent = !!p.talent; /* v10 天赋神通：老宠默认未领悟 */ if (!p.peq || typeof p.peq !== 'object') p.peq = {}; for (const sl in SLOTS) if (p.peq[sl] && (!okPetGear(p.peq[sl]) || PET_GEAR[p.peq[sl].k].slot !== sl)) delete p.peq[sl]; if (!(p.id > 0)) p.id = ++S.petSeq; S.petSeq = Math.max(S.petSeq, p.id); if (p.sex !== 'm' && p.sex !== 'f') p.sex = R() < 0.5 ? 'm' : 'f'; p.bred = !!p.bred; });
   if (!Array.isArray(S.pet)) S.pet = S.pet != null ? [S.pet] : []; S.pet = S.pet.filter(id => S.pets.some(p => p.id === id)).slice(0, 4); if (!S.pet.length && S.pets.length) S.pet = [S.pets[0].id];
-  S.hunger = typeof S.hunger === 'number' && isFinite(S.hunger) ? clamp(S.hunger, 0, 100) : 100; // v7：饥饿 / 状态 / 疗伤药
+  S.hunger = typeof S.hunger === 'number' && isFinite(S.hunger) ? clamp(S.hunger, 0, 10000) : 100; // v7：饥饿 / 状态 / 疗伤药；v1279 辟谷丸可突破至 10000
   const st0 = S.status && typeof S.status === 'object' ? S.status : {}, nn = x => Math.max(0, +x || 0);
   S.status = { bleed: !!st0.bleed, poison: st0.poison === true || (typeof st0.poison === 'number' && st0.poison > C.now()), depress: nn(st0.depress), bleedBase: nn(st0.bleedBase), poisonBase: nn(st0.poisonBase), bleedFrac: nn(st0.bleedFrac) % 1, poisonFrac: nn(st0.poisonFrac) % 1 };
   if (S.status.bleed && !S.status.bleedBase) S.status.bleedBase = Math.floor(+S.attrs.vit || 1);   // 旧存档：以当前生命为上限
@@ -1223,7 +1223,7 @@ function eatHerb(S, key) { // v1136 Ye 定：属性草每天可吃 5 棵——�
   if ((S.herbEat.n | 0) >= 5) return { err: 'daily' };
   S.mats[key]--; if (S.mats[key] <= 0) delete S.mats[key];
   S.herbEat.n++;
-  S.hunger = Math.min(100, (S.hunger | 0) + 20);
+  S.hunger = (S.hunger | 0) > 100 ? (S.hunger | 0) : Math.min(100, (S.hunger | 0) + 20);
   const attr = LINGGEN_ATTR[e];
   if (!S.attrs) S.attrs = {};
   S.attrs[attr] = (S.attrs[attr] | 0) + 1;
@@ -1922,7 +1922,7 @@ function eatFood(S, kind, k, n, petId) { // 吃肉/蛋：恢复饱食度（肉�
   store[k] -= n; if (!store[k]) delete store[k];
   const res = { n, hunger: it.hunger * n, sta: 0, pet, loyal: 0, cured: false };
   if (pet) { pet.hunger = Math.min(100, pet.hunger + res.hunger); for (let i = 0; i < n; i++) res.loyal += loyalUp(pet, K.FEED_LOYAL_P, 2, 4); if (hasSt(S, 'depress') && R() < K.DEPRESS_PET_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
-  else { S.hunger = Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
+  else { S.hunger = S.hunger > 100 ? S.hunger : Math.min(100, S.hunger + res.hunger); if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
   return res;
 }
 function useMed(S, k) { const m = MEDS[k]; if (!m || !(S.meds[k] > 0)) return { ok: false, why: 'none' }; if (m.cure === 'curse') { if (!((S.curseN|0) > 0)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; S.curseN = (S.curseN|0) - 1; return { ok: true, cure: 'curse' }; } if (!hasSt(S, m.cure)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); return { ok: true, cure: m.cure }; }
@@ -2162,7 +2162,7 @@ function craft(S, skill, key, opt) { // 烹饪 / 锻造 / 炼金：1 活力；�
 function eatDish(S, key, n) { // 吃菜：饱食 + 体力（死亡中不回体力）；精良/极品附带增益（覆盖旧增益）
   const d = dishOf(key); if (!d) return null; n = Math.min(n || 1, S.dishes[key] || 0); if (n <= 0) return null;
   S.dishes[key] -= n; if (!S.dishes[key]) delete S.dishes[key];
-  S.hunger = Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
+  S.hunger = S.hunger > 100 ? S.hunger : Math.min(100, S.hunger + d.hunger * n); const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
   let buff = null; if (d.q >= 2) { buff = d.buff === 'luck' ? { k: 'luck', v: K.BUFF_LUCK[d.q], left: K.BUFF_ACTS, src: d.name } : { k: d.buff, v: K.BUFF_ATTR[d.q], left: K.BUFF_FIGHTS, src: d.name }; S.buff = buff; }
   return { n, hunger: d.hunger * n, sta, buff, d };
 }
@@ -2308,7 +2308,7 @@ function brewAntidote(S) { // v1163 解毒丹自炼（Ye 定：商店 1000 金/�
   return { ok, rate, n, xp, lvUp };
 }
 const DANWAN = { // v1096 炼药阶梯：辟谷丸/气力丸（丸非丹，不积丹毒；成品走 S.dan 透传，如菜肴）
-  bigu: { name: '辟谷丸', icon: '🍘', lv: 3, herb: 'h_vit', desc: '饱食 +20', fx: 'hunger', val: 20 },
+  bigu: { name: '辟谷丸', icon: '🍘', lv: 3, herb: 'h_vit', desc: '饱食 +20，可突破上限至10000', fx: 'hunger', val: 20 },
   qili: { name: '气力丸', icon: '💪', lv: 5, herb: 'h_str', desc: '体力 +3', fx: 'sta', val: 3 },
 };
 function brewDan(S, key) { // v1096 炼丸（本地判定，照抄化无丹）
@@ -2377,7 +2377,7 @@ function useDanwan(S, key, n) { // v1096 服丸
   if (!S.dan) S.dan = {};
   const have = S.dan[key] || 0; n = Math.min(n || 1, have); if (n <= 0) return 0;
   S.dan[key] = have - n; if (!S.dan[key]) delete S.dan[key];
-  if (def.fx === 'hunger') S.hunger = Math.min(100, (S.hunger|0) + def.val * n);
+  if (def.fx === 'hunger') S.hunger = Math.min(10000, (S.hunger|0) + def.val * n);
   else if (def.fx === 'sta') S.stamina = (S.stamina|0) + def.val * n;
   return n;
 }
@@ -3216,7 +3216,7 @@ const ADV_EVENTS = {
     { l: '另寻他路', f: X => X.say('你绕了很远的路。') }] },
   inn:      { type: 'rest', t: '路边有一家客栈', ch: [
     { l: '住店歇息', cost: 0.2, f: X => { const l = X.heal(0.4, '一夜好眠'); X.cure('depress'); return l; } },
-    { l: '点一桌好菜', cost: 0.3, f: X => { X.S.hunger = Math.min(100, X.S.hunger + 40); return X.buff(pick(['str', 'agi', 'def']), '酒足饭饱，浑身是劲'); } },
+    { l: '点一桌好菜', cost: 0.3, f: X => { X.S.hunger = X.S.hunger > 100 ? X.S.hunger : Math.min(100, X.S.hunger + 40); return X.buff(pick(['str', 'agi', 'def']), '酒足饭饱，浑身是劲'); } },
     { l: '打听消息', f: X => X.xp(0.15, '你从食客口中听到不少江湖传闻') }] },
   hot_spring:{ type: 'rest', t: '前方有一处温泉', ch: [
     { l: '泡个澡', f: X => { const l = X.heal(0.35, '温泉洗去一身疲惫'); return X.cure('bleed') ? l + '；流血止住' : l; } },
