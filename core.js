@@ -2413,7 +2413,7 @@ function brew(S, attr, opt) {
   opt = opt || {};
   // v998 加料判定：变异优先；未中搭配按加料数掷炸炉（基础料只损药草、药引未动、加料全损）
   const extras = [];
-  if (Array.isArray(opt.extras)) { for (const ek of opt.extras.slice(0, 3)) { if ((ek.startsWith('h_') || ek.startsWith('dw')) && useMat(S, ek)) extras.push(ek); } }
+  if (Array.isArray(opt.extras)) { for (const ek of opt.extras.slice(0, 3)) { if (ek.startsWith('h_')) { if (useMatN(S, ek, 100)) extras.push(ek); } else if (ek.startsWith('dw') && useMat(S, ek)) extras.push(ek); } }
   const _alcXp = () => { let u = 0; while (S.alc.xp >= alcNeed(S.alc.lv)) { S.alc.xp -= alcNeed(S.alc.lv); S.alc.lv++; u++; } return u; };
   if (extras.length) {
     const combo = mutComboFor(attr, extras);
@@ -2454,6 +2454,7 @@ function brew(S, attr, opt) {
   return { ok, rate, attr, potions, xp, lvUp, lu, sp, extras, duilu };
 }
 function useMat(S, k) { if ((S.mats[k] || 0) <= 0) return false; S.mats[k]--; if (!S.mats[k]) delete S.mats[k]; return true; }
+function useMatN(S, k, n) { if ((S.mats[k] || 0) < n) return false; S.mats[k] -= n; if (!S.mats[k]) delete S.mats[k]; return true; }
 
 /* ---------- 商店 ---------- */
 function buy(S, kind, key, n) {

@@ -47,6 +47,8 @@ const premFrag = k => { const rn = C.repairNameL(k); if (rn) return `，意外�
 const useOpt = { lu: '', spirit: '' };
 const alcExtraSel = {}; // v998 加料选择
 const alcExtrasArr = () => { const a = []; for (const k in alcExtraSel) for (let i = 0; i < alcExtraSel[k]; i++) a.push(k); return a; }; // 炼药时投入哪一品凝露 / 灵石（可选，各 1）
+const alcExtraPortion = ek => ek.startsWith('h_') ? 100 : 1; // v1278 属性草加料 100 颗为一份
+const alcExtraMax = (ek, hv) => Math.floor((hv || 0) / alcExtraPortion(ek));
 const LU = C.LU, SPK = ['sp1', 'sp2', 'sp3', 'sp4', 'sp5'], LUK = ['dw1', 'dw2', 'dw3']; // v1128 凝露三品
 const $ = id => document.getElementById(id);
 var S, pk = null; window.S = S;
@@ -2841,13 +2843,13 @@ function sheetAlchemy(warn) {
   if (lifeLocked('alc')) { openSheet(`<h2>⚗️ 炼药</h2><div class="hint">🔒 未选择<b>炼药</b>技能，无法炼药。</div><div class="row"><button class="btn gold full" data-lcopen>🎯 选择生活技能</button></div><button class="btn full" data-close>关闭</button>`); return; } // v204
   const m = S.mats; if (useOpt.spirit && !(S.ores[useOpt.spirit] > 0)) useOpt.spirit = ''; if (useOpt.lu && !(m[useOpt.lu] > 0)) useOpt.lu = '';
   const gp = C.gradeProbs(S, useOpt.lu, useOpt.spirit);
-  for (const ek in alcExtraSel) { const hv = m[ek] || 0; if (alcExtraSel[ek] > hv) alcExtraSel[ek] = hv; if (alcExtraSel[ek] <= 0) delete alcExtraSel[ek]; } // v998 加料剪除
+  for (const ek in alcExtraSel) { const hv = m[ek] || 0, mx = alcExtraMax(ek, hv); if (alcExtraSel[ek] > mx) alcExtraSel[ek] = mx; if (alcExtraSel[ek] <= 0) delete alcExtraSel[ek]; } // v998 加料剪除；v1278 属性草按 100 颗一份剪除
   const tBtn = (kind, k, have, item) => `<button class="btn ${useOpt[kind] === k ? 'on' : ''}" data-${kind}opt="${k}" ${have > 0 ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${item.name.slice(0, 2)} ×${have || 0}<br><small>+${C.pct(item.alc)}</small></button>`;
   const tRow = (title, kind, keys, store, items) => `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">${title}<small>可选 1 品，每次炼制消耗 1 个，成功率与上品概率同时提升</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${keys.map(k => tBtn(kind, k, store[k], items[k])).join('')}</div>`;
   openSheet(`<h2>炼药 · Lv.${S.alc.lv} <small style="font-size:12px;color:var(--dim)">关联 智力 ${S.attrs.int}（成功率 +${C.pct(C.lifeAttrRate(S, 'alc'))}，上品 +${C.pct(C.lifeAttrQ(S, 'alc'))}）</small></h2>` + (warn ? `<div class="warn">${warn}</div>` : '') +
     `<div class="hint">每次消耗 ${C.useFali(S) ? C.lifeManaCost(S) + ' 法力' : K.COST_LIFE + ' 活力'} + 1 株对应药草 + 1 枚兽蛋（药引，优先低级，当前 <b style="color:#7fd6ff">${eggTotal(S)}</b> 枚）（当前${C.useFali(S) ? `法力 <b style="color:#5fd8e0">${S.mana}/${C.manaMax(S)}</b>` : `活力 <b style="color:#7fd6ff">${S.vigor}</b>`}，药草可种植或在商店购买）。成功率 <b class="y">${C.pct(C.alcRate(S, useOpt.lu, useOpt.spirit))}</b>；成丹 <b class="y">1-10 枚随机</b>；品质 <span class="q3">完美+5</span> ${C.pct(gp.q5)} · <span class="q2">丹纹+4</span> ${C.pct(gp.q4)} · <span class="q3">上品+3</span> ${C.pct(gp.q3)} · <span class="q2">中品+2</span> ${C.pct(gp.q2)} · <span class="q1">下品+1</span> ${C.pct(gp.q1)}</div>` +
     tRow('💧 凝露', 'lu', LUK, m, LU) + tRow('💠 灵石', 'spirit', SPK, S.ores, ORES) +
-    `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">🧪 加料<small>自选 0-3 味投进炉里（点按增减）。搭配对了有惊喜，不对会炸炉——基础料损 1 份、加料全损，结果自负</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${[['h_str', MATS['h_str'].name], ['h_agi', MATS['h_agi'].name], ['h_def', MATS['h_def'].name], ['h_vit', MATS['h_vit'].name], ['h_int', MATS['h_int'].name], ['dw1', '下品凝露'], ['dw2', '中品凝露'], ['dw3', '上品凝露']].map(([ek, nm]) => { const have = m[ek] || 0, sel = alcExtraSel[ek] || 0; return `<button class="btn ${sel ? 'on' : ''}" data-extra="${ek}" ${have > 0 ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${nm} ×${have}<br><small>${sel ? '已投 ' + sel : '未投'}</small></button>`; }).join('')}</div>` +
+    `<div class="row" style="border:none;padding-bottom:2px"><div class="lab">🧪 加料<small>自选 0-3 味投进炉里（点按增减，属性草100颗为一份）。搭配对了有惊喜，不对会炸炉——基础料损 1 份、加料全损，结果自负</small></div></div><div class="grid2" style="grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:6px">${[['h_str', MATS['h_str'].name], ['h_agi', MATS['h_agi'].name], ['h_def', MATS['h_def'].name], ['h_vit', MATS['h_vit'].name], ['h_int', MATS['h_int'].name], ['dw1', '下品凝露'], ['dw2', '中品凝露'], ['dw3', '上品凝露']].map(([ek, nm]) => { const have = m[ek] || 0, sel = alcExtraSel[ek] || 0, por = alcExtraPortion(ek); return `<button class="btn ${sel ? 'on' : ''}" data-extra="${ek}" ${have >= por ? '' : 'disabled'} style="padding:6px 2px;font-size:12px;line-height:1.3">${nm} ×${have}<br><small>${sel ? (por > 1 ? '已投 ' + sel + '份（' + (sel * por) + '）' : '已投 ' + sel) : (por > 1 ? '100颗/份' : '未投')}</small></button>`; }).join('')}</div>` +
     `<div class="hint">🧪 丹毒 <b class="${(S.danDu|0) > 60 ? 'r' : (S.danDu|0) > 20 ? 'y' : 'g'}">${S.danDu|0}</b>/${C.danDuCap(S)}（${C.toxTier(S.danDu|0)}）· 当前丹药药效 <b class="y">${Math.round(C.toxFactor(S) * 100)}%</b> ${S.toxDan ? ` · ☣️毒丹累积池 <b class="y">${S.toxPool|0}</b>` : ''} · 化无丹可清毒（见下方丹方）</div>` +
     ATTRS.map(k => { const h = m['h_' + k] || 0, noEgg = eggTotal(S) < 1; return `<div class="row"><div class="lab">${AN[k]}丹<small>技能 ${xpTrackTxt(pillXpStore(), k)} · ${MATS['h_' + k].name} ×<b class="${h ? 'g' : 'r'}">${h}</b> + 兽蛋 ×<b class="${noEgg ? 'r' : 'g'}">${eggTotal(S)}</b></small></div>
       <button class="btn" data-brew="${k}" data-n="1" ${(C.lifeCost(S) || noEgg) ? 'disabled' : ''}>炼 1 次</button>
@@ -5476,10 +5478,10 @@ async function doBrew(k, n) {
     (stop ? `<br><span class="r">⚠️ ${stop}</span>` : ''));
   afterAct(); commit(); S.dead ? closeSheet() : sheetAlchemy(stop);
 }
-function doAlcExtra(ek) { // v998 加料点按
-  const have = (S.mats || {})[ek] || 0; if (have <= 0) return;
+function doAlcExtra(ek) { // v998 加料点按；v1278 属性草 100 颗为一份
+  const have = (S.mats || {})[ek] || 0; const max = alcExtraMax(ek, have); if (max <= 0) return;
   const cur = alcExtraSel[ek] || 0; const total = alcExtrasArr().length;
-  if (cur >= have) { delete alcExtraSel[ek]; }
+  if (cur >= max) { delete alcExtraSel[ek]; }
   else if (total >= 3) { toastLog('sys', '🧪 加料最多 3 味'); return; }
   else alcExtraSel[ek] = cur + 1;
   sheetAlchemy();
