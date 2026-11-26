@@ -1280,7 +1280,7 @@ async function teamPetRemove(petKey){
 // v1051 组队：队长移动后同步全队位置
 function teamLeaderMoveSync(x, y){
   try {
-    if (!window._myTeam || !window._isTeamLeader) return;
+    // v1293 不再依赖本地队伍缓存：直接发同步，服务端校验队长身份（非队长自动拒绝）
     api('/api/world/team/move', { method:'POST', body:{ x:x, y:y } }).catch(function(){});
   } catch(_){}
 }
@@ -1544,7 +1544,7 @@ setInterval(function(){
   try {
     if (typeof loggedIn !== 'function' || !loggedIn()) return;
     window._teamTick = (window._teamTick || 0) + 1;
-    if (typeof window._myTeam === 'undefined' || window._teamTick % 5 === 0) {
+    if (true) { // v1293 每秒都对一次队伍状态，不再靠缓存自举（缓存没建立时跟随永远不启动）
       api('/api/world/team/state').then(function(r){
         if (!r.ok || !r.json || !r.json.ok) return;
         var had = window._myTeam || null;
