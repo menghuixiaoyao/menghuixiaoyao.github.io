@@ -14,7 +14,7 @@ window.teamPanel = async function(){
   _tryTeam(0);
 };
 // v1191 关键导出提前：teamRefresh/teamInvite/pkChallenge 是函数声明（文件加载即提升），原导出在文件尾，中段运行错误会让导出永远执行不到、组队面板卡死；提前到文件头紧跟 teamPanel，声明一就绪即可用
-try { window.teamRefresh = teamRefresh; window.teamInvite = teamInvite; window.pkChallenge = pkChallenge; } catch (_) {}
+try { window.teamRefresh = teamRefresh; window.teamInvite = teamInvite; window.pkChallenge = pkChallenge; window.teamLeaderMoveSync = teamLeaderMoveSync; } catch (_) {}
 // v1069 神识单按钮（Ye 定整合）：练气点=10秒探查，化神点=探查+开外放面板
 window.shenshiGo = function(){
   try {
@@ -1216,6 +1216,41 @@ async function teamDecline(teamId){
   if (r.ok && r.json && r.json.ok){ teamRefresh(); }
   else glog('bad', '👥 操作失败' + (r.netErr ? '（网络不通）' : '：' + escH(teamErrText(r))));
 }
+// v1288 Ye 定：组队邀请直接弹在主界面上（不再只藏在组队面板里）
+window._teamInviteSeen = window._teamInviteSeen || {};
+function teamInvitePopClose(){ var el = document.getElementById('teamInvitePop'); if (el) el.remove(); }
+window.teamInvitePopAccept = async function(teamId){ teamInvitePopClose(); await teamAccept(teamId); };
+window.teamInvitePopDecline = async function(teamId){ teamInvitePopClose(); await teamDecline(teamId); };
+window.teamInvitePopLater = function(key){ window._teamInviteSeen[key] = 1; teamInvitePopClose(); };
+function teamInvitePopShow(iv){
+  if (document.getElementById('teamInvitePop')) return;
+  var key = iv.teamId + ':' + (iv.invitedAt || '');
+  var d = document.createElement('div');
+  d.id = 'teamInvitePop';
+  d.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  d.innerHTML = '<div style="background:#1d1d2b;border:1px solid #555;border-radius:12px;padding:18px;max-width:340px;width:100%;text-align:center;color:#fff">'
+    + '<div style="font-size:17px;margin-bottom:8px">👥 组队邀请</div>'
+    + '<div style="margin-bottom:14px"><b style="color:#7ec8ff">' + escH(iv.leaderName || '?') + '</b> 邀请你组队（' + (iv.slotsUsed || 0) + '/5）</div>'
+    + '<div style="display:flex;gap:8px"><button class="btn gold" style="flex:1" onclick="window.teamInvitePopAccept(\'' + escH(iv.teamId) + '\')">接受</button>'
+    + '<button class="btn" style="flex:1" onclick="window.teamInvitePopDecline(\'' + escH(iv.teamId) + '\')">拒绝</button>'
+    + '<button class="btn" style="flex:1" onclick="window.teamInvitePopLater(\'' + escH(key) + '\')">稍后</button></div></div>';
+  document.body.appendChild(d);
+}
+window.teamInvitePopShow = teamInvitePopShow;
+setInterval(function(){
+  try {
+    if (typeof loggedIn !== 'function' || !loggedIn()) return;
+    if (document.getElementById('teamInvitePop')) return;
+    api('/api/world/team/invites').then(function(r){
+      if (!r.ok || !r.json || !r.json.ok) return;
+      var invs = r.json.invites || [];
+      for (var i = 0; i < invs.length; i++){
+        var k = invs[i].teamId + ':' + (invs[i].invitedAt || '');
+        if (!window._teamInviteSeen[k]) { teamInvitePopShow(invs[i]); break; }
+      }
+    }).catch(function(){});
+  } catch(_){}
+}, 10000);
 async function teamLeave(){
   var r = await api('/api/world/team/leave', { method:'POST', body:{} });
   if (r.ok && r.json && r.json.ok){ window._myTeam = null; window._isTeamLeader = false; glog('sys', '👥 已离开队伍'); teamRefresh(); }
@@ -1544,6 +1579,7 @@ setInterval(function(){
   } catch(_){}
 }, 3000);
 window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
+window.teamLeaderMoveSync = teamLeaderMoveSync; // v1288 导出：main.js 移动点裸调此名，未导出时队长移动同步静默失效、队员不跟随
 window.teamRefresh = teamRefresh; // v1187 导出：人物卡组队先刷新队伍状态，再决定要不要先建队
 window.pkChallenge = pkChallenge;
 window.pkPanel = pkPanel; // v1249 导出：main.js data-netpk 跨块调在线约战面板
