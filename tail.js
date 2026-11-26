@@ -1558,24 +1558,28 @@ setInterval(function(){
       }).catch(function(){});
     }
     if (!window._myTeam || window._isTeamLeader) return;
-    api('/api/world/state').then(function(r){
-      if (!r.ok || !r.json) return;
-      var ps = r.json.players || [];
-      var me = (typeof myAid === 'function') ? myAid() : '';
-      if (!me) return;
-      for (var i = 0; i < ps.length; i++){
-        if (ps[i] && ps[i].accountId === me){
-          var sx = ps[i].x, sy = ps[i].y;
-          if (sx != null && sy != null && typeof S !== 'undefined' && S && S.worldMap && (S.worldMap.px !== sx || S.worldMap.py !== sy)){
-            S.worldMap.px = sx; S.worldMap.py = sy;
-            if (typeof save === 'function') save();
-            if (typeof renderWorldMap === 'function') renderWorldMap();
-            try { glog('sys', '👥 队长带队移动，你已跟随'); } catch(_){}
-          }
-          break;
-        }
+    // v1294 跟随：先取队伍状态里自己的服务端坐标，服务端旧版没带坐标时回退拉世界状态
+    var _applyFollow = function(sx2, sy2){
+      if (sx2 != null && sy2 != null && typeof S !== 'undefined' && S && S.worldMap && ((S.worldMap.px|0) !== (sx2|0) || (S.worldMap.py|0) !== (sy2|0))){
+        S.worldMap.px = sx2|0; S.worldMap.py = sy2|0;
+        if (typeof save === 'function') save();
+        if (typeof renderWorldMap === 'function') renderWorldMap();
+        try { glog('sys', '👥 队长带队移动，你已跟随'); } catch(_){}
       }
-    }).catch(function(){});
+    };
+    var _ms = (window._myTeam.members || []);
+    var _me2 = (typeof myAid === 'function') ? myAid() : '';
+    var _found = false;
+    for (var j = 0; j < _ms.length; j++){
+      if (_ms[j] && _ms[j].accountId === _me2 && _ms[j].x != null){ _found = true; _applyFollow(_ms[j].x, _ms[j].y); break; }
+    }
+    if (!_found){
+      api('/api/world/state').then(function(r){
+        if (!r.ok || !r.json) return;
+        var ps = r.json.players || [];
+        for (var i = 0; i < ps.length; i++){ if (ps[i] && ps[i].accountId === _me2){ _applyFollow(ps[i].x, ps[i].y); break; } }
+      }).catch(function(){});
+    }
   } catch(_){}
 }, 1000); // v1291 Ye 定秒跟：主城跟随 1 秒一查
 window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
