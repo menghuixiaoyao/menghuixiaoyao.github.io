@@ -330,9 +330,9 @@ const MEATS = { // 肉：品种与猎物对应，食用恢复体力
 const OLD_SKILLS = ['fireball', 'smash', 'heal', 'shield']; // 旧存档默认已会的技能
 // 炼药材料：每次炼药必须消耗 1 株对应属性的药草（basic）；凝露为可选增益（见 LU）
 const MATS = {
-  h_agi: { name: '敏捷草', price: 5, basic: 'agi' }, h_str: { name: '力量草', price: 5, basic: 'str' },
-  h_def: { name: '防御草', price: 5, basic: 'def' }, h_vit: { name: '生命草', price: 5, basic: 'vit' },
-  h_int: { name: '智力草', price: 5, basic: 'int' },
+  h_agi: { name: '敏捷草', price: 20, basic: 'agi' }, h_str: { name: '力量草', price: 20, basic: 'str' },
+  h_def: { name: '防御草', price: 20, basic: 'def' }, h_vit: { name: '生命草', price: 20, basic: 'vit' },
+  h_int: { name: '智力草', price: 20, basic: 'int' },
   lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（元婴以上元神照料才生长）', seed: 1 }, // v887；v890 洞府元婴限定
   qingteng: { name: '青藤', ele: '木' }, lingmu: { name: '灵木', ele: '木' }, yimu: { name: '乙木', ele: '木' }, // v1224 五行木材：不可出售（无 price），主城共享池/野外木掷出
   jingye: { name: '极品灵液', mana: 1000000, capPct: 2000, extra: true, desc: '服用：法力 +1000000（压条上限 2000%）' }, // v1267 炼金极品灵液：不可出售（无 price），服用只加法力/仙力
