@@ -348,6 +348,7 @@ function saveAuth(d){
   ls(LK.name, d.username || ''); ls(LK.pno, String(d.player_no || ''));
   ls(LK.guest, d.guest ? '1' : '0');
   try { ls(LK.last, String(Date.now())); } catch(_){} // v1266 登录即活跃
+  try { sessionIdleStart(); } catch(_){} // v1272 门禁登录后也要启动空闲计时（init 时未登录会跳过）
   M.baseRev = loadBaseRev();
   if (swapped){
     glog('sys', '🌐 已按账号分开存档：这个账号将使用它自己的存档，正在重载…');
@@ -2091,11 +2092,12 @@ async function sessionIdleLogout(){
 function sessionIdleStart(){
   try {
     if (!loggedIn() || _idleTimer) return;
-    var _touch = function(){ try { sessionTouch(); } catch(_){} };
+    var _touch = function(){ try { if (!sessionIdleCheck()) sessionTouch(); } catch(_){} }; // v1272 先验过期再续命：闲过半小时后回来点按不能把会话点活
     document.addEventListener('pointerdown', _touch, { passive: true });
     document.addEventListener('keydown', _touch);
     document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') { try { sessionIdleCheck(); } catch(_){} } });
     window.addEventListener('focus', function(){ try { sessionIdleCheck(); } catch(_){} });
+    window.addEventListener('pageshow', function(){ try { sessionIdleCheck(); } catch(_){} }); // v1272 历史/bfcache 恢复也验
     _idleTimer = setInterval(function(){ try { sessionIdleCheck(); } catch(_){} }, 60000);
   } catch(_){}
 }
