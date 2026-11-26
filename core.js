@@ -3935,7 +3935,7 @@ function advSharedPoll(S) {
         }
       }
     } catch (_) {}
-  }, 5000);
+  }, 1000); // v1291 Ye 定秒跟：冒险图跟随 1 秒一查
 }
 // ======== v1125 冒险图资源与采集阵（共享图） ========
 async function advSharedRefresh() {

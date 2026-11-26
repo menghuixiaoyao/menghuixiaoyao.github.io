@@ -1577,7 +1577,7 @@ setInterval(function(){
       }
     }).catch(function(){});
   } catch(_){}
-}, 3000);
+}, 1000); // v1291 Ye 定秒跟：主城跟随 1 秒一查
 window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
 window.teamLeaderMoveSync = teamLeaderMoveSync; // v1288 导出：main.js 移动点裸调此名，未导出时队长移动同步静默失效、队员不跟随
 window.teamRefresh = teamRefresh; // v1187 导出：人物卡组队先刷新队伍状态，再决定要不要先建队
