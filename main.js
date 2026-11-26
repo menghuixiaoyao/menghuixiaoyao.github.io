@@ -5033,14 +5033,8 @@ function doCheckin(force) {
   }
   const r = C.checkin(S, force);
   if (!r.ok) { toastLog('sys', '今日已签到，明天再来吧。'); return; }
-  // v978 X 验证用户签到体力翻倍
-  try {
-    if (typeof isXVerified === 'function' && isXVerified() && r.gain > 0) {
-      S.stamina = (S.stamina|0) + r.gain;
-      r.gain = r.gain * 2;
-      log('gold', '🎖️ <span class="y">X 认证</span>加成：签到体力翻倍！');
-    }
-  } catch(_) {}
+  // v978 X 验证用户签到体力翻倍；v1286 多出的一倍走邮箱发送（服务端按认证状态发，本地直加会被同步钳掉）
+  try { xBonusMail(); } catch(_) {}
   if (r.toxLoss) log('bad', `🧪 <b>丹毒攻心</b>（丹毒 ${S.danDu|0}），寿元 <span class="r">-${r.toxLoss} 年</span>`); // v1138
   // v1086 拍卖行已改服务端结算，本地 auc3Daily 停用（避免重复结算）
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
@@ -7893,11 +7887,20 @@ function refreshMainMailBtn(){
     el.textContent = n ? '（' + n + '未读）' : '';
   } catch (_) {}
 }
+async function xBonusMail(){ // v1286 X 认证签到双倍走邮箱（服务端去重，重复调用无害）
+  try {
+    if (!window.MHXY || !MHXY.api) return;
+    const r = await MHXY.api('/api/mail/xbonus', { method: 'POST', body: {} });
+    if (r.ok && r.json && r.json.sent) log('gold', `🎖️ <span class="y">X 认证</span>加成：双倍体力 ${r.json.stamina || ''} 点已发到邮箱`);
+    else if (r.ok && r.json && r.json.verified && r.json.checkedIn === false && !window._xbRetried) { window._xbRetried = 1; setTimeout(xBonusMail, 4000); }
+  } catch(_) {}
+}
 async function mailPull(){
   if (window._mailPulling) return;
   if (!window.MHXY || !MHXY.api) return;
   window._mailPulling = true;
   try {
+    await MHXY.api('/api/mail/xbonus', { method: 'POST', body: {} }).catch(() => {}); // v1286 先补发 X 双倍，再拉邮箱
     const r = await MHXY.api('/api/mail/pending');
     const j = r && r.json;
     if (!(j && j.ok && Array.isArray(j.mails))) return;
