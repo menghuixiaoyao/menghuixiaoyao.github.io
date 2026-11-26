@@ -63,6 +63,7 @@ function load() {
   try { if (window.LG) window.LG.ensure(S); } catch(_) {} // v867 老存档补抽灵根（跨块走window.LG）
 }
 function save() { try { S.log = S.log.slice(-K.LOG_KEEP); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); try{window.MHXY&&MHXY.markDirty(SAVE_KEY)}catch(_){} } catch (e) {} }
+window.save = save; // v1289 导出：tail 组队跟随要存档，裸名够不着封装内函数
 function welcome() {
   log('gold', `<b class="y">欢迎来到【梦回逍遥】</b><br>每日<b>签到</b>可得 ${C.checkinAmount(S)} 点体力（每升 1 级 +1）。体力可用于<b>修炼</b>属性、<b>炼药</b>、<b>冒险</b>斩妖、与他人<b>PK</b>夺取属性。冒险与 PK 获胜可得<b>金元</b>，在<b>商店</b>购买药草与技能书。<br>初入江湖，赠你 ${K.START_STAMINA} 点体力。`);
   // v1088 新号强制建号链：性别→头像→名字→种族
@@ -408,6 +409,7 @@ window.qtyPrompt = function(type, key, max) { // v824 背包数量输入
   } catch(e) {}
 };
 
+window.renderWorldMap = renderWorldMap; // v1289 导出：tail 组队跟随/在线位置刷新要重绘地图，裸名够不着封装内函数
 function renderWorldMap() {
   try {
     try { const _ssb = document.getElementById('shenshiBtn'); if (_ssb) _ssb.style.display = (S.realm|0) >= 1 ? '' : 'none'; try { window._myRealm = (S.realm|0) || 0; } catch(_) {} } catch(_) {} // v1072 神识单按钮：练气显示；同步全局境界（Ye 定整合）
