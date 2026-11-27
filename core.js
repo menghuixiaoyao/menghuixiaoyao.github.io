@@ -2490,10 +2490,10 @@ function buy(S, kind, key, n) {
     S.gold -= _gp(1000); S.pouch = (S.pouch || 0) + 1; S.ringBought = 1; return { ok: true, n: 1, cost: _gp(1000) }; // v882 商店卖小型储物袋1000金
   }
   if (kind === 'ring_stone') { // v883 灵石买储物戒指：下/中/上品各限1枚
-    const flag = 'ringBought_' + k;
+    const flag = 'ringBought_' + key; // v1319 修：原误用未定义变量 k，点购买直接报错
     if (S[flag]) return { ok: false, why: 'once' };
-    if ((S.ores[k] || 0) < 1) return { ok: false, why: 'stone' };
-    S.ores[k]--; S[flag] = 1; S.rings = (S.rings || 0) + 1; return { ok: true, n: 1, cost: 0 };
+    if ((S.ores[key] || 0) < 1) return { ok: false, why: 'stone' };
+    S.ores[key]--; S[flag] = 1; S.rings = (S.rings || 0) + 1; return { ok: true, n: 1, cost: 0 };
   }
   if (kind === 'space_s') { // v883 极品灵石买储物空间(小)×3，每号限1
     if (S.spaceSBought) return { ok: false, why: 'once' };
