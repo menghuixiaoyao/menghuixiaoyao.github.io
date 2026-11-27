@@ -3390,9 +3390,9 @@ function sheetShop(msg) {
     `<h3>灵石</h3><div class="row"><div class="lab">🪨 灵气石 <span class="tag">100 金</span><small>服用：法力 +10（压条上限 100%） · 炼药投入：成功率/上品 +5% · 拥有 ${S.ores.sp1 || 0}</small></div>
       <button class="btn" data-buy="spirit" data-k="sp1" data-n="1" ${g >= _dgp(100) ? '' : 'disabled'}>买 1</button>
       <button class="btn gold" data-buy="spirit" data-k="sp1" data-n="5" ${g >= _dgp(100) * 5 ? '' : 'disabled'}>买 5</button></div>
-    <div class="row"><div class="lab">🪨 灵气石回收 <span class="tag">40 金/块</span><small>拥有 ${S.ores.sp1 || 0}</small></div>
+    <div class="row"><div class="lab">🪨 灵气石回收 <span class="tag">20 金/块</span><small>拥有 ${S.ores.sp1 || 0}</small></div>
       <button class="btn" data-sellspirit="1" ${(S.ores.sp1|0) > 0 ? '' : 'disabled'}>卖 1</button>
-      <button class="btn gold" data-sellspirit="all" ${(S.ores.sp1|0) > 0 ? '' : 'disabled'}>全卖 +${(S.ores.sp1|0)*40}</button></div>` +
+      <button class="btn gold" data-sellspirit="all" ${(S.ores.sp1|0) > 0 ? '' : 'disabled'}>全卖 +${(S.ores.sp1|0)*20}</button></div>` +
     Object.keys(GATHER).filter(kind => !GATHER[kind].nosell).map(kind => { const g = GATHER[kind], st = S[g.store], ks = Object.keys(g.items).filter(k => st[k] > 0 && g.items[k].price);
       return `<h3>出售${g.noun}</h3>` + (ks.length ? ks.map(k => `<div class="row"><div class="lab">${rarTxt(kind, k)} ×${st[k]} <span class="tag">${g.items[k].price} 金/${g.unit}</span></div>
       <button class="btn" data-sell="${k}" data-kind="${kind}" data-n="1">卖 1</button>
@@ -8903,14 +8903,14 @@ document.addEventListener('click', e => {
       try { sheetRun(_r); } catch(_) {}
     } catch(_) {}
   }
-  else if (d.sellspirit !== undefined) { // v759 灵气石40金回收
+  else if (d.sellspirit !== undefined) { // v1348 灵气石20金回收（Ye 定）
     try {
       const _n = d.sellspirit === 'all' ? (S.ores.sp1|0) : 1;
       const _has = S.ores.sp1|0;
       if (_has <= 0) return;
       const _sellN = Math.min(_n, _has);
-      S.ores.sp1 -= _sellN; S.gold = (S.gold|0) + _sellN * 40;
-      try { if (typeof log === 'function') log('gold', `🛒 出售 🪨灵气石 ×${_sellN}（金元 +${_sellN*40}）`); } catch(_) {}
+      S.ores.sp1 -= _sellN; S.gold = (S.gold|0) + _sellN * 20;
+      try { if (typeof log === 'function') log('gold', `🛒 出售 🪨灵气石 ×${_sellN}（金元 +${_sellN*20}）`); } catch(_) {}
       try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v1095 卖灵石也触发雷云判定
       try { commit(); } catch(_) {}
       try { const _sy = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy; } catch(_) {}

@@ -157,7 +157,7 @@ const ORES = {
   iron:   { name: '铁矿', p: 0.50, price: 3 },
   copper: { name: '铜矿', p: 0.30, price: 6 },
   silver: { name: '银矿', p: 0.15, price: 15 },
-  gold:   { name: '金矿', p: 0.05, price: 40 },
+  gold:   { name: '金矿', p: 0.05, price: 20 },
   // 灵石：不参与矿石稀有度掷骰；挖到灵石时再按品阶掷骰（p 为基础概率）
   // 灵石五品（sp1~sp5）：挖矿偶得，不可出售；服用只加法力/仙力（mana 为每块增量，capPct 为压条上限百分比）；炼药可投入 1 块，成功率与上品各 +alc
   sp1: { name: '灵气石', p: 0.50, mana: 10, capPct: 100, alc: 0.05, extra: true },
