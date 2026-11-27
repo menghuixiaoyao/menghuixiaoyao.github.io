@@ -4458,11 +4458,13 @@ window.lwEat = function (idx) {
   try {
     const arr = S.lingwu || [];
     const it = arr[idx | 0]; if (!it) return;
+    if ((S.realm | 0) === 0 && (it.g | 0) !== 1) { log('bad', '凡人只能生吃地品灵物'); return; } // v1343 凡人品级限制（Ye 定）
     const base = Math.floor(it.y * 0.1), f = C.eleFactorL(S, it.e), gain = Math.floor(base * f), note = C.eleNoteL(f); // v1130 倍率矩阵
     arr.splice(idx | 0, 1);
     const _aw = C.tryAwakenRoot(S, C.rootBaseL(it.e)); // v1134 生吃灵物觉醒判定：须有该行基础灵根
     const _cp = _aw ? null : C.tryComprehendRoot(S, it.e); // v1135 吃不相对应灵物：极稀有领悟新灵根
     S.lifespan = (S.lifespan || 100) + gain;
+    C.addDanDu(S, 500); // v1343 生吃灵物丹毒固定 +500（Ye 定）
     if (S.degraded) { // v1326-v1329 灵物生吃代替修复灵物：凡人1000年起逐境翻倍；炼虚起须天品（Ye 定）
       const _ri = C.DEGRADE_CHAIN.indexOf(S.degraded) >= 0 ? C.DEGRADE_CHAIN.indexOf(S.degraded) : Object.keys(C.DEGRADE_FAIL2).findIndex(k => C.DEGRADE_FAIL2[k] === S.degraded);
       if (_ri >= 0 && (it.g | 0) === (_ri >= 10 ? 3 : _ri >= 6 ? 2 : 1) && (it.y | 0) >= 1000 * Math.pow(2, _ri)) {
@@ -4471,7 +4473,7 @@ window.lwEat = function (idx) {
         else { S.realm = _ri; S.degraded = null; if (S.failNum) { delete S.failNum[_ri]; delete S.failNum['chain']; } log('good', `🌿 ${C.LW_GRADE_NAMES[(it.g | 0) - 1]}灵物（${it.y}年）代替${C.repairNameL('repair' + _ri)}：${_c} → ${C.REALMS[_ri]}，根基修复`); }
       }
     }
-    log('good', `🌿 生吃<b style="color:${C.GRADE_COLORS[it.g - 1]}">${C.LW_GRADE_NAMES[it.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[it.e]}">${it.e}</b>（${it.y} 年），寿元 <span class="g">+${gain}</span>${note ? `（${note}）` : ''}`);
+    log('good', `🌿 生吃<b style="color:${C.GRADE_COLORS[it.g - 1]}">${C.LW_GRADE_NAMES[it.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[it.e]}">${it.e}</b>（${it.y} 年），寿元 <span class="g">+${gain}</span>${note ? `（${note}）` : ''}，丹毒 +500（当前 ${S.danDu|0}/${C.danDuCap(S)}）`);
     if (_aw) log('good', `🌟 <b>灵根觉醒！</b>${C.rootBaseL(it.e)}灵根食灵而醒，化作<b>${_aw}</b>灵根！`); // v1134
     if (_cp) log('good', `🌟 <b>顿悟新灵根！</b>此物与自身灵根不合，却意外领悟了从未有过的<b>${_cp}</b>灵根！`); // v1135
     commit(); sheetBag();
@@ -4754,7 +4756,7 @@ function sheetBag() {
   const _seals = (S.sealed || []).filter(x => x && !x.done);
   openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 💵美元 <b class="y">${S.usd || 0}</b> · 🌒下品 <b class="y">${S.ores.sp2|0}</b> · 🌗中品 <b class="y">${S.ores.sp3|0}</b> · 💎上品 <b class="y">${S.ores.sp4|0}</b> · 💠极品 <b class="y">${S.ores.sp5|0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（小型储物袋可扩充）。服用丹药可永久提升属性。</div>` +
     `<h3>⛏️ 器具</h3>` + toolCardHtml('pick', 'bag') + toolCardHtml('hoe', 'bag') +
-    (((S.lingwu || []).length || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => { const _base = Math.floor(w.y * 0.1), _f = C.eleFactorL(S, w.e), _gain = Math.floor(_base * _f), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w.e]}">${w.e}</b> · ${w.y} 年<small>炼寿元丹的材料（炼药面板）；生吃：寿元 +${_gain}${_note ? `（${_note}）` : ''}</small></div><button class="btn" onclick="window.lwEat(${i})">生吃</button><button class="btn" onclick="window.lwDevourPick(${i})">吞噬</button></div>`; }).join('') + [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0).map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>种到洞府灵田，收割时才定五行，可长${C.LW_GRADE_NAMES[g - 1]}</small></div></div>`).join('') : '') +
+    (((S.lingwu || []).length || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => { const _base = Math.floor(w.y * 0.1), _f = C.eleFactorL(S, w.e), _gain = Math.floor(_base * _f), _note = C.eleNoteL(_f), _cant = (S.realm|0) === 0 && (w.g|0) !== 1; return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w.e]}">${w.e}</b> · ${w.y} 年<small>炼寿元丹的材料（炼药面板）；生吃：寿元 +${_gain} · 丹毒 +500${_note ? `（${_note}）` : ''}${_cant ? ' · 凡人吃不了' : ''}</small></div><button class="btn" ${_cant ? 'disabled' : ''} onclick="window.lwEat(${i})">生吃</button><button class="btn" onclick="window.lwDevourPick(${i})">吞噬</button></div>`; }).join('') + [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0).map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>种到洞府灵田，收割时才定五行，可长${C.LW_GRADE_NAMES[g - 1]}</small></div></div>`).join('') : '') +
     ((S.herbs && ((S.herbs.lq1|0) + (S.herbs.lq2|0) + (S.herbs.lq3|0)) > 0) ? `<h3>🌿 灵草</h3>` + [1, 2, 3].filter(g => ((S.herbs['lq' + g]|0) > 0)).map(g => `<div class="row"><div class="lab">${window._herbHtml('lq' + g)} ×${S.herbs['lq' + g]}<small>田药园所采，可挂拍卖行出售</small></div></div>`).join('') : '') +
     (((S.syd || []).length) ? `<h3>💊 寿元丹</h3>` + S.syd.map((p, i) => { const _f = C.eleFactorL(S, p.e), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.LW_ELE_COLORS[p.e]}">${p.e}行寿元丹</b><small>寿元 +${Math.floor(p.val * _f)}${_note ? `（${_note}）` : ''} · 积丹毒</small></div><button class="btn gold" onclick="window.eatSyd(${i})">服用</button></div>`; }).join('') : '') +
     `<h3>丹药</h3>` +
