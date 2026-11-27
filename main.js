@@ -485,7 +485,9 @@ window._afterHerbSheet = function() { // v1242 采药后面板：田药园面板
 window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2/3；不传则自动取最高档有货的；产出与野外同表，灵草停产，共享池保留
   herbTick(S);
   const hg = S.herbGarden;
-  if (!grade) grade = (hg.h3|0) > 0 ? 3 : (hg.h2|0) > 0 ? 2 : 1;
+  if (!grade) grade = ((hg.h3|0) > 0 && (S.realm|0) >= 8) ? 3 : ((hg.h2|0) > 0 && (S.realm|0) >= 4) ? 2 : 1; // v1324 天品元婴/仙品仙人可采，自动采集只取够格的最高档
+  if (grade === 2 && (S.realm|0) < 4) { if (typeof toastLog === 'function') toastLog('sys', '元婴境方可采天品灵草丛'); return; }
+  if (grade === 3 && (S.realm|0) < 8) { if (typeof toastLog === 'function') toastLog('sys', '仙人境方可采仙品灵草丛'); return; }
   if ((hg['h' + grade]|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
   // v966 彻底版：登录在线时走服务端
   if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
@@ -968,7 +970,8 @@ function openHerbSheetRender() {
       const name = { 1: '地品灵草丛', 2: '天品灵草丛', 3: '仙品灵草丛' }[g];
       const cyc = { 1: '每分钟 1 丛', 2: '每 10 分钟 1 丛', 3: '每半小时 1 丛' }[g];
       const cnt = (hg['h' + g]|0);
-      return `<div class="row"><div class="lab">${window._herbHtml('lq' + g, name)}<small>${cyc} · 剩余×${cnt} · 五属性草×${5 * g}</small></div><button class="btn gold" onclick="gatherProgWrap('采药中……',function(){doHerbGather(${g})})" ${cnt > 0 ? '' : 'disabled'}>采 1 丛</button></div>`;
+      const _gate = g === 1 || (S.realm|0) >= (g === 2 ? 4 : 8);
+      return `<div class="row"><div class="lab">${window._herbHtml('lq' + g, name)}<small>${cyc} · 剩余×${cnt} · 五属性草×${5 * g}${_gate ? '' : (g === 2 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('采药中……',function(){doHerbGather(${g})})" ${(cnt > 0 && _gate) ? '' : 'disabled'}>采 1 丛</button></div>`; // v1324 品级境界门槛
     }).join('');
     openSheet(`<h2>🌱 田药园</h2><div class="hint">灵药丛分开长、分开采 · 各上限 99 · 免费 · 采一丛得五属性草 5/10/15 株，另有灵物/种子/凝露/木材随缘出</div>${rows}<button class="btn full" onclick="toggleAutoGather('herb')">${(window._autoGather.active && window._autoGather.type==='herb') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
