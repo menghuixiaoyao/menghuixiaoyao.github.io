@@ -937,7 +937,24 @@ window.openReserveSheet = function() {
     openSheet(`<h2>⛏️ 灵脉矿区</h2><div class="hint">矿石每分钟生长 · 灵脉按大小刷新 · 免费逐个采集</div><button class="btn gold full" onclick="gatherProgWrap('挖矿中……',doReserveOre)" ${(rn.o|0)>0?'':'disabled'}>⛏️ 挖矿石（剩余×${rn.o|0}）</button>${[0, 1, 2].map(t => { const _cnt = (rn.vs && rn.vs[t])|0; const _gate = t === 0 || (S.realm|0) >= (t === 1 ? 4 : 8); const _cyc = ['每分钟刷新', '每10分钟刷新', '每半小时刷新'][t]; return `<div class="row"><div class="lab">${['💎 小型灵脉', '💎 中型灵脉', '💎 巨型灵脉'][t]}<small>${_cyc} · 剩余×${_cnt}${_gate ? '' : (t === 1 ? ' · 元婴可采' : ' · 仙人可采')}</small></div><button class="btn gold" onclick="gatherProgWrap('开采中……',function(){doReserveVein(${t})})" ${(_cnt > 0 && _gate) ? '' : 'disabled'}>开采</button></div>`; }).join('')}${((S.veins||[]).some(v => (v|0) > 0)) ? '<div class="hint" style="margin-top:6px">💎 我的灵脉（吃下出灵石，巨型可出仙玉）</div>' + [0, 1, 2].map(t => `<div class="row"><div class="lab">${['小型灵脉', '中型灵脉', '巨型灵脉'][t]}<small>持有 ×${(S.veins && S.veins[t])|0}</small></div><button class="btn gold" onclick="doEatVein(${t})">吃</button></div>`).join('') : ''}<button class="btn full" onclick="toggleAutoGather('reserve')">${(window._autoGather.active && window._autoGather.type==='reserve') ? '⏸️ 停止自动采集' : '▶️ 自动采集（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
+// v1313 田药园/养殖园统一服务器：数量以服务器 garden_state 为准，本地 tick 只作离线回落
+function syncGardenState(cb) {
+  try {
+    if (typeof MHXY === 'undefined' || !MHXY.api || !MHXY.loggedIn || !MHXY.loggedIn()) { if (cb) cb(); return; }
+    MHXY.api('/api/roll/garden_state').then(function (r) {
+      if (r && r.ok && r.json && r.json.ok) {
+        if (r.json.herbGarden) S.herbGarden = r.json.herbGarden;
+        if (r.json.ranch) S.ranch = r.json.ranch;
+        if (r.json.now) window._srvOffset = (r.json.now | 0) - Date.now();
+      }
+      if (cb) cb();
+    }).catch(function () { if (cb) cb(); });
+  } catch (_) { if (cb) cb(); }
+}
 window.openHerbSheet = function() {
+  syncGardenState(function () { openHerbSheetRender(); });
+};
+function openHerbSheetRender() {
   try {
     herbTick(S); const hg = S.herbGarden;
     const rows = [1, 2, 3].map(g => {
@@ -950,12 +967,31 @@ window.openHerbSheet = function() {
   } catch(_) {}
 };
 window.openRanchSheet = function() {
+  syncGardenState(function () { openRanchSheetRender(); });
+};
+function openRanchSheetRender() {
   try {
     ranchTick(S); const r = S.ranch;
     openSheet(`<h2>🥚 养殖园</h2><div class="hint">每10分钟肉/蛋各产出1个，上限99 · 免费逐个收获</div><div class="grid2"><button class="btn gold" onclick="doRanchHunt()" ${(r.m|0)>0?'':'disabled'}>🏹 打猎<br><small>收1块肉（剩余×${r.m|0}）</small></button><button class="btn gold" onclick="doRanchPatrol()" ${(r.e|0)>0?'':'disabled'}>🔍 巡视<br><small>收1枚蛋（剩余×${r.e|0}）</small></button></div><button class="btn full" onclick="toggleAutoGather('ranch')">${(window._autoGather.active && window._autoGather.type==='ranch') ? '⏸️ 停止自动收获' : '▶️ 自动收获（2～5秒随机）'}</button><button class="btn full" data-a="close">关闭</button>`);
   } catch(_) {}
 };
+function ranchHarvestSrv(kind) { // v1313 养殖园收获服务器发放
+  MHXY.api('/api/roll/ranch_harvest', { method: 'POST', body: { kind } }).then(function (r) {
+    if (!r || !r.ok || !r.json || !r.json.ok) { if (typeof toastLog === 'function') toastLog('sys', kind === 'meat' ? '还没有肉' : '还没有蛋'); return; }
+    if (r.json.ranch) S.ranch = r.json.ranch;
+    let knm = kind === 'meat' ? '肉' : '蛋';
+    for (const g of (r.json.gains || [])) {
+      if (g.st === 'food') { S.food = S.food || {}; S.food[g.k] = (S.food[g.k] | 0) + g.n; knm = (C.MEATS[g.k] && C.MEATS[g.k].name) || g.k; }
+      if (g.st === 'eggs') { S.eggs = S.eggs || {}; S.eggs[g.k] = (S.eggs[g.k] | 0) + g.n; knm = (C.EGGS[g.k] && C.EGGS[g.k].name) || g.k; }
+    }
+    log('good', '🥚 在养殖园收获：' + knm + '×1（剩余' + (kind === 'meat' ? (S.ranch.m | 0) + '块' : (S.ranch.e | 0) + '枚') + '）');
+    try { if (typeof thunderRanch === 'function') thunderRanch(); } catch (_) {}
+    commit(); renderWorldMap(); openRanchSheetRender();
+    if (typeof toastLog === 'function') toastLog('good', '收获' + knm + '×1');
+  }).catch(function () {});
+}
 window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义）
+  if (typeof MHXY !== 'undefined' && MHXY.api && MHXY.loggedIn && MHXY.loggedIn()) { ranchHarvestSrv('meat'); return; } // v1313 服务器收获
   ranchTick(S);
   const r = S.ranch;
   if ((r.m|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '还没有肉'); return; }
@@ -970,6 +1006,7 @@ window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义
   if (typeof toastLog === 'function') toastLog('good', `收获${knm}×1`);
 };
 window.doRanchPatrol = function() { // v666 一次收1枚蛋（修复v555未定义）
+  if (typeof MHXY !== 'undefined' && MHXY.api && MHXY.loggedIn && MHXY.loggedIn()) { ranchHarvestSrv('egg'); return; } // v1313 服务器收获
   ranchTick(S);
   const r = S.ranch;
   if ((r.e|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '还没有蛋'); return; }
