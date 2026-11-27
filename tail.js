@@ -65,13 +65,30 @@ window._startTeamFollow = function(){
 };
 window._teamAdvFollow = function(team){
   try {
-    if (!team || !team.advDk || window._isTeamLeader) return;
-    if (typeof S === 'undefined' || !S || S.run || S.dead) return;
+    if (!team || window._isTeamLeader) return;
+    if (typeof S === 'undefined' || !S) return;
+    var _fAt = 0;
+    try { _fAt = parseInt(localStorage.getItem('mhxy_advfollow_at') || '0', 10) || 0; } catch(_){}
+    var _setF = function(v){ try { if (v) localStorage.setItem('mhxy_advfollow_at', String(v)); else localStorage.removeItem('mhxy_advfollow_at'); } catch(_){} };
+    var _exitRun = function(){
+      var _nowMs = Date.now();
+      if (window._advExitTriedAt && _nowMs - window._advExitTriedAt < 5000) return;
+      window._advExitTriedAt = _nowMs;
+      if (typeof window.doAdvRetreat === 'function') window.doAdvRetreat();
+      if (!S.run) { _setF(0); try { glog('sys', '👥 已跟随队长离开冒险图'); } catch(_){} }
+    };
+    if (!team.advDk) {
+      if (_fAt && S.run) _exitRun();
+      else if (!S.run && _fAt) _setF(0);
+      return;
+    }
+    if (S.run && _fAt && (team.advAt || 0) !== _fAt) { _exitRun(); return; }
+    if (S.run || S.dead) return;
     if (window._advFollowTried === (team.advAt || 0)) return;
     window._advFollowTried = team.advAt || 0;
     if (typeof window.doAdventure === 'function') window.doAdventure(team.advDk);
     if (!S.run) { try { glog('sys', '👥 队长已进冒险图，你未能跟进（体力或境界不足）'); } catch(_){} }
-    else { try { glog('sys', '👥 已跟随队长进入冒险图'); } catch(_){} }
+    else { _setF(team.advAt || 0); try { glog('sys', '👥 已跟随队长进入冒险图'); } catch(_){} }
   } catch(_){}
 };
 try { window._startTeamFollow(); } catch(_) {}

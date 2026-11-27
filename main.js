@@ -2277,7 +2277,7 @@ function closeSheet() {
   if (window._fromAdv) { window._fromAdv = false; try { if (S.run && S.run.grid && typeof sheetRun === 'function') sheetRun(); } catch(_) {} } // v770 从冒险打开人物面板，关闭返回冒险
 }
 window.closeSheet = closeSheet;
-window.sheetRun = sheetRun; window.log = log; window.toastLog = toastLog; window.commit = commit; window.afterAct = afterAct; window.render = render; window.doAdventure = doAdventure; // v1297 队员跟随进冒险图要跨文件调进图 // v1176 跨文件导出：v1157 拆分后 core/tail 封装外裸调这些名字解析不到、又被 try/catch 吞掉——冒险采集/攻击/布阵静默失效的根源
+window.sheetRun = sheetRun; window.log = log; window.toastLog = toastLog; window.commit = commit; window.afterAct = afterAct; window.render = render; window.doAdventure = doAdventure; window.doAdvRetreat = doAdvRetreat; // v1297/v1300 队员跟随进/出冒险图要跨文件调用 // v1176 跨文件导出：v1157 拆分后 core/tail 封装外裸调这些名字解析不到、又被 try/catch 吞掉——冒险采集/攻击/布阵静默失效的根源
 window.sheetBattlePlan = sheetBattlePlan; // v1248 手动 PK 预设按钮与开局提示用
 window.openSheet = openSheet; // v959 联机模块需要（顶层函数默认非全局）
 $('mask').addEventListener('click', e => { if (e.target === $('mask') && !$('mask').dataset.lock) closeSheet(); });
