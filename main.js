@@ -4670,7 +4670,7 @@ function sheetBag() {
     ((S.inv['detox']|0) > 0 ? `<div class="row"><div class="lab">🍃 <b class="y">化无丹</b> ×${S.inv['detox']}<small>服用：丹毒 -20（当前丹毒 ${S.danDu|0}/${C.danDuCap(S)}）</small></div><button class="btn gold" data-detoxuse="1">服用</button></div>` : '') +
     (((S.dan && S.dan.bigu)|0) > 0 ? `<div class="row"><div class="lab">🍘 <b class="y">辟谷丸</b> ×${S.dan.bigu}<small>服用：饱食 +20，可无限叠加（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="bigu">服用</button></div>` : '') +
     (((S.dan && S.dan.qili)|0) > 0 ? `<div class="row"><div class="lab">💪 <b class="y">气力丸</b> ×${S.dan.qili}<small>服用：体力 +3（丸非丹，不积丹毒）</small></div><button class="btn gold" data-danuse="qili">服用</button></div>` : '') +
-    `<div class=row><div>🌿修复灵物</div><button class="btn" data-allrep>一键领取</button></div>`+[0,1,2,3,4,5,6,7,8,9,10,11,12].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神炼合乘劫余散尊'[i]}灵物×${S.inv['repair'+i]}</div><button class="btn" data-rep=${i}>服</button></div>`:'').join('')+
+    `<div class=row><div>🌿修复灵物</div></div>`+[0,1,2,3,4,5,6,7,8,9,10,11,12].map(i=>S.inv['repair'+i]>0?`<div class=row><div>🌿修${'胎气基丹婴神炼合乘劫余散尊'[i]}灵物×${S.inv['repair'+i]}</div><button class="btn" data-rep=${i}>服</button></div>`:'').join('')+
 
 
     (!list.length && !(S.inv['mai']|0) ? '<div class="empty">空空如也，去炼药吧～</div>' : '') +
@@ -6237,7 +6237,7 @@ async function gatherServer(S, kind, n) {
       for (const gg of (j.gains || [])) {
         // v1224 共享池三组（凝露/木材/修复灵物）只记 premium，不进主计数（与本地 gather 同规；旧 /^lu/" 正则自 v1128 改名后已失效，凝露从未记入 premium）
         const isPrem = kind === 'farm' && ((gg.st === 'mats' && (/^dw/.test(gg.k) || (C.WOOD_KEYS_L && C.WOOD_KEYS_L.indexOf(gg.k) >= 0))) || (gg.st === 'inv' && /^repair\d+$/.test(gg.k)));
-        if (!isPrem) { for (let q = 0; q < gg.n; q++) x.push(gg.k); }
+        if (!isPrem && !(kind === 'mine' && gg.st === 'ores' && /^sp/.test(gg.k))) { for (let q = 0; q < gg.n; q++) x.push(gg.k); } // v1310 灵石走石缝行显示，不进矿石列表（原重复显示两遍）
         if (gg.st === 'food') { x.meat = gg.k; (out.meat = out.meat || {})[gg.k] = ((out.meat[gg.k]||0) + gg.n); }
         if (gg.st === 'petEggs') { x.petEgg = 1; out.petEgg = (out.petEgg||0) + gg.n; }
         if (isPrem) { x.premium = gg.k; (out.premium = out.premium || {})[gg.k] = ((out.premium[gg.k]||0) + gg.n); }
@@ -7524,6 +7524,21 @@ function xyInit() {
   for (const b of S.binders) if (b.intimacy === undefined) b.intimacy = 0; // v264 补亲密度
 }
 function xyTotal() { xyInit(); return (S.xianyuan.m|0) + (S.xianyuan.f|0); }
+// v1310 仙缘同步：绑定存服务器，本地点数/绑定者按服务器列表重建（轮回、重置存档后不消失）
+function xySyncFromServer() {
+  try {
+    if (typeof MHXY === 'undefined' || !MHXY.api || !MHXY.loggedIn || !MHXY.loggedIn()) return;
+    MHXY.api('/api/xianyuan/list').then(function (r) {
+      if (!r.ok || !r.json || !Array.isArray(r.json.binders)) return;
+      xyInit();
+      const nb = r.json.binders.map(function (b) { return { accountId: b.accountId, name: b.username, gender: b.gender === 'f' ? 'f' : 'm', since: b.since, intimacy: 0 }; });
+      const nm = nb.filter(function (b) { return b.gender === 'm'; }).length, nf = nb.length - nm;
+      if (JSON.stringify(S.binders.map(function (b) { return b.accountId; })) !== JSON.stringify(nb.map(function (b) { return b.accountId; })) || (S.xianyuan.m | 0) !== nm || (S.xianyuan.f | 0) !== nf) {
+        S.binders = nb; S.xianyuan = { m: nm, f: nf }; commit();
+      }
+    }).catch(function () {});
+  } catch (_) {}
+}
 function xySimBind() { // 模拟NPC绑定
   xyInit();
   const baseNames = (typeof RANK_PLAYER_NAMES !== 'undefined' ? RANK_PLAYER_NAMES.slice() : ['无名道友']);
@@ -7587,6 +7602,7 @@ function doXianyuan() { // 仙缘面板（v1081：玩家互绑版，NPC 模拟�
   openSheet(html);
   commit();
   // 拉服务端绑定列表 + 待确认请求
+  xySyncFromServer();
   try {
     if (typeof MHXY !== 'undefined' && MHXY.api) {
       MHXY.api('/api/xianyuan/list').then(function(r){
@@ -9025,7 +9041,7 @@ document.addEventListener('click', e => {
   else if (d.detoxuse) doUseDetox();
   else if (d.danuse) doEatDan(d.danuse);
   else if (d.juling) doJuling(d.juling);
-  else if(d.allrep!==undefined){for(let i=0;i<12;i++)S.inv['repair'+i]=(S.inv['repair'+i]|0)+9;commit();render();log('good','🌿12种修复灵物各+9');}else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();const rp=r.split('|');log(rp[0]==='ok'?'good':'bad',rp[0]==='ok'?`🌿修复成功！${rp[1]}→${rp[2]}`:'🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if(d.drinkbutian)doDrinkButian(); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); try { if (typeof sheetChar === 'function' && $('sheet') && $('sheet').style.display !== 'none') sheetChar(); } catch(_) {} toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
+  else if(d.rep>=0){const r=C.useRepair(S,+d.rep);commit();render();const rp=r.split('|');log(rp[0]==='ok'?'good':'bad',rp[0]==='ok'?`🌿修复成功！${rp[1]}→${rp[2]}`:'🌿'+r);}else if(d.drinkmai)doDrinkMai(+d.drinkmai); else if(d.drinkbutian)doDrinkButian(); else if (d.chest) doOpenChest(d.chest, +d.n || 1); else if (d.synthvmai) doSynthVMai(); else if (d.synthxps) doSynthXPS(); else if (d.synthzps) doSynthZPS(); else if (d.synthsps) doSynthSPS(); else if (d.synthjps) doSynthJPS();   else if (d.shamode) { S.shaMode = d.shamode; save(); render(); try { if (typeof sheetChar === 'function' && $('sheet') && $('sheet').style.display !== 'none') sheetChar(); } catch(_) {} toastLog('sys', d.shamode === 'def' ? '🛡️ 煞气转为加防御' : '⚔️ 煞气转为加攻击'); }
   else if (d.sha) doSha(d.sha);
   else if (d.drink) doDrink(d.drink, +d.g, +d.n);
   else if (d.take) window.finishPk(d.take);
