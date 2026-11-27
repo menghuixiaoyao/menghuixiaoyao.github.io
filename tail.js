@@ -15,6 +15,55 @@ window.teamPanel = async function(){
 };
 // v1191 关键导出提前：teamRefresh/teamInvite/pkChallenge 是函数声明（文件加载即提升），原导出在文件尾，中段运行错误会让导出永远执行不到、组队面板卡死；提前到文件头紧跟 teamPanel，声明一就绪即可用
 try { window.teamRefresh = teamRefresh; window.teamInvite = teamInvite; window.pkChallenge = pkChallenge; window.teamLeaderMoveSync = teamLeaderMoveSync; } catch (_) {}
+// v1296 跟随轮询注册提前到文件头：原注册在文件 1543 行，iOS Safari 中段加载异常时轮询永远注册不上（面板靠函数提升还能用，跟随却不动）；提前注册与导出同理
+window._applyTeamFollow = function(){
+  try {
+    if (!window._myTeam || window._isTeamLeader) return;
+    var _applyFollow = function(sx2, sy2){
+      if (sx2 != null && sy2 != null && typeof S !== 'undefined' && S && S.worldMap && ((S.worldMap.px|0) !== (sx2|0) || (S.worldMap.py|0) !== (sy2|0))){
+        S.worldMap.px = sx2|0; S.worldMap.py = sy2|0;
+        if (typeof save === 'function') save();
+        if (typeof renderWorldMap === 'function') renderWorldMap();
+        try { glog('sys', '👥 队长带队移动，你已跟随'); } catch(_){}
+      }
+    };
+    var _ms = (window._myTeam.members || []);
+    var _me2 = (typeof myAid === 'function') ? myAid() : '';
+    var _found = false;
+    for (var j = 0; j < _ms.length; j++){
+      if (_ms[j] && _ms[j].accountId === _me2 && _ms[j].x != null){ _found = true; _applyFollow(_ms[j].x, _ms[j].y); break; }
+    }
+    if (!_found){
+      api('/api/world/state').then(function(r){
+        if (!r.ok || !r.json) return;
+        var ps = r.json.players || [];
+        for (var i = 0; i < ps.length; i++){ if (ps[i] && ps[i].accountId === _me2){ _applyFollow(ps[i].x, ps[i].y); break; } }
+      }).catch(function(){});
+    }
+  } catch(_){}
+};
+window._startTeamFollow = function(){
+  if (window._teamFollowTimer) return;
+  window._teamFollowTimer = setInterval(function(){
+    try {
+      if (typeof loggedIn !== 'function' || !loggedIn()) return;
+      api('/api/world/team/state').then(function(r){
+        if (!r.ok || !r.json || !r.json.ok) return;
+        var had = window._myTeam || null;
+        var now = r.json.team || null;
+        var gotNotice = false;
+        if (r.json.notices && r.json.notices.length) { gotNotice = true; r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); }
+        window._myTeam = now;
+        try { window._isTeamLeader = now ? (now.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
+        if (now && !window._isTeamLeader && !window._teamSeenLogged){ window._teamSeenLogged = true; try { glog('sys', '👥 已在队伍中，队长移动时你会自动跟随'); } catch(_){} }
+        if (now && !window._isTeamLeader) { try { window._applyTeamFollow(); } catch(_){} }
+        if (had && !now && !gotNotice) { try { glog('sys', '👥 你已不在队伍中'); } catch(_){} }
+        if (document.getElementById('mhxyTeamInfo') && typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} }
+      }).catch(function(){});
+    } catch(_){}
+  }, 1000);
+};
+try { window._startTeamFollow(); } catch(_) {}
 // v1069 神识单按钮（Ye 定整合）：练气点=10秒探查，化神点=探查+开外放面板
 window.shenshiGo = function(){
   try {
