@@ -6317,7 +6317,7 @@ async function gatherServer(S, kind, n) {
     const j = resp && resp.json;
     if (!(resp.ok && j && j.ok)) {
       const e = (j||{}).error;
-      if (e === 'would_die' || e === 'dead' || e === 'no_stamina') return null; // 交由本地完整流程（含死亡/提示）
+      if (e === 'would_die' || e === 'dead' || e === 'no_stamina' || e === 'conflict') return null; // 交由本地完整流程（含死亡/提示）；v1340 conflict 不再静默吞掉（Ye 定）
       if (resp.netErr) return null;
       break; // 服务端已响应（bad_kind/conflict 等），不回落，返回已有部分
     }
@@ -6327,7 +6327,7 @@ async function gatherServer(S, kind, n) {
     }
     S.stamina = j.stamina;
     if (!j.fail && g && g.attr) S.attrs[g.attr] = (S.attrs[g.attr]|0) + 1;
-    try { if (typeof hungerDown === 'function') C.hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
+    try { C.hungerDown(S, K.HUNGER_ACT, 1); } catch(_){} // v1340 修 typeof 守卫误杀饱食扣减
     if (j.poison) { S.hpCur = Math.max(0, (S.hpCur|0) - j.poison); try { if (typeof poisonAcc !== 'undefined') poisonAcc += j.poison; } catch(_){} }
     if (S.buff && S.buff.k === 'luck') { S.buff.left = (S.buff.left|0) - 1; if (S.buff.left <= 0) S.buff = null; }
     if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
