@@ -3994,6 +3994,7 @@ window.advGatherRes = async function(code) {
     }
     if (resp.ok && j && j.ok) {
       const got = advApplyGains(j);
+      try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
       if (j.which) { if (j.tools && typeof j.tools === 'object') { S.tools = j.tools; } else { const _t = toolsNormalizeL(S); _t[j.which] = j.tool ? [j.tool] : []; S.tools = _t; } toolsNormalizeL(S); } // v1128 器具状态以服务端为准；v1224 数组同步（旧服务端单对象回落）
       try { const _t = S.run.shared.tiles[gy] && S.run.shared.tiles[gy][gx]; if (_t && j.rs) _t.rs = j.rs; else if (_t && _t.rs && j.code) { _t.rs = Object.assign({}, _t.rs); _t.rs[j.code] = Math.max(0, ((_t.rs[j.code] | 0) - 1)); if (!_t.rs[j.code]) delete _t.rs[j.code]; } } catch (_) {} // v1186 本地镜像按槽同步
       if (got.length) log('good', `✨ 采集${(j.crit | 0) > 1 ? `（<b class="y">💥暴击×${j.crit}</b>）` : ''}：${got.join('、')}${j.broke ? `；<span class="r">${j.which === 'hoe' ? '药锄' : '矿镐'}持久耗尽，碎了</span>` : ''}`);
@@ -4013,7 +4014,7 @@ window.advLocalGatherUI = function(code) { // v1186 本地图当前格采集（�
     if (!r) return;
     if (r.err) log('bad', r.err);
     else if (r.disturbed) { log('bad', '😱 采集时惊扰了怪物，它扑了过来！'); S.run.ev = C.advMonTileEv(S, S.run, r.disturbed); }
-    else if (r.msg) log('good', `✨ 采集：${r.msg}`);
+    else if (r.msg) { try { hungerDown(S, 1, 1); } catch (_) {} log('good', `✨ 采集：${r.msg}`); } // v1320 每次采集得物资扣1饱食
     afterAct(); commit(); sheetRun();
   } catch (e) {}
 };
