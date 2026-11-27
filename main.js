@@ -844,9 +844,10 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
         if (!S.ores) S.ores = {};
         S.ores[j.key] = (S.ores[j.key]|0) + 1;
         try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食，不够扣寿元（Ye 定）
+        try { if (!S.dead) C.gainXp(S, 1); } catch (_) {} // v1344 每次挖矿采集经验 +1（Ye 定）
         if (S.reserveNode) S.reserveNode.o = j.remaining;
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        log('good', `⛏️ 在灵脉矿区采集：${j.name}×1（剩余${j.remaining}块）`);
+        log('good', `⛏️ 在灵脉矿区采集：${j.name}×1（剩余${j.remaining}块），经验 +1`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openReserveSheet();
         if (typeof toastLog === 'function') toastLog('good', `采集${window._herbHtml(j.key, j.name)}×1`);
@@ -861,12 +862,14 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
   const rn = S.reserveNode;
   if ((rn.o|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
   const _opool = [['iron', 'copper'], ['silver', 'gold'], ['sp1', 'sp2', 'sp3']][window._mineTier()]; // v1001 三档
-  const k = _opool[Math.floor(Math.random() * _opool.length)];
+  let k = _opool[Math.floor(Math.random() * _opool.length)];
+  if ((S.realm | 0) < 4) { const _rr = Math.random(); if (_rr < 0.0001) k = 'sp5'; else if (_rr < 0.0011) k = 'sp4'; } // v1344 矿区挖矿：元婴以下上品千分之一、极品万分之一（Ye 定）
   let knm = '矿石';
   if (k) { if (!S.ores) S.ores = {}; S.ores[k] = (S.ores[k]|0) + 1; knm = (C.ORES[k] && C.ORES[k].name) || k; }
   rn.o--;
   try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
-  log('good', `⛏️ 在灵脉矿区采集：${knm}×1（剩余${rn.o}块）`);
+  try { if (!S.dead) C.gainXp(S, 1); } catch (_) {} // v1344 每次挖矿采集经验 +1（Ye 定）
+  log('good', `⛏️ 在灵脉矿区采集：${knm}×1（剩余${rn.o}块），经验 +1`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采集${knm}×1`);
@@ -911,9 +914,10 @@ window.doReserveVein = async function(t) { // v558 采灵脉；v1007 按大小�
         const got = window._veinYield(vtn); // v1005 采灵脉直接出灵石/仙玉
         if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
         try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+        try { if (!S.dead) C.gainXp(S, 1); } catch (_) {} // v1344 每次挖矿采集经验 +1（Ye 定）
         if (S.reserveNode) { const _rn = S.reserveNode; if (!Array.isArray(_rn.vs)) _rn.vs = [_rn.v|0, 0, 0]; const _dt = ((_rn.vs[vtn]|0) > 0) ? vtn : _want; if (_dt >= 0 && (_rn.vs[_dt]|0) > 0) _rn.vs[_dt]--; _rn.v = (_rn.vs[0]|0) + (_rn.vs[1]|0) + (_rn.vs[2]|0); }
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
-        log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（剩余${S.reserveNode ? S.reserveNode.v|0 : 0}条）`);
+        log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（该档剩余${S.reserveNode && S.reserveNode.vs ? S.reserveNode.vs[vtn]|0 : 0}条），经验 +1`);
         thunderGatherJudge();
         commit(); renderWorldMap(); openReserveSheet();
         if (typeof toastLog === 'function') toastLog('good', `采${veinNames[vtn]}：${got}`);
@@ -932,7 +936,8 @@ window.doReserveVein = async function(t) { // v558 采灵脉；v1007 按大小�
   if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
   rn.vs[vtn]--; rn.v = (rn.vs[0]|0) + (rn.vs[1]|0) + (rn.vs[2]|0);
   try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
-  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（该档剩余${rn.vs[vtn]}条）`);
+  try { if (!S.dead) C.gainXp(S, 1); } catch (_) {} // v1344 每次挖矿采集经验 +1（Ye 定）
+  log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（该档剩余${rn.vs[vtn]}条），经验 +1`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
   if (typeof toastLog === 'function') toastLog('good', `采${veinNames[vtn]}：${got}`);
@@ -6319,7 +6324,7 @@ async function gatherServer(S, kind, n) {
     const j = resp && resp.json;
     if (!(resp.ok && j && j.ok)) {
       const e = (j||{}).error;
-      if (e === 'would_die' || e === 'dead' || e === 'no_stamina' || e === 'conflict') return null; // 交由本地完整流程（含死亡/提示）；v1340 conflict 不再静默吞掉（Ye 定）
+      if (e === 'would_die' || e === 'dead' || e === 'no_stamina' || e === 'conflict') { if (out.length) break; return null; } // v1344 已有服务端成功时返回部分结果，禁止本地整批重跑重复扣体力；无成功才交本地完整流程
       if (resp.netErr) return null;
       break; // 服务端已响应（bad_kind/conflict 等），不回落，返回已有部分
     }

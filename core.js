@@ -3599,7 +3599,14 @@ function addToolL(S, which, tool, keepId) {
 const WOOD_KEYS_L = ['qingteng', 'lingmu', 'yimu'];
 const WOOD_BY_GRADE_L = { 1: 'qingteng', 2: 'lingmu', 3: 'yimu' };
 const REPAIR_POOL_L = Array.from({ length: 13 }, (_, i) => 'repair' + i); // v1225 修胎..修尊灵物全进池（Ye 定「留到修尊灵物」）；v1246 13 种、多修炼灵物
-function sharedPoolRollL(grade) { // 主城 1% 平值一掷，三组平分；grade=null（种植）木材随机
+function sharedPoolRollL(grade) { // 田药园 1% 平值一掷三组平分；grade=null（防御种植）v1344 修复灵物组 5%，凝露/木材各 1/300 不变
+  if (!grade) {
+    const x = Math.random();
+    if (x < 0.05) return { type: 'repair', key: REPAIR_POOL_L[(Math.random() * REPAIR_POOL_L.length) | 0] };
+    if (x < 0.05 + 1 / 300) return { type: 'dew' };
+    if (x < 0.05 + 2 / 300) return { type: 'wood', key: WOOD_KEYS_L[(Math.random() * 3) | 0] };
+    return null;
+  }
   if (Math.random() >= 0.01) return null;
   const x = Math.random();
   if (x < 1 / 3) return { type: 'dew' };
@@ -3995,9 +4002,10 @@ window.advGatherRes = async function(code) {
     if (resp.ok && j && j.ok) {
       const got = advApplyGains(j);
       try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+      try { if (!S.dead && got.length) gainXp(S, 1); } catch (_) {} // v1344 每次挖矿采集经验 +1（Ye 定）
       if (j.which) { if (j.tools && typeof j.tools === 'object') { S.tools = j.tools; } else { const _t = toolsNormalizeL(S); _t[j.which] = j.tool ? [j.tool] : []; S.tools = _t; } toolsNormalizeL(S); } // v1128 器具状态以服务端为准；v1224 数组同步（旧服务端单对象回落）
       try { const _t = S.run.shared.tiles[gy] && S.run.shared.tiles[gy][gx]; if (_t && j.rs) _t.rs = j.rs; else if (_t && _t.rs && j.code) { _t.rs = Object.assign({}, _t.rs); _t.rs[j.code] = Math.max(0, ((_t.rs[j.code] | 0) - 1)); if (!_t.rs[j.code]) delete _t.rs[j.code]; } } catch (_) {} // v1186 本地镜像按槽同步
-      if (got.length) log('good', `✨ 采集${(j.crit | 0) > 1 ? `（<b class="y">💥暴击×${j.crit}</b>）` : ''}：${got.join('、')}${j.broke ? `；<span class="r">${j.which === 'hoe' ? '药锄' : '矿镐'}持久耗尽，碎了</span>` : ''}`);
+      if (got.length) log('good', `✨ 采集${(j.crit | 0) > 1 ? `（<b class="y">💥暴击×${j.crit}</b>）` : ''}：${got.join('、')}，经验 +1${j.broke ? `；<span class="r">${j.which === 'hoe' ? '药锄' : '矿镐'}持久耗尽，碎了</span>` : ''}`);
       commit();
     } else {
       const _e = (j || {}).error, _wn = (j || {}).which === 'hoe' ? '药锄' : '矿镐';
@@ -4014,7 +4022,7 @@ window.advLocalGatherUI = function(code) { // v1186 本地图当前格采集（�
     if (!r) return;
     if (r.err) log('bad', r.err);
     else if (r.disturbed) { log('bad', '😱 采集时惊扰了怪物，它扑了过来！'); S.run.ev = C.advMonTileEv(S, S.run, r.disturbed); }
-    else if (r.msg) { try { hungerDown(S, 1, 1); } catch (_) {} log('good', `✨ 采集：${r.msg}`); } // v1320 每次采集得物资扣1饱食
+    else if (r.msg) { try { hungerDown(S, 1, 1); } catch (_) {} try { if (!S.dead) gainXp(S, 1); } catch (_) {} log('good', `✨ 采集：${r.msg}，经验 +1`); } // v1320 每次采集得物资扣1饱食；v1344 经验 +1
     afterAct(); commit(); sheetRun();
   } catch (e) {}
 };
