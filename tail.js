@@ -1543,22 +1543,9 @@ function tbApplyResult(b) { // 结算应用（只应用一次）：服务端已�
 setInterval(function(){
   try {
     if (typeof loggedIn !== 'function' || !loggedIn()) return;
-    window._teamTick = (window._teamTick || 0) + 1;
-    if (true) { // v1293 每秒都对一次队伍状态，不再靠缓存自举（缓存没建立时跟随永远不启动）
-      api('/api/world/team/state').then(function(r){
-        if (!r.ok || !r.json || !r.json.ok) return;
-        var had = window._myTeam || null;
-        var now = r.json.team || null;
-        var gotNotice = false;
-        if (r.json.notices && r.json.notices.length) { gotNotice = true; r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); }
-        window._myTeam = now;
-        try { window._isTeamLeader = now ? (now.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
-        if (had && !now && !gotNotice) { try { glog('sys', '👥 你已不在队伍中'); } catch(_){} }
-        if (document.getElementById('mhxyTeamInfo') && typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} }
-      }).catch(function(){});
-    }
+window._applyTeamFollow = function(){
+  try {
     if (!window._myTeam || window._isTeamLeader) return;
-    // v1294 跟随：先取队伍状态里自己的服务端坐标，服务端旧版没带坐标时回退拉世界状态
     var _applyFollow = function(sx2, sy2){
       if (sx2 != null && sy2 != null && typeof S !== 'undefined' && S && S.worldMap && ((S.worldMap.px|0) !== (sx2|0) || (S.worldMap.py|0) !== (sy2|0))){
         S.worldMap.px = sx2|0; S.worldMap.py = sy2|0;
@@ -1580,6 +1567,26 @@ setInterval(function(){
         for (var i = 0; i < ps.length; i++){ if (ps[i] && ps[i].accountId === _me2){ _applyFollow(ps[i].x, ps[i].y); break; } }
       }).catch(function(){});
     }
+  } catch(_){}
+};
+    window._teamTick = (window._teamTick || 0) + 1;
+    if (true) { // v1293 每秒都对一次队伍状态，不再靠缓存自举（缓存没建立时跟随永远不启动）
+      api('/api/world/team/state').then(function(r){
+        if (!r.ok || !r.json || !r.json.ok) return;
+        var had = window._myTeam || null;
+        var now = r.json.team || null;
+        var gotNotice = false;
+        if (r.json.notices && r.json.notices.length) { gotNotice = true; r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); }
+        window._myTeam = now;
+        try { window._isTeamLeader = now ? (now.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
+        if (now && !window._isTeamLeader && !window._teamSeenLogged){ window._teamSeenLogged = true; try { glog('sys', '👥 已在队伍中，队长移动时你会自动跟随'); } catch(_){} }
+        if (now && !window._isTeamLeader) { try { window._applyTeamFollow && window._applyTeamFollow(); } catch(_){} }
+        if (had && !now && !gotNotice) { try { glog('sys', '👥 你已不在队伍中'); } catch(_){} }
+        if (document.getElementById('mhxyTeamInfo') && typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} }
+      }).catch(function(){});
+    }
+    if (!window._myTeam || window._isTeamLeader) return;
+    if (window._applyTeamFollow) window._applyTeamFollow();
   } catch(_){}
 }, 1000); // v1291 Ye 定秒跟：主城跟随 1 秒一查
 window.teamInvite = teamInvite; // v1171 导出：人物卡按钮在封装之外，typeof 够不着封装内函数——组队/切磋按钮一直是死的（Ye 报点不了）
