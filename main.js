@@ -4492,7 +4492,7 @@ window.lwDevour = function (idx, eatenIdx) { // v1331 吞噬得年份：在被�
     const _sheng = _gen[prey.e] === me.e; // v1332 相生更容易吃满；v1333 相克更少、相同对半保底（Ye 定）
     const _same = prey.e === me.e, _kef = _ke[prey.e] === me.e;
     const _py = Math.max(1, prey.y | 0);
-    const gain = _sheng ? Math.ceil(_py * (0.75 + Math.random() * 0.25)) : _same ? Math.ceil(_py / 2) + Math.floor(Math.random() * Math.max(1, _py - Math.ceil(_py / 2) + 1)) : _kef ? 1 + Math.floor(Math.random() * Math.max(1, Math.ceil(_py / 2))) : 1 + Math.floor(Math.random() * _py);
+    const gain = Math.max(1, Math.ceil(_py * (_sheng ? 0.60 + Math.random() * 0.30 : _same ? 0.50 + Math.random() * 0.50 : _kef ? 0.01 + Math.random() * 0.99 : Math.random()))); // v1335 相生60-90%/相同50-100%/相克1-100%（Ye 定）
     arr.splice(eatenIdx | 0, 1);
     me.y = (me.y | 0) + gain;
     const _crit = Math.random() < 0.01; // v1334 1% 暴击：主灵物年份翻倍（Ye 定）
