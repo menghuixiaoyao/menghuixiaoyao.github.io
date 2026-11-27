@@ -4686,8 +4686,8 @@ function sheetBag() {
 
     (!list.length && !(S.inv['mai']|0) ? '<div class="empty">空空如也，去炼药吧～</div>' : '') +
     (((S.inv['chestN']|0) + (S.inv['chestR']|0) + (S.inv['chestA']|0) + (S.inv['chestB']|0)) > 0 ? `<h3>宝箱</h3>` +
-      ((S.inv['chestB']|0) > 0 ? `<div class="row"><div class="lab">🎲 <b class="y">盲盒</b> ×${S.inv['chestB']}<small>擂台日榜奖励，开出随机惊喜</small></div><button class="btn gold" data-chest="chestB" data-n="1">开启</button>${(S.inv['chestB']|0) > 1 ? `<button class="btn" data-chest="chestB" data-n="${S.inv['chestB']}">全开</button>` : ''}</div>` : '') +
-      ((S.inv['chestN']|0) > 0 ? `<div class="row"><div class="lab">🎀 <b class="y">精致盲盒</b> ×${S.inv['chestN']}<small>擂台周榜奖励，开出灵石/金元</small></div><button class="btn gold" data-chest="chestN" data-n="1">开启</button>${(S.inv['chestN']|0) > 1 ? `<button class="btn" data-chest="chestN" data-n="${S.inv['chestN']}">全开</button>` : ''}</div>` : '') +
+      ((S.inv['chestB']|0) > 0 ? `<div class="row"><div class="lab">🎲 <b class="y">盲盒</b> ×${S.inv['chestB']}<small>擂台日榜奖励，能开出游戏里任何东西</small></div><button class="btn gold" data-chest="chestB" data-n="1">开启</button>${(S.inv['chestB']|0) > 1 ? `<button class="btn" data-chest="chestB" data-n="${S.inv['chestB']}">全开</button>` : ''}</div>` : '') +
+      ((S.inv['chestN']|0) > 0 ? `<div class="row"><div class="lab">🎀 <b class="y">精致盲盒</b> ×${S.inv['chestN']}<small>擂台周榜奖励，能开出游戏里任何东西</small></div><button class="btn gold" data-chest="chestN" data-n="1">开启</button>${(S.inv['chestN']|0) > 1 ? `<button class="btn" data-chest="chestN" data-n="${S.inv['chestN']}">全开</button>` : ''}</div>` : '') +
       ((S.inv['chestR']|0) > 0 ? `<div class="row"><div class="lab">🎁 <b class="y">稀有宝箱</b> ×${S.inv['chestR']}<small>擂台月榜奖励，开出高品灵石/凝露</small></div><button class="btn gold" data-chest="chestR" data-n="1">开启</button>${(S.inv['chestR']|0) > 1 ? `<button class="btn" data-chest="chestR" data-n="${S.inv['chestR']}">全开</button>` : ''}</div>` : '') +
       ((S.inv['chestA']|0) > 0 ? `<div class="row"><div class="lab">💎 <b class="y">高级宝箱</b> ×${S.inv['chestA']}<small>擂台年榜奖励，开出极品灵石/珍稀</small></div><button class="btn gold" data-chest="chestA" data-n="1">开启</button>${(S.inv['chestA']|0) > 1 ? `<button class="btn" data-chest="chestA" data-n="${S.inv['chestA']}">全开</button>` : ''}</div>` : '') : '') +
     `<h3>材料</h3>` + (mats.length ? mats.map(k => `<div class="row"><div class="lab">${MATS[k].name} ×${S.mats[k]}<small>直接吃：饱食 +20 · 对应属性 +1 · 丹毒 +20（今日已吃 ${C.herbEatenToday(S)}/5）</small></div><button class="btn" onclick="window.eatHerb('${k}')">吃</button></div>`).join('') : '<div class="empty">暂无材料，可在商店购买</div>') +
@@ -5640,12 +5640,11 @@ async function doOpenChest(kind, n) { // v251 开宝箱
         if (!S.inv) S.inv = {}; if (!S.ores) S.ores = {}; if (!S.mats) S.mats = {};
         S.inv[kind] = (S.inv[kind]|0) - j.n; if (S.inv[kind] <= 0) delete S.inv[kind];
         const gains = [];
-        for (const gg of (j.gains||[])) {
+        for (const gg of (j.gains||[])) { // v1302 盲盒全物品池：按 store 通用入账+通用命名
           if (gg.st === 'gold') { S.gold = (S.gold|0) + gg.n; gains.push('金元+' + gg.n); }
-          else if (gg.st === 'ores') { S.ores[gg.k] = (S.ores[gg.k]|0) + gg.n; gains.push((gg.k==='sp1'?'下品灵石':gg.k==='sp2'?'中品灵石':gg.k==='sp3'?'上品灵石':gg.k==='sp4'?'极品灵石':gg.k==='sp5'?'💠极品灵石':gg.k) + '×' + gg.n); }
-          else if (gg.st === 'mats') { S.mats[gg.k] = (S.mats[gg.k]|0) + gg.n; if (gg.k === 'maiPages') gains.push('🌀脉络残页×1'); else gains.push((gg.k==='lu1'?'一':gg.k==='lu2'?'二':'三') + '品凝露×1'); }
-          else if (gg.st === 'inv') { S.inv[gg.k] = (S.inv[gg.k]|0) + gg.n; gains.push('🌟补天丹×1'); }
           else if (gg.st === 'usd') { S.usd = (S.usd|0) + gg.n; gains.push('💵美元 $' + gg.n); }
+          else if (gg.st === 'xianyu') { S.xianyu = (S.xianyu|0) + gg.n; gains.push('💠仙玉×' + gg.n); }
+          else { S[gg.st] = S[gg.st] || {}; S[gg.st][gg.k] = (S[gg.st][gg.k]|0) + gg.n; gains.push(ptItemName(gg.st, gg.k) + '×' + gg.n); }
         }
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
         const name = kind === 'chestN' ? '🎀精致盲盒' : kind === 'chestB' ? '🎲盲盒' : kind === 'chestR' ? '🎁稀有宝箱' : '💎高级宝箱';
@@ -5666,19 +5665,16 @@ async function doOpenChest(kind, n) { // v251 开宝箱
     if (Math.random() < _btR) { S.inv['butian'] = (S.inv['butian']|0) + 1; gains.push('🌟补天丹×1'); }
     const _usdDen = kind === 'chestB' ? 10000 : kind === 'chestN' ? 7500 : kind === 'chestR' ? 5000 : 2500; // v1221 美元额外掷（Ye 定精确概率，中了 $1；不占原奖励槽）
     if (Math.random() < 1 / _usdDen) { S.usd = (S.usd|0) + 1; gains.push('💵美元 $1'); }
-    if (kind === 'chestN' || kind === 'chestB') {
-      if (r < 0.5) { const g = 20 + Math.floor(Math.random() * 30); S.gold += g; gains.push('金元+' + g); }
-      else if (r < 0.8) { S.ores['sp1'] = (S.ores['sp1'] | 0) + 1; gains.push('下品灵石×1'); }
-      else { S.ores['sp2'] = (S.ores['sp2'] | 0) + 1; gains.push('中品灵石×1'); }
-    } else if (kind === 'chestR') {
-      if (r < 0.4) { S.ores['sp3'] = (S.ores['sp3'] | 0) + 1; gains.push('上品灵石×1'); }
-      else if (r < 0.7) { S.ores['sp4'] = (S.ores['sp4'] | 0) + 1; gains.push('极品灵石×1'); }
-      else { const k2 = 'lu' + (1 + Math.floor(Math.random() * 3)); S.mats[k2] = (S.mats[k2] | 0) + 1; gains.push((k2 === 'lu1' ? '一' : k2 === 'lu2' ? '二' : '三') + '品凝露×1'); }
-    } else {
-      if (r < 0.4) { S.ores['sp5'] = (S.ores['sp5'] | 0) + 2; gains.push('💠极品灵石×2'); }
-      else if (r < 0.7) { S.mats['maiPages'] = (S.mats['maiPages'] | 0) + 1; gains.push('🌀脉络残页×1'); }
-      else { const g = 100 + Math.floor(Math.random() * 100); S.gold += g; gains.push('金元+' + g); }
-    }
+    // v1302 本地回落同样全物品池
+    const _pool = [];
+    Object.keys(MATS).forEach(k => _pool.push(['mats', k]));
+    ['iron','copper','silver','gold','sp1','sp2','sp3','sp4','sp5'].forEach(k => _pool.push(['ores', k]));
+    Object.keys(C.MEDS || {}).forEach(k => _pool.push(['meds', k]));
+    ['pg1','pg2','pg3','pg4','pg5'].forEach(k => _pool.push(['pages', k]));
+    ['chicken','duck','goose','ostrich'].forEach(k => _pool.push(['eggs', k]));
+    const _pk = _pool[Math.floor(Math.random() * _pool.length)];
+    S[_pk[0]] = S[_pk[0]] || {}; S[_pk[0]][_pk[1]] = (S[_pk[0]][_pk[1]] | 0) + 1;
+    gains.push(ptItemName(_pk[0], _pk[1]) + '×1');
   }
   const name = kind === 'chestN' ? '🎀精致盲盒' : kind === 'chestB' ? '🎲盲盒' : kind === 'chestR' ? '🎁稀有宝箱' : '💎高级宝箱';
   log('good', name + ' ×' + n + ' 开启，获得：<span class="y">' + gains.join('、') + '</span>');

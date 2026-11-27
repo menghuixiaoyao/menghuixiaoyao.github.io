@@ -4559,6 +4559,12 @@ async function advBattleSettle(S, run, b) { // 冒险战斗结算
       }
     }
     const rolls = randRound([0.35, 0.6, 1, 1.5, 2.5][m.rank]); if (rolls) lines.push(await X.loot(rolls, null, m.rank >= 3 ? 1 : 0));
+    // v1302 Ye 定：九幽弯月以上杀怪极低概率掉仙府令，以下图掉洞府令
+    if (run.dk === 'abyss' || run.dk === 'nightmare') {
+      if (R() < 0.001) { S.mats['xianfu_token'] = (S.mats['xianfu_token'] | 0) + 1; run.rew.items['xianfu_token'] = (run.rew.items['xianfu_token'] | 0) + 1; lines.push('🏯 掉落 <b class="y">仙府令 ×1</b>'); }
+    } else if (run.dk === 'easy' || run.dk === 'mid' || run.dk === 'hard' || run.dk === 'brutal' || run.dk === 'hell') {
+      if (R() < 0.005) { S.mats['cave_token'] = (S.mats['cave_token'] | 0) + 1; run.rew.items['cave_token'] = (run.rew.items['cave_token'] | 0) + 1; lines.push('🏠 掉落 <b class="y">洞府令 ×1</b>'); }
+    }
   } else { // 战败：沿用冒险战败规则
     const lostSta = S.stamina, lostGold = Math.floor(S.gold * K.DEATH_GOLD_PCT), x = diff.xpL;
     if ((S.protect | 0) > 0) { // 🛡️新人保护：免除战败惩罚（不扣属性、体力不清零、不扣金元、不染伤病）
