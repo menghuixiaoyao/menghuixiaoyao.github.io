@@ -498,7 +498,7 @@ window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2
         if (S.herbGarden) S.herbGarden['h' + grade] = Math.max(0, (S.herbGarden['h' + grade]|0) - 1);
         let got = [];
         try { got = (C.advApplyGains ? C.advApplyGains(j) : []); } catch (_) { got = []; }
-        try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+        try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
         const left = S.herbGarden ? S.herbGarden['h' + grade]|0 : 0;
         log('good', `🌱 采集${['', '地品', '天品', '仙品'][grade]}灵草丛：${got.length ? got.join('、') : '空'}（剩余${left}丛）`); // v1322 提示采集品级（Ye 定）
         thunderGatherJudge();
@@ -514,7 +514,7 @@ window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2
   const hg2 = S.herbGarden;
   if ((hg2['h' + grade]|0) <= 0) { if (typeof toastLog === 'function') toastLog('sys', '草药还未长好'); return; }
   hg2['h' + grade]--;
-  try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+  try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
   const _h5 = ['h_str', 'h_agi', 'h_def', 'h_vit', 'h_int'];
   const _ym = {};
   for (let i = 0; i < 5 * grade; i++) { const k = _h5[Math.floor(Math.random() * _h5.length)]; _ym[k] = (_ym[k] | 0) + 1; }
@@ -843,7 +843,7 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
       if (r.ok && j && j.key) {
         if (!S.ores) S.ores = {};
         S.ores[j.key] = (S.ores[j.key]|0) + 1;
-        try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食，不够扣寿元（Ye 定）
+        try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食，不够扣寿元（Ye 定）
         if (S.reserveNode) S.reserveNode.o = j.remaining;
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
         log('good', `⛏️ 在灵脉矿区采集：${j.name}×1（剩余${j.remaining}块）`);
@@ -865,7 +865,7 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
   let knm = '矿石';
   if (k) { if (!S.ores) S.ores = {}; S.ores[k] = (S.ores[k]|0) + 1; knm = (C.ORES[k] && C.ORES[k].name) || k; }
   rn.o--;
-  try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+  try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
   log('good', `⛏️ 在灵脉矿区采集：${knm}×1（剩余${rn.o}块）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
@@ -910,7 +910,7 @@ window.doReserveVein = async function(t) { // v558 采灵脉；v1007 按大小�
         const vtn = Math.max(0, (typeof j.key === 'number') ? (j.key|0) : _want);
         const got = window._veinYield(vtn); // v1005 采灵脉直接出灵石/仙玉
         if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
-        try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+        try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
         if (S.reserveNode) { const _rn = S.reserveNode; if (!Array.isArray(_rn.vs)) _rn.vs = [_rn.v|0, 0, 0]; const _dt = ((_rn.vs[vtn]|0) > 0) ? vtn : _want; if (_dt >= 0 && (_rn.vs[_dt]|0) > 0) _rn.vs[_dt]--; _rn.v = (_rn.vs[0]|0) + (_rn.vs[1]|0) + (_rn.vs[2]|0); }
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
         log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（剩余${S.reserveNode ? S.reserveNode.v|0 : 0}条）`);
@@ -931,7 +931,7 @@ window.doReserveVein = async function(t) { // v558 采灵脉；v1007 按大小�
   const got = window._veinYield(vtn); // v1005 直接出货
   if (got === null) { if (typeof toastLog === 'function') toastLog('sys', '背包已满'); return; }
   rn.vs[vtn]--; rn.v = (rn.vs[0]|0) + (rn.vs[1]|0) + (rn.vs[2]|0);
-  try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+  try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
   log('good', `💎 在灵脉矿区采集：${veinNames[vtn]} → ${got}（该档剩余${rn.vs[vtn]}条）`);
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); openReserveSheet();
@@ -994,7 +994,7 @@ function ranchHarvestSrv(kind) { // v1313 养殖园收获服务器发放
       if (g.st === 'food') { S.food = S.food || {}; S.food[g.k] = (S.food[g.k] | 0) + g.n; knm = (C.MEATS[g.k] && C.MEATS[g.k].name) || g.k; }
       if (g.st === 'eggs') { S.eggs = S.eggs || {}; S.eggs[g.k] = (S.eggs[g.k] | 0) + g.n; knm = (C.EGGS[g.k] && C.EGGS[g.k].name) || g.k; }
     }
-    try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+    try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
     log('good', '🥚 在养殖园收获：' + knm + '×1（剩余' + (kind === 'meat' ? (S.ranch.m | 0) + '块' : (S.ranch.e | 0) + '枚') + '）');
     try { if (typeof thunderRanch === 'function') thunderRanch(); } catch (_) {}
     commit(); renderWorldMap(); openRanchSheetRender();
@@ -1011,7 +1011,7 @@ window.doRanchHunt = function() { // v666 一次收1块肉（修复v555未定义
   let knm = '肉';
   if (k) { if (!S.food) S.food = {}; S.food[k] = (S.food[k]|0) + 1; knm = (C.MEATS[k] && C.MEATS[k].name) || k; }
   r.m--;
-  try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+  try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
   log('good', `🥚 在养殖园收获：${knm}×1（剩余${r.m}块）`);
   try { if (typeof thunderRanch === 'function') thunderRanch(); } catch(_) {} // v809 养殖园收获触发雷云判定
   commit(); renderWorldMap(); openRanchSheet();
@@ -1027,7 +1027,7 @@ window.doRanchPatrol = function() { // v666 一次收1枚蛋（修复v555未定�
   let knm = '蛋';
   if (k) { if (!S.eggs) S.eggs = {}; S.eggs[k] = (S.eggs[k]|0) + 1; knm = (C.EGGS[k] && C.EGGS[k].name) || k; }
   r.e--;
-  try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
+  try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
   log('good', `🥚 在养殖园收获：${knm}×1（剩余${r.e}枚）`);
   try { if (typeof thunderRanch === 'function') thunderRanch(); } catch(_) {} // v809 养殖园收获触发雷云判定
   commit(); renderWorldMap(); openRanchSheet();
@@ -4574,7 +4574,7 @@ async function doCraft(skill, k, n, opt) {
           try { payLife(S); } catch (_) {}
           S.vigor = j.vigor; S.mana = j.mana;
           if (S.life && S.life.refine) { S.life.refine.lv = j.lifeLv; S.life.refine.xp = j.lifeXp; }
-          try { hungerDown(S, K.HUNGER_ACT, 1); } catch (_) {}
+          try { C.hungerDown(S, K.HUNGER_ACT, 1); } catch (_) {}
           if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
           r = { ok: true, n: j.n || 1, xp: 0, lvUp: j.lvUp || 0 };
         } else {
@@ -4601,7 +4601,7 @@ async function doCraft(skill, k, n, opt) {
           try { payLife(S); } catch(_){}
           S.vigor = j.vigor; S.mana = j.mana;
           if (S.life && S.life.refine) { S.life.refine.lv = j.lifeLv; S.life.refine.xp = j.lifeXp; }
-          try { hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
+          try { C.hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
           if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
           r = {ok: j.success, pot: j.key, n: j.n||0, xp: 0, lvUp: j.lvUp||0};
           xp += 0; // 服务端已加经验，本地 xp 仅用于显示（此处计 0，由 lvUp 体现）
@@ -5392,7 +5392,7 @@ async function doBrew(k, n) {
           try { payLife(S); } catch(_){} // 雷云判定（v661）
           S.vigor = j.vigor; S.mana = j.mana;
           S.alc.lv = j.alcLv; S.alc.xp = j.alcXp;
-          try { hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
+          try { C.hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
           if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
           // 转 UI 格式
           const potions = [];
@@ -6293,7 +6293,7 @@ async function gatherServer(S, kind, n) {
     }
     S.stamina = j.stamina;
     if (!j.fail && g && g.attr) S.attrs[g.attr] = (S.attrs[g.attr]|0) + 1;
-    try { if (typeof hungerDown === 'function') hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
+    try { if (typeof hungerDown === 'function') C.hungerDown(S, K.HUNGER_ACT, 1); } catch(_){}
     if (j.poison) { S.hpCur = Math.max(0, (S.hpCur|0) - j.poison); try { if (typeof poisonAcc !== 'undefined') poisonAcc += j.poison; } catch(_){} }
     if (S.buff && S.buff.k === 'luck') { S.buff.left = (S.buff.left|0) - 1; if (S.buff.left <= 0) S.buff = null; }
     if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
