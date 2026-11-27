@@ -1259,16 +1259,6 @@ function cityMoveThunder() {
           }
           if (isTrainCell) {
             if (w.px === x && w.py === y) {
-              if ((S.stamina|0) <= 0) { // v564 体力耗尽点⛰️区直接进闭关二选一，不再弹体力不足
-                const _im = (S.realm|0) === 0, _ix = (S.realm|0) >= 10;
-                const _ct = _im ? 'wushu' : 'cave', _vt = _im ? 'ningqi' : 'vein';
-                const _cn = _im ? '🥋 习武' : '🏔️ 洞府闭关', _vn = _im ? '🌀 凝气' : '⛰️ 灵脉闭关';
-                const _xR = 1 + C.maiMai(S) + C.szBigCount(S);
-                const _cd = _im ? '每分钟+1经验，安全' : (_ix ? `每小时+${_xR}仙力，参悟法则，安全无风险` : `每分钟+${1 + C.maiLuo(S)}法力，安全无风险`);
-                const _vd = _im ? '每小时凝气判定，攒引气入体' : (_ix ? `每小时+${_xR + 1}仙力，参悟法则，入关1小时后会被真人PK匹配` : `每分钟+${2 + C.maiLuo(S)}法力，可凝气🌀，入关1小时后会被真人PK匹配`);
-                if (typeof openSheet === 'function') openSheet(`<h2>⛰️ 闭关</h2><div class="grid2"><button class="btn" onclick="window._afkFromMap('${_ct}','${_cn}')">${_cn}<br><small>${_cd}</small></button><button class="btn" onclick="window._afkFromMap('${_vt}','${_vn}')">${_vn}<br><small>${_vd}</small></button></div>${_ix && (S.afkCarryMins|0) > 0 ? `<div class="hint">🧘 已存仙力零头 ${S.afkCarryMins|0} 分钟，入关继续凑满60分钟入账。</div>` : ''}`);
-                return;
-              }
               if (typeof sheetTrain === 'function') sheetTrain();
             } else if (cityMoveOk(w, x, y)) { // v849 缩地/大挪移
               w.px = x; w.py = y; if (typeof save === 'function') save(); renderWorldMap(); cityMoveThunder(); teamLeaderMoveSync(x, y); // v851；v1051 组队同步
@@ -1715,7 +1705,7 @@ try { if (typeof C !== 'undefined' && typeof C.afkTick === 'function' && typeof 
   if (!S.dead && S.stamina <= 0 && !S.afk) {
     const lbl = C.resLbl(S);
     ab.style.display = 'block';
-    ab.innerHTML = `🧘 <b>体力耗尽</b>，请点左侧地图⛰️区闭关积累${lbl}（无上限），下次签到或体力恢复时自动出关。`;
+    ab.innerHTML = `🧘 <b>体力耗尽</b>，可吃东西恢复，或自行去左侧地图⛰️区闭关积累${lbl}。`;
     if (!ab.dataset.ts10) { ab.dataset.ts10 = '1'; setTimeout(() => { ab.style.display = 'none'; delete ab.dataset.ts10; }, 10000); } // v561 体力耗尽横幅只显示10秒
   } else if (S.afk) {
     delete ab.dataset.ts10;
@@ -2891,12 +2881,6 @@ function checkAchievements() {
   try { if (typeof save === 'function') save(); } catch(e) {}
 }
 function sheetTrain() {
-  // 体力耗尽时直接弹系统选择框
-  if (S.stamina <= 0 && !S.afk && !S.dead) {
-    closeSheet();
-    doAfkChoose();
-    return;
-  }
   openSheet(`<h2>修炼</h2><div class="hint">消耗体力提升属性，1 体力 = 1 点。当前体力 <b class="g">${S.stamina}</b>，🍗饱食度 <b class="g">${S.hunger}</b>${(S.realm|0) >= 1 && window.LG ? `<br>🌟灵根 <b>${window.LG.name(S)}</b>：修炼 <b class="g">${window.LG.trainTxt(S)}</b> 概率多得1点，闭关收益 <b class="g">${window.LG.afkTxt(S)}</b>` : ''}</div>` + (C.hasSt(S, 'poison') ? `<div class="warn">☠️ 你身中剧毒：每次进入冒险生命 -${Math.max(1, Math.ceil(C.bumpPeak(S) * 5 * K.POISON_VIT))}，<b>再进 ${C.leftBeforeDeath(S, 'poison')} 次冒险将毒发身亡</b>！请先用解毒丹。</div>` : '') +
     ATTRS.map(k => GK[k] ? (kind => { const g = GATHER[kind], v = GV[kind]; return `<div class="row"><div class="lab">${GI[kind]} ${g.name} · ${AN[k]} <b>${S.attrs[k]}</b><small>${AN[k]} +1，获得${g.noun}${kind === 'read' ? `（学习/深度学习/小悟/中悟/大悟 ${Object.values(C.gatherProbs(S, 'read')).map(C.pct).join('/')}，${C.pct(C.skillPageChance(S))} 得技能残页）` : `（${kind === 'farm' ? '丰收' : '暴击'}率 ${C.pct(C.gatherCrit(S, kind))}，${kind === 'farm' ? '用于炼药' : '可在商店出售'}${kind === 'egg' ? `，${C.pct(K.PET_EGG_CHANCE)} 掏到灵宠蛋` : ''}）`}</small></div>
       <button class="btn" data-gather="${kind}" data-n="1" ${S.stamina >= 1 ? '' : 'disabled'}>${v} 1</button>
