@@ -869,6 +869,7 @@ window._veinYield = function(t) { // 灵脉产出表：小型 sp1/sp2/sp3、中�
   const pools = [['sp1', 'sp2', 'sp3'], ['sp3', 'sp4', 'sp5']];
   let k;
   if (t === 2) { const _x = Math.random(); k = _x < 0.45 ? 'sp4' : _x < 0.80 ? 'sp5' : 'xy'; }
+  else if (Math.random() < (t === 1 ? 1 / 3 : 2 / 3)) { const OP = [['iron', 475], ['copper', 285], ['silver', 142], ['gold', 48]]; let r = Math.random() * 950; k = 'iron'; for (const [ok, w] of OP) { r -= w; if (r < 0) { k = ok; break; } } } // v1318 灵脉也出矿石：小型2/3、中型1/3（Ye 定）
   else k = pools[t][Math.floor(Math.random() * 3)];
   if (k === 'xy') { S.xianyu = (S.xianyu|0) + 1; return '仙玉×1'; }
   const added = C.gainItem(S, 'ores', k, 1);
