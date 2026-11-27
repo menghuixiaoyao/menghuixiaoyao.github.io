@@ -496,6 +496,7 @@ window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2
       const j = resp && resp.json;
       if (resp.ok && j && j.ok) {
         if (S.herbGarden) S.herbGarden['h' + grade] = Math.max(0, (S.herbGarden['h' + grade]|0) - 1);
+        if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev); // v1347 同步服务端 rev，避免上传冲突把经验冲掉
         let got = [];
         try { got = (C.advApplyGains ? C.advApplyGains(j) : []); } catch (_) { got = []; }
         try { C.hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
@@ -999,6 +1000,7 @@ function ranchHarvestSrv(kind) { // v1313 养殖园收获服务器发放
   MHXY.api('/api/roll/ranch_harvest', { method: 'POST', body: { kind } }).then(function (r) {
     if (!r || !r.ok || !r.json || !r.json.ok) { if (typeof toastLog === 'function') toastLog('sys', kind === 'meat' ? '还没有肉' : '还没有蛋'); return; }
     if (r.json.ranch) S.ranch = r.json.ranch;
+    if (typeof r.json.rev === 'number' && MHXY.setBaseRev) MHXY.setBaseRev(r.json.rev); // v1347 同步服务端 rev，避免上传冲突把经验冲掉
     let knm = kind === 'meat' ? '肉' : '蛋';
     for (const g of (r.json.gains || [])) {
       if (g.st === 'food') { S.food = S.food || {}; S.food[g.k] = (S.food[g.k] | 0) + g.n; knm = (C.MEATS[g.k] && C.MEATS[g.k].name) || g.k; }
