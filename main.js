@@ -498,7 +498,7 @@ window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2
         try { got = (C.advApplyGains ? C.advApplyGains(j) : []); } catch (_) { got = []; }
         try { hungerDown(S, 1, 1); } catch (_) {} // v1320 每次采集得物资扣1饱食
         const left = S.herbGarden ? S.herbGarden['h' + grade]|0 : 0;
-        log('good', `🌱 在田药园采集${['', '地品', '天品', '仙品'][grade]}灵草丛：${got.length ? got.join('、') : '空'}（剩余${left}丛）`); // v1322 提示采集品级（Ye 定）
+        log('good', `🌱 采集${['', '地品', '天品', '仙品'][grade]}灵草丛：${got.length ? got.join('、') : '空'}（剩余${left}丛）`); // v1322 提示采集品级（Ye 定）
         thunderGatherJudge();
         commit(); renderWorldMap(); window._afterHerbSheet();
         if (typeof toastLog === 'function') toastLog('good', got.length ? ('采集' + got[0]) : '采药完成');
@@ -531,7 +531,7 @@ window.doHerbGather = async function(grade) { // v1241 一次采1丛，grade 1/2
     else _gains.push({ st: 'inv', k: sp.key, n: 1 });
   }
   const got = (C.advApplyGains ? C.advApplyGains({ gains: _gains }) : []);
-  log('good', `🌱 在田药园采集${['', '地品', '天品', '仙品'][grade]}灵草丛：${got.length ? got.join('、') : '空'}（剩余${hg2['h' + grade]}丛）`); // v1322 提示采集品级（Ye 定）
+  log('good', `🌱 采集${['', '地品', '天品', '仙品'][grade]}灵草丛：${got.length ? got.join('、') : '空'}（剩余${hg2['h' + grade]}丛）`); // v1322 提示采集品级（Ye 定）
   thunderGatherJudge(); // v718 采集触发雷云判定
   commit(); renderWorldMap(); window._afterHerbSheet();
   if (typeof toastLog === 'function') toastLog('good', got.length ? ('采集' + got[0]) : '采药完成');
