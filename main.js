@@ -431,8 +431,23 @@ function reserveHas(S) {
   return (S.reserveNode.o > 0 || (S.reserveNode.v | 0) > 0); // v538；v1261 草药不产，不计 h
 }
 // v540 田药园(3,2)：草药刷新
+// v1312 服务器时间：田药园/养殖园生长按服务器时钟算（本地时钟只作未同步时的回落）
+window._srvOffset = 0; window._srvSyncAt = 0;
+function serverNow() { return Date.now() + (window._srvOffset || 0); }
+function syncServerTime() {
+  try {
+    if (typeof MHXY === 'undefined' || !MHXY.api || !MHXY.loggedIn || !MHXY.loggedIn()) return;
+    if (Date.now() - (window._srvSyncAt || 0) < 60000) return;
+    window._srvSyncAt = Date.now();
+    const t0 = Date.now();
+    MHXY.api('/api/time').then(function (r) {
+      if (r && r.ok && r.json && r.json.now) window._srvOffset = (r.json.now | 0) - Math.floor((t0 + Date.now()) / 2);
+    }).catch(function () {});
+  } catch (_) {}
+}
 function herbTick(S) { // v1237 三档灵药丛：地品每分钟/天品每10分钟/仙品每半小时，各上限99
-  const now = Date.now();
+  syncServerTime();
+  const now = serverNow();
   if (!S.herbGarden) S.herbGarden = { h1: 0, h2: 0, h3: 0, t1: now, t2: now, t3: now };
   const hg = S.herbGarden;
   if (hg.h1 === undefined) { // v1237 迁移：旧版单株并入地品丛（旧 t 作三档计时起点）
@@ -736,7 +751,8 @@ window.thunderJudgeWithProb = function(baseP) { // v741 可调概率的雷云判
 };
 // v541 养殖园(2,0)：肉和蛋
 function ranchTick(S) { // v666 叠加；v1264 每 10 分钟肉/蛋各+1，上限99（r.t 基准不动，已攒数量不动）
-  const now = Date.now();
+  syncServerTime();
+  const now = serverNow();
   if (!S.ranch) S.ranch = { m: 0, e: 0, t: now };
   const r = S.ranch;
   if (!r.t) r.t = now; else if (r.t > now) r.t = now;
