@@ -4497,7 +4497,9 @@ window.lwDevour = function (idx, eatenIdx) { // v1331 吞噬得年份：在被�
     me.y = (me.y | 0) + gain;
     const _crit = Math.random() < 0.01; // v1334 1% 暴击：主灵物年份翻倍（Ye 定）
     if (_crit) me.y = (me.y | 0) * 2;
-    log('good', `🌿 ${C.LW_GRADE_NAMES[me.g - 1]}·${me.e} 吞噬 ${C.LW_GRADE_NAMES[prey.g - 1]}·${prey.e}（${prey.y} 年）${_sheng ? '，五行相生' : _same ? '，同属性' : _kef ? '，五行相克' : ''}，年份 <span class="g">+${gain}</span>${_crit ? '，<b class="y">暴击！主灵物年份翻倍</b>' : ''}，现 ${me.y} 年`);
+    const _up = (prey.g | 0) > (me.g | 0) && (me.g | 0) < 3 && Math.random() < 0.30; // v1336 吃高品质 30% 升品（Ye 定）
+    if (_up) me.g = (me.g | 0) + 1;
+    log('good', `🌿 ${C.LW_GRADE_NAMES[me.g - 1]}·${me.e} 吞噬 ${C.LW_GRADE_NAMES[prey.g - 1]}·${prey.e}（${prey.y} 年）${_sheng ? '，五行相生' : _same ? '，同属性' : _kef ? '，五行相克' : ''}，年份 <span class="g">+${gain}</span>${_crit ? '，<b class="y">暴击！主灵物年份翻倍</b>' : ''}${_up ? `，<b class="y">升品为${C.LW_GRADE_NAMES[(me.g | 0) - 1]}</b>` : ''}，现 ${me.y} 年`);
     commit(); sheetBag();
   } catch (_) {}
 };
