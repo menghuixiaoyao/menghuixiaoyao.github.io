@@ -608,7 +608,7 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
       else {
         reserveTick(S); const _rn = S.reserveNode;
         if ((_rn.o|0) > 0) { _fn = doReserveOre; _txt = '挖矿中……（自动）'; } // v1261 草药不产了
-        else if ((_rn.v|0) > 0) { _fn = doReserveVein; _txt = '采灵脉中……（自动）'; }
+        else if (window._autoVeinTier() >= 0) { _fn = doReserveVein; _txt = '采灵脉中……（自动）'; } // v1350 自动采集只数够格灵脉档（Ye 定）
       }
     } catch(_){}
     if (!_fn) {
@@ -859,7 +859,7 @@ window.doReserveOre = async function() { // v558 挖矿石；v666 一次挖1块
         if (typeof toastLog === 'function') toastLog('good', `采集${window._herbHtml(j.key, j.name)}×1`);
         return;
       }
-      if (j && j.error === 'no_ore') { if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); return; }
+      if (j && j.error === 'no_ore') { if (S.reserveNode) S.reserveNode.o = 0; if (typeof toastLog === 'function') toastLog('sys', '没有矿石'); try { openReserveSheet(); } catch(_){} return; } // v1350 服务端没矿同步本地剩余，自动采集下轮停
       if (r.status === 401) { /* 登录过期，回落本地 */ }
       else if (!r.netErr) { return; } // 服务端已响应（限流/冲突等），不回落，避免重复记账
     } catch(e) { /* 网络失败，回落本地 */ }
@@ -929,7 +929,8 @@ window.doReserveVein = async function(t) { // v558 采灵脉；v1007 按大小�
         if (typeof toastLog === 'function') toastLog('good', `采${veinNames[vtn]}：${got}`);
         return;
       }
-      if ((j||{}).error === 'no_vein' || !resp.netErr) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
+      if ((j||{}).error === 'no_vein') { try { const _rn = S.reserveNode; if (_rn && Array.isArray(_rn.vs) && _want >= 0) { _rn.vs[_want] = 0; _rn.v = (_rn.vs[0]|0) + (_rn.vs[1]|0) + (_rn.vs[2]|0); } } catch(_){} if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); try { openReserveSheet(); } catch(_){} return; } // v1350 服务端没灵脉同步本地该档剩余，自动采集下轮停
+      if (!resp.netErr) { if (typeof toastLog === 'function') toastLog('sys', '没有灵脉'); return; }
     } catch(e) { /* 回落本地 */ }
   }
   reserveTick(S);
