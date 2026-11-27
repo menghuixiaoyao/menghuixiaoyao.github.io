@@ -4487,10 +4487,12 @@ window.lwDevourPick = function (idx) { // v1331 灵物吞噬：选被吞的灵�
 window.lwDevour = function (idx, eatenIdx) { // v1331 吞噬得年份：在被吞年份内随机取，不超过其年份（Ye 定）
   try {
     const arr = S.lingwu || []; const me = arr[idx | 0]; const prey = arr[eatenIdx | 0]; if (!me || !prey || (idx | 0) === (eatenIdx | 0)) return;
-    const gain = 1 + Math.floor(Math.random() * Math.max(1, prey.y | 0));
+    const _gen = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
+    const _sheng = _gen[prey.e] === me.e; // v1332 相生属性更容易吃满（Ye 定）
+    const gain = _sheng ? Math.ceil(Math.max(1, prey.y | 0) * (0.5 + Math.random() * 0.5)) : 1 + Math.floor(Math.random() * Math.max(1, prey.y | 0));
     arr.splice(eatenIdx | 0, 1);
     me.y = (me.y | 0) + gain;
-    log('good', `🌿 ${C.LW_GRADE_NAMES[me.g - 1]}·${me.e} 吞噬 ${C.LW_GRADE_NAMES[prey.g - 1]}·${prey.e}（${prey.y} 年），年份 <span class="g">+${gain}</span>，现 ${me.y} 年`);
+    log('good', `🌿 ${C.LW_GRADE_NAMES[me.g - 1]}·${me.e} 吞噬 ${C.LW_GRADE_NAMES[prey.g - 1]}·${prey.e}（${prey.y} 年）${_sheng ? '，五行相生' : ''}，年份 <span class="g">+${gain}</span>，现 ${me.y} 年`);
     commit(); sheetBag();
   } catch (_) {}
 };
