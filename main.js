@@ -8418,6 +8418,8 @@ window.finishPk = function(chosen) {
 }
 function doReset() {
   if (!confirm('确定要重置存档吗？所有进度将被清除且无法恢复！')) return;
+  // v1307 重置存档同时退出服务器队伍（队伍存服务端，只清本地存档退不掉）
+  try { if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) MHXY.api('/api/world/team/leave', 'POST', {}); } catch (_) {}
   localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); window.S = S; closeSheet(); $('log').innerHTML = ''; welcome(); commit();
 }
 
