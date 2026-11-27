@@ -641,7 +641,7 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
     }
   };
   _doOne();
-  try { if (type === 'herb') openHerbSheet(); else openReserveSheet(); } catch(_){}
+  try { if (type === 'herb') openHerbSheet(); else if (type === 'ranch') openRanchSheet(); else openReserveSheet(); } catch(_){} // v1341 养殖园自动采集不再跳矿区（Ye 定）
 };
 window._advAuto = window._advAuto || { active: false, timer: null, dk: null, x: 0, y: 0, seq: 0 }; // v1216 冒险格自动采集状态
 window.advAutoSlots = function() { // v1216 当前格可采槽（与信息条同序同口径）
