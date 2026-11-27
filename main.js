@@ -590,7 +590,7 @@ window.toggleAutoGather = function(type) { // v720 自动采集开关；v733 极
     if (typeof S !== 'undefined' && S && S.thunderOk) { window.toggleAutoGather(type); return; }
     let _fn = null, _txt = '';
     try {
-      if (type === 'herb') { herbTick(S); if (((S.herbGarden.h1|0) + (S.herbGarden.h2|0) + (S.herbGarden.h3|0)) > 0) { _fn = doHerbGather; _txt = '采药中……（自动）'; } }
+      if (type === 'herb') { herbTick(S); const _hrm = S.realm|0; const _hg = (S.herbGarden.h1|0) + (_hrm >= 4 ? (S.herbGarden.h2|0) : 0) + (_hrm >= 8 ? (S.herbGarden.h3|0) : 0); if (_hg > 0) { _fn = doHerbGather; _txt = '采药中……（自动）'; } } // v1342 自动采集只数够格的档（Ye 定）
       else if (type === 'ranch') { // v799 养殖园自动；v809 改随机：肉/蛋随机收
         try { if (typeof ranchTick === 'function') ranchTick(S); } catch(_) {}
         const _rr = S.ranch || {};
