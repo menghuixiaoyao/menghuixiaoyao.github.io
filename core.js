@@ -4498,7 +4498,7 @@ function advCtx(S, run, lines) { // 事件结果工具
                 }
               }
               commit();
-              return `获得 <span class="y">${got.join(' ')}</span>`;
+              return got.length ? `获得 <span class="y">${got.join(' ')}</span>` : '';
             }
             }
           } catch(e) {}
@@ -4507,7 +4507,7 @@ function advCtx(S, run, lines) { // 事件结果工具
         for (let i = 0; i < rolls; i++) { let e, g = 0; do { e = lootRoll(S, Math.min(8, t + (bonus || 0) + (run.dk === 'mijing' ? 2 : 0)), run.dk); } while (cats && !cats.includes(e.st) && ++g < 60);
           if (e.st === 'gear') { const gr = rollGear(S, t + (bonus || 0)); const key = `${gr.k}|${gr.set}|${gr.q}`; if (S.gearBag.length < bagCap(S)) { S.gearBag.push(gr); rw.items['gear:' + key] = (rw.items['gear:' + key] || 0) + 1; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span>`); } else { const price = gearPrice(gr); S.gold += price; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span><small>（包满自动卖+${price}金）</small>`); } }
           else { const n = e.n > 1 ? ri(1, e.n) : 1; X.put(e.st, e.k, n); got.push(`${lootLabel(e.st, e.k)}×${n}`); } }
-        return `获得 <span class="y">${got.join(' ')}</span>`; },
+        return got.length ? `获得 <span class="y">${got.join(' ')}</span>` : ''; },
     take: (st, k, n) => { if ((S[st][k] -= n) <= 0) delete S[st][k]; },
     hurt: k => { if (k === 'poison' && C.toxImmune(S)) return '（百毒不侵，毒奈何不了你）'; if (hasSt(S, k)) return `（已${STATUS[k].name}）`; addStatus(S, k); run.newSt = (run.newSt || []).concat(k); return `<span class="r">${STATUS[k].icon}${STATUS[k].name}</span>`; }, // v1140 百毒不侵：冒险中毒被挡
     cure: k => { if (!hasSt(S, k)) return false; cureStatus(S, k); return true; },
@@ -4540,7 +4540,7 @@ async function advBattleSettle(S, run, b) { // 冒险战斗结算
   run.newSt = (run.newSt || []).concat(res.newSt);
   const X = advCtx(S, run), lines = [];
   if (win) { S.stats.advWin++; S.stats.advWinTotal = (S.stats.advWinTotal || 0) + 1;
-    const _shaP = (m.rank >= 4) ? 0.3 : 0.1; if (R() < _shaP) { S.inv['sha'] = (S.inv['sha'] || 0) + 1; lines.push(`👹 击杀获得 <b class="y">煞气 ×1</b>`); } run.rew.wins++; lines.push(`战胜 <span class="${rk.cls}">【${rk.name}】${m.name}</span>：` + X.gain(ADV_FIGHT_U * rk.rew) + '，' + X.xp(ADV_FIGHT_U * rk.rew));
+    run.rew.wins++; // v1305 煞气改服务端击杀凭证兑付时掷 lines.push(`战胜 <span class="${rk.cls}">【${rk.name}】${m.name}</span>：` + X.gain(ADV_FIGHT_U * rk.rew) + '，' + X.xp(ADV_FIGHT_U * rk.rew));
     const dwx = (DIFFS[run.dk] || {}).wx, _we = dwx ? wxByK(dwx) : null;
     if (_we) { // 五行：王必掉1对应残物；其他怪基础2%，每次不出+1%，出了清零（王不影响保底）
       if (m.rank >= 4) {
@@ -4558,13 +4558,7 @@ async function advBattleSettle(S, run, b) { // 冒险战斗结算
         }
       }
     }
-    const rolls = randRound([0.35, 0.6, 1, 1.5, 2.5][m.rank]); if (rolls) lines.push(await X.loot(rolls, null, m.rank >= 3 ? 1 : 0));
-    // v1302 Ye 定：九幽弯月以上杀怪极低概率掉仙府令，以下图掉洞府令
-    if (run.dk === 'abyss' || run.dk === 'nightmare') {
-      if (R() < 0.001) { S.mats['xianfu_token'] = (S.mats['xianfu_token'] | 0) + 1; run.rew.items['xianfu_token'] = (run.rew.items['xianfu_token'] | 0) + 1; lines.push('🏯 掉落 <b class="y">仙府令 ×1</b>'); }
-    } else if (run.dk === 'easy' || run.dk === 'mid' || run.dk === 'hard' || run.dk === 'brutal' || run.dk === 'hell') {
-      if (R() < 0.005) { S.mats['cave_token'] = (S.mats['cave_token'] | 0) + 1; run.rew.items['cave_token'] = (run.rew.items['cave_token'] | 0) + 1; lines.push('🏠 掉落 <b class="y">洞府令 ×1</b>'); }
-    }
+    const rolls = randRound([0.35, 0.6, 1, 1.5, 2.5][m.rank]); const _lt = await X.loot(rolls, null, m.rank >= 3 ? 1 : 0); if (_lt) lines.push(_lt); // v1305 rolls=0 也兑凭证（煞气/令服务端掷）
   } else { // 战败：沿用冒险战败规则
     const lostSta = S.stamina, lostGold = Math.floor(S.gold * K.DEATH_GOLD_PCT), x = diff.xpL;
     if ((S.protect | 0) > 0) { // 🛡️新人保护：免除战败惩罚（不扣属性、体力不清零、不扣金元、不染伤病）
