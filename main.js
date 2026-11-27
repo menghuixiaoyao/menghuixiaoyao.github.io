@@ -5289,7 +5289,7 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
   try { if (window.MHXY && MHXY.loggedIn()) MHXY.api('/api/profile/title', { method: 'POST', body: { title: S.titleAch || '' } }).catch(() => {}); } catch(_) {} // v1140 轮回后同步称号（百毒不侵已随轮回消失）
   if (r.err) return;
   // v1308 轮回自动退出服务器队伍（同重置存档）
-  try { if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) MHXY.api('/api/world/team/leave', 'POST', {}); } catch (_) {}
+  try { if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) { MHXY.api('/api/world/team/leave', 'POST', {}); MHXY.api('/api/xianyuan/unbind_all', 'POST', {}); } } catch (_) {} // v1311 轮回/重置自动取消全部仙缘绑定（Ye 定）
   S.forceReinc = false; S.forceReincWhy = null;
   closeSheet();
   const rb = C.reincBonus(S);
@@ -8437,7 +8437,7 @@ window.finishPk = function(chosen) {
 function doReset() {
   if (!confirm('确定要重置存档吗？所有进度将被清除且无法恢复！')) return;
   // v1307 重置存档同时退出服务器队伍（队伍存服务端，只清本地存档退不掉）
-  try { if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) MHXY.api('/api/world/team/leave', 'POST', {}); } catch (_) {}
+  try { if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) { MHXY.api('/api/world/team/leave', 'POST', {}); MHXY.api('/api/xianyuan/unbind_all', 'POST', {}); } } catch (_) {} // v1311 轮回/重置自动取消全部仙缘绑定（Ye 定）
   localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); window.S = S; closeSheet(); $('log').innerHTML = ''; welcome(); commit();
 }
 
