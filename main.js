@@ -4477,6 +4477,23 @@ window.lwEat = function (idx) {
     commit(); sheetBag();
   } catch (_) {}
 };
+window.lwDevourPick = function (idx) { // v1331 灵物吞噬：选被吞的灵物（Ye 定）
+  try {
+    const arr = S.lingwu || []; const me = arr[idx | 0]; if (!me) return;
+    const btns = arr.map((w, i) => i === (idx | 0) ? '' : `<button class="btn full" onclick="window.lwDevour(${idx | 0},${i})">${C.LW_GRADE_NAMES[w.g - 1]}·${w.e}（${w.y} 年）</button>`).join('');
+    openSheet(`<h2>🌿 灵物吞噬</h2><div class="hint">${C.LW_GRADE_NAMES[me.g - 1]}·${me.e}（${me.y} 年）吞噬另一株灵物，年份随机增加，不超过被吞者的年份。选要吞的：</div>${btns}<button class="btn full" data-a="close">取消</button>`);
+  } catch (_) {}
+};
+window.lwDevour = function (idx, eatenIdx) { // v1331 吞噬得年份：在被吞年份内随机取，不超过其年份（Ye 定）
+  try {
+    const arr = S.lingwu || []; const me = arr[idx | 0]; const prey = arr[eatenIdx | 0]; if (!me || !prey || (idx | 0) === (eatenIdx | 0)) return;
+    const gain = 1 + Math.floor(Math.random() * Math.max(1, prey.y | 0));
+    arr.splice(eatenIdx | 0, 1);
+    me.y = (me.y | 0) + gain;
+    log('good', `🌿 ${C.LW_GRADE_NAMES[me.g - 1]}·${me.e} 吞噬 ${C.LW_GRADE_NAMES[prey.g - 1]}·${prey.e}（${prey.y} 年），年份 <span class="g">+${gain}</span>，现 ${me.y} 年`);
+    commit(); sheetBag();
+  } catch (_) {}
+};
 window.eatHerb = async function (key) { // v1136 吃属性草
   try {
     await srvProg('/api/progress/eat_herb', { key });
@@ -4728,7 +4745,7 @@ function sheetBag() {
   const _seals = (S.sealed || []).filter(x => x && !x.done);
   openSheet(`<h2>背包</h2><div class="hint">金元 <b class="y">${S.gold}</b> · ${MAGATAMA}仙玉 <b class="y">${S.xianyu || 0}</b> · 💵美元 <b class="y">${S.usd || 0}</b> · 🌒下品 <b class="y">${S.ores.sp2|0}</b> · 🌗中品 <b class="y">${S.ores.sp3|0}</b> · 💎上品 <b class="y">${S.ores.sp4|0}</b> · 💠极品 <b class="y">${S.ores.sp5|0}</b>。物品 <b class="y">${C.itemCount(S)}/${C.itemCap(S)}</b>（小型储物袋可扩充）。服用丹药可永久提升属性。</div>` +
     `<h3>⛏️ 器具</h3>` + toolCardHtml('pick', 'bag') + toolCardHtml('hoe', 'bag') +
-    (((S.lingwu || []).length || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => { const _base = Math.floor(w.y * 0.1), _f = C.eleFactorL(S, w.e), _gain = Math.floor(_base * _f), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w.e]}">${w.e}</b> · ${w.y} 年<small>炼寿元丹的材料（炼药面板）；生吃：寿元 +${_gain}${_note ? `（${_note}）` : ''}</small></div><button class="btn" onclick="window.lwEat(${i})">生吃</button></div>`; }).join('') + [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0).map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>种到洞府灵田，收割时才定五行，可长${C.LW_GRADE_NAMES[g - 1]}</small></div></div>`).join('') : '') +
+    (((S.lingwu || []).length || Object.values(S.lwseeds || {}).some(v => (v | 0) > 0)) ? `<h3>🌿 灵物</h3>` + (S.lingwu || []).map((w, i) => { const _base = Math.floor(w.y * 0.1), _f = C.eleFactorL(S, w.e), _gain = Math.floor(_base * _f), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[w.g - 1]}">${C.LW_GRADE_NAMES[w.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[w.e]}">${w.e}</b> · ${w.y} 年<small>炼寿元丹的材料（炼药面板）；生吃：寿元 +${_gain}${_note ? `（${_note}）` : ''}</small></div><button class="btn" onclick="window.lwEat(${i})">生吃</button><button class="btn" onclick="window.lwDevourPick(${i})">吞噬</button></div>`; }).join('') + [1, 2, 3].filter(g => ((S.lwseeds || {})[g] | 0) > 0).map(g => `<div class="row"><div class="lab"><b style="color:${C.GRADE_COLORS[g - 1]}">${C.LW_SEED_NAMES[g - 1]}</b> ×${S.lwseeds[g]}<small>种到洞府灵田，收割时才定五行，可长${C.LW_GRADE_NAMES[g - 1]}</small></div></div>`).join('') : '') +
     ((S.herbs && ((S.herbs.lq1|0) + (S.herbs.lq2|0) + (S.herbs.lq3|0)) > 0) ? `<h3>🌿 灵草</h3>` + [1, 2, 3].filter(g => ((S.herbs['lq' + g]|0) > 0)).map(g => `<div class="row"><div class="lab">${window._herbHtml('lq' + g)} ×${S.herbs['lq' + g]}<small>田药园所采，可挂拍卖行出售</small></div></div>`).join('') : '') +
     (((S.syd || []).length) ? `<h3>💊 寿元丹</h3>` + S.syd.map((p, i) => { const _f = C.eleFactorL(S, p.e), _note = C.eleNoteL(_f); return `<div class="row"><div class="lab"><b style="color:${C.LW_ELE_COLORS[p.e]}">${p.e}行寿元丹</b><small>寿元 +${Math.floor(p.val * _f)}${_note ? `（${_note}）` : ''} · 积丹毒</small></div><button class="btn gold" onclick="window.eatSyd(${i})">服用</button></div>`; }).join('') : '') +
     `<h3>丹药</h3>` +
