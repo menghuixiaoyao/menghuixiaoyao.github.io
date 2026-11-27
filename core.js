@@ -1569,8 +1569,8 @@ function useLu(S, k, n) { // 服用凝露：每点随机加到一项属性
 function canCheckin(S) { return S.lastCheckin !== todayStr(); }
 const vigorGain = S => K.VIGOR_BASE + Math.floor(S.level / 2), vigorCap = S => 10;
 function checkinAmount(S) { const totalLv = (S.realm|0) * 10 + (S.level|0); const base = K.CHECKIN_STAMINA + (totalLv - 1) * K.CHECKIN_PER_LV; return S.race === 'mech' ? Math.floor(base * 1.2) : base; } // 按累计总等级（突破不重置）；v1088 机械不知疲倦：签到体力 +20%
-function checkin(S, force) {
-  if (!force && !canCheckin(S)) return { ok: false };
+function checkin(S, force, srv) {
+  if (!srv && !force && !canCheckin(S)) return { ok: false };
   if (S.afk) S.afk = null; // AFK由doCheckin处理结算，Core只清空标记
   let revived = null; // 次日签到复活：流血致死 → 生命 1、流血清除；毒发致死 → 生命 = 中毒基数一半（向上取整），中毒仍在（基数不变）
   if (S.dead) {
@@ -1579,14 +1579,22 @@ function checkin(S, force) {
     else { S.attrs.vit = K.ATTR_MIN; cureStatus(S, 'bleed'); cureStatus(S, 'poison'); }
     revived.vit = S.attrs.vit; S.dead = null;
   }
-  const gain = staGain(S, checkinAmount(S));
-  const today = todayStr(), yesterday = todayStr(new Date(Date.now() - 86400000));
-  if (S.lastCheckin === yesterday) S.consecDays = (S.consecDays || 0) + 1;
-  else if (S.lastCheckin !== today) S.consecDays = 1;
+  // v1306 srv：体力/活力/连签/储物袋/签到计数已由服务端发放，此处只同步绝对值，其余日结（复活/丹毒/流血/寿元）仍本地
+  const gain = srv ? (srv.gain | 0) : staGain(S, checkinAmount(S));
+  const today = srv ? srv.date : todayStr(), yesterday = todayStr(new Date(Date.now() - 86400000));
   let ringReward = false;
-  const cd = S.consecDays || 0;
-  if (cd === 7 && !S.signPouchDone && (S.pouch || 0) < 10) { S.pouch = (S.pouch || 0) + 1; S.signPouchDone = 1; ringReward = true; } // v882 签到送小型储物袋：一个号限1次
-  S.lastCheckin = today; S.stamina += gain; S.stats.checkins++; S.stats.checkinsTotal = (S.stats.checkinsTotal || 0) + 1;
+  if (srv) {
+    S.consecDays = srv.consecDays | 0; ringReward = !!srv.ringReward;
+    if (ringReward) S.signPouchDone = 1;
+    S.pouch = srv.pouch | 0; S.lastCheckin = today; S.stamina = srv.stamina | 0;
+    S.stats.checkins = srv.checkins | 0; S.stats.checkinsTotal = srv.checkinsTotal | 0;
+  } else {
+    if (S.lastCheckin === yesterday) S.consecDays = (S.consecDays || 0) + 1;
+    else if (S.lastCheckin !== today) S.consecDays = 1;
+    const cd = S.consecDays || 0;
+    if (cd === 7 && !S.signPouchDone && (S.pouch || 0) < 10) { S.pouch = (S.pouch || 0) + 1; S.signPouchDone = 1; ringReward = true; } // v882 签到送小型储物袋：一个号限1次
+    S.lastCheckin = today; S.stamina += gain; S.stats.checkins++; S.stats.checkinsTotal = (S.stats.checkinsTotal || 0) + 1;
+  }
   // v432 中毒复活不回满，按复活后生命属性折算
   if (revived && revived.cause === 'poison') {
     const _maxHp = C.bumpPeak(S) * 5;
@@ -1601,7 +1609,7 @@ function checkin(S, force) {
   if (toxLoss > 0) S.lifespan = Math.max(0, S.lifespan - toxLoss);
   let bled = 0, died = null, forceReinc = false;
   if (S.lifespan <= 0 && !S.dead) { forceReinc = true; S.forceReinc = true; S.forceReincWhy = 'life'; } // 寿元耗尽：强制轮回，不再坐化；v1178 标记来源供横幅/提示分文案
-  const vigor = Math.max(0, Math.min(vigorGain(S), vigorCap(S) - S.vigor)); S.vigor += vigor; /* 活力可结转，最多 3 天量；死亡不清空活力 */
+  const vigor = srv ? (srv.vigor | 0) : Math.max(0, Math.min(vigorGain(S), vigorCap(S) - S.vigor)); if (srv) S.vigor = srv.vigorNow | 0; else S.vigor += vigor; /* 活力可结转，最多 3 天量；死亡不清空活力 */
   const mana = 0; /* 签到不回法力 */
   if (S.status.bleed) { // 流血不止：每次签到扣流血时生命上限的 20%，扣到 0 即死亡
     bled = Math.max(1, Math.ceil(S.attrs.vit * K.BLEED_CHECKIN)); S.attrs.vit = Math.max(0, S.attrs.vit - bled);
@@ -4491,6 +4499,13 @@ function advCtx(S, run, lines) { // 事件结果工具
                   const gr = rollGear(S, t + (bonus || 0)); const key = `${gr.k}|${gr.set}|${gr.q}`;
                   if (S.gearBag.length < bagCap(S)) { S.gearBag.push(gr); rw.items['gear:' + key] = (rw.items['gear:' + key] || 0) + 1; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span>`); }
                   else { const price = gearPrice(gr); S.gold += price; got.push(`<span class="gq${gr.q}">${lootLabel('gear', key)}</span><small>（包满自动卖+${price}金）</small>`); }
+                } else if (d.st === 'gold') { // v1306 服务端发放金元
+                  S.gold = (S.gold | 0) + (d.n | 0); rw.gold += d.n | 0;
+                  got.push(`金元 +${d.n | 0}`);
+                } else if (d.st === 'pts') { // v1306 服务端发放属性点（不入 rw.gains，避免结算重复申报）
+                  const _pg = d.gains || {}; const _pt = [];
+                  for (const a in _pg) if (_pg[a] > 0) { S.attrs[a] = (S.attrs[a] | 0) + _pg[a]; _pt.push(AN[a] + '+' + _pg[a]); }
+                  if (_pt.length) got.push(_pt.join(' '));
                 } else {
                   // 服务端已发放到 D1，本地同步
                   X.put(d.st, d.k, d.n);
@@ -4540,23 +4555,20 @@ async function advBattleSettle(S, run, b) { // 冒险战斗结算
   run.newSt = (run.newSt || []).concat(res.newSt);
   const X = advCtx(S, run), lines = [];
   if (win) { S.stats.advWin++; S.stats.advWinTotal = (S.stats.advWinTotal || 0) + 1;
-    run.rew.wins++; // v1305 煞气改服务端击杀凭证兑付时掷 lines.push(`战胜 <span class="${rk.cls}">【${rk.name}】${m.name}</span>：` + X.gain(ADV_FIGHT_U * rk.rew) + '，' + X.xp(ADV_FIGHT_U * rk.rew));
+    run.rew.wins++;
+    const _srvGain = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn() && run.shared && run.shared.on);
+    lines.push(`战胜 <span class="${rk.cls}">【${rk.name}】${m.name}</span>` + (_srvGain ? '' : '：' + X.gain(ADV_FIGHT_U * rk.rew) + '，' + X.xp(ADV_FIGHT_U * rk.rew))); // v1306 在线战斗点/金改服务端凭证发放
     const dwx = (DIFFS[run.dk] || {}).wx, _we = dwx ? wxByK(dwx) : null;
-    if (_we) { // 五行：王必掉1对应残物；其他怪基础2%，每次不出+1%，出了清零（王不影响保底）
-      if (m.rank >= 4) {
-        S.wxFrag[dwx] = (S.wxFrag[dwx] | 0) + 1; const _wk = 'wxFrag:' + dwx; run.rew.items[_wk] = (run.rew.items[_wk] | 0) + 1;
-        lines.push(`获得 <b style="color:${_we.color}">【${_we.name}残物】×1</b>`);
-      } else {
-        if (!S.wxPity || typeof S.wxPity !== 'object') S.wxPity = {};
-        const _pity = Math.max(0, Math.min(1, +(S.wxPity[dwx] || 0)));
-        if (R() < WX_FRAG_DROP + _pity) {
-          S.wxFrag[dwx] = (S.wxFrag[dwx] | 0) + 1; const _wk = 'wxFrag:' + dwx; run.rew.items[_wk] = (run.rew.items[_wk] | 0) + 1;
-          S.wxPity[dwx] = 0;
-          lines.push(`获得 <b style="color:${_we.color}">【${_we.name}残物】×1</b>`);
-        } else {
-          S.wxPity[dwx] = Math.min(1, _pity + 0.01);
+    if (_we && typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) { // v1306 五行残物改服务端掷（王必掉、其他2%+保底，保底存服务端）
+      try {
+        const _wr = await MHXY.api('/api/progress/wxfrag', 'POST', { dk: run.dk, rank: m.rank | 0 });
+        if (_wr.ok && _wr.json && _wr.json.ok) {
+          if (typeof MHXY.setBaseRev === 'function' && _wr.json.rev) MHXY.setBaseRev(_wr.json.rev);
+          S.wxFrag = S.wxFrag || {}; S.wxPity = S.wxPity || {};
+          S.wxFrag[dwx] = _wr.json.frag | 0; S.wxPity[dwx] = Number(_wr.json.pity) || 0;
+          if (_wr.json.got) { const _wk = 'wxFrag:' + dwx; run.rew.items[_wk] = (run.rew.items[_wk] | 0) + 1; lines.push(`获得 <b style="color:${_we.color}">【${_we.name}残物】×1</b>`); }
         }
-      }
+      } catch (_) {}
     }
     const rolls = randRound([0.35, 0.6, 1, 1.5, 2.5][m.rank]); const _lt = await X.loot(rolls, null, m.rank >= 3 ? 1 : 0); if (_lt) lines.push(_lt); // v1305 rolls=0 也兑凭证（煞气/令服务端掷）
   } else { // 战败：沿用冒险战败规则

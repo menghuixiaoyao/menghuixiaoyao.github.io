@@ -4904,8 +4904,23 @@ function doCheckin(force) {
     afterAct(); commit();
     if (!force && !C.canCheckin(S)) return; // 已签到：只出关，不再签到
   }
+  // v1306 在线签到：体力/活力/连签先走服务端发放，再跑本地日结（复活/丹毒/流血）
+  if (!force && typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) {
+    MHXY.api('/api/progress/checkin', 'POST', {}).then(function (res) {
+      if (res && res.ok && res.json && res.json.ok) {
+        if (typeof MHXY.setBaseRev === 'function' && res.json.rev) MHXY.setBaseRev(res.json.rev);
+        doCheckinSrv(res.json);
+      } else if (res && res.json && res.json.error === 'already') { toastLog('sys', '今日已签到，明天再来吧。'); }
+      else { const r0 = C.checkin(S, force); if (r0.ok) doCheckinFx(r0); else toastLog('sys', '今日已签到，明天再来吧。'); }
+    }).catch(function () { const r0 = C.checkin(S, force); if (r0.ok) doCheckinFx(r0); else toastLog('sys', '今日已签到，明天再来吧。'); });
+    return;
+  }
   const r = C.checkin(S, force);
   if (!r.ok) { toastLog('sys', '今日已签到，明天再来吧。'); return; }
+  doCheckinFx(r);
+}
+function doCheckinSrv(srv) { const r = C.checkin(S, false, srv); if (r.ok) doCheckinFx(r, srv); }
+function doCheckinFx(r, srv) {
   // v978 X 验证用户签到体力翻倍；v1286 多出的一倍走邮箱发送（服务端按认证状态发，本地直加会被同步钳掉）
   try { xBonusMail(); } catch(_) {}
   if (r.toxLoss) log('bad', `🧪 <b>丹毒攻心</b>（丹毒 ${S.danDu|0}），寿元 <span class="r">-${r.toxLoss} 年</span>`); // v1138
@@ -4913,7 +4928,7 @@ function doCheckin(force) {
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
   log('gold', `📅 签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
   try { if (typeof addMerit === 'function') addMerit(1, '每日签到'); } catch(_) {} // v893
-  try { if (typeof addFame === 'function') addFame(1, '每日签到'); const _idb = ID_TIERS[idTier()].ci; if (_idb > 0) { S.stamina = (S.stamina|0) + _idb; log('gold', `🎖️ 身份特权：签到体力 +${_idb}（${ID_TIERS[idTier()].name}）`); } } catch(_) {}
+  try { if (typeof addFame === 'function') addFame(1, '每日签到'); const _idb = srv ? (srv.idb | 0) : ID_TIERS[idTier()].ci; if (_idb > 0) { if (!srv) S.stamina = (S.stamina|0) + _idb; log('gold', `🎖️ 身份特权：签到体力 +${_idb}（${ID_TIERS[idTier()].name}）`); } } catch(_) {}
   afterAct();
   commit();
   if (r.forceReinc) doReincarnate(true);
