@@ -5644,6 +5644,7 @@ async function doOpenChest(kind, n) { // v251 开宝箱
           if (gg.st === 'gold') { S.gold = (S.gold|0) + gg.n; gains.push('金元+' + gg.n); }
           else if (gg.st === 'usd') { S.usd = (S.usd|0) + gg.n; gains.push('💵美元 $' + gg.n); }
           else if (gg.st === 'xianyu') { S.xianyu = (S.xianyu|0) + gg.n; gains.push('💠仙玉×' + gg.n); }
+          else if (gg.st === 'petEggs') { S.petEggs = (S.petEggs|0) + gg.n; gains.push('🥚灵宠蛋×' + gg.n); }
           else { S[gg.st] = S[gg.st] || {}; S[gg.st][gg.k] = (S[gg.st][gg.k]|0) + gg.n; gains.push(ptItemName(gg.st, gg.k) + '×' + gg.n); }
         }
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
@@ -5672,9 +5673,13 @@ async function doOpenChest(kind, n) { // v251 开宝箱
     Object.keys(C.MEDS || {}).forEach(k => _pool.push(['meds', k]));
     ['pg1','pg2','pg3','pg4','pg5'].forEach(k => _pool.push(['pages', k]));
     ['chicken','duck','goose','ostrich'].forEach(k => _pool.push(['eggs', k]));
+    _pool.push(['inv', 'mai'], ['inv', 'sha'], ['inv', 'butian'], ['petEggs', 'petegg']);
+    ['rabbit','deer','wolf','tiger'].forEach(k => { _pool.push(['food', k]); _pool.push(['prey', k]); });
+    ['eb1','eb2','eb3','eb4','eb5'].forEach(k => _pool.push(['expBooks', k]));
+    ['fireball','smash','heal','shield'].forEach(k => _pool.push(['skillBooks', k]));
     const _pk = _pool[Math.floor(Math.random() * _pool.length)];
-    S[_pk[0]] = S[_pk[0]] || {}; S[_pk[0]][_pk[1]] = (S[_pk[0]][_pk[1]] | 0) + 1;
-    gains.push(ptItemName(_pk[0], _pk[1]) + '×1');
+    if (_pk[0] === 'petEggs') { S.petEggs = (S.petEggs | 0) + 1; gains.push('🥚灵宠蛋×1'); }
+    else { S[_pk[0]] = S[_pk[0]] || {}; S[_pk[0]][_pk[1]] = (S[_pk[0]][_pk[1]] | 0) + 1; gains.push(ptItemName(_pk[0], _pk[1]) + '×1'); }
   }
   const name = kind === 'chestN' ? '🎀精致盲盒' : kind === 'chestB' ? '🎲盲盒' : kind === 'chestR' ? '🎁稀有宝箱' : '💎高级宝箱';
   log('good', name + ' ×' + n + ' 开启，获得：<span class="y">' + gains.join('、') + '</span>');

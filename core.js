@@ -258,10 +258,10 @@ const QNAME = ['', '普通', '精良', '极品'], QMULT = [0, 1, 1.5, 2];
 const DISHES = {
   d_rabbit: { name: '烤兔肉',       lv: 1, need: [['food', 'rabbit', 1], ['mats', 'h_agi', 20]], hunger: 20, sta: 2, buff: 'agi' },
   d_egg:    { name: '香煎鸡蛋',     lv: 1, need: [['eggs', 'chicken', 2], ['mats', 'h_def', 20]], hunger: 15, sta: 1, buff: 'def' },
-  d_duck:   { name: '灵草鸭蛋羹',   lv: 2, need: [['eggs', 'duck', 1], ['mats', 'h_agi', 20]], hunger: 20, sta: 2, buff: 'agi' },
-  d_ostrich:{ name: '灵草鸵鸟蛋',   lv: 3, need: [['eggs', 'ostrich', 1], ['mats', 'h_str', 20]], hunger: 40, sta: 5, buff: 'str' },
+  d_duck:   { name: '灵草鸭蛋羹',   lv: 1, need: [['eggs', 'duck', 1], ['mats', 'h_agi', 20]], hunger: 20, sta: 2, buff: 'agi' },
+  d_ostrich:{ name: '灵草鸵鸟蛋',   lv: 1, need: [['eggs', 'ostrich', 1], ['mats', 'h_str', 20]], hunger: 40, sta: 5, buff: 'str' },
   d_deer:   { name: '药膳鹿肉羹',   lv: 2, need: [['food', 'deer', 1], ['mats', 'h_vit', 1]],  hunger: 30, sta: 4, buff: 'def' },
-  d_goose:  { name: '灵草鹅蛋饼',   lv: 2, need: [['eggs', 'goose', 1], ['mats', 'h_int', 1]], hunger: 25, sta: 2, buff: 'int' },
+  d_goose:  { name: '灵草鹅蛋饼',   lv: 1, need: [['eggs', 'goose', 1], ['mats', 'h_int', 1]], hunger: 25, sta: 2, buff: 'int' },
   d_wolf:   { name: '红烧狼肉',     lv: 3, need: [['food', 'wolf', 1], ['mats', 'h_str', 1]],  hunger: 40, sta: 5, buff: 'str' },
   d_tiger:  { name: '虎肉大补汤',   lv: 5, need: [['food', 'tiger', 1], ['eggs', 'ostrich', 1]], hunger: 60, sta: 8, buff: 'luck' },
   // 珍馐：烹饪特产，不可食用，PK 战前使用（最先手，无视敏捷）；存入 S.zx
