@@ -5736,7 +5736,7 @@ function ptNameSheet(accountId, name) {
   const dt = ptDeadTip(); if (dt) { showTip(dt); return; }
   if (!ptLoggedIn()) { showTip('先登录真人联机才能发起交易'); return; }
   if (!accountId || accountId === ptMyAid()) { showTip('不能跟自己交易'); return; }
-  openSheet(`<h2>🤝 ${esc(name || '道友')}</h2><div class="hint">与对方进行私人交易（美元结算），对方在线接受后开窗。</div><div class="row"><button class="btn gold" data-ptoffer="${esc(accountId)}">🤝 发起交易</button><button class="btn" data-close>关闭</button></div>`);
+  openSheet(`<h2>🤝 ${esc(name || '道友')}</h2><div class="hint">与对方进行私人交易。只有美元才能私下交易，对方在线接受后开窗。</div><div class="row"><button class="btn gold" data-ptoffer="${esc(accountId)}">🤝 发起交易</button><button class="btn" data-close>关闭</button></div>`);
 }
 async function ptOfferFlow(accountId) {
   const dt = ptDeadTip(); if (dt) { showTip(dt); return; }
@@ -5764,7 +5764,7 @@ function ptRenderWindow(sess) {
   const _ptBarter = (sess.from_items || []).length && (sess.to_items || []).length;
   const _ptBadCur = (sess.from_gold | 0) > 0 || (sess.to_gold | 0) > 0 || (sess.from_xianyu | 0) > 0 || (sess.to_xianyu | 0) > 0;
   const _ptBlock = _ptBadCur ? '私人交易只能用美元，金元/仙玉不能放' : _ptUsdTotal <= 0 ? '必须有美元在内才能交易' : _ptBarter ? '不能物换物' : '';
-  openSheet(`<h2>🤝 私人交易</h2><div class="hint">与 ${esc(otherP.name || '对方')}[${otherP.no || '?'}] 交易 · 改了放置要重新确认 · 必须有美元，不能物换物</div>`
+  openSheet(`<h2>🤝 私人交易</h2><div class="hint">与 ${esc(otherP.name || '对方')}[${otherP.no || '?'}] 交易 · 改了放置要重新确认 · 只有美元才能私下交易，不能物换物</div>`
     + `<div class="row"><div class="lab">我放的<small>${ptSideLines(sess[me + '_items'], sess[me + '_usd'], sess[me + '_gold'], sess[me + '_xianyu'])}</small></div></div>`
     + `<div class="row"><div class="lab">${esc(otherP.name || '对方')}放的<small>${ptSideLines(sess[other + '_items'], sess[other + '_usd'], sess[other + '_gold'], sess[other + '_xianyu'])}</small></div></div>`
     + (_ptBlock ? `<div class="row"><div class="lab"><span class="r">${_ptBlock}</span></div></div>` : '')
@@ -5834,7 +5834,7 @@ function ptPickerSheet() {
     escCount[ln.store][ln.key] = (escCount[ln.store][ln.key] || 0) + (ln.qty | 0);
   }
   const pickKeys = [], pickGear = [];
-  let html = `<h2>🤝 放物品 / 美元</h2><div class="hint">填想要放的数量（0 = 不放）；提交后双方确认重置。美元只放整数。</div>`;
+  let html = `<h2>🤝 放物品 / 美元</h2><div class="hint">填想要放的数量（0 = 不放）；提交后双方确认重置。只有美元才能私下交易，美元只放整数。</div>`;
   html += `<div class="row"><div class="lab">💵美元<small>持有 $${(S.usd | 0) + myUsd}（已托管 $${myUsd}）</small></div><input id="ptUsd" type="number" min="0" value="${myUsd}" style="width:80px;padding:6px;background:#222;color:#fff;border:1px solid #555;border-radius:6px"></div>`;
 
   const eggTotal = (S.petEggs | 0) + ((escCount.petEggs && escCount.petEggs.petEggs) | 0);
@@ -6177,7 +6177,7 @@ async function ptPollOffersOnce() {
 function ptPromptOffer(off) {
   const from = off.from || {};
   let ok = false;
-  try { ok = confirm('🤝 ' + (from.name || '?') + '[' + (from.no || '?') + '] 想与你私人交易（美元结算），5 分钟内有效，是否接受？'); } catch(_) {}
+  try { ok = confirm('🤝 ' + (from.name || '?') + '[' + (from.no || '?') + '] 想与你私人交易（只有美元才能私下交易），5 分钟内有效，是否接受？'); } catch(_) {}
   ptRespond(off.id, ok);
 }
 async function ptRespond(id, accept) {
