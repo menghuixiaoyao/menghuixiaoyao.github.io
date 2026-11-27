@@ -184,9 +184,9 @@ const EGGS = {
 };
 // 疗伤药（商店出售，背包使用）
 const MEDS = {
-  bandage:  { name: '止血药', price: 25, cure: 'bleed',   desc: '止住流血（流血唯一解法）' },
+  bandage:  { name: '止血药', price: 50, cure: 'bleed',   desc: '止住流血（流血唯一解法）' },
   antidote: { name: '解毒丹', price: 1000, cure: 'poison',  desc: '解除中毒（中毒唯一解法，否则会毒发身亡）；炼药可自炼' }, // v1163 Ye 定：1000 金/颗，也可自炼
-  incense:  { name: '兴奋剂', price: 30, cure: 'depress', desc: '立即驱散抑郁' },
+  incense:  { name: '兴奋剂', price: 50, cure: 'depress', desc: '立即驱散抑郁' },
   shenshui: { name: '神水', price: 50, cure: 'curse', desc: '消除一层诅咒' },
   tpscroll: { name: '随机传送卷', price: 200, desc: '冒险中随机传送到任意一格' }, // v765
   stealthfu: { name: '隐身符', price: 100, desc: '使用后 30 分钟内采集资源不惊扰怪物（可叠加时长）' } // v1162 Ye 定：商店 100 金/张
@@ -232,7 +232,7 @@ const FARM = {
 };
 // 凝露三品（dw1~dw3，v1128 由凝露五品改制：下品/中品/上品）：种植偶得（下品也可在商店购买）；服用得随机属性点 pts；炼药可投入 1 瓶，成功率与上品各 +alc
 const LU = {
-  dw1: { name: '下品凝露', p: 0.50, pts: 1, alc: 0.05, extra: true, price: 15, desc: '炼药投入：成功率/上品 +5%；服用：随机属性 +1' },
+  dw1: { name: '下品凝露', p: 0.50, pts: 1, alc: 0.05, extra: true, desc: '炼药投入：成功率/上品 +5%；服用：随机属性 +1' }, // v1301 商店取消（无 price）
   dw2: { name: '中品凝露', p: 0.15, pts: 3, alc: 0.15, extra: true },
   dw3: { name: '上品凝露', p: 0.02, pts: 8, alc: 0.40, extra: true }
 };
@@ -333,11 +333,11 @@ const MATS = {
   h_agi: { name: '敏捷草', price: 20, basic: 'agi' }, h_str: { name: '力量草', price: 20, basic: 'str' },
   h_def: { name: '防御草', price: 20, basic: 'def' }, h_vit: { name: '生命草', price: 20, basic: 'vit' },
   h_int: { name: '智力草', price: 20, basic: 'int' },
-  lz_seed: { name: '🌱灵植种子', price: 10, desc: '洞府灵田种植用（元婴以上元神照料才生长）', seed: 1 }, // v887；v890 洞府元婴限定
+  lz_seed: { name: '🌱灵植种子', desc: '洞府灵田种植用（元婴以上元神照料才生长）', seed: 1 }, // v1301 商店取消（无 price）；v887；v890 洞府元婴限定
   qingteng: { name: '青藤', ele: '木' }, lingmu: { name: '灵木', ele: '木' }, yimu: { name: '乙木', ele: '木' }, // v1224 五行木材：不可出售（无 price），主城共享池/野外木掷出
   jingye: { name: '极品灵液', mana: 1000000, capPct: 2000, extra: true, desc: '服用：法力 +1000000（压条上限 2000%）' }, // v1267 炼金极品灵液：不可出售（无 price），服用只加法力/仙力
-  cave_token: { name: '🏠洞府令', price: 500, desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 }, // v890 改回元婴限定
-  xianfu_token: { name: '🏯仙府令', price: 1200, desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 10 }
+  cave_token: { name: '🏠洞府令', desc: '使用：开辟洞府1格，灵气+2（元婴可用）', token: 'cave', energy: 2, needRealm: 4 }, // v1301 商店取消（无 price）；v890 改回元婴限定
+  xianfu_token: { name: '🏯仙府令', desc: '使用：开辟仙府1格，灵气+5（仙人可用）', token: 'xianfu', energy: 5, needRealm: 10 } // v1301 商店取消（无 price）
 };
 Object.assign(MATS, LU);
 FARM.jingye = MATS.jingye; // v1267 极品灵液挂 FARM（extra 不参与种植掉落）防 normalize 的 farm 清理误删 mats 键
