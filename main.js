@@ -70,17 +70,6 @@ function welcome() {
   if (!S._onboarded) setTimeout(() => chainNext(), 300);
 }
 
-/* ---------- 调试模式 ---------- */
-const params = new URLSearchParams(location.search);
-if (params.get('debug') === '1') sessionStorage.setItem('fsd_debug', '1');
-if (params.get('debug') === '0') sessionStorage.removeItem('fsd_debug');
-function applyDebug() { document.body.classList.toggle('debug', sessionStorage.getItem('fsd_debug') === '1'); }
-let taps = 0, tapT = 0;
-$('title').addEventListener('click', () => {
-  const now = Date.now(); taps = now - tapT < 600 ? taps + 1 : 1; tapT = now;
-  if (taps >= 1) { taps = 0; if (sessionStorage.getItem('fsd_debug')) sessionStorage.removeItem('fsd_debug'); else sessionStorage.setItem('fsd_debug', '1'); applyDebug(); toastLog('sys', '调试模式：' + (document.body.classList.contains('debug') ? '开启' : '关闭')); }
-});
-
 /* ---------- 日志 ---------- */
 function timeStr() { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
 function log(cls, html) { const e = { c: cls, h: html, t: timeStr() }; S.log.push(e); renderEntry(e, true); }
@@ -4714,32 +4703,6 @@ function sheetBattleBag() {
   const medRows = meds.length ? meds.map(k => { const m = C.MEDS[k], need = C.hasSt(S, m.cure); return `<div class="row"><div class="lab">💊 ${m.name} ×${S.meds[k]}<small>${m.desc}</small></div><button class="btn ${need ? 'gold' : ''}" data-battleuse="med:${k}" ${need ? '' : 'disabled'}>${need ? '使用' : '无需'}</button></div>`; }).join('') : '<div class="empty">暂无疗伤药，可在商店购买</div>';
   openSheet(`<h2>🎒 战斗背包</h2><div class="hint">使用物品将<b class="r">消耗本回合</b>行动。</div><h3>🧪 药水</h3>${potRows}<h3>💊 疗伤药</h3>${medRows}<button class="btn full" data-close>返回战斗</button>`);
 }
-function sheetDebug() {
-  const d = [
-    ['测试签到', 'dbg_checkin'], // v307 恢复
-    ['一键全物品', 'dbg_allitems'],
-    ['清理重复灵石', 'dbg_clear_dup_ores'],
-    ['+1000金元', 'dbg_gold1k'],
-    ['⚠️恢复初始', 'dbg_reset'],
-    ['闭关+1小时', 'dbg_afk_1h'],
-    ['闭关+24小时', 'dbg_afk_24h'],
-    ['+1000万 法力', 'dbg_mana10m'],
-    ['+1万 仙力', 'dbg_xian10k'],
-    ['+100万 仙力', 'dbg_xian1m'],
-    ['恢复仙力2280', 'dbg_xian_fix'],
-    ['直升1级', 'dbg_lvup'],
-    ['直升圆满', 'dbg_yuanman'],
-    ['回满血', 'dbg_fullhp'],
-    ['中毒', 'dbg_poison'],
-    ['流血', 'dbg_bleed'],
-    ['抑郁', 'dbg_depress'],
-    ['毒发身亡（立即）', 'dbg_poison_die'],
-    ['流血身亡（立即）', 'dbg_bleed_die'],
-    ['清除所有状态', 'dbg_clear'],
-    ['全物品各+1', 'dbg_items'],
-  ];
-  openSheet(`<h2>调试后台</h2>` + d.map(x => `<button class="act" data-a="debug" data-dbg="${x[1]}"><span class="t">${x[0]}</span></button>`).join(''));
-}
 const RANK_TABS = [['level','🏆等级榜'],['str','💪力量榜'],['agi','💨敏捷榜'],['def','🛡️防御榜'],['vit','❤️生命榜'],['int','🧠智力榜'],['checkin','📅签到榜'],['afk','🧘闭关榜'],['deathmatch','☠️生死局榜'],['bounty','📜赏金猎人榜']];
 let _rankCache = null, _rankTab = 'level';
 function sheetPersonInfo(e, backBtn) {
@@ -4928,109 +4891,7 @@ function sheetPkWin() {
 }
 
 /* ---------- 行动 ---------- */
-function doDebug(act) {
-  if (act === 'dbg_afk_cave' || act === 'dbg_afk_vein') {
-    S.afk = { type: act === 'dbg_afk_vein' ? 'vein' : 'cave', start: Date.now() };
-    save(); render();
-    try { log('good', '🧘 开始' + (act === 'dbg_afk_vein' ? '灵脉' : '洞府') + '闭关挂机…'); } catch(e) {}
-    return;
-  }
-  if (act === 'dbg_afk_1h' || act === 'dbg_afk_24h') {
-    try {
-      if (!S.afk) { toastLog('sys', '当前未在闭关中'); return; }
-      const hrs = act === 'dbg_afk_24h' ? 24 : 1;
-      const type = S.afk.type, isMana = (typeof C.useFali === 'function' ? C.useFali(S) : false);
-      let gain = 0, lbl = '', nqBonusDbg = 0, hcDbg = 0, defDbg = 0, defMultDbg = 0;
-      const sc = (typeof C.setCounts === 'function' ? C.setCounts(S) : {});
-      if (type === 'wushu') { const w2x = (sc.fatal || 0) >= 2 ? 2 : 1; gain = hrs * 60 * w2x; lbl = '经验'; }
-      else if (type === 'ningqi') { const hc = (sc.heal || 0), hi = hc >= 2 ? Math.min(5, hc) - 2 : -1; let nqBonus = 0, nqAgain = 0; try { nqBonus = hi >= 0 ? (C.GEAR_SETS.heal.ningqi[hi] || 0) : 0; nqAgain = hi >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi] || 0) : 0; nqBonusDbg = nqBonus; hcDbg = hc; } catch(e) {} const nqRate = Math.min(0.95, (0.30 + nqBonus) * C.qiFactor()); for (let i = 0; i < hrs; i++) { if (Math.random() < nqRate) { gain += 150; S.yinQi = (S.yinQi|0) + 1; if (nqAgain > 0 && Math.random() < nqAgain) gain += 150; } } lbl = '经验'; } // v116 v1064 改 C.qiFactor（修 iOS 测试结算报错）
-      else { const isVein = type === 'vein'; const dc = (sc.def || 0), di = dc >= 1 ? Math.min(5, dc) - 1 : -1; let afkMult = 0; try { afkMult = di >= 0 ? (C.GEAR_SETS.def.afkMult[di] || 0) : 0; defDbg = dc; defMultDbg = afkMult; } catch(e) {} gain = Math.floor((S.realm|0) >= 10 ? hrs * ((isVein ? 2 : 1) + C.maiMai(S) + C.szBigCount(S)) * (1 + afkMult) : hrs * 60 * ((isVein ? 2 : 1) + C.maiLuo(S)) * (1 + afkMult)); lbl = (typeof C.resLbl === 'function' ? C.resLbl(S) : '灵力'); if (isVein) { let nqB2 = 0, nqA2 = 0; try { const hc2 = (sc.heal || 0), hi2 = hc2 >= 2 ? Math.min(5, hc2) - 2 : -1; nqB2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqi[hi2] || 0) : 0; nqA2 = hi2 >= 0 ? (C.GEAR_SETS.heal.ningqiAgain[hi2] || 0) : 0; } catch(e) {} const nqR2 = Math.min(0.95, 0.30 + nqB2); let nqN2 = 0; for (let i = 0; i < hrs; i++) { if (Math.random() < nqR2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; if (nqA2 > 0 && Math.random() < nqA2) { nqN2++; S.yinQi = (S.yinQi|0) + 1; } } } if (nqN2 > 0) log('good', (S.realm|0) >= 10 ? `⚖️ 参悟法则，法则之力 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）` : `🌀 灵脉凝气，凝气 <span class="g">+${nqN2}缕</span>（${S.yinQi|0}/10）`); } } // v89：每条络+1；v1059 Ye 定：开脉术经验不加闭关（只升级、给实脉）；v202 灵脉每小时判定凝气
-      if (gain > 0) { if (isMana) S.mana = Math.min(C.manaCapEff(S), S.mana + gain); else S.xp += gain; }
-      S.stats = S.stats || {}; S.stats.afkSecs = (S.stats.afkSecs || 0) + hrs * 3600; S.stats.afkSecsTotal = (S.stats.afkSecsTotal || 0) + hrs * 3600;
-      save(); render();
-      const dbgInfo = type === 'ningqi' ? `heal件数=${hcDbg},加成=${Math.round(nqBonusDbg*100)}%` : (type === 'dongfu' || type === 'vein') ? `def件数=${defDbg},加成=${Math.round(defMultDbg*100)}%` : '';
-      log('good', `⏰ 测试结算 +${hrs}小时：<span class="g">${lbl} +${gain}</span>（${dbgInfo}）`);
-    } catch(err) { try { log('bad', '测试结算报错：' + (err && err.message)); } catch(e) {} }
-    return;
-  }
-  closeSheet();
-  if (act === 'dbg_reset') { if (confirm('确定要恢复初始账号吗？当前存档将清空！')) { localStorage.removeItem(SAVE_KEY); pk = null; S = C.newState(); window.S = S; closeSheet(); $('log').innerHTML = ''; welcome(); commit(); } return; }
-  if (act === 'dbg_checkin') { doCheckin(true); return; }
-  if (act === 'dbg_allitems') {
-    const _give = (store, defObj, n) => { try { if (!defObj) return; for (const k in defObj) store[k] = (store[k]||0) + n; } catch(e) {} };
-    try { if (!S.ores) S.ores = {}; _give(S.ores, (typeof ORES !== 'undefined' ? ORES : null), 99); } catch(e) {}
-    try { if (!S.mats) S.mats = {}; _give(S.mats, (typeof MATS !== 'undefined' ? MATS : null), 99); } catch(e) {}
-    try { if (!S.meds) S.meds = {}; _give(S.meds, (typeof MEDS !== 'undefined' ? MEDS : null), 99); } catch(e) {}
-    try {
-      if (!S.elixirs) S.elixirs = {};
-      const _pot = (typeof POTIONS !== 'undefined' ? POTIONS : null);
-      if (_pot) for (const k in _pot) for (let q = 1; q <= 4; q++) { const _ek = k + q; S.elixirs[_ek] = (S.elixirs[_ek]||0) + 99; }
-    } catch(e) {}
-    try { if (!S.eggs) S.eggs = {}; _give(S.eggs, (typeof EGGS !== 'undefined' ? EGGS : null), 99); } catch(e) {}
-    try { if (!S.pages) S.pages = {}; _give(S.pages, (typeof PAGES !== 'undefined' ? PAGES : null), 99); } catch(e) {}
-    try { if (!S.food) S.food = {}; _give(S.food, (typeof MEATS !== 'undefined' ? MEATS : null), 99); } catch(e) {}
-    try { if (!S.dishes) S.dishes = {}; _give(S.dishes, (typeof DISHES !== 'undefined' ? DISHES : null), 99); } catch(e) {}
-    try { if (!S.inv) S.inv = {}; S.inv['sha'] = (S.inv['sha']||0) + 99; S.inv['mai'] = (S.inv['mai']||0) + 99; } catch(e) {}
-    try { if (!S.skillPages) S.skillPages = {}; const _sk = (typeof SKILLS !== 'undefined' ? SKILLS : null); if (_sk) for (const k in _sk) S.skillPages[k] = (S.skillPages[k]||0) + 99; } catch(e) {}
-    try { S.petEggs = (S.petEggs||0) + 99; } catch(e) {}
-    try { S.xianyu = (S.xianyu||0) + 99; } catch(e) {}
-    try { S.gold = (S.gold||0) + 999999; } catch(e) {}
-    try { log('good', '🧪 <span class="pu">[测试]</span> 所有物品 +99，金元 +999999'); } catch(e) {}
-    afterAct(); commit(); return;
-  }
-  if (act === 'dbg_clear_dup_ores') {
-    try {
-      // 清理没有图标的重复灵石（合成版：xps, zps, sps, jps）
-      for (const k of ['xps', 'zps', 'sps', 'jps']) { if (S.ores && S.ores[k]) delete S.ores[k]; }
-      log('good', '🧪 <span class="pu">[测试]</span> 已清理重复灵石');
-    } catch(e) {}
-    afterAct(); commit(); return;
-  }
-  if (act === 'dbg_gold1k') { S.gold = (S.gold||0) + 1000; log('gold', '🛠️ 测试：金元 +1000'); commit(); sheetDebug(); return; }
-  if (act === 'dbg_items') {
-    const add = (o, k, n=1) => { if (o) o[k] = (o[k]||0) + n; };
-    for (let q=1; q<=5; q++) { add(S.ores, 'sp'+q); add(S.ores, 'lu'+q); }
-    ['hp1','hp2','hp3'].forEach(k => add(S.elixirs, k));
-    Object.keys(MEDS).forEach(k => add(S.meds, k));
-    for (let q=1; q<=5; q++) add(S.pages, 'pg'+q);
-    for (let q=1; q<=5; q++) add(S.expBooks, 'exp'+q);
-    Object.keys(SKILLS).forEach(k => add(S.skillBooks, k));
-    add(S.elixirs, 'beast1', 3);
-    add(S, 'gold', 1000);
-    afterAct(); commit(); render(); toastLog('sys', '全物品各+1（背包查看使用）'); return;
-  }
-  if (act === 'dbg_xp1k') { C.gainXp(S, 1000); toastLog('sys', '经验 +1000'); }
-  else if (act === 'dbg_xp10k') { C.gainXp(S, 10000); toastLog('sys', '经验 +10000'); }
-  else if (act === 'dbg_mana1k') { S.mana = Math.min(C.manaCapEff(S), S.mana + 1000); toastLog('sys', '法力 +1000'); }
-  else if (act === 'dbg_mana100k') { S.mana = Math.min(C.manaCapEff(S), S.mana + 100000); toastLog('sys', '法力 +100000'); }
-  else if (act === 'dbg_mana1m') { S.mana = Math.min(C.manaCapEff(S), S.mana + 1000000); toastLog('sys', '法力 +100万'); }
-  else if (act === 'dbg_mana10m') { S.mana = Math.min(C.manaCapEff(S), S.mana + 10000000); toastLog('sys', '法力 +1000万'); }
-  else if (act === 'dbg_xian10k') { if ((S.realm|0) >= 10) S.xianCap = Math.max(1, (S.xianCap|0) + 10000); S.mana = (Math.floor(S.mana || 0)) + 10000; toastLog('sys', '仙力 +1万'); } // v844 仙人境加仙力时同步涨上限，否则被cap卡住没用
-  else if (act === 'dbg_xian1m') { if ((S.realm|0) >= 10) S.xianCap = Math.max(1, (S.xianCap|0) + 1000000); S.mana = (Math.floor(S.mana || 0)) + 1000000; toastLog('sys', '仙力 +100万'); } // v844 同上
-  else if (act === 'dbg_xian_fix') { S.xianCap = 2280; S.mana = 2280; toastLog('sys', '仙力已恢复为2280（22.8亿/100万）'); }
-  else if (act === 'dbg_lvup') { C.levelUp(S, 1); afterAct(); commit(); render(); toastLog('sys', '升1级'); } else if (act === 'dbg_yuanman') { C.levelUp(S, 10 - (S.level|0)); toastLog('sys', '已直升圆满'); } else if (act === 'dbg_fullhp') { S.hpCur = null; toastLog('sys', '已回满血'); }
-  else if (act === 'dbg_maxlv') { while (S.level < 10) C.levelUp(S); toastLog('sys', '已满级'); }
-  if (act === 'dbg_poison') { C.addStatus(S, 'poison'); toastLog('sys', '已中毒'); }
-  else if (act === 'dbg_bleed') { C.addStatus(S, 'bleed'); toastLog('sys', '已流血'); }
-  else if (act === 'dbg_depress') { C.addStatus(S, 'depress'); toastLog('sys', '已抑郁'); }
-  else if (act === 'dbg_poison_die') { S.status.poison = true; C.die(S, 'poison'); toastLog('sys', '毒发身亡'); }
-  else if (act === 'dbg_bleed_die') { S.status.bleed = true; C.die(S, 'bleed'); toastLog('sys', '流血身亡'); }
-  else if (act === 'dbg_clear') { S.status.bleed = false; S.status.poison = false; S.status.depress = 0; toastLog('sys', '状态已清除'); }
-  save(); render();
-}
 function doCheckin(force) {
-  // v605 测试签到给一键全物
-  if (force) {
-    try {
-      for(let i=0;i<12;i++)S.inv['repair'+i]=Math.max(S.inv['repair'+i]|0,9);
-      for(const k in ORES)S.ores[k]=Math.max(S.ores[k]|0,99);
-      for(const k in MATS)S.mats[k]=Math.max(S.mats[k]|0,99);
-      for(const k in MEDS)S.meds[k]=Math.max(S.meds[k]|0,99);
-      for(const k in POTIONS)S.elixirs[k]=Math.max(S.elixirs[k]|0,99);
-      S.xianyu=Math.max(S.xianyu|0,99);S.gold=Math.max(S.gold|0,9999);
-      log('good','🎒 <span class="pu">[测试]</span> 一键全物已发放');
-    } catch(e) {}
-  }
   // 出关结算（防C.checkin里没跑到）
   if (S.afk) {
     let gain = 0;
@@ -5050,7 +4911,7 @@ function doCheckin(force) {
   if (r.toxLoss) log('bad', `🧪 <b>丹毒攻心</b>（丹毒 ${S.danDu|0}），寿元 <span class="r">-${r.toxLoss} 年</span>`); // v1138
   // v1086 拍卖行已改服务端结算，本地 auc3Daily 停用（避免重复结算）
   if (r.revived) log('good', (r.revived.cause === 'poison' || r.revived.cause === 'old' ? '' : `🌅 你从昏迷中醒来——<b class="g">复活了</b>！`) + `${r.revived.cause === 'old' ? `⏳ 寿元耗尽坐化，一缕残魂不散，重聚肉身。<b class="r">寿元已尽（0年）</b>，请尽快<b class="y">突破</b>增加寿元，或<b class="y">轮回</b>转世重修！` : r.revived.cause === 'poison' ? `🌅 因为中毒太深昏死过去，嘴巴大张，恰巧仙鸟飞过，拉了一坨糑糑进入嘴里，刚好缓解了中毒状态，但是毒依然未解除。<br><b class="g">复活了</b>：生命恢复到 <b class="r">${r.revived.vit}</b>（上限 ${r.revived.base} 的一半）。<b class="r">再消耗 ${C.leftBeforeDeath(S, 'poison')} 点体力将再次毒发身亡</b>，速用<b>解毒丹</b>！` : `流血止住了，但元气大伤，生命只剩 <b class="r">1</b>（原 ${r.revived.base}），需重新修炼。`}`);
-  log('gold', `📅 ${force ? '<span class="pu">[测试]</span> ' : ''}签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
+  log('gold', `📅 签到成功，体力 <span class="g">+${r.gain}</span>${r.died && !r.died.protected ? '' : `（当前 ${S.stamina}）`}，活力 <span style="color:#7fd6ff">+${r.vigor}</span>（${S.vigor}/${C.vigorCap(S)}${r.vigor < C.vigorGain(S) ? '，已满' : ''}）<br>🔥 连续签到 <b class="y">${r.consecDays}</b> 天` + (r.ringReward ? `<br>🎉 <span class="g">连续签到 ${r.consecDays} 天！获得 🎒小型储物袋 ×1（当前 ${S.pouch} 只）</span>` : '') + (r.bled ? `<br><span class="r">🩸 伤口流血不止，生命 -${r.bled * K.HP_PER_VIT}（当前 ${S.attrs.vit * K.HP_PER_VIT}）。${r.died ? '' : `<b>再签到 ${C.leftBeforeDeath(S, 'bleed')} 次将流血身亡！</b>`}只有<b>止血药</b>能止血！</span>` : ''));
   try { if (typeof addMerit === 'function') addMerit(1, '每日签到'); } catch(_) {} // v893
   try { if (typeof addFame === 'function') addFame(1, '每日签到'); const _idb = ID_TIERS[idTier()].ci; if (_idb > 0) { S.stamina = (S.stamina|0) + _idb; log('gold', `🎖️ 身份特权：签到体力 +${_idb}（${ID_TIERS[idTier()].name}）`); } } catch(_) {}
   afterAct();
@@ -8696,7 +8557,7 @@ document.addEventListener('click', e => {
   if (d.feedseat) { doFeedSeat(); return; }
   if (d.pillseat) { doPillSeat(); return; }
   if (d.qtyseat) { if (d.qtyseat === 'page') { const _cur = C.SZ_SEATS.findIndex((_, x) => C.szProg(S, x) < 10); const i = (window._starSeat === undefined) ? _cur : window._starSeat; if (i >= 0) window.szQty('page', i, false); } else { const i = (window._starSeat === undefined) ? C.szFirstDanOpen(S) : window._starSeat; if (i >= 0) window.szQty('pill', i, false); } return; }
-  if (d.a) { const fn = ({ close: () => closeSheet(), checkin: () => doCheckin(false), train: sheetTrain, alchemy: () => sheetAlchemy(), life: () => sheetLife(lifeTab), adventure: sheetAdventure, wxsynth: sheetWxSynth, pk: doPkChooseRealm, arena: doArena, xianyuan: doXianyuan, mail: doMail, sect: doSect, shop: () => sheetShop(), bag: sheetBag, cave: () => { const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0; if (_dg > 0 || _xg > 0) { if (typeof goBackCaveChoice === 'function') goBackCaveChoice(); } else { toastLog('sys', '🏔️ 洞府功能开发中，敬请期待'); } }, debug: () => doDebug(d.dbg), lvup: () => doLvUp(), reinc: () => doReincarnate(), breakthrough: () => doBreakthrough(), dazuo: () => doDazuo(), afkCave: () => doAfkChoose('cave'), afkVein: () => doAfkChoose('vein') })[d.a]; if (fn) fn(); }
+  if (d.a) { const fn = ({ close: () => closeSheet(), checkin: () => doCheckin(false), train: sheetTrain, alchemy: () => sheetAlchemy(), life: () => sheetLife(lifeTab), adventure: sheetAdventure, wxsynth: sheetWxSynth, pk: doPkChooseRealm, arena: doArena, xianyuan: doXianyuan, mail: doMail, sect: doSect, shop: () => sheetShop(), bag: sheetBag, cave: () => { const _dg = S.dongfuGrids|0, _xg = S.xianfuGrids|0; if (_dg > 0 || _xg > 0) { if (typeof goBackCaveChoice === 'function') goBackCaveChoice(); } else { toastLog('sys', '🏔️ 洞府功能开发中，敬请期待'); } }, lvup: () => doLvUp(), reinc: () => doReincarnate(), breakthrough: () => doBreakthrough(), dazuo: () => doDazuo(), afkCave: () => doAfkChoose('cave'), afkVein: () => doAfkChoose('vein') })[d.a]; if (fn) fn(); }
   else if (d.advpage) sheetAdventure(+d.advpage);
   else if (d.adv) { petSay('battle', 0.3); doAdventure(d.adv); }
   else if (d.wxsyn) { const [k, kind] = String(d.wxsyn).split(':'); doWxSynth(k, kind); }
@@ -9443,10 +9304,9 @@ document.addEventListener('click', e => {
   else if ('chatsend' in d) { const inp = $('chatInput'); const v = inp ? (inp.value || '').trim() : ''; if (v) { const _li2 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_li2 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { if (inp) inp.value = ''; try { chatHistoryToCache(); } catch(_) {} setTimeout(() => { if ($('chatBox')) sheetChat(); }, 600); } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录真人联机'); } else { toastLog('sys', '发送失败'); } }); } else { toastLog('sys', '请先登录真人联机再发言'); } } }
   else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v) { var _cfOpen1016 = false; try { var _cfEl1016 = document.getElementById('chatFloat'); _cfOpen1016 = !!(_cfEl1016 && _cfEl1016.classList.contains('on')); } catch(_) {} var _tab2 = _cfOpen1016 ? (window._chatTab || 'world') : 'world'; /* v1016: 悬浮窗未开时主界面发言强制走world，修静默丢消息 */ const _li3 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_tab2 === 'world' && _li3 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { inp.value = ''; try { window._srvChat = (window._srvChat || []).concat([{ n: (MHXY.myName ? MHXY.myName() : '我'), t: v.slice(0, 200) }]); } catch(_) {} if (window.renderChatFloat) window.renderChatFloat(); try { chatHistoryToCache(); } catch(_) {} } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } else { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } }); } else { if (_tab2 === 'world') toastLog('sys', '未登录真人联机：这条只留在本机，先去真人联机登录'); if (typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value = ''; save(); if (window.renderChatFloat) window.renderChatFloat(); } } } } // v1008 主界面输入框按频道/登录态分流（原写死本地）
   else if (d.menutab) sheetMenu(d.menutab);
-  else if (t.id === 'debugBtn') sheetDebug();
 });
 
-load(); applyDebug(); renderLog(); afterAct(); if (S._onboarded && !S.race && !S.forceReinc) setTimeout(() => sheetRace('old'), 600); // v1088 老号登录补选种族
+load(); renderLog(); afterAct(); if (S._onboarded && !S.race && !S.forceReinc) setTimeout(() => sheetRace('old'), 600); // v1088 老号登录补选种族
 // v982 修 Bug#35：_pendingTrib 真恢复——读档时若问心未完成且境界未推进，重弹问心
 try {
   if (S && S._pendingTrib && S._pendingTrib.quiz && (S.realm|0) === (S._pendingFromRealm|0)) {
