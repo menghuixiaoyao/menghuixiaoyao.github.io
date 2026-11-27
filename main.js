@@ -4465,7 +4465,7 @@ window.lwEat = function (idx) {
     S.lifespan = (S.lifespan || 100) + gain;
     if ((it.g | 0) === 1 && S.degraded) { // v1326/v1327 地品灵物生吃代替修复灵物：凡人1000年/练气2000年，逐境+1000（Ye 定）
       const _ri = C.DEGRADE_CHAIN.indexOf(S.degraded) >= 0 ? C.DEGRADE_CHAIN.indexOf(S.degraded) : Object.keys(C.DEGRADE_FAIL2).findIndex(k => C.DEGRADE_FAIL2[k] === S.degraded);
-      if (_ri >= 0 && (it.y | 0) >= (_ri + 1) * 1000) {
+      if (_ri >= 0 && (it.y | 0) >= 1000 * Math.pow(2, _ri)) { // v1328 年份逐境翻倍：凡人1000/练气2000/筑基4000（Ye 定）
         const _c = C.DEGRADE_CHAIN[_ri], _c2 = C.DEGRADE_FAIL2[_c];
         if (S.degraded === _c2) { S.degraded = _c; if (S.failNum) { S.failNum['chain'] = 1; delete S.failNum[S.realm | 0]; } log('good', `🌿 地品灵物（${it.y}年）代替${C.repairNameL('repair' + _ri)}：${_c2} → ${_c}`); }
         else { S.realm = _ri; S.degraded = null; if (S.failNum) { delete S.failNum[_ri]; delete S.failNum['chain']; } log('good', `🌿 地品灵物（${it.y}年）代替${C.repairNameL('repair' + _ri)}：${_c} → ${C.REALMS[_ri]}，根基修复`); }
