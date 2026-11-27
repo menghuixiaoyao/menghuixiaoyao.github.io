@@ -180,7 +180,7 @@ const EGGS = {
   chicken: { name: '鸡蛋',   p: 0.50, price: 3, hunger: 5 },
   duck:    { name: '鸭蛋',   p: 0.30, price: 6, hunger: 8 },
   goose:   { name: '鹅蛋',   p: 0.15, price: 15, hunger: 12 },
-  ostrich: { name: '鸵鸟蛋', p: 0.05, price: 40, hunger: 25 }
+  ostrich: { name: '鸵鸟蛋', p: 0.05, price: 20, hunger: 25 }
 };
 // 疗伤药（商店出售，背包使用）
 const MEDS = {
