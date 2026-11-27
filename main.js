@@ -4463,6 +4463,11 @@ window.lwEat = function (idx) {
     const _aw = C.tryAwakenRoot(S, C.rootBaseL(it.e)); // v1134 生吃灵物觉醒判定：须有该行基础灵根
     const _cp = _aw ? null : C.tryComprehendRoot(S, it.e); // v1135 吃不相对应灵物：极稀有领悟新灵根
     S.lifespan = (S.lifespan || 100) + gain;
+    if ((it.g | 0) === 1 && (it.y | 0) >= 1000 && S.degraded) { // v1326 千年以上地品灵物生吃可修凡人突破（同修胎灵物，Ye 定）
+      const _c0 = C.DEGRADE_CHAIN[0], _c02 = C.DEGRADE_FAIL2[_c0];
+      if (S.degraded === _c02) { S.degraded = _c0; if (S.failNum) { S.failNum['chain'] = 1; delete S.failNum[S.realm | 0]; } log('good', `🌿 千年地品灵物修胎：${_c02} → ${_c0}`); }
+      else if (S.degraded === _c0) { S.realm = 0; S.degraded = null; if (S.failNum) { delete S.failNum[0]; delete S.failNum['chain']; } log('good', `🌿 千年地品灵物修胎：${_c0} → 凡人，根基修复`); }
+    }
     log('good', `🌿 生吃<b style="color:${C.GRADE_COLORS[it.g - 1]}">${C.LW_GRADE_NAMES[it.g - 1]}</b>·<b style="color:${C.LW_ELE_COLORS[it.e]}">${it.e}</b>（${it.y} 年），寿元 <span class="g">+${gain}</span>${note ? `（${note}）` : ''}`);
     if (_aw) log('good', `🌟 <b>灵根觉醒！</b>${C.rootBaseL(it.e)}灵根食灵而醒，化作<b>${_aw}</b>灵根！`); // v1134
     if (_cp) log('good', `🌟 <b>顿悟新灵根！</b>此物与自身灵根不合，却意外领悟了从未有过的<b>${_cp}</b>灵根！`); // v1135
