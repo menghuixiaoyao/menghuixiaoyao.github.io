@@ -28,16 +28,16 @@ window._applyTeamFollow = function(){
       }
     };
     var _ms = (window._myTeam.members || []);
-    var _me2 = (typeof myAid === 'function') ? myAid() : '';
+    var _me2 = (typeof myAid === 'function') ? myAid() : ''; var _mp2 = (typeof myPno === 'function') ? String(myPno() || '') : ''; var _isMe2 = function(o){ return o && ((_me2 && o.accountId === _me2) || (_mp2 && String(o.playerNo != null ? o.playerNo : (o.player_no != null ? o.player_no : '')) === _mp2)); };
     var _found = false;
     for (var j = 0; j < _ms.length; j++){
-      if (_ms[j] && _ms[j].accountId === _me2 && _ms[j].x != null){ _found = true; _applyFollow(_ms[j].x, _ms[j].y); break; }
+      if (_ms[j] && _isMe2(_ms[j]) && _ms[j].x != null){ _found = true; _applyFollow(_ms[j].x, _ms[j].y); break; }
     }
     if (!_found){
       api('/api/world/state').then(function(r){
         if (!r.ok || !r.json) return;
         var ps = r.json.players || [];
-        for (var i = 0; i < ps.length; i++){ if (ps[i] && ps[i].accountId === _me2){ _applyFollow(ps[i].x, ps[i].y); break; } }
+        for (var i = 0; i < ps.length; i++){ if (ps[i] && _isMe2(ps[i])){ _applyFollow(ps[i].x, ps[i].y); break; } }
       }).catch(function(){});
     }
   } catch(_){}
@@ -54,14 +54,25 @@ window._startTeamFollow = function(){
         var gotNotice = false;
         if (r.json.notices && r.json.notices.length) { gotNotice = true; r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); }
         window._myTeam = now;
-        try { window._isTeamLeader = now ? (now.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
+        try { window._isTeamLeader = now ? (now.leaderId === myAid() || ((now.members || []).some(function(m){ return m.isLeader && String(m.playerNo || '') !== '' && String(m.playerNo) === String(myPno() || ''); }))) : false; } catch(_){ window._isTeamLeader = false; }
         if (now && !window._isTeamLeader && !window._teamSeenLogged){ window._teamSeenLogged = true; try { glog('sys', '👥 已在队伍中，队长移动时你会自动跟随'); } catch(_){} }
-        if (now && !window._isTeamLeader) { try { window._applyTeamFollow(); } catch(_){} }
+        if (now && !window._isTeamLeader) { try { window._applyTeamFollow(); } catch(_){} try { window._teamAdvFollow && window._teamAdvFollow(now); } catch(_){} }
         if (had && !now && !gotNotice) { try { glog('sys', '👥 你已不在队伍中'); } catch(_){} }
         if (document.getElementById('mhxyTeamInfo') && typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} }
       }).catch(function(){});
     } catch(_){}
   }, 1000);
+};
+window._teamAdvFollow = function(team){
+  try {
+    if (!team || !team.advDk || window._isTeamLeader) return;
+    if (typeof S === 'undefined' || !S || S.run || S.dead) return;
+    if (window._advFollowTried === (team.advAt || 0)) return;
+    window._advFollowTried = team.advAt || 0;
+    if (typeof window.doAdventure === 'function') window.doAdventure(team.advDk);
+    if (!S.run) { try { glog('sys', '👥 队长已进冒险图，你未能跟进（体力或境界不足）'); } catch(_){} }
+    else { try { glog('sys', '👥 已跟随队长进入冒险图'); } catch(_){} }
+  } catch(_){}
 };
 try { window._startTeamFollow(); } catch(_) {}
 // v1069 神识单按钮（Ye 定整合）：练气点=10秒探查，化神点=探查+开外放面板
@@ -1161,7 +1172,7 @@ async function teamRefresh(){
   if (r.json.notices && r.json.notices.length) r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); // v1188 组队通知（与 /state 送达二选一，服务端取走即清）
   // v1051 存全局队伍状态
   window._myTeam = team;
-  try { window._isTeamLeader = team ? (team.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
+  try { window._isTeamLeader = team ? (team.leaderId === myAid() || ((team.members || []).some(function(m){ return m.isLeader && String(m.playerNo || '') !== '' && String(m.playerNo) === String(myPno() || ''); }))) : false; } catch(_){ window._isTeamLeader = false; }
   // 我的队伍
   var infoBox = document.getElementById('mhxyTeamInfo');
   if (infoBox){
@@ -1604,16 +1615,16 @@ window._applyTeamFollow = function(){
       }
     };
     var _ms = (window._myTeam.members || []);
-    var _me2 = (typeof myAid === 'function') ? myAid() : '';
+    var _me2 = (typeof myAid === 'function') ? myAid() : ''; var _mp2 = (typeof myPno === 'function') ? String(myPno() || '') : ''; var _isMe2 = function(o){ return o && ((_me2 && o.accountId === _me2) || (_mp2 && String(o.playerNo != null ? o.playerNo : (o.player_no != null ? o.player_no : '')) === _mp2)); };
     var _found = false;
     for (var j = 0; j < _ms.length; j++){
-      if (_ms[j] && _ms[j].accountId === _me2 && _ms[j].x != null){ _found = true; _applyFollow(_ms[j].x, _ms[j].y); break; }
+      if (_ms[j] && _isMe2(_ms[j]) && _ms[j].x != null){ _found = true; _applyFollow(_ms[j].x, _ms[j].y); break; }
     }
     if (!_found){
       api('/api/world/state').then(function(r){
         if (!r.ok || !r.json) return;
         var ps = r.json.players || [];
-        for (var i = 0; i < ps.length; i++){ if (ps[i] && ps[i].accountId === _me2){ _applyFollow(ps[i].x, ps[i].y); break; } }
+        for (var i = 0; i < ps.length; i++){ if (ps[i] && _isMe2(ps[i])){ _applyFollow(ps[i].x, ps[i].y); break; } }
       }).catch(function(){});
     }
   } catch(_){}
@@ -1627,9 +1638,9 @@ window._applyTeamFollow = function(){
         var gotNotice = false;
         if (r.json.notices && r.json.notices.length) { gotNotice = true; r.json.notices.forEach(function(n){ try { glog('sys', n.text); } catch(_){} }); }
         window._myTeam = now;
-        try { window._isTeamLeader = now ? (now.leaderId === myAid()) : false; } catch(_){ window._isTeamLeader = false; }
+        try { window._isTeamLeader = now ? (now.leaderId === myAid() || ((now.members || []).some(function(m){ return m.isLeader && String(m.playerNo || '') !== '' && String(m.playerNo) === String(myPno() || ''); }))) : false; } catch(_){ window._isTeamLeader = false; }
         if (now && !window._isTeamLeader && !window._teamSeenLogged){ window._teamSeenLogged = true; try { glog('sys', '👥 已在队伍中，队长移动时你会自动跟随'); } catch(_){} }
-        if (now && !window._isTeamLeader) { try { window._applyTeamFollow && window._applyTeamFollow(); } catch(_){} }
+        if (now && !window._isTeamLeader) { try { window._applyTeamFollow && window._applyTeamFollow(); } catch(_){} try { window._teamAdvFollow && window._teamAdvFollow(now); } catch(_){} }
         if (had && !now && !gotNotice) { try { glog('sys', '👥 你已不在队伍中'); } catch(_){} }
         if (document.getElementById('mhxyTeamInfo') && typeof window.teamRefresh === 'function') { try { window.teamRefresh(); } catch(_){} }
       }).catch(function(){});
