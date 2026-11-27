@@ -342,7 +342,7 @@ const MATS = {
 Object.assign(MATS, LU);
 FARM.jingye = MATS.jingye; // v1267 极品灵液挂 FARM（extra 不参与种植掉落）防 normalize 的 farm 清理误删 mats 键
 const STARTER_MATS = 0, STARTER_GOLD = 0; // 新手礼包：无（旧存档迁移时同样发放）
-function grantStarter(S) { ATTRS.forEach(a => S.mats['h_' + a] = (S.mats['h_' + a] || 0) + STARTER_MATS); S.gold += STARTER_GOLD; }
+function grantStarter(S) { ATTRS.forEach(a => S.mats['h_' + a] = (S.mats['h_' + a] || 0) + STARTER_MATS); S.gold += STARTER_GOLD; S.inv = S.inv || {}; S.inv.chuanyin = (S.inv.chuanyin || 0) + 10; } // v1349 新人送10个传音符（Ye 定）
 // 冒险难度：mult 怪物强度倍率；win 胜利属性点；lose 战败扣点；gold 胜利金元；ms 怪物技能数
 const DIFFS = { // cost 体力；mult 怪物强度（相对玩家）；rec/recTot 建议等级/总属性（低于此值怪物按 recTot 的强度生成）；win/gold/xp 胜利奖励；lose 败扣属性；xpL 败得经验；st 败后伤病概率；ms 怪物技能数
   easy:      { name: '玄天葫芦', cost: 1,  mult: 0.76, rec: 1,  recTot: 5,   win: [1, 2],    gold: [10, 20],    xp: 10,  lose: 1,  xpL: 3,  st: 0.10, ms: 0, pre: '' },
@@ -2505,6 +2505,11 @@ function buy(S, kind, key, n) {
     if ((S.xianyu || 0) < 1) return { ok: false, why: 'xianyu' };
     S.xianyu -= 1; S.spaceLBought = 1; S.spaceL = (S.spaceL || 0) + 1; return { ok: true, n: 1, cost: 0 };
   }
+  if (kind === 'chuanyin') { // v1349 传音符 100 金/个（Ye 定）
+    const price = _gp(100);
+    n = Math.min(n, Math.floor(S.gold / price)); if (n <= 0) return { ok: false, why: 'gold' };
+    S.gold -= price * n; S.inv = S.inv || {}; S.inv.chuanyin = (S.inv.chuanyin || 0) + n; return { ok: true, n, cost: price * n };
+  }
   if (kind === 'spirit') {
     const price = _gp(100); // v759 一品灵石售价100金
     n = Math.min(n, Math.floor(S.gold / price)); if (n <= 0) return { ok: false, why: 'gold' };
@@ -3405,6 +3410,7 @@ function invLabelL(k) { // v1224 inv 显示名：修复灵物/化无丹/煞气/�
   if (k === 'detox') return '🍃化无丹';
   if (k === 'sha') return '👹煞气';
   if (k === 'fuq') return '🎫强化符';
+  if (k === 'chuanyin') return '📣传音符';
   const mu = /^mut_(.+)$/.exec(k); if (mu && MUT_PILLS[mu[1]]) return '🌀' + MUT_PILLS[mu[1]].name;
   const m = /^(str|agi|def|vit|int)_([1-5])$/.exec(k); if (m) return GRADES[+m[2]] + AN[m[1]] + '丹';
   return k;

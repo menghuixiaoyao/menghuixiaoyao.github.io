@@ -1121,11 +1121,14 @@ async function chatSend(){
   var r = await api('/api/chat/send', { method:'POST', body:{ text:v, realm:realm } });
   if (r.ok && r.json && r.json.ok){
     if (inp) inp.value = '';
+    try { if (typeof r.json.rev === 'number') M.setBaseRev(r.json.rev); if (typeof r.json.chuanyin === 'number' && typeof S !== 'undefined' && S) { S.inv = S.inv || {}; S.inv.chuanyin = r.json.chuanyin; } } catch(_){}
     // WS 会广播回来；若 WS 没连，手动补一条
     if (!M.chatWs){
       var box = document.getElementById('mhxyChatBox');
       if (box && r.json.message){ var tmp = document.createElement('div'); tmp.innerHTML = chatMsgHtml(r.json.message); while (tmp.firstChild) box.appendChild(tmp.firstChild); box.scrollTop = box.scrollHeight; }
     }
+  } else if ((r.json || {}).error === 'need_chuanyin'){
+    glog('bad', '🌐 没有传音符：世界发言消耗1个传音符，商店100金元一个');
   } else if (r.status === 429){
     glog('bad', '🌐 发言太快，3秒后再试');
   } else if (r.status === 401){

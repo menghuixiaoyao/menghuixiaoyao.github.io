@@ -1537,8 +1537,9 @@ function cityMoveThunder() {
         if (tab === 'world' && _loggedIn) {
           try {
             MHXY.api('/api/chat/send', { method:'POST', body:{ text:v.slice(0,200), realm: (typeof curRealm === 'function' ? curRealm() : 0) } }).then(function(r) {
-              if (r.ok && r.json && r.json.ok) { inp.value = ''; try { window._srvChat = (window._srvChat || []).concat([{ n: '我', t: v.slice(0, 200) }]); window.renderChatFloat(); } catch(_) {} try { chatHistoryToCache(); } catch(_) {} }
+              if (r.ok && r.json && r.json.ok) { inp.value = ''; try { if (typeof r.json.rev === 'number') MHXY.setBaseRev(r.json.rev); if (typeof r.json.chuanyin === 'number') { S.inv = S.inv || {}; S.inv.chuanyin = r.json.chuanyin; } } catch(_) {} try { window._srvChat = (window._srvChat || []).concat([{ n: '我', t: v.slice(0, 200) }]); window.renderChatFloat(); } catch(_) {} try { chatHistoryToCache(); } catch(_) {} }
               else if (r.status === 429) { try { toastLog('sys', '发言太快，3秒后再试'); } catch(_) {} }
+              else if ((r.json || {}).error === 'need_chuanyin') { try { toastLog('sys', '没有传音符：世界发言消耗1个传音符，商店100金元一个'); } catch(_) {} }
               else if (r.status === 401) { try { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } catch(_) {} }
               else { try { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } catch(_) {} }
             });
@@ -3387,6 +3388,7 @@ function sheetShop(msg) {
     `<h3>🧧 红包（买了去真人世界频道发）</h3>` + rpShopHtml() +
     `<h3>⛏️ 器具（冒险采集）</h3>` + [['pick', '⛏️'], ['hoe', '🌿']].map(([tk, ic]) => { const arr = (C.toolsNormalizeL(S)[tk]) || []; const act = C.activeToolL(S, tk); return `<div class="row"><div class="lab">${ic} <b style="color:${C.TOOL_TIER_COLORS[0]}">${C.TOOL_NAMES[tk][0]}</b> <span class="tag">100 金</span><small>${tk === 'pick' ? '挖矿石、采灵脉用（灵脉需镐档不低于灵脉大小）' : '采草药用（需锄档不低于草药等级）'} · ${arr.length ? `已拥有 ${arr.length} 把${act ? `（正在用 ${C.TOOL_NAMES[tk][act.tier]}，持久 ${act.dur}/${act.max}）` : ''}` : '未拥有'} · 可买多把</small></div><button class="btn gold" data-buy="tool" data-k="${tk}" data-n="1" ${g >= _dgp(100) ? '' : 'disabled'}>购买</button></div>`; }).join('') +
     `<div class="row"><div class="lab">🎫 强化符 <span class="tag">200 金</span><small>普通器具持久上限 +100 并回满（背包里使用，升法器后不可再用） · 拥有 ${(S.inv && S.inv.fuq) | 0}</small></div><button class="btn" data-buy="tool" data-k="fuq" data-n="1" ${g >= _dgp(200) ? '' : 'disabled'}>买 1</button><button class="btn gold" data-buy="tool" data-k="fuq" data-n="5" ${g >= _dgp(200) * 5 ? '' : 'disabled'}>买 5</button></div>` +
+    `<div class="row"><div class="lab">📣 传音符 <span class="tag">100 金</span><small>世界发言消耗 1 个 · 拥有 ${(S.inv && S.inv.chuanyin) | 0}</small></div><button class="btn" data-buy="chuanyin" data-k="chuanyin" data-n="1" ${g >= _dgp(100) ? '' : 'disabled'}>买 1</button><button class="btn gold" data-buy="chuanyin" data-k="chuanyin" data-n="5" ${g >= _dgp(100) * 5 ? '' : 'disabled'}>买 5</button></div>` +
     `<h3>灵石</h3><div class="row"><div class="lab">🪨 灵气石 <span class="tag">100 金</span><small>服用：法力 +10（压条上限 100%） · 炼药投入：成功率/上品 +5% · 拥有 ${S.ores.sp1 || 0}</small></div>
       <button class="btn" data-buy="spirit" data-k="sp1" data-n="1" ${g >= _dgp(100) ? '' : 'disabled'}>买 1</button>
       <button class="btn gold" data-buy="spirit" data-k="sp1" data-n="5" ${g >= _dgp(100) * 5 ? '' : 'disabled'}>买 5</button></div>
@@ -6256,13 +6258,13 @@ async function doBuy(kind, k, n) {
     return;
   }
   // v964 彻底版：med/mat/spirit 登录在线时走服务端（固定价兑换，服务端验算）
-  if ((kind === 'med' || kind === 'mat' || kind === 'spirit') && window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+  if ((kind === 'med' || kind === 'mat' || kind === 'spirit' || kind === 'chuanyin') && window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
     try {
       const resp = await MHXY.api('/api/shop/buy', {method:'POST', body:{kind, key:k, n}});
       const j = resp && resp.json;
       if (resp.ok && j && j.ok) {
-        const store = kind === 'med' ? 'meds' : kind === 'mat' ? 'mats' : 'ores';
-        const skey = kind === 'spirit' ? 'sp1' : k;
+        const store = kind === 'med' ? 'meds' : kind === 'mat' ? 'mats' : kind === 'chuanyin' ? 'inv' : 'ores';
+        const skey = kind === 'spirit' ? 'sp1' : kind === 'chuanyin' ? 'chuanyin' : k;
         // v972 服务端返回权威金元余额，直接采用（修复本地虚高问题）
         if (typeof j.gold === 'number') S.gold = j.gold;
         else S.gold = (S.gold|0) - j.cost;
@@ -6270,6 +6272,7 @@ async function doBuy(kind, k, n) {
         S[store][skey] = (S[store][skey]|0) + j.n;
         if (typeof j.rev === 'number') MHXY.setBaseRev(j.rev);
         if (kind === 'spirit') log('gold', `🛒 购买 💎一品灵石 ×${j.n}（金元 -${j.cost}）`);
+        else if (kind === 'chuanyin') log('gold', `🛒 购买 📣传音符 ×${j.n}（金元 -${j.cost}）`);
         else log('gold', `🛒 购买 ${(kind === 'med' ? C.MEDS : MATS)[k].name} ×${j.n}（金元 -${j.cost}）`);
         try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {}
         commit(); const _sy = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy;
@@ -6296,6 +6299,7 @@ async function doBuy(kind, k, n) {
   else if (kind === 'space_s') log('gold', `📦 购买 <span class="y">储物空间（小）</span> ×1（物品包×3）`);
   else if (kind === 'space_l') log('gold', `📦 购买 <span class="y">储物空间（大）</span> ×1（物品包×4）`);
   else if (kind === 'spirit') log('gold', `🛒 购买 💎一品灵石 ×${r.n}（金元 -${r.cost}）`);
+  else if (kind === 'chuanyin') log('gold', `🛒 购买 📣传音符 ×${r.n}（金元 -${r.cost}）`);
   else log('gold', `🛒 购买 ${(kind === 'med' ? C.MEDS : MATS)[k].name} ×${r.n}（金元 -${r.cost}）`);
   try { if (typeof thunderJudgeWithProb === 'function') thunderJudgeWithProb(0.10); } catch(_) {} // v796 交易触发雷云判定
   commit(); const _sy = $('sheet').scrollTop; sheetShop(); $('sheet').scrollTop = _sy; // v200 购买后保持滚动位置
@@ -9437,8 +9441,8 @@ document.addEventListener('click', e => {
       else sheetConsign('list', ((r.json || {}).error === 'no_item') ? '物品不足（存档可能已同步变动）。' : '上架失败。', consignSec);
     } catch(_) { sheetConsign('list', '网络不通，稍后再试。', consignSec); }
   })(); }
-  else if ('chatsend' in d) { const inp = $('chatInput'); const v = inp ? (inp.value || '').trim() : ''; if (v) { const _li2 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_li2 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { if (inp) inp.value = ''; try { chatHistoryToCache(); } catch(_) {} setTimeout(() => { if ($('chatBox')) sheetChat(); }, 600); } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录真人联机'); } else { toastLog('sys', '发送失败'); } }); } else { toastLog('sys', '请先登录真人联机再发言'); } } }
-  else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v) { var _cfOpen1016 = false; try { var _cfEl1016 = document.getElementById('chatFloat'); _cfOpen1016 = !!(_cfEl1016 && _cfEl1016.classList.contains('on')); } catch(_) {} var _tab2 = _cfOpen1016 ? (window._chatTab || 'world') : 'world'; /* v1016: 悬浮窗未开时主界面发言强制走world，修静默丢消息 */ const _li3 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_tab2 === 'world' && _li3 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { inp.value = ''; try { window._srvChat = (window._srvChat || []).concat([{ n: (MHXY.myName ? MHXY.myName() : '我'), t: v.slice(0, 200) }]); } catch(_) {} if (window.renderChatFloat) window.renderChatFloat(); try { chatHistoryToCache(); } catch(_) {} } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } else { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } }); } else { if (_tab2 === 'world') toastLog('sys', '未登录真人联机：这条只留在本机，先去真人联机登录'); if (typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value = ''; save(); if (window.renderChatFloat) window.renderChatFloat(); } } } } // v1008 主界面输入框按频道/登录态分流（原写死本地）
+  else if ('chatsend' in d) { const inp = $('chatInput'); const v = inp ? (inp.value || '').trim() : ''; if (v) { const _li2 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_li2 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { if (inp) inp.value = ''; try { if (typeof r.json.rev === 'number') MHXY.setBaseRev(r.json.rev); if (typeof r.json.chuanyin === 'number') { S.inv = S.inv || {}; S.inv.chuanyin = r.json.chuanyin; } } catch(_) {} try { chatHistoryToCache(); } catch(_) {} setTimeout(() => { if ($('chatBox')) sheetChat(); }, 600); } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if ((r.json || {}).error === 'need_chuanyin') { toastLog('sys', '没有传音符：世界发言消耗1个传音符，商店100金元一个'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请重新登录真人联机'); } else { toastLog('sys', '发送失败'); } }); } else { toastLog('sys', '请先登录真人联机再发言'); } } }
+  else if ('cfsend' in d) { const inp = $('cfInput'); const v = inp ? (inp.value||'').trim() : ''; if (v) { var _cfOpen1016 = false; try { var _cfEl1016 = document.getElementById('chatFloat'); _cfOpen1016 = !!(_cfEl1016 && _cfEl1016.classList.contains('on')); } catch(_) {} var _tab2 = _cfOpen1016 ? (window._chatTab || 'world') : 'world'; /* v1016: 悬浮窗未开时主界面发言强制走world，修静默丢消息 */ const _li3 = (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()); if (_tab2 === 'world' && _li3 && MHXY.api) { MHXY.api('/api/chat/send', { method: 'POST', body: { text: v.slice(0, 200), realm: (S.realm|0) } }).then(r => { if (r.ok && r.json && r.json.ok) { inp.value = ''; try { if (typeof r.json.rev === 'number') MHXY.setBaseRev(r.json.rev); if (typeof r.json.chuanyin === 'number') { S.inv = S.inv || {}; S.inv.chuanyin = r.json.chuanyin; } } catch(_) {} try { window._srvChat = (window._srvChat || []).concat([{ n: (MHXY.myName ? MHXY.myName() : '我'), t: v.slice(0, 200) }]); } catch(_) {} if (window.renderChatFloat) window.renderChatFloat(); try { chatHistoryToCache(); } catch(_) {} } else if (r.status === 429) { toastLog('sys', '发言太快，3秒后再试'); } else if ((r.json || {}).error === 'need_chuanyin') { toastLog('sys', '没有传音符：世界发言消耗1个传音符，商店100金元一个'); } else if (r.status === 401) { toastLog('sys', '登录已过期，请到真人联机重新登录后再发言'); } else { toastLog('sys', '发送失败' + (r.netErr ? '（网络不通）' : '')); } }); } else { if (_tab2 === 'world') toastLog('sys', '未登录真人联机：这条只留在本机，先去真人联机登录'); if (typeof C.chatSend === 'function') { C.chatSend(S, v); inp.value = ''; save(); if (window.renderChatFloat) window.renderChatFloat(); } } } } // v1008 主界面输入框按频道/登录态分流（原写死本地）
   else if (d.menutab) sheetMenu(d.menutab);
 });
 
