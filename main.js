@@ -5288,6 +5288,8 @@ function doReincarnateConfirm(keepAttr, sealGen, forced) { // v209 去掉 sealNa
   const r = C.reincarnate(S, keepAttr, sealGen); // v216 印记信息存遗物（求道：主题；求名：名字模板）
   try { if (window.MHXY && MHXY.loggedIn()) MHXY.api('/api/profile/title', { method: 'POST', body: { title: S.titleAch || '' } }).catch(() => {}); } catch(_) {} // v1140 轮回后同步称号（百毒不侵已随轮回消失）
   if (r.err) return;
+  // v1308 轮回自动退出服务器队伍（同重置存档）
+  try { if (typeof MHXY !== 'undefined' && MHXY.loggedIn && MHXY.loggedIn()) MHXY.api('/api/world/team/leave', 'POST', {}); } catch (_) {}
   S.forceReinc = false; S.forceReincWhy = null;
   closeSheet();
   const rb = C.reincBonus(S);
