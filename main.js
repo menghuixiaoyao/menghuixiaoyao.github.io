@@ -4488,11 +4488,14 @@ window.lwDevour = function (idx, eatenIdx) { // v1331 吞噬得年份：在被�
   try {
     const arr = S.lingwu || []; const me = arr[idx | 0]; const prey = arr[eatenIdx | 0]; if (!me || !prey || (idx | 0) === (eatenIdx | 0)) return;
     const _gen = { '木': '火', '火': '土', '土': '金', '金': '水', '水': '木' };
-    const _sheng = _gen[prey.e] === me.e; // v1332 相生属性更容易吃满（Ye 定）
-    const gain = _sheng ? Math.ceil(Math.max(1, prey.y | 0) * (0.5 + Math.random() * 0.5)) : 1 + Math.floor(Math.random() * Math.max(1, prey.y | 0));
+    const _ke = { '木': '土', '土': '水', '水': '火', '火': '金', '金': '木' };
+    const _sheng = _gen[prey.e] === me.e; // v1332 相生更容易吃满；v1333 相克更少、相同对半保底（Ye 定）
+    const _same = prey.e === me.e, _kef = _ke[prey.e] === me.e;
+    const _py = Math.max(1, prey.y | 0);
+    const gain = _sheng ? Math.ceil(_py * (0.75 + Math.random() * 0.25)) : _same ? Math.ceil(_py / 2) + Math.floor(Math.random() * Math.max(1, _py - Math.ceil(_py / 2) + 1)) : _kef ? 1 + Math.floor(Math.random() * Math.max(1, Math.ceil(_py / 2))) : 1 + Math.floor(Math.random() * _py);
     arr.splice(eatenIdx | 0, 1);
     me.y = (me.y | 0) + gain;
-    log('good', `🌿 ${C.LW_GRADE_NAMES[me.g - 1]}·${me.e} 吞噬 ${C.LW_GRADE_NAMES[prey.g - 1]}·${prey.e}（${prey.y} 年）${_sheng ? '，五行相生' : ''}，年份 <span class="g">+${gain}</span>，现 ${me.y} 年`);
+    log('good', `🌿 ${C.LW_GRADE_NAMES[me.g - 1]}·${me.e} 吞噬 ${C.LW_GRADE_NAMES[prey.g - 1]}·${prey.e}（${prey.y} 年）${_sheng ? '，五行相生' : _same ? '，同属性' : _kef ? '，五行相克' : ''}，年份 <span class="g">+${gain}</span>，现 ${me.y} 年`);
     commit(); sheetBag();
   } catch (_) {}
 };
