@@ -1930,7 +1930,7 @@ function eatFood(S, kind, k, n, petId) { // 吃肉/蛋：恢复饱食度（肉�
   store[k] -= n; if (!store[k]) delete store[k];
   const res = { n, hunger: it.hunger * n, sta: 0, pet, loyal: 0, cured: false };
   if (pet) { pet.hunger = Math.min(100, pet.hunger + res.hunger); for (let i = 0; i < n; i++) res.loyal += loyalUp(pet, K.FEED_LOYAL_P, 2, 4); if (hasSt(S, 'depress') && R() < K.DEPRESS_PET_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
-  else { const _hg = S.hunger < 100 ? Math.min(res.hunger, 100 - S.hunger) : 0; S.hunger += _hg; res.hunger = _hg; if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; if (S.afk && res.sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
+  else { const _hg = S.hunger < 100 ? Math.min(res.hunger, 100 - S.hunger) : 0; S.hunger += _hg; res.hunger = _hg; if (kind === 'meat' && !S.dead) { res.sta = S.race === 'mech' ? Math.floor(n * it.sta * 1.2) : staGain(S, n * it.sta); /* v1088 机械不知疲倦：吃肉回体力 +20% */ S.stamina += res.sta; } if (S.afk) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); } /* 死亡中吃肉不回体力 */ if (hasSt(S, 'depress') && R() < K.DEPRESS_FOOD_CURE) { cureStatus(S, 'depress'); res.cured = true; } }
   return res;
 }
 function useMed(S, k) { const m = MEDS[k]; if (!m || !(S.meds[k] > 0)) return { ok: false, why: 'none' }; if (m.cure === 'curse') { if (!((S.curseN|0) > 0)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; S.curseN = (S.curseN|0) - 1; return { ok: true, cure: 'curse' }; } if (!hasSt(S, m.cure)) return { ok: false, why: 'healthy' }; S.meds[k]--; if (!S.meds[k]) delete S.meds[k]; cureStatus(S, m.cure); return { ok: true, cure: m.cure }; }
@@ -2170,7 +2170,7 @@ function craft(S, skill, key, opt) { // 烹饪 / 锻造 / 炼金：1 活力；�
 function eatDish(S, key, n) { // 吃菜：饱食 + 体力（死亡中不回体力）；精良/极品附带增益（覆盖旧增益）
   const d = dishOf(key); if (!d) return null; n = Math.min(n || 1, S.dishes[key] || 0); if (n <= 0) return null;
   S.dishes[key] -= n; if (!S.dishes[key]) delete S.dishes[key];
-  const _hg = S.hunger < 100 ? Math.min(d.hunger * n, 100 - S.hunger) : 0; S.hunger += _hg; const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk && sta > 0 && S.stamina >= 1) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
+  const _hg = S.hunger < 100 ? Math.min(d.hunger * n, 100 - S.hunger) : 0; S.hunger += _hg; const sta = S.dead ? 0 : Math.floor(dishSta(d.d, d.q) * n * (S.race === 'mech' ? 1.2 : 1)); /* v1088 机械不知疲倦：吃菜回体力 +20% */ S.stamina += sta; if (S.afk) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
   let buff = null; if (d.q >= 2) { buff = d.buff === 'luck' ? { k: 'luck', v: K.BUFF_LUCK[d.q], left: K.BUFF_ACTS, src: d.name } : { k: d.buff, v: K.BUFF_ATTR[d.q], left: K.BUFF_FIGHTS, src: d.name }; S.buff = buff; }
   return { n, hunger: _hg, sta, buff, d };
 }
@@ -2387,6 +2387,7 @@ function useDanwan(S, key, n) { // v1096 服丸
   S.dan[key] = have - n; if (!S.dan[key]) delete S.dan[key];
   if (def.fx === 'hunger') S.hunger = (S.hunger|0) + def.val * n; // v1281 辟谷丸无限叠加
   else if (def.fx === 'sta') S.stamina = (S.stamina|0) + def.val * n;
+  if (S.afk) { const gain = afkExit(S, 'eat'); log('good', gain > 0 ? `🧘 进食出关，获得 <span class="g">${resLbl(S)} +${gain}</span>。` : ((window._afkExitBanked && window._afkExitBanked.mins > 0 && (S.realm|0) >= 10) ? `🧘 进食出关，仙力零头已累计 ${S.afkCarryMins|0} 分钟（满60入账）。` : `🧘 进食出关（不足1分钟，无收益）。`)); }
   return n;
 }
 function useMutPill(S, id) {
