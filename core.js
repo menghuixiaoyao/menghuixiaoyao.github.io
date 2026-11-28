@@ -3473,7 +3473,7 @@ const ADV_MAP_SHAPES = { // v1151 异形地图（与服务端 advmap.js 同图�
 };
 const ADV_HI_Y = 6; // v1220 高地行：y=6，6 块高地（与服务端 advmap.js HI_Y 同规）
 const ADV_CLOUD_Y = 7; // v1234 云端行：y=7，6 块云端格（与服务端 advmap.js CLOUD_Y 同规）
-function hiGateFor(x) { return x < 3 ? 'shukuchi' : 'danuoyi'; } // v1220 高地技能门：前 3 块缩地、后 3 块大挪移（与服务端同规）；v1234 云端行沿用同一分法
+function hiGateFor(x) { return 'danuoyi'; } // v1355 云端技能门：云端格全要大挪移（与服务端同规）；高地技能门为缩地（见 advGenGrid 高地行 need）
 function cloudNeedPasses(skills, need) { // v1234 云端格技能门：大挪移可进缩地云端格，缩地云端格接受 shukuchi 或 danuoyi，大挪移云端格只接受 danuoyi（与服务端 hiGatePasses 同规）
   if (!skills) return false;
   if (need === 'danuoyi') return skills.includes('danuoyi');
@@ -3496,10 +3496,10 @@ function advGenGrid(dk) { // v1151 异形地图（与服务端同图）：虚空
   pos.slice(bag.length).forEach(p => { Object.assign(tiles[p[1]][p[0]], advFreshResTileL(_nowG, advQiL(dk), dk)); });
   if (ADV_MAP_SHAPES[dk || 'easy']) { // v1220 高地：8 张冒险图各加 6 块（y=6 行），与主图不相连、内容与普通 land 格同规；五行图（wx_*）不加
     const _hiRow = [];
-    for (let x = 0; x < ADV_GW; x++) { const _ht = advFreshResTileL(_nowG, advQiL(dk), dk); _ht.gate = hiGateFor(x); _hiRow.push(_ht); }
+    for (let x = 0; x < ADV_GW; x++) { const _ht = advFreshResTileL(_nowG, advQiL(dk), dk); _ht.gate = 'shukuchi'; _ht.need = 'shukuchi'; _hiRow.push(_ht); } // v1355 高地技能门：缩地（大挪移也可进）
     tiles.push(_hiRow);
     const _clRow = []; // v1234 云端：8 张冒险图各加 6 块（y=7 行），内容与普通 land 格同规，带 need 技能门（前 3 缩地、后 3 大挪移）；五行图不加
-    for (let x = 0; x < ADV_GW; x++) { const _ct = advFreshResTileL(_nowG, advQiL(dk), dk); _ct.need = hiGateFor(x); _clRow.push(_ct); }
+    for (let x = 0; x < ADV_GW; x++) { const _ct = advFreshResTileL(_nowG, advQiL(dk), dk); _ct.need = 'danuoyi'; _clRow.push(_ct); } // v1355 云端技能门：全要大挪移
     tiles.push(_clRow);
   }
   return { w: ADV_GW, h: tiles.length, tiles, px: sx, py: sy, ex: ADV_GW - 1, ey: 0, moves: 0 };

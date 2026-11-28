@@ -3062,7 +3062,7 @@ function sheetRun(out) { // v182 格子冒险：地图 + 上下左右方向键 +
       else icon = `<div style="position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center">${icon}<span style="position:absolute;top:-2px;right:-2px;font-size:10px">🧭</span></div>`;
     }
     const _stNeed = shared && shared.tiles && shared.tiles[y] && shared.tiles[y][x] ? shared.tiles[y][x].need : null; // v1234 云端格技能角标
-    const _tgtNeed = _stNeed || t.need || (y === _clRowIdx && _clRowIdx >= 0 ? C.hiGateFor(x) : null);
+    const _tgtNeed = _stNeed || t.need || (y === _clRowIdx && _clRowIdx >= 0 ? 'danuoyi' : (y === _hiRowIdx && _hiRowIdx >= 0 ? 'shukuchi' : null)); // v1355 云端大挪移、高地缩地
     if (_tgtNeed) { // v1234 云端技能角标（1 字）：缩地蓝「缩」/大挪移紫「移」（沿用 v1220 高地角标样式）
       const _nb = _tgtNeed === 'danuoyi' ? '移' : '缩';
       const _nbc = _tgtNeed === 'danuoyi' ? '#b45cff' : '#4d9dff';
@@ -3167,7 +3167,7 @@ function doAdvMove(dir) {
   if (S.forceReinc) { try { showTip(S.forceReincWhy === 'life' ? '⌛ 寿元耗尽，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>' : '☠️ 你已身死，不能移动<br><small>只能解除牵绊、聊天，然后轮回</small>'); } catch (_) {} return; } // v1178
   const r = C.advMove(S, dir);
   if (!r) return;
-  if (r.err) { if (r.err === 'need_skill') { try { showTip(r.skill === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '☁️ 这块云端格需要学会「缩地」才能上去'); } catch (_) {} } return; } // v1235 云端格方向移动被拦也要提示差哪个技能（此前静默）
+  if (r.err) { if (r.err === 'need_skill') { try { showTip(r.skill === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '⛰️ 这块高地需要学会「缩地」才能上去'); } catch (_) {} } return; } // v1235 云端格方向移动被拦也要提示差哪个技能（此前静默）
   if (r.end) { showAdvEnd({ lines: ['抵达终点'], end: r.end }); return; }
   afterAct(); commit(); sheetRun();
   if (r.resMsg) { try { toastLog('good', r.resMsg); } catch (_) {} } // v1125 资源格采集反馈
@@ -8751,7 +8751,7 @@ document.addEventListener('click', e => {
           const _need0 = (_stt && _stt.need) || (_gy === 7 ? C.hiGateFor(_gx) : null);
           if (_need0) {
             const _has0 = _need0 === 'danuoyi' ? (S.skills && S.skills.includes('danuoyi')) : ((S.skills && S.skills.includes('shukuchi')) || (S.skills && S.skills.includes('danuoyi')));
-            if (!_has0) { try { showTip(_need0 === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '☁️ 这块云端格需要学会「缩地」才能上去'); } catch (_) {} }
+            if (!_has0) { try { showTip(_need0 === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '⛰️ 这块高地需要学会「缩地」才能上去'); } catch (_) {} }
           }
           return;
         }
@@ -8764,10 +8764,10 @@ document.addEventListener('click', e => {
         const _maxDiag = _hasDny ? 2 : (_hasSk ? 1 : 0);
         const _isOrth = (_dx === 0 || _dy === 0);
         const _clRow7 = _gr.tiles[7] && _gr.tiles[7].some(function(_t) { return _t && _t.need; }); // v1234 云端行（本地第 7 行）判定
-        const _tgtNeed = (_stt && _stt.need) || (_tt && _tt.need) || (_clRow7 && _gy === 7 ? C.hiGateFor(_gx) : null); // v1234 云端格技能门（本地判定；服务端心跳/移动再验一次）
+        const _tgtNeed = (_stt && _stt.need) || (_tt && _tt.need) || (_clRow7 && _gy === 7 ? 'danuoyi' : (_gy === 6 ? 'shukuchi' : null)); // v1355 云端大挪移、高地缩地（本地判定；服务端心跳/移动再验一次）
         if (_tgtNeed) {
           const _passN = _tgtNeed === 'danuoyi' ? _hasDny : (_hasSk || _hasDny);
-          if (!_passN) { try { showTip(_tgtNeed === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '☁️ 这块云端格需要学会「缩地」才能上去'); } catch (_) {} return; }
+          if (!_passN) { try { showTip(_tgtNeed === 'danuoyi' ? '☁️ 这块云端格需要学会「大挪移」才能上去' : '⛰️ 这块高地需要学会「缩地」才能上去'); } catch (_) {} return; }
         }
         const _canMove = (_isOrth && _dist >= 1 && _dist <= _maxDist) || ((!_isOrth) && (_hasSk || _hasDny) && _cheb >= 1 && _cheb <= _maxDiag); // v1231 高地无门：与普通格同规（相邻正交 1 格；斜向仍要缩地/大挪移技能）
         if (_canMove) {
