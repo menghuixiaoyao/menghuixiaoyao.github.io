@@ -5059,7 +5059,12 @@ function doFaZe(el) { // v867 参悟法则：尊者解锁，3体力/次，仅对
 }
 async function doTrain(k, n) { await srvProg('/api/progress/train', { attr: k, n: Math.min(120, n | 0) }); const d = C.train(S, k, n), f = C.train.fail || 0; if (d) { const xpGain = S.realm === 0 ? (C.train.gain || 0) * 10 : 0; const _lgb = C.train._lgb || 0; log(S.dead ? 'bad' : 'good', `📖 挑灯看书，${AN[k]} <span class="g">+${C.train.gain}</span>（体力 -${d}）` + (_lgb ? `，<span class="g">灵根 +${_lgb}</span>` : '') + (xpGain ? `，经验 <span class="g">+${xpGain}</span>` : '') + (f ? `<br><span class="r">🌧️ 心绪低落，${f} 次看书读不进去</span>` : '')); afterAct(); commit(); S.dead ? closeSheet() : sheetTrain(); } }
 async function doLvUp() {
-  await srvProg('/api/progress/levelup', {});
+  // v1353 升级必须先把本地经验同步上云并拿到服务端登记；登记失败绝不本地先升（否则上传会被账本等级上限钳回）。
+  if (window.MHXY && MHXY.loggedIn && MHXY.loggedIn()) {
+    try { save(); await MHXY.syncNow(); } catch (_) {}
+    const _sr = await srvProg('/api/progress/levelup', {});
+    if (!_sr || _sr.denied) { toastLog('bad', _sr && _sr.denied === 'xp' ? '经验不足' : _sr && _sr.denied === 'mana' ? '法力不足' : _sr && _sr.denied === 'max' ? '已大圆满' : '升级未登记，请稍后再试'); return; }
+  }
   const r = C.doManualLevelUp(S);
   if (r.err) { toastLog('bad', r.err === 'dead' ? '已死亡' : r.err === 'max' ? '已大圆满' : r.err === 'mana' ? '法力不足' : '经验不足'); return; }
   { const mn2 = (S.realm|0) >= 10 ? '仙力' : '法力'; log('good', `⬆️ <b>升级！</b>当前 Lv.${S.level}，全属性 +${(S.realm|0) + 1 + C.reincBonus(S)}` + (r.manaBoost ? `，<span class="g">满${mn2}升级：当前${mn2} ×1.1（${S.mana}）</span>` : '')); }
